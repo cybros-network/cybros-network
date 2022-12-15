@@ -1,0 +1,53 @@
+[package]
+name = "pallet-simple_computing"
+version = "0.0.1-dev"
+description = "Substrate pallet to providing simple computing jobs, this is the MVP usage of pallet-computing_workers"
+authors = ["Jasl <https://github.com/jasl>"]
+homepage = "https://github.com/jasl/research-node"
+repository = "https://github.com/jasl/research-node"
+license = "Apache-2.0"
+edition = "2021"
+publish = false
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+log = { version = "0.4.17", default-features = false }
+
+scale-codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
+scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
+
+frame-support = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+
+pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+pallet-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+
+pallet-computing_workers = { path = "../computing_workers", default-features = false }
+
+[dev-dependencies]
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+sp-io = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+
+pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master" }
+
+[features]
+default = ["std"]
+std = [
+	"log/std",
+	"scale-codec/std",
+	"frame-support/std",
+	"frame-system/std",
+	"scale-info/std",
+	"pallet-balances/std",
+	"pallet-randomness-collective-flip/std",
+	"pallet-computing_workers/std",
+]
+try-runtime = [
+	"frame-support/try-runtime",
+	"pallet-balances/try-runtime",
+	"pallet-randomness-collective-flip/try-runtime",
+	"pallet-computing_workers/try-runtime",
+]

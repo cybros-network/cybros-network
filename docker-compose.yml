@@ -1,0 +1,17 @@
+version: "3.2"
+
+services:
+  dev:
+    container_name: research-node
+    image: paritytech/ci-linux:production
+    working_dir: /var/www/research-node
+    ports:
+      - "9944:9944"
+    environment:
+      - CARGO_HOME=/var/www/research-node/.cargo
+    volumes:
+      - .:/var/www/research-node
+      - type: bind
+        source: ./.local
+        target: /root/.local
+    command: bash -c "cargo build --release && ./target/release/research-node --dev --ws-external"

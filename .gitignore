@@ -1,0 +1,17 @@
+.DS_Store
+*.swp
+.vscode
+.idea/
+
+**/tmp/
+**/target/
+**/*.rs.bk
+.wasm-binaries
+rls*.log
+**/Cargo.lock
+
+!/Cargo.lock
+
+agents/deno/data/
+agents/deno/log/
+agents/deno/main.js
