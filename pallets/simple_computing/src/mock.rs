@@ -105,15 +105,24 @@ impl pallet_computing_workers::Config for Test {
 }
 
 parameter_types! {
-	pub const MaxJobPayloadLen: u32 = 128 * 1000;
-	pub const SlashingCardinal: Balance = DOLLARS;
+	pub const JobDepositBase: Balance = 10 * DOLLARS;
+	pub const JobInputDepositPerByte: Balance = 1 * DOLLARS;
+	pub const MinJobRunningDurationLen: u32 = 20;
+	pub const MaxJobCommandLen: u32 = 32;
+	pub const MaxJobInputLen: u32 = 128 * 1000;
+	pub const MaxJobOutputLen: u32 = 128 * 1000;
 }
 
 impl pallet_simple_computing::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WorkerManageable = ComputingWorkers;
-	type MaxJobPayloadLen = MaxJobPayloadLen;
-	type SlashingCardinal = SlashingCardinal;
+	type JobId = u32;
+	type JobDepositBase = JobDepositBase;
+	type JobInputDepositPerByte = JobInputDepositPerByte;
+	type MinJobRunningDurationLen = MinJobRunningDurationLen;
+	type MaxJobCommandLen = MaxJobCommandLen;
+	type MaxJobInputLen = MaxJobInputLen;
+	type MaxJobOutputLen = MaxJobOutputLen;
 }
 
 // Build genesis storage according to the mock runtime.

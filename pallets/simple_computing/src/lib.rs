@@ -4,6 +4,8 @@ pub use pallet::*;
 
 pub mod types;
 
+pub mod macros;
+
 #[cfg(test)]
 mod mock;
 
@@ -24,11 +26,15 @@ macro_rules! log {
 	};
 }
 
-use crate::types::{Job, JobPayloadVec, JobResult, JobStatus};
+use frame_support::{
+	sp_runtime::Saturating,
+	traits::ReservableCurrency,
+};
 use pallet_computing_workers::{
 	traits::{WorkerLifecycleHooks, WorkerManageable},
 	types::{BalanceOf, OfflineReason, OnlinePayload, VerifiedAttestation},
 };
+use crate::types::*;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -48,22 +54,45 @@ pub mod pallet {
 
 		type WorkerManageable: WorkerManageable<Self>;
 
-		type MaxJobPayloadLen: Get<u32>;
+		type JobId: Member + Parameter + MaxEncodedLen + Copy + AutoIncrement;
 
 		#[pallet::constant]
-		type SlashingCardinal: Get<BalanceOf<Self>>;
+		type JobDepositBase: Get<BalanceOf<Self>>;
+
+		#[pallet::constant]
+		type JobInputDepositPerByte: Get<BalanceOf<Self>>;
+
+		#[pallet::constant]
+		type MinJobRunningDurationLen: Get<u32>;
+
+		#[pallet::constant]
+		type MaxJobCommandLen: Get<u32>;
+
+		#[pallet::constant]
+		type MaxJobInputLen: Get<u32>;
+
+		#[pallet::constant]
+		type MaxJobOutputLen: Get<u32>;
 	}
 
 	#[pallet::storage]
 	#[pallet::getter(fn assigned_jobs)]
 	pub(crate) type AssignedJobs<T: Config> = StorageMap<_, Identity, T::AccountId, Job<T>>;
 
+	#[pallet::storage]
+	pub(super) type NextJobId<T: Config> = StorageMap<
+		_,
+		Identity,
+		T::AccountId,
+		T::JobId,
+		OptionQuery
+	>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		Slashed { worker: T::AccountId, amount: BalanceOf<T> },
-		JobAssigned { worker: T::AccountId },
-		JobStarted { worker: T::AccountId },
+		JobCreated { worker: T::AccountId },
+		JobStarted { worker: T::AccountId, deadline: Option<T::BlockNumber> },
 		JobCompleted { worker: T::AccountId, result: JobResult },
 		JobRemoved { worker: T::AccountId },
 	}
@@ -71,7 +100,7 @@ pub mod pallet {
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		InsufficientFundsForSlashing,
+		InsufficientFundsForReserving,
 		NoPermission,
 		NotTheOwner,
 		WorkerNotExists,
@@ -79,30 +108,63 @@ pub mod pallet {
 		AlreadyAssigned,
 		AlreadyStarted,
 		CantRemove,
+		MaxRunningDurationTooShort,
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
-		pub fn create_job(origin: OriginFor<T>, worker: T::AccountId, payload: JobPayloadVec<T>) -> DispatchResult {
+		pub fn create_job(
+			origin: OriginFor<T>,
+			worker: T::AccountId,
+			command: JobCommand<T>,
+			input: JobInput<T>,
+			max_running_duration: Option<T::BlockNumber>
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::ensure_owner(&who, &worker)?;
 
 			ensure!(!AssignedJobs::<T>::contains_key(&worker), Error::<T>::AlreadyAssigned);
 
+			if let Some(max_running_duration) = max_running_duration {
+				ensure!(
+					max_running_duration >= T::MinJobRunningDurationLen::get().into(),
+					Error::<T>::MaxRunningDurationTooShort
+				);
+			}
+
+			let deposit_base = T::JobDepositBase::get();
+			let per_byte = T::JobInputDepositPerByte::get();
+			let reserved =
+				deposit_base.saturating_add(per_byte.saturating_mul((input.len() as u32).into()));
+
+			<T as pallet_computing_workers::Config>::Currency::reserve(&who, reserved)?;
+
+			let job_id  =
+				NextJobId::<T>::get(&worker).unwrap_or(T::JobId::initial_value());
+
 			let job = Job {
+				job_id,
+				command,
 				status: JobStatus::Created,
 				result: None,
+				output: None,
 				created_by: who,
 				created_at: Some(frame_system::Pallet::<T>::block_number()),
 				started_at: None,
 				completed_at: None,
-				payload,
+				input,
+				max_running_duration,
+				reserved,
+				deadline: None,
 			};
 			AssignedJobs::<T>::insert(&worker, job);
 
-			Self::deposit_event(Event::JobAssigned { worker });
+			Self::deposit_event(Event::JobCreated { worker: worker.clone() });
+
+			let next_job_id = job_id.increment();
+			NextJobId::<T>::insert(&worker, next_job_id);
 
 			Ok(())
 		}
@@ -120,19 +182,27 @@ pub mod pallet {
 
 			ensure!(job.status == JobStatus::Created, Error::<T>::AlreadyStarted);
 
+			let current_block = frame_system::Pallet::<T>::block_number();
+			let deadline = if let Some(max_running_duration) = job.max_running_duration {
+				Some(current_block + max_running_duration)
+			} else {
+				None
+			};
+
 			job.status = JobStatus::Started;
-			job.started_at = Some(frame_system::Pallet::<T>::block_number());
+			job.started_at = Some(current_block);
+			job.deadline = deadline;
 
 			AssignedJobs::<T>::insert(&worker, job);
 
-			Self::deposit_event(Event::JobStarted { worker });
+			Self::deposit_event(Event::JobStarted { worker, deadline });
 
 			Ok(())
 		}
 
 		#[pallet::call_index(2)]
 		#[pallet::weight(0)]
-		pub fn complete_job(origin: OriginFor<T>, result: JobResult) -> DispatchResult {
+		pub fn complete_job(origin: OriginFor<T>, result: JobResult, output: Option<JobOutput<T>>) -> DispatchResult {
 			let worker = ensure_signed(origin)?;
 			Self::ensure_worker(&worker)?;
 
@@ -144,6 +214,7 @@ pub mod pallet {
 
 			job.status = JobStatus::Completed;
 			job.result = Some(result);
+			job.output = output;
 			job.completed_at = Some(frame_system::Pallet::<T>::block_number());
 
 			AssignedJobs::<T>::insert(&worker, job);
@@ -178,7 +249,7 @@ pub mod pallet {
 
 			AssignedJobs::<T>::remove(&worker);
 
-			// TODO: Do settlement
+			<T as pallet_computing_workers::Config>::Currency::unreserve(&job.created_by, job.reserved);
 
 			Self::deposit_event(Event::JobRemoved { worker });
 
@@ -186,8 +257,8 @@ pub mod pallet {
 		}
 
 		// TODO: Cancel Job (called by the owner)
-		// TODO: Heartbeat for the job, or it will be timeout
-		// TODO: How to clean up timeout jobs and slash those workers?
+		// TODO: Report a job is timeout (called by anyone)
+		// TODO: Do we need the worker keeping report the progress of the job? how?
 	}
 
 	impl<T: Config> Pallet<T> {
@@ -226,7 +297,11 @@ pub mod pallet {
 				return
 			}
 
-			// TODO: slash by reason
+			let Some(job) = AssignedJobs::<T>::get(worker) else {
+				return
+			};
+
+			<T as pallet_computing_workers::Config>::Currency::unreserve(&job.created_by, job.reserved);
 			AssignedJobs::<T>::remove(worker)
 		}
 
@@ -235,7 +310,7 @@ pub mod pallet {
 		}
 
 		fn after_requesting_offline(_worker: &T::AccountId) {
-			// TODO:
+			// Nothing to do
 		}
 
 		fn before_deregister(_worker: &T::AccountId) {

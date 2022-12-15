@@ -1,13 +1,26 @@
-use frame_support::{sp_std::prelude::*, BoundedVec, RuntimeDebug};
+use frame_support::{
+	sp_std::prelude::*,
+	sp_runtime::Saturating,
+	BoundedVec, RuntimeDebug,
+};
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use pallet_computing_workers::types::BalanceOf;
+use crate::macros::impl_auto_increment;
 
-pub type JobPayloadVec<T> = BoundedVec<u8, <T as crate::Config>::MaxJobPayloadLen>;
+pub trait AutoIncrement {
+	fn increment(&self) -> Self;
+	fn initial_value() -> Self;
+}
+impl_auto_increment!(u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
+
+pub type JobCommand<T> = BoundedVec<u8, <T as crate::Config>::MaxJobCommandLen>;
+pub type JobInput<T> = BoundedVec<u8, <T as crate::Config>::MaxJobInputLen>;
+pub type JobOutput<T> = BoundedVec<u8, <T as crate::Config>::MaxJobOutputLen>;
 
 #[derive(Encode, Decode, Copy, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum JobStatus {
 	Created,
-	// Enqueued, // Just note that no queue in simple computing
 	Started,
 	Completed,
 	Timeout,
@@ -24,13 +37,20 @@ pub enum JobResult {
 #[derive(Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug, Clone, PartialEq, Eq)]
 #[scale_info(skip_type_params(T))]
 pub struct Job<T: crate::Config> {
+	pub job_id: T::JobId,
+	/// Discriminator used by a worker to decide how to execute a job.
+	pub command: JobCommand<T>,
+	/// Payload the worker should use when executing the job
+	pub input: JobInput<T>,
+	/// Number of blocks a job may be held by a worker before it is considered timeout after started.
+	pub max_running_duration: Option<T::BlockNumber>,
+	pub reserved: BalanceOf<T>,
+	pub deadline: Option<T::BlockNumber>,
 	pub status: JobStatus,
 	pub result: Option<JobResult>,
+	pub output: Option<JobOutput<T>>,
 	pub created_by: T::AccountId,
 	pub created_at: Option<T::BlockNumber>,
-	// pub assigned_at: Option<T::BlockNumber>, // Just note that no assign in simple computing
-	// pub enqueued_at: Option<T::BlockNumber>, // Just note that no queue in simple computing
 	pub started_at: Option<T::BlockNumber>,
 	pub completed_at: Option<T::BlockNumber>,
-	pub payload: JobPayloadVec<T>,
 }
