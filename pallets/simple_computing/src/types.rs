@@ -37,7 +37,7 @@ pub enum JobResult {
 #[derive(Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug, Clone, PartialEq, Eq)]
 #[scale_info(skip_type_params(T))]
 pub struct Job<T: crate::Config> {
-	pub job_id: T::JobId,
+	pub id: T::JobId,
 	/// Discriminator used by a worker to decide how to execute a job.
 	pub command: JobCommand<T>,
 	/// Payload the worker should use when executing the job

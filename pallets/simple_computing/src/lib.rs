@@ -80,6 +80,17 @@ pub mod pallet {
 	pub(crate) type AssignedJobs<T: Config> = StorageMap<_, Identity, T::AccountId, Job<T>>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn completed_jobs)]
+	pub(crate) type CompletedJobs<T: Config> = StorageDoubleMap<
+		_,
+		Identity,
+		T::AccountId,
+		Identity,
+		T::JobId,
+		Job<T>
+	>;
+
+	#[pallet::storage]
 	pub(super) type NextJobId<T: Config> = StorageMap<
 		_,
 		Identity,
@@ -94,7 +105,7 @@ pub mod pallet {
 		JobCreated { worker: T::AccountId },
 		JobStarted { worker: T::AccountId, deadline: Option<T::BlockNumber> },
 		JobCompleted { worker: T::AccountId, result: JobResult },
-		JobRemoved { worker: T::AccountId },
+		JobReclaimed { worker: T::AccountId, job_id: T::JobId },
 	}
 
 	// Errors inform users that something went wrong.
@@ -107,7 +118,6 @@ pub mod pallet {
 		JobNotExists,
 		AlreadyAssigned,
 		AlreadyStarted,
-		CantRemove,
 		MaxRunningDurationTooShort,
 	}
 
@@ -145,7 +155,7 @@ pub mod pallet {
 				NextJobId::<T>::get(&worker).unwrap_or(T::JobId::initial_value());
 
 			let job = Job {
-				job_id,
+				id: job_id,
 				command,
 				status: JobStatus::Created,
 				result: None,
@@ -217,7 +227,8 @@ pub mod pallet {
 			job.output = output;
 			job.completed_at = Some(frame_system::Pallet::<T>::block_number());
 
-			AssignedJobs::<T>::insert(&worker, job);
+			CompletedJobs::<T>::insert(&worker, job.id, job);
+			AssignedJobs::<T>::remove(&worker);
 
 			Self::deposit_event(Event::JobCompleted { worker, result });
 
@@ -226,7 +237,11 @@ pub mod pallet {
 
 		#[pallet::call_index(3)]
 		#[pallet::weight(0)]
-		pub fn remove_job(origin: OriginFor<T>, worker: T::AccountId) -> DispatchResult {
+		pub fn reclaim_completed_job(
+			origin: OriginFor<T>,
+			worker: T::AccountId,
+			job_id: T::JobId
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let Some(worker_info) = T::WorkerManageable::worker_info(&worker) else {
@@ -235,28 +250,19 @@ pub mod pallet {
 
 			ensure!(who == worker || who == worker_info.owner, Error::<T>::NoPermission);
 
-			let Some(job) = AssignedJobs::<T>::get(&worker) else {
+			let Some(job) = CompletedJobs::<T>::take(&worker, &job_id) else {
 				return Err(Error::<T>::JobNotExists.into())
 			};
 
-			ensure!(
-				matches!(
-					job.status,
-					JobStatus::Created | JobStatus::Completed | JobStatus::Timeout | JobStatus::Cancelled
-				),
-				Error::<T>::CantRemove
-			);
-
-			AssignedJobs::<T>::remove(&worker);
-
 			<T as pallet_computing_workers::Config>::Currency::unreserve(&job.created_by, job.reserved);
 
-			Self::deposit_event(Event::JobRemoved { worker });
+			Self::deposit_event(Event::JobReclaimed { worker, job_id });
 
 			Ok(())
 		}
 
 		// TODO: Cancel Job (called by the owner)
+		// TODO: Remove Job (called by the owner)
 		// TODO: Report a job is timeout (called by anyone)
 		// TODO: Do we need the worker keeping report the progress of the job? how?
 	}

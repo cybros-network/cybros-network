@@ -6,8 +6,8 @@ parameter_types! {
 	pub const JobInputDepositPerByte: Balance = deposit(0, 1);
 	pub const MinJobRunningDurationLen: u32 = 20;
 	pub const MaxJobCommandLen: u32 = 32;
-	pub const MaxJobInputLen: u32 = 128 * 1000;
-	pub const MaxJobOutputLen: u32 = 128 * 1000;
+	pub const MaxJobInputLen: u32 = 2 * 1024; // 2 KiB
+	pub const MaxJobOutputLen: u32 = 2 * 1024; // 2 KiB
 }
 
 impl pallet_simple_computing::Config for Runtime {

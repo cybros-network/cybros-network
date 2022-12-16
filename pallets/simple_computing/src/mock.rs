@@ -109,8 +109,8 @@ parameter_types! {
 	pub const JobInputDepositPerByte: Balance = 1 * DOLLARS;
 	pub const MinJobRunningDurationLen: u32 = 20;
 	pub const MaxJobCommandLen: u32 = 32;
-	pub const MaxJobInputLen: u32 = 128 * 1000;
-	pub const MaxJobOutputLen: u32 = 128 * 1000;
+	pub const MaxJobInputLen: u32 = 2 * 1024;
+	pub const MaxJobOutputLen: u32 = 2 * 1024;
 }
 
 impl pallet_simple_computing::Config for Test {

@@ -221,6 +221,7 @@ function createSubstrateApi(rpcUrl: string): ApiPromise | null {
           "Errored",
         ],
       },
+      JobOutput: "BoundedVec<u8, 128000>"
     },
   });
 }
@@ -272,30 +273,6 @@ async function handleJob() {
   const logger = log.getLogger("background");
   const api = window.substrateApi;
   const job = window.locals.currentJob;
-
-  if (job.status === JobStatus.Completed) {
-    window.locals.sentCompleteJobAt = undefined;
-    window.locals.runningJob = undefined;
-
-    if (window.locals.sentRemoveJobAt && window.locals.sentRemoveJobAt >= window.finalizedBlockNumber) {
-      logger.debug("Waiting remove job extrinsic finalize");
-
-      return;
-    }
-
-    logger.info(`Sending "simple_computing.remove_job()`);
-    const txPromise = api.tx.simpleComputing.removeJob(window.workerKeyPair.address);
-    logger.debug(`Call hash: ${txPromise.toHex()}`);
-    const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
-    logger.info(`Transaction hash: ${txHash.toHex()}`);
-    // TODO: Catch whether failed
-
-    window.locals.sentRemoveJobAt = window.latestBlockNumber;
-
-    return;
-  } else {
-    window.locals.sentRemoveJobAt = undefined;
-  }
 
   if (job.status === JobStatus.Started && window.locals.sentCompleteJobAt) {
     logger.debug("Waiting complete job extrinsic finalize");
@@ -379,9 +356,10 @@ async function handleJob() {
   process.status().then(async (status) => {
     const result = status.code === 0 ? "Success" : "Failed";
     const jobResult = api.createType("JobResult", result);
+    const jobOutput = api.createType("Option<JobOutput>", null)
 
     logger.info(`Sending "simple_computing.complete_job()`);
-    const txPromise = api.tx.simpleComputing.completeJob(jobResult);
+    const txPromise = api.tx.simpleComputing.completeJob(jobResult, jobOutput);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -480,7 +458,6 @@ interface Locals {
   sentRefreshAttestationAt?: number;
   sentStartJobAt?: number;
   sentCompleteJobAt?: number;
-  sentRemoveJobAt?: number;
 
   currentJob?: any;
   runningJob?: Deno.Process;
@@ -709,6 +686,11 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
     window.locals.currentJob = jsonifyJob
 
     await handleJob();
+  } else if (window.locals.sentCompleteJobAt) {
+    window.locals.sentCompleteJobAt = undefined;
+    window.locals.runningJob = undefined;
+
+    return;
   }
 });
 
