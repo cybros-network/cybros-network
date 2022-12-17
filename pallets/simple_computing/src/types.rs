@@ -44,7 +44,9 @@ pub struct Job<T: crate::Config> {
 	pub input: JobInput<T>,
 	/// Number of blocks a job may be held by a worker before it is considered timeout after started.
 	pub max_running_duration: Option<T::BlockNumber>,
+	/// Balance of the job creator reserve for the job's storage
 	pub reserved: BalanceOf<T>,
+	/// The last block that the job valid
 	pub deadline: Option<T::BlockNumber>,
 	pub status: JobStatus,
 	pub result: Option<JobResult>,

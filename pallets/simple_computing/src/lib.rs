@@ -212,7 +212,11 @@ pub mod pallet {
 
 		#[pallet::call_index(2)]
 		#[pallet::weight(0)]
-		pub fn complete_job(origin: OriginFor<T>, result: JobResult, output: Option<JobOutput<T>>) -> DispatchResult {
+		pub fn complete_job(
+			origin: OriginFor<T>,
+			result: JobResult,
+			output: Option<JobOutput<T>>,
+		) -> DispatchResult {
 			let worker = ensure_signed(origin)?;
 			Self::ensure_worker(&worker)?;
 
