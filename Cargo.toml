@@ -2,10 +2,21 @@
 panic = "unwind"
 opt-level = 3
 
+# make sure dev builds with backtrace do
+# not slow us down
+[profile.dev.package.backtrace]
+inherits = "release"
+
 [profile.production]
 inherits = "release"
 lto = true
 codegen-units = 1
+
+[profile.testnet]
+inherits = "release"
+debug = 1 # debug symbols are useful for profilers
+debug-assertions = true
+overflow-checks = true
 
 [workspace]
 resolver = "2"
@@ -15,8 +26,17 @@ members = [
     "node",
     "runtime",
     "pallets/*",
+    "worker",
 ]
 
 exclude = [
-    "contracts",
+    "vendor",
 ]
+
+[patch.crates-io]
+# I know this is bad but there's `zeroize` version conflict between `vodozemac` and `substrate`
+x25519-dalek = { path = "vendor/x25519-dalek" }
+
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-io = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }

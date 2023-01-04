@@ -37,7 +37,7 @@ use pallet_transaction_payment::Multiplier;
 
 use node_primitives::constants::{
 	currency::{deposit, EXISTENTIAL_DEPOSIT, UNITS},
-	time::SLOT_DURATION,
+	time::{SLOT_DURATION, DAYS},
 	weight::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO},
 };
 
@@ -156,6 +156,7 @@ construct_runtime!(
 
 		// The main stage
 		MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 100,
+		Nfts: pallet_nfts::{Pallet, Call, Storage, Event<T>} = 101,
 
 		ComputingWorkers: pallet_computing_workers::{Pallet, Call, Storage, Event<T>} = 110,
 		SimpleComputing: pallet_simple_computing::{Pallet, Call, Storage, Event<T>} = 111,
@@ -217,6 +218,7 @@ mod benches {
 		[pallet_balances, Balances]
 		[pallet_vesting, Vesting]
 		[pallet_message_queue, MessageQueue]
+		[pallet_nfts, Nfts]
 		[pallet_computing_workers, ComputingWorkers]
 	);
 }
@@ -412,12 +414,12 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade() -> (Weight, Weight) {
+		fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
 			// NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
 			// have a backtrace here. If any of the pre/post migration checks fail, we shall stop
 			// right here and right now.
-			let weight = Executive::try_runtime_upgrade().unwrap();
-			(weight, RuntimeBlockWeights::get().max_block)
+			let weight = Executive::try_runtime_upgrade(checks).unwrap();
+			(weight, BlockWeights::get().max_block)
 		}
 
 		fn execute_block(

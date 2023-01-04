@@ -14,6 +14,7 @@ mod transaction_payment;
 mod vesting;
 
 mod message_queue;
+mod nfts;
 
 mod computing_workers;
 mod simple_computing;
