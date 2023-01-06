@@ -34,6 +34,9 @@ exclude = [
 ]
 
 [patch.crates-io]
+# TODO: Remove this when new Deno version released.
+deno_runtime = { git = "https://github.com/denoland/deno", branch = "main" }
+
 # I know this is bad but there's `zeroize` version conflict between `vodozemac` and `substrate`
 x25519-dalek = { path = "vendor/x25519-dalek" }
 
