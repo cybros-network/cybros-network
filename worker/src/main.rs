@@ -1,5 +1,9 @@
+mod tracing;
+mod service;
 mod cli;
 
-fn main() -> anyhow::Result<()> {
-	cli::run()
+mod command;
+
+fn main() -> cli::Result<()> {
+	command::run()
 }
