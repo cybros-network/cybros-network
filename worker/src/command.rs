@@ -39,7 +39,15 @@ pub fn run() -> Result<()> {
 
 	let runner = cli.create_runner(&cli.run)?;
 	runner.run_node_until_exit(|config| async move {
-		let (_keystore, task_manager) = new_worker(&config)?;
+		let (keystore, mut task_manager) = new_worker(&config)?;
+
+		crate::service::spawn_tasks(
+			crate::service::SpawnTasksParams {
+				config,
+				task_manager: &mut task_manager,
+				keystore: keystore.clone()
+			}
+		)?;
 
 		Ok(task_manager)
 	})
