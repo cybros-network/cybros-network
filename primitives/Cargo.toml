@@ -1,10 +1,9 @@
 [package]
 name = "node-primitives"
 version = "0.0.1-dev"
-authors = ["Jasl <https://github.com/jasl>"]
-homepage = "https://github.com/jasl/research-node/"
-repository = "https://github.com/jasl/research-node/"
 description = "Substrate node low-level primitives."
+authors.workspace = true
+repository.workspace = true
 edition = "2021"
 license = "Apache-2.0"
 

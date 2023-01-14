@@ -18,9 +18,13 @@ debug = 1 # debug symbols are useful for profilers
 debug-assertions = true
 overflow-checks = true
 
+[workspace.package]
+authors = ["Jasl <https://github.com/jasl>"]
+homepage = "https://github.com/jasl/research-node/"
+repository = "https://github.com/jasl/research-node/"
+
 [workspace]
 resolver = "2"
-
 members = [
     "primitives",
     "node",
@@ -28,7 +32,6 @@ members = [
     "pallets/*",
     "worker",
 ]
-
 exclude = [
     "vendor",
 ]

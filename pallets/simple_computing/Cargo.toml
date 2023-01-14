@@ -2,9 +2,8 @@
 name = "pallet-simple_computing"
 version = "0.0.1-dev"
 description = "Substrate pallet to providing simple computing jobs, this is the MVP usage of pallet-computing_workers"
-authors = ["Jasl <https://github.com/jasl>"]
-homepage = "https://github.com/jasl/research-node"
-repository = "https://github.com/jasl/research-node"
+authors.workspace = true
+repository.workspace = true
 license = "Apache-2.0"
 edition = "2021"
 publish = false

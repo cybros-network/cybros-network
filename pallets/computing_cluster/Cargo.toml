@@ -2,9 +2,8 @@
 name = "computing-cluster"
 version = "0.0.1-dev"
 description = "Substrate pallet for managing groups of workers and orchestrate jobs."
-authors = ["Jasl <https://github.com/jasl>"]
-homepage = "https://github.com/jasl/research-node"
-repository = "https://github.com/jasl/research-node"
+authors.workspace = true
+repository.workspace = true
 license = "Apache-2.0"
 edition = "2021"
 publish = false

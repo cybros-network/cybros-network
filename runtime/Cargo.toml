@@ -2,9 +2,8 @@
 name = "research-runtime"
 version = "0.0.1-dev"
 description = "A fresh FRAME-based Substrate runtime, ready for hacking."
-authors = ["Jasl <https://github.com/jasl>"]
-homepage = "https://github.com/jasl/research-node/"
-repository = "https://github.com/jasl/research-node/"
+authors.workspace = true
+repository.workspace = true
 license = "Apache-2.0"
 edition = "2021"
 publish = false
