@@ -12,8 +12,8 @@ publish = false
 build = "build.rs"
 
 [dependencies]
-deno_core = "0.165.0"
-deno_runtime = "0.91.0"
+deno_core = "0.166.0"
+deno_runtime = "0.92.0"
 vodozemac = { git = "https://github.com/matrix-org/vodozemac.git" }
 
 redb = "0.11.0"

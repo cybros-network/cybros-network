@@ -68,13 +68,14 @@ pub fn spawn_tasks(
 	let keystore = keystore as SyncCryptoStorePtr;
 
 
-	// TODO: generate keys and show public
+	// TODO: Initialize DB
+
+	// TODO: generate keys (if needed) and show public
 	// Example: info!("📦 Highest known block at #{}", chain_info.best_number);
 
 	// TODO: Read on-chain state of the worker, if not register, register it
 
 	// TODO: Start services, such as polling latest (finalized?) blocks, Prometheus service, etc.
-
 	let spawn_handle = task_manager.spawn_handle();
 
 	if let Some(PrometheusConfig { port, registry }) = config.prometheus_config.clone() {
