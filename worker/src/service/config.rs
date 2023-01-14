@@ -19,7 +19,6 @@
 //! Service configuration.
 
 use prometheus_endpoint::Registry;
-use sp_core::crypto::SecretString;
 use std::{
 	io,
 	net::SocketAddr,
@@ -36,8 +35,6 @@ pub struct Configuration {
 	pub impl_version: String,
 	/// Handle to the tokio runtime. Will be used to spawn futures by the task manager.
 	pub tokio_handle: tokio::runtime::Handle,
-	/// Configuration for the keystore.
-	pub keystore: KeystoreConfig,
 	/// RPC over HTTP binding address. `None` if disabled.
 	pub rpc_http: Option<SocketAddr>,
 	/// CORS settings for HTTP & WS servers. `None` if all origins are allowed.
@@ -66,30 +63,6 @@ pub enum TaskType {
 	Async,
 	/// The task might perform a lot of expensive CPU operations and/or call `thread::sleep`.
 	Blocking,
-}
-
-/// Configuration of the client keystore.
-#[derive(Debug, Clone)]
-pub enum KeystoreConfig {
-	/// Keystore at a path on-disk. Recommended for native nodes.
-	Path {
-		/// The path of the keystore.
-		path: PathBuf,
-		/// Node keystore's password.
-		password: Option<SecretString>,
-	},
-	/// In-memory keystore. Recommended for in-browser nodes.
-	InMemory,
-}
-
-impl KeystoreConfig {
-	/// Returns the path for the keystore.
-	pub fn path(&self) -> Option<&Path> {
-		match self {
-			Self::Path { path, .. } => Some(path),
-			Self::InMemory => None,
-		}
-	}
 }
 
 /// Configuration of the Prometheus endpoint.
@@ -141,7 +114,7 @@ impl BasePath {
 		match &*temp {
 			Some(p) => Ok(Self::new(p.path())),
 			None => {
-				let temp_dir = tempfile::Builder::new().prefix("substrate").tempdir()?;
+				let temp_dir = tempfile::Builder::new().prefix("cybros_worker").tempdir()?;
 				let path = PathBuf::from(temp_dir.path());
 
 				*temp = Some(temp_dir);

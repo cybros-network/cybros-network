@@ -18,8 +18,6 @@
 
 //! Initialization errors.
 
-use sp_core::crypto;
-
 /// Result type alias for the CLI.
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -38,27 +36,6 @@ pub enum Error {
 
 	#[error("Invalid input: {0}")]
 	Input(String),
-
-	#[error("Invalid URI; expecting either a secret URI or a public URI.")]
-	InvalidUri(crypto::PublicError),
-
-	#[error("Signature is an invalid format.")]
-	SignatureFormatInvalid,
-
-	#[error("Key is an invalid format.")]
-	KeyFormatInvalid,
-
-	#[error("Unknown key type, must be a known 4-character sequence")]
-	KeyTypeInvalid,
-
-	#[error("Signature verification failed")]
-	SignatureInvalid,
-
-	#[error("Key store operation failed")]
-	KeyStoreOperation,
-
-	#[error("Key storage issue encountered")]
-	KeyStorage(#[from] sc_keystore::Error),
 
 	#[error("Invalid hexadecimal string data, {0:?}")]
 	HexDataConversion(array_bytes::Error),
@@ -80,12 +57,6 @@ impl From<&str> for Error {
 impl From<String> for Error {
 	fn from(s: String) -> Error {
 		Error::Input(s)
-	}
-}
-
-impl From<crypto::PublicError> for Error {
-	fn from(e: crypto::PublicError) -> Error {
-		Error::InvalidUri(e)
 	}
 }
 

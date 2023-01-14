@@ -1,5 +1,4 @@
 use crate::cli::{WorkerCli, RunCmd, Result};
-use crate::service::new_worker;
 
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
@@ -35,19 +34,42 @@ impl WorkerCli for Cli {
 
 /// Parse and run command line arguments
 pub fn run() -> Result<()> {
+	use futures::FutureExt;
+	use crate::service::TaskManager;
+	use crate::service::config::PrometheusConfig;
+	use crate::service::Error;
+
 	let cli = Cli::from_args();
 
 	let runner = cli.create_runner(&cli.run)?;
 	runner.run_node_until_exit(|config| async move {
-		let (keystore, mut task_manager) = new_worker(&config)?;
+		let sysinfo = sc_sysinfo::gather_sysinfo();
+		sc_sysinfo::print_sysinfo(&sysinfo);
 
-		crate::service::spawn_tasks(
-			crate::service::SpawnTasksParams {
-				config,
-				task_manager: &mut task_manager,
-				keystore: keystore.clone()
-			}
-		)?;
+		let task_manager = {
+			let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
+			TaskManager::new(config.tokio_handle.clone(), registry)
+		}.map_err(|e| <prometheus_endpoint::PrometheusError as Into<Error>>::into(e))?;
+
+		// TODO: Initialize DB
+
+
+
+		// TODO: generate keys (if needed) and show public
+		// Example: info!("📦 Highest known block at #{}", chain_info.best_number);
+
+		// TODO: Read on-chain state of the worker, if not register, register it
+
+		// TODO: Start services, such as polling latest (finalized?) blocks, Prometheus service, etc.
+		let spawn_handle = task_manager.spawn_handle();
+
+		if let Some(PrometheusConfig { port, registry }) = config.prometheus_config.clone() {
+			spawn_handle.spawn(
+				"prometheus-endpoint",
+				None,
+				prometheus_endpoint::init_prometheus(port, registry).map(drop),
+			);
+		}
 
 		Ok(task_manager)
 	})

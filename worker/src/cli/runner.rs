@@ -225,10 +225,13 @@ impl<C: WorkerCli> Runner<C> {
 }
 
 /// Log information about the node itself.
-pub fn print_node_infos<C: WorkerCli>(_config: &Configuration) {
+pub fn print_node_infos<C: WorkerCli>(config: &Configuration) {
 	info!("{}", C::impl_name());
 	info!("✌️  version {}", C::impl_version());
 	info!("❤️  by {}, {}-{}", C::author(), C::copyright_start_year(), Local::now().year());
+	if let Some(base_path) = &config.base_path {
+		info!("💾 Working path: {}", base_path.path().display());
+	}
 }
 
 #[cfg(test)]
@@ -276,7 +279,6 @@ mod tests {
 				impl_name: "spec".into(),
 				impl_version: "3".into(),
 				tokio_handle: runtime.handle().clone(),
-				keystore: crate::service::config::KeystoreConfig::InMemory,
 				rpc_http: None,
 				rpc_cors: None,
 				prometheus_config: None,

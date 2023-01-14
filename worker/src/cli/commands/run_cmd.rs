@@ -19,7 +19,7 @@
 use crate::cli::{
 	error::Result,
 	params::{
-		KeystoreParams, SharedParams,
+		SharedParams,
 	},
 	CliConfiguration,
 };
@@ -69,10 +69,6 @@ pub struct RunCmd {
 	#[clap(flatten)]
 	pub shared_params: SharedParams,
 
-	#[allow(missing_docs)]
-	#[clap(flatten)]
-	pub keystore_params: KeystoreParams,
-
 	/// Run a temporary node.
 	///
 	/// A temporary directory will be created to store the configuration and will be deleted
@@ -91,38 +87,24 @@ impl CliConfiguration for RunCmd {
 		&self.shared_params
 	}
 
-	fn keystore_params(&self) -> Option<&KeystoreParams> {
-		Some(&self.keystore_params)
-	}
-
-	fn dev_key_seed(&self, is_dev: bool) -> Result<Option<String>> {
-		Ok(
-			if is_dev {
-				Some("//Alice".into())
-			} else {
-				None
-			}
-		)
-	}
-
-	fn prometheus_config(
-		&self,
-		default_listen_port: u16,
-	) -> Result<Option<PrometheusConfig>> {
-		Ok(if self.no_prometheus {
-			None
+	fn base_path(&self) -> Result<Option<BasePath>> {
+		Ok(if self.tmp {
+			Some(BasePath::new_temp_dir()?)
 		} else {
-			let interface =
-				if self.prometheus_external { Ipv4Addr::UNSPECIFIED } else { Ipv4Addr::LOCALHOST };
-
-			Some(PrometheusConfig::new_with_default_registry(
-				SocketAddr::new(
-					interface.into(),
-					self.prometheus_port.unwrap_or(default_listen_port),
-				),
-				None
-			))
+			match self.shared_params().base_path()? {
+				Some(r) => Some(r),
+				// If `dev` is enabled, we use the temp base path.
+				None if self.shared_params().is_dev() => Some(BasePath::new_temp_dir()?),
+				None => None,
+			}
 		})
+	}
+
+	fn rpc_http(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
+		let interface =
+			if self.rpc_external { Ipv4Addr::UNSPECIFIED } else { Ipv4Addr::LOCALHOST };
+
+		Ok(Some(SocketAddr::new(interface.into(), self.rpc_port.unwrap_or(default_listen_port))))
 	}
 
 	fn rpc_cors(&self, is_dev: bool) -> Result<Option<Vec<String>>> {
@@ -146,24 +128,34 @@ impl CliConfiguration for RunCmd {
 			.into())
 	}
 
-	fn rpc_http(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-		let interface =
-			if self.rpc_external { Ipv4Addr::UNSPECIFIED } else { Ipv4Addr::LOCALHOST };
+	fn prometheus_config(
+		&self,
+		default_listen_port: u16,
+	) -> Result<Option<PrometheusConfig>> {
+		Ok(if self.no_prometheus {
+			None
+		} else {
+			let interface =
+				if self.prometheus_external { Ipv4Addr::UNSPECIFIED } else { Ipv4Addr::LOCALHOST };
 
-		Ok(Some(SocketAddr::new(interface.into(), self.rpc_port.unwrap_or(default_listen_port))))
+			Some(PrometheusConfig::new_with_default_registry(
+				SocketAddr::new(
+					interface.into(),
+					self.prometheus_port.unwrap_or(default_listen_port),
+				),
+				None
+			))
+		})
 	}
 
-	fn base_path(&self) -> Result<Option<BasePath>> {
-		Ok(if self.tmp {
-			Some(BasePath::new_temp_dir()?)
-		} else {
-			match self.shared_params().base_path()? {
-				Some(r) => Some(r),
-				// If `dev` is enabled, we use the temp base path.
-				None if self.shared_params().is_dev() => Some(BasePath::new_temp_dir()?),
-				None => None,
+	fn dev_key_seed(&self, is_dev: bool) -> Result<Option<String>> {
+		Ok(
+			if is_dev {
+				Some("//Alice".into())
+			} else {
+				None
 			}
-		})
+		)
 	}
 }
 

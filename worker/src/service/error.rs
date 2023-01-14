@@ -18,8 +18,6 @@
 
 //! Errors that can occur during the service operation.
 
-use sc_keystore;
-
 /// Service Result typedef.
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -30,12 +28,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
 	#[error(transparent)]
 	Io(#[from] std::io::Error),
-
-	#[error(transparent)]
-	Keystore(#[from] sc_keystore::Error),
-
-	#[error("Tasks executor hasn't been provided.")]
-	TaskExecutorRequired,
 
 	#[error("Prometheus metrics error")]
 	Prometheus(#[from] prometheus_endpoint::PrometheusError),

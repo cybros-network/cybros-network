@@ -18,18 +18,18 @@
 
 //! Configuration trait for a CLI based on substrate
 
-use crate::cli::{
-	error::Result, KeystoreParams, SharedParams, WorkerCli,
-};
 use log::warn;
+use std::net::SocketAddr;
+use crate::cli::{
+	error::Result, SharedParams, WorkerCli,
+};
 use crate::service::{
 	config::{
-		BasePath, Configuration, KeystoreConfig, PrometheusConfig,
+		BasePath, Configuration, PrometheusConfig,
 	},
 	TracingReceiver,
 };
 use crate::tracing::logging::LoggerBuilder;
-use std::{net::SocketAddr, path::PathBuf};
 
 /// The recommended open file descriptor limit to be configured for the process.
 const RECOMMENDED_OPEN_FILE_DESCRIPTOR_LIMIT: u64 = 10_000;
@@ -41,14 +41,14 @@ const RECOMMENDED_OPEN_FILE_DESCRIPTOR_LIMIT: u64 = 10_000;
 pub trait DefaultConfigurationValues {
 	/// The port Substrate should listen on for http connections.
 	///
-	/// By default this is `9933`.
+	/// By default this is `8000`.
 	fn rpc_http_listen_port() -> u16 {
 		8000
 	}
 
 	/// The port Substrate should listen on for prometheus connections.
 	///
-	/// By default this is `9615`.
+	/// By default this is `8100`.
 	fn prometheus_listen_port() -> u16 {
 		8100
 	}
@@ -60,11 +60,6 @@ impl DefaultConfigurationValues for () {}
 pub trait CliConfiguration<DCV: DefaultConfigurationValues = ()>: Sized {
 	/// Get the SharedParams for this object
 	fn shared_params(&self) -> &SharedParams;
-
-	/// Get the KeystoreParams for this object
-	fn keystore_params(&self) -> Option<&KeystoreParams> {
-		None
-	}
 
 	/// Get the base path of the configuration (if any)
 	///
@@ -78,16 +73,6 @@ pub trait CliConfiguration<DCV: DefaultConfigurationValues = ()>: Sized {
 	/// By default this is retrieved from `SharedParams`.
 	fn is_dev(&self) -> Result<bool> {
 		Ok(self.shared_params().is_dev())
-	}
-
-	/// Get the keystore configuration.
-	///
-	/// By default this is retrieved from `KeystoreParams` if it is available. Otherwise it uses
-	/// `KeystoreConfig::InMemory`.
-	fn keystore_config(&self, config_dir: &PathBuf) -> Result<KeystoreConfig> {
-		self.keystore_params()
-			.map(|x| x.keystore_config(config_dir))
-			.unwrap_or(Ok(KeystoreConfig::InMemory))
 	}
 
 	/// Get the RPC HTTP address (`None` if disabled).
@@ -147,14 +132,11 @@ pub trait CliConfiguration<DCV: DefaultConfigurationValues = ()>: Sized {
 		let base_path = self
 			.base_path()?
 			.unwrap_or_else(|| BasePath::from_project("", "", &C::executable_name()));
-		let config_dir = base_path.config_dir();
-		let keystore = self.keystore_config(&config_dir)?;
 
 		Ok(Configuration {
 			impl_name: C::impl_name(),
 			impl_version: C::impl_version(),
 			tokio_handle,
-			keystore,
 			rpc_http: self.rpc_http(DCV::rpc_http_listen_port())?,
 			rpc_cors: self.rpc_cors(is_dev)?,
 			prometheus_config: self
