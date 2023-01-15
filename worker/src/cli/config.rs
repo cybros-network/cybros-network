@@ -52,6 +52,13 @@ pub trait DefaultConfigurationValues {
 	fn prometheus_listen_port() -> u16 {
 		8100
 	}
+
+	/// The Substrate RPC URL for connecting to the chain.
+	///
+	/// By default this is `ws://127.0.0.1:9944`.
+	fn substrate_rpc_url() -> url::Url {
+		url::Url::parse("ws://127.0.0.1:9944").unwrap()
+	}
 }
 
 impl DefaultConfigurationValues for () {}
@@ -99,6 +106,16 @@ pub trait CliConfiguration<DCV: DefaultConfigurationValues = ()>: Sized {
 		Ok(None)
 	}
 
+	/// Get the Substrate RPC URL
+	///
+	/// By default this is `ws://127.0.0.1:9944`.
+	fn substrate_rpc_url(
+		&self,
+		default_rpc_url: url::Url,
+	) -> Result<url::Url> {
+		Ok(default_rpc_url)
+	}
+
 	/// Get the development key seed from the current object
 	///
 	/// By default this is `None`.
@@ -141,6 +158,7 @@ pub trait CliConfiguration<DCV: DefaultConfigurationValues = ()>: Sized {
 			rpc_cors: self.rpc_cors(is_dev)?,
 			prometheus_config: self
 				.prometheus_config(DCV::prometheus_listen_port())?,
+			substrate_rpc_url: self.substrate_rpc_url(DCV::substrate_rpc_url())?,
 			dev_key_seed: self.dev_key_seed(is_dev)?,
 			tracing_targets: self.tracing_targets()?,
 			tracing_receiver: self.tracing_receiver()?,

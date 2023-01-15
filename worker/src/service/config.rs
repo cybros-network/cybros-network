@@ -41,6 +41,8 @@ pub struct Configuration {
 	pub rpc_cors: Option<Vec<String>>,
 	/// Prometheus endpoint configuration. `None` if disabled.
 	pub prometheus_config: Option<PrometheusConfig>,
+	/// Substrate node RPC URL
+	pub substrate_rpc_url: url::Url,
 	/// Development key seed.
 	///
 	/// When running in development mode, the seed will be used to generate authority keys by the

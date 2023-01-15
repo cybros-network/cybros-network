@@ -8,9 +8,10 @@ pub use constants::*;
 pub mod types {
 	use sp_runtime::{
 		generic,
-		traits::{IdentifyAccount, Verify},
+		traits::{IdentifyAccount, Verify, AccountIdLookup, BlakeTwo256},
 		MultiSignature,
 	};
+	use sp_core::H256;
 
 	/// An index to a block.
 	pub type BlockNumber = u32;
@@ -24,6 +25,9 @@ pub mod types {
 
 	/// The type for looking up accounts. We don't expect more than 4 billion of them.
 	pub type AccountIndex = u32;
+
+	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
+	pub type Lookup = AccountIdLookup<AccountId, ()>;
 
 	/// Balance of an account.
 	pub type Balance = u128;
@@ -41,7 +45,10 @@ pub mod types {
 	pub type Index = u32;
 
 	/// A hash of some data used by the chain.
-	pub type Hash = sp_core::H256;
+	pub type Hash = H256;
+
+	/// The hashing algorithm used used by the chain.
+	pub type Hashing = BlakeTwo256;
 
 	/// A timestamp: milliseconds since the unix epoch.
 	/// `u64` is enough to represent a duration of half a billion years, when the

@@ -51,7 +51,7 @@ pub use sp_runtime::{Perbill, Permill};
 pub use node_primitives::{
 	constants,
 	opaque::{self, Header},
-	types::{AccountId, Balance, BlockNumber, Hash, Index, Moment, Signature},
+	types::{AccountId, Lookup, Balance, BlockNumber, Hash, Hashing, Index, Moment, Signature},
 };
 
 mod pallet_configs;

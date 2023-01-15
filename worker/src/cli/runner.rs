@@ -282,6 +282,7 @@ mod tests {
 				rpc_http: None,
 				rpc_cors: None,
 				prometheus_config: None,
+				substrate_rpc_url: url::Url::parse("ws:/127.0.0.1:9944").unwrap(),
 				dev_key_seed: None,
 				tracing_targets: None,
 				tracing_receiver: Default::default(),

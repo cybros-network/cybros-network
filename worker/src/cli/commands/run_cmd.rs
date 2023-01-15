@@ -65,6 +65,13 @@ pub struct RunCmd {
 	#[arg(long)]
 	pub no_prometheus: bool,
 
+	#[arg(
+		long,
+		value_parser = validate_substrate_rpc_url,
+		alias = "substrate-rpc-url"
+	)]
+	pub substrate_rpc_url: Option<url::Url>,
+
 	#[allow(missing_docs)]
 	#[clap(flatten)]
 	pub shared_params: SharedParams,
@@ -157,35 +164,15 @@ impl CliConfiguration for RunCmd {
 			}
 		)
 	}
-}
 
-#[derive(Debug)]
-enum TelemetryParsingError {
-	MissingVerbosity,
-	VerbosityParsingError(std::num::ParseIntError),
-}
 
-impl std::error::Error for TelemetryParsingError {}
-
-impl std::fmt::Display for TelemetryParsingError {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			TelemetryParsingError::MissingVerbosity => write!(f, "Verbosity level missing"),
-			TelemetryParsingError::VerbosityParsingError(e) => write!(f, "{}", e),
-		}
-	}
-}
-
-fn parse_telemetry_endpoints(s: &str) -> std::result::Result<(String, u8), TelemetryParsingError> {
-	let pos = s.find(' ');
-	match pos {
-		None => Err(TelemetryParsingError::MissingVerbosity),
-		Some(pos_) => {
-			let url = s[..pos_].to_string();
-			let verbosity =
-				s[pos_ + 1..].parse().map_err(TelemetryParsingError::VerbosityParsingError)?;
-			Ok((url, verbosity))
-		},
+	fn substrate_rpc_url(
+		&self,
+		default_rpc_url: url::Url,
+	) -> Result<url::Url> {
+		Ok(
+			self.substrate_rpc_url.clone().unwrap_or(default_rpc_url)
+		)
 	}
 }
 
@@ -227,5 +214,19 @@ fn parse_cors(s: &str) -> Result<Cors> {
 		Ok(Cors::All)
 	} else {
 		Ok(Cors::List(origins))
+	}
+}
+
+fn validate_substrate_rpc_url(arg: &str) -> std::result::Result<url::Url, String> {
+	let url = url::Url::parse(arg).map_err(|e| e.to_string())?;
+
+	let scheme = url.scheme();
+	if scheme == "ws" || scheme == "wss" {
+		Ok(url)
+	} else {
+		Err(format!(
+			"'{}' URL scheme not supported. Only websocket RPC is currently supported",
+			url.scheme()
+		))
 	}
 }

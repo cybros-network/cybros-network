@@ -29,6 +29,9 @@ pub enum Error {
 	#[error(transparent)]
 	Io(#[from] std::io::Error),
 
+	#[error("Database error")]
+	Database(#[from] redb::Error),
+
 	#[error("Prometheus metrics error")]
 	Prometheus(#[from] prometheus_endpoint::PrometheusError),
 

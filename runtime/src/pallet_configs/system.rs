@@ -7,7 +7,6 @@ use frame_support::{
 };
 use frame_system::limits::{BlockLength, BlockWeights};
 use pallet_balances::AccountData;
-use sp_runtime::traits::{AccountIdLookup, BlakeTwo256};
 use sp_version::RuntimeVersion;
 
 parameter_types! {
@@ -55,11 +54,11 @@ impl frame_system::Config for Runtime {
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
-	type Hashing = BlakeTwo256;
+	type Hashing = Hashing;
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
-	type Lookup = AccountIdLookup<AccountId, ()>;
+	type Lookup = Lookup;
 	/// The header type.
 	type Header = Header;
 	/// The ubiquitous event type.
