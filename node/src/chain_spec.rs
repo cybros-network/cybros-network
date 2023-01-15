@@ -1,5 +1,5 @@
-use node_primitives::types::AccountId;
-use node_runtime::{
+use runtime_primitives::types::AccountId;
+use runtime::{
 	AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;

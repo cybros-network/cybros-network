@@ -68,7 +68,7 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 		Pair as PairT,
 		crypto::{SecretUri, ExposeSecret},
 	};
-	use std::str::FromStr;
+	use std::{str::FromStr, sync::Arc};
 	use subxt::{
 		dynamic::Value,
 		tx::PairSigner,
@@ -128,7 +128,7 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 	// TODO: Read on-chain state of the worker, if not register, notice user and quit
 	let substrate_url = config.substrate_rpc_url.as_str();
 	info!("Connecting to: {}", substrate_url);
-	let api = OnlineClient::<CybrosConfig>::from_url(substrate_url).await.unwrap();
+	let substrate_api = Arc::new(OnlineClient::<CybrosConfig>::from_url(substrate_url).await.unwrap());
 	let storage_address = subxt::dynamic::storage(
 		"ComputingWorkers",
 		"Workers",
@@ -137,7 +137,7 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 			Value::from_bytes(&keyring.public()),
 		],
 	);
-	let account = api
+	let account = substrate_api
 		.storage()
 		.fetch_or_default(&storage_address, None)
 		.await.unwrap()

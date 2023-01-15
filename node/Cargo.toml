@@ -1,23 +1,24 @@
 [package]
-name = "research-node"
+name = "cybros-node"
 version = "0.0.1-dev"
-description = "A fresh FRAME-based Substrate node, ready for hacking."
+description = "Cybros node, powered by Substrate."
 authors.workspace = true
 homepage.workspace = true
 repository.workspace = true
 license = "Apache-2.0"
 edition = "2021"
 publish = false
+
 build = "build.rs"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [[bin]]
-name = "research-node"
+name = "cybros-node"
 
 [dependencies]
-clap = { version = "4.0.9", features = ["derive"] }
+clap = { version = "4.0.32", features = ["derive"] }
 futures = { version = "0.3.21", features = ["thread-pool"]}
 
 sc-cli = { git = "https://github.com/paritytech/substrate", branch = "master" }
@@ -58,8 +59,8 @@ frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch =
 frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 # Local Dependencies
-node-primitives = { path = "../primitives" }
-node-runtime = { path = "../runtime", package = "research-runtime" }
+runtime-primitives = { package = "cybros-runtime-primitives", path = "../primitives" }
+runtime = { path = "../runtime", package = "cybros-primal-runtime" }
 
 # CLI-specific dependencies
 try-runtime-cli = { git = "https://github.com/paritytech/substrate", branch = "master", optional = true }
@@ -71,10 +72,13 @@ substrate-build-script-utils = { git = "https://github.com/paritytech/substrate"
 default = []
 # Dependencies that are only required if runtime benchmarking should be build.
 runtime-benchmarks = [
-	"node-runtime/runtime-benchmarks",
+	"runtime/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 ]
 # Enable features that allow the runtime to be tried and debugged. Name might be subject to change
 # in the near future.
-try-runtime = ["node-runtime/try-runtime", "try-runtime-cli/try-runtime"]
+try-runtime = [
+	"try-runtime-cli/try-runtime",
+	"runtime/try-runtime",
+]

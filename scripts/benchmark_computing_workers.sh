@@ -4,7 +4,7 @@ set -e
 
 echo "*** Run benchmark for pallet-computing_workers ***"
 
-target/release/research-node benchmark pallet \
+target/release/cybros-node benchmark pallet \
   --pallet=pallet_computing_workers \
   --chain=dev \
   --steps=50 \

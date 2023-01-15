@@ -20,8 +20,8 @@ overflow-checks = true
 
 [workspace.package]
 authors = ["Jasl <https://github.com/jasl>"]
-homepage = "https://github.com/jasl/research-node/"
-repository = "https://github.com/jasl/research-node/"
+homepage = "https://github.com/jasl/cybros-network"
+repository = "https://github.com/jasl/cybros-network"
 
 [workspace]
 resolver = "2"

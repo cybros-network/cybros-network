@@ -1,4 +1,4 @@
-# Research Node
+# Cybros Network
 
 A fresh FRAME-based [Substrate](https://www.substrate.io/) node, ready for hacking :rocket:
 
@@ -42,7 +42,7 @@ Once the project has been built, the following command can be used to explore al
 subcommands:
 
 ```sh
-./target/release/reearch-node -h
+./target/release/cybros-node -h
 ```
 
 ## Run
@@ -56,19 +56,19 @@ node.
 This command will start the single-node development chain with non-persistent state:
 
 ```bash
-./target/release/research-node --dev
+./target/release/cybros-node --dev
 ```
 
 Purge the development chain's state:
 
 ```bash
-./target/release/research-node purge-chain --dev
+./target/release/cybros-node purge-chain --dev
 ```
 
 Start the development chain with detailed logging:
 
 ```bash
-RUST_BACKTRACE=1 ./target/release/research-node -ldebug --dev
+RUST_BACKTRACE=1 ./target/release/cybros-node -ldebug --dev
 ```
 
 > Development chain means that the state of our chain will be in a tmp folder while the nodes are
@@ -91,7 +91,7 @@ is ran. The following commands shows how to use a newly created folder as our db
 $ mkdir my-chain-state
 
 // Use of that folder to store the chain state
-$ ./target/release/research-node --dev --base-path ./my-chain-state/
+$ ./target/release/cybros-node --dev --base-path ./my-chain-state/
 
 // Check the folder structure created inside the base path after running the chain
 $ ls ./my-chain-state
@@ -155,7 +155,7 @@ After the node has been [built](#build), refer to the embedded documentation to 
 capabilities and configuration parameters that it exposes:
 
 ```shell
-./target/release/research-node --help
+./target/release/cybros-node --help
 ```
 
 ### Runtime
@@ -213,15 +213,15 @@ Then run the following command to start a single node development chain.
 
 This command will firstly compile your code, and then start a local development network. You can
 also replace the default command
-(`cargo build --release && ./target/release/research-node --dev --ws-external`)
+(`cargo build --release && ./target/release/cybros-node --dev --ws-external`)
 by appending your own. A few useful ones are as follow.
 
 ```bash
 # Run Substrate node without re-compiling
-./scripts/docker_run.sh ./target/release/research-node --dev --ws-external
+./scripts/docker_run.sh ./target/release/cybros-node --dev --ws-external
 
 # Purge the local dev chain
-./scripts/docker_run.sh ./target/release/research-node purge-chain --dev
+./scripts/docker_run.sh ./target/release/cybros-node purge-chain --dev
 
 # Check whether the code is compilable
 ./scripts/docker_run.sh cargo check

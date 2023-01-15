@@ -2,16 +2,16 @@ version: "3.2"
 
 services:
   dev:
-    container_name: research-node
+    container_name: cybros-node
     image: paritytech/ci-linux:production
-    working_dir: /var/www/research-node
+    working_dir: /var/www/cybros-node
     ports:
       - "9944:9944"
     environment:
-      - CARGO_HOME=/var/www/research-node/.cargo
+      - CARGO_HOME=/var/www/cybros-node/.cargo
     volumes:
-      - .:/var/www/research-node
+      - .:/var/www/cybros-node
       - type: bind
         source: ./.local
         target: /root/.local
-    command: bash -c "cargo build --release && ./target/release/research-node --dev --ws-external"
+    command: bash -c "cargo build --release && ./target/release/cybros-node --dev --ws-external"

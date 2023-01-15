@@ -2,7 +2,7 @@ use subxt::{
 	config::{WithExtrinsicParams, Config},
 	tx::{BaseExtrinsicParams, PlainTip}
 };
-use node_primitives::{types::*, opaque::*};
+use runtime_primitives::{types::*, opaque::*};
 
 /// A struct representing the signed extra and additional parameters required
 /// to construct a transaction for a polkadot node.

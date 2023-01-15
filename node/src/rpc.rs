@@ -13,7 +13,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
-use node_primitives::{
+use runtime_primitives::{
 	opaque::Block,
 	types::{AccountId, Balance, Index},
 };

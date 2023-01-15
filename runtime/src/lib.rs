@@ -35,7 +35,7 @@ use frame_support::weights::Weight;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::Multiplier;
 
-use node_primitives::constants::{
+use runtime_primitives::constants::{
 	currency::{deposit, EXISTENTIAL_DEPOSIT, UNITS},
 	time::{SLOT_DURATION, DAYS},
 	weight::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO},
@@ -48,7 +48,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
-pub use node_primitives::{
+pub use runtime_primitives::{
 	constants,
 	opaque::{self, Header},
 	types::{AccountId, Lookup, Balance, BlockNumber, Hash, Hashing, Index, Moment, Signature},
@@ -72,8 +72,8 @@ impl_opaque_keys! {
 // https://docs.substrate.io/main-docs/build/upgrade#runtime-versioning
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("research-network"),
-	impl_name: create_runtime_str!("research-network"),
+	spec_name: create_runtime_str!("primal"),
+	impl_name: create_runtime_str!("cybros-primal"),
 	authoring_version: 1,
 	spec_version: 100,
 	impl_version: 1,

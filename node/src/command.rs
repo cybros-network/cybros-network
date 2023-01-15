@@ -9,11 +9,11 @@ use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
 
-use node_primitives::{constants::currency::EXISTENTIAL_DEPOSIT, opaque::Block};
+use runtime_primitives::{constants::currency::EXISTENTIAL_DEPOSIT, opaque::Block};
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Research Node".into()
+		"Cybros node".into()
 	}
 
 	fn impl_version() -> String {
@@ -29,7 +29,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"support.anonymous.an".into()
+		"https://github.com/jasl/cybros-network/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
@@ -45,7 +45,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		&node_runtime::VERSION
+		&runtime::VERSION
 	}
 }
 

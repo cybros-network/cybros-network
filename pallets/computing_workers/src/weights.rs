@@ -7,7 +7,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// target/release/research-node
+// target/release/cybros-node
 // benchmark
 // pallet
 // --pallet=pallet_computing_workers
