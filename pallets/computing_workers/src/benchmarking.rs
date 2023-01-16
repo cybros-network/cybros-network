@@ -2,12 +2,6 @@
 
 use super::*;
 
-use crate::types::{
-	AttestationMethod, AttestationPayload, ExtraOnlinePayload, FlipFlopStage, NonTEEAttestation, OnlinePayload,
-	WorkerStatus,
-};
-#[allow(unused)]
-use crate::Pallet as ComputingWorkers;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::{
 	assert_ok, fail,
@@ -15,6 +9,12 @@ use frame_support::{
 };
 use frame_system::{Account, RawOrigin};
 use sp_runtime::app_crypto::{sr25519, KeyTypeId, RuntimePublic};
+use primitives::{
+	AttestationMethod, AttestationPayload, ExtraOnlinePayload, FlipFlopStage, NonTEEAttestation, OnlinePayload,
+	WorkerStatus,
+};
+#[allow(unused)]
+use crate::Pallet as ComputingWorkers;
 
 const DOLLARS: u128 = 1_000_000_000_000;
 const WORKER_KEY_TYPE: KeyTypeId = KeyTypeId(*b"work");

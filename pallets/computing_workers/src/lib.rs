@@ -1,7 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod traits;
-pub mod types;
 pub mod weights;
 
 #[cfg(test)]
@@ -27,6 +26,7 @@ macro_rules! log {
 	};
 }
 
+pub use primitives;
 pub use pallet::*;
 
 use frame_support::{
@@ -41,11 +41,15 @@ use sp_io::crypto::sr25519_verify;
 use sp_runtime::{traits::Zero, SaturatedConversion, Saturating};
 use sp_std::prelude::*;
 
+use primitives::*;
 use crate::{
 	traits::*,
-	types::*,
 	weights::WeightInfo,
 };
+
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub type PositiveImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::PositiveImbalance;
+pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
 #[frame_support::pallet]
 mod pallet {
@@ -136,7 +140,7 @@ mod pallet {
 	/// Storage for computing_workers.
 	#[pallet::storage]
 	#[pallet::getter(fn workers)]
-	pub(crate) type Workers<T: Config> = CountedStorageMap<_, Identity, T::AccountId, WorkerInfo<T>>;
+	pub(crate) type Workers<T: Config> = CountedStorageMap<_, Identity, T::AccountId, WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>>;
 
 	/// Storage for flip set, this is for online checking
 	#[pallet::storage]
@@ -905,12 +909,12 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	fn ensure_owner(who: &T::AccountId, worker_info: &WorkerInfo<T>) -> DispatchResult {
+	fn ensure_owner(who: &T::AccountId, worker_info: &WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>) -> DispatchResult {
 		ensure!(*who == worker_info.owner, Error::<T>::NotTheOwner);
 		Ok(())
 	}
 
-	fn ensure_worker(who: &T::AccountId, worker_info: &WorkerInfo<T>) -> DispatchResult {
+	fn ensure_worker(who: &T::AccountId, worker_info: &WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>) -> DispatchResult {
 		ensure!(*who == worker_info.account, Error::<T>::NotTheWorker);
 		Ok(())
 	}
@@ -931,7 +935,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	fn ensure_attestation_method(attestation: &Option<Attestation>, worker_info: &WorkerInfo<T>) -> DispatchResult {
+	fn ensure_attestation_method(attestation: &Option<Attestation>, worker_info: &WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>) -> DispatchResult {
 		let Some(worker_attestation_method) = worker_info.attestation_method.clone() else {
 			ensure!(attestation.is_none(), Error::<T>::AttestationMethodChanged);
 			return Ok(())
@@ -973,7 +977,7 @@ impl<T: Config> Pallet<T> {
 }
 
 impl<T: Config> WorkerManageable<T> for Pallet<T> {
-	fn worker_info(worker: &T::AccountId) -> Option<WorkerInfo<T>> {
+	fn worker_info(worker: &T::AccountId) -> Option<WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>> {
 		Workers::<T>::get(worker)
 	}
 

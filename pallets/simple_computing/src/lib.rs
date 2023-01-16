@@ -32,7 +32,8 @@ use frame_support::{
 };
 use pallet_computing_workers::{
 	traits::{WorkerLifecycleHooks, WorkerManageable},
-	types::{BalanceOf, OfflineReason, OnlinePayload, VerifiedAttestation},
+	primitives::{OfflineReason, OnlinePayload, VerifiedAttestation},
+	BalanceOf,
 };
 use crate::types::*;
 

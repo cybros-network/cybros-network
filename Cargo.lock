@@ -5580,6 +5580,7 @@ dependencies = [
  "hex-literal",
  "log",
  "pallet-balances",
+ "pallet-computing_workers-primitives",
  "pallet-randomness-collective-flip",
  "pallet-timestamp",
  "parity-scale-codec",
@@ -5588,6 +5589,15 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-computing_workers-primitives"
+version = "0.0.1-dev"
+dependencies = [
+ "frame-support",
+ "parity-scale-codec",
+ "scale-info",
 ]
 
 [[package]]

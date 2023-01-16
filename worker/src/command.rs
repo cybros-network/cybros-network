@@ -90,7 +90,7 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 
 	// Read the worker identity
 
-	// if not found, generate one.
+	// If not found, generate one.
 	let read_txn = db.begin_read()?;
 	if let Err(table) = read_txn.open_table(TABLE_SECRETS) {
 		let secret =
@@ -139,9 +139,8 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 	);
 	let account = substrate_api
 		.storage()
-		.fetch_or_default(&storage_address, None)
-		.await.unwrap()
-		.to_value().unwrap();
+		.fetch(&storage_address, None)
+		.await.unwrap().unwrap().to_value().unwrap();
 	println!("Bob's account details: {account}");
 
 	// TODO: Start services, such as polling latest (finalized?) blocks, Prometheus service, etc.

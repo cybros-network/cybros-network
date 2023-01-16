@@ -1,9 +1,11 @@
 #[allow(unused)]
-use crate::{mock::*, types::*, Config, Error, Event};
-#[allow(unused)]
 use frame_support::{assert_err, assert_noop, assert_ok};
 #[allow(unused)]
 use frame_system::Account;
+#[allow(unused)]
+use primitives::*;
+#[allow(unused)]
+use crate::{mock::*, BalanceOf, Config, Error, Event};
 
 #[allow(unused)]
 const ALICE: AccountId = 1;
@@ -14,7 +16,9 @@ const BOB: AccountId = 3;
 #[allow(unused)]
 const BOB_WORKER: AccountId = 4;
 
-fn register_worker_for(owner: AccountId, worker: AccountId, initial_deposit: Balance) -> WorkerInfo<Test> {
+type WorkerInfo = primitives::WorkerInfo<<Test as frame_system::Config>::AccountId, BalanceOf<Test>, <Test as frame_system::Config>::BlockNumber>;
+
+fn register_worker_for(owner: AccountId, worker: AccountId, initial_deposit: Balance) -> WorkerInfo {
 	let owner_balance = Balances::free_balance(owner);
 
 	assert_ok!(ComputingWorkers::register(RuntimeOrigin::signed(owner), worker, initial_deposit));

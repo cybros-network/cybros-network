@@ -57,7 +57,7 @@ pallet-computing_workers = { path = "../pallets/computing_workers", default-feat
 pallet-simple_computing = { path = "../pallets/simple_computing", default-features = false }
 
 # Local Dependencies
-runtime-primitives = { package = "cybros-runtime-primitives", path = "../primitives", default-features = false }
+runtime-primitives = { package = "cybros-runtime-primitives", path = "../runtime-primitives", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "master", optional = true }
@@ -138,8 +138,8 @@ try-runtime = [
 	"pallet-multisig/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-vesting/try-runtime",
-	"pallet-computing_workers/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-nfts/try-runtime",
+	"pallet-computing_workers/try-runtime",
 	"pallet-simple_computing/try-runtime",
 ]

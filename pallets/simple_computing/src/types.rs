@@ -5,7 +5,7 @@ use frame_support::{
 };
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use pallet_computing_workers::types::BalanceOf;
+use pallet_computing_workers::BalanceOf;
 use crate::macros::impl_auto_increment;
 
 pub trait AutoIncrement {

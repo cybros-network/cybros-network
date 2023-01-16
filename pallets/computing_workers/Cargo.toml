@@ -28,6 +28,8 @@ sp-io = { git = "https://github.com/paritytech/substrate", branch = "master", de
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
+primitives = { package = "pallet-computing_workers-primitives", path = "primitives", default-features = false }
+
 pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
@@ -51,6 +53,7 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"primitives/std",
 	"pallet-balances/std",
 	"pallet-timestamp/std",
 	"pallet-randomness-collective-flip/std",

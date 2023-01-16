@@ -28,7 +28,8 @@ macro_rules! log {
 use frame_support::{sp_runtime::Saturating, sp_std::prelude::*};
 use pallet_computing_workers::{
 	traits::{WorkerLifecycleHooks, WorkerManageable},
-	types::{BalanceOf, OfflineReason, OnlinePayload, VerifiedAttestation},
+	primitives::{OfflineReason, OnlinePayload, VerifiedAttestation},
+	BalanceOf,
 };
 
 #[frame_support::pallet]

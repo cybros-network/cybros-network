@@ -26,7 +26,7 @@ repository = "https://github.com/jasl/cybros-network"
 [workspace]
 resolver = "2"
 members = [
-    "primitives",
+    "runtime-primitives",
     "node",
     "runtime",
     "pallets/*",

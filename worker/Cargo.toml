@@ -70,7 +70,7 @@ deno_core = "0.166.0"
 deno_runtime = "0.92.0"
 vodozemac = { git = "https://github.com/matrix-org/vodozemac.git" }
 sc-sysinfo = { git = "https://github.com/paritytech/substrate", branch = "master" }
-runtime-primitives = { package = "cybros-runtime-primitives", path = "../primitives" }
+runtime-primitives = { package = "cybros-runtime-primitives", path = "../runtime-primitives" }
 
 [dev-dependencies]
 # CLI

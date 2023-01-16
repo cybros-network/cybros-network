@@ -26,9 +26,9 @@ pallet-randomness-collective-flip = { git = "https://github.com/paritytech/subst
 pallet-computing_workers = { path = "../computing_workers", default-features = false }
 
 [dev-dependencies]
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-sp-io = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-io = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
