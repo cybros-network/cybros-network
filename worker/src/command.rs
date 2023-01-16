@@ -1,4 +1,3 @@
-use sp_core::Pair;
 use crate::cli::{WorkerCli, RunCmd, Result};
 use crate::service::{Configuration, TaskManager};
 
@@ -74,6 +73,9 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 		tx::PairSigner,
 		OnlineClient,
 	};
+	use scale_codec::Decode;
+	use pallet_computing_workers_primitives::WorkerInfo;
+	use runtime_primitives::types::{AccountId, Balance, BlockNumber};
 	use crate::service::config::PrometheusConfig;
 	use crate::chain::CybrosConfig;
 
@@ -140,8 +142,11 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 	let account = substrate_api
 		.storage()
 		.fetch(&storage_address, None)
-		.await.unwrap().unwrap().to_value().unwrap();
-	println!("Bob's account details: {account}");
+		.await.unwrap();
+	if let Some(account) = account {
+		let decoded = WorkerInfo::<AccountId, Balance, BlockNumber>::decode::<&[u8]>(&mut account.encoded()).unwrap();
+		println!("Bob's account details: {:?}", decoded);
+	}
 
 	// TODO: Start services, such as polling latest (finalized?) blocks, Prometheus service, etc.
 	let spawn_handle = task_manager.spawn_handle();

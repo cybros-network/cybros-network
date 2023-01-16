@@ -1622,6 +1622,7 @@ dependencies = [
  "log",
  "nu-ansi-term",
  "once_cell",
+ "pallet-computing_workers-primitives",
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "pin-project",
