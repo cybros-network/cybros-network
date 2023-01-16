@@ -1,5 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "std")]
+use std::fmt;
+
 use frame_support::{
 	codec::{Decode, Encode, MaxEncodedLen},
 	scale_info::TypeInfo,
@@ -131,6 +134,18 @@ pub enum WorkerStatus {
 impl Default for WorkerStatus {
 	fn default() -> Self {
 		WorkerStatus::Registered
+	}
+}
+
+#[cfg(feature = "std")]
+impl fmt::Display for WorkerStatus {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		match self {
+			WorkerStatus::Registered => write!(f, "Registered"),
+			WorkerStatus::Online => write!(f, "Online"),
+			WorkerStatus::RequestingOffline => write!(f, "RequestingOffline"),
+			WorkerStatus::Offline => write!(f, "Offline"),
+		}
 	}
 }
 

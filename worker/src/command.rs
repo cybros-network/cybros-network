@@ -74,10 +74,11 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 		OnlineClient,
 	};
 	use scale_codec::Decode;
-	use pallet_computing_workers_primitives::WorkerInfo;
 	use runtime_primitives::types::{AccountId, Balance, BlockNumber};
 	use crate::service::config::PrometheusConfig;
 	use crate::chain::CybrosConfig;
+
+	type WorkerInfo = pallet_computing_workers_primitives::WorkerInfo<AccountId, Balance, BlockNumber>;
 
 	let work_path = config.base_path.as_ref().expect("Must provide a valid `--base-path`");
 	let work_path = work_path.path();
@@ -86,6 +87,16 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 	sc_sysinfo::print_sysinfo(&sysinfo);
 
 	let task_manager = init_task_manager(&config)?;
+	let spawn_handle = task_manager.spawn_handle();
+
+	// Start Prometheus service earlier so monitor can get the worker is started (but may not initiated)
+	if let Some(PrometheusConfig { port, registry }) = config.prometheus_config.clone() {
+		spawn_handle.spawn(
+			"prometheus-endpoint",
+			None,
+			prometheus_endpoint::init_prometheus(port, registry).map(drop),
+		);
+	}
 
 	// Load or create DB
 	let db = init_db(work_path)?;
@@ -129,8 +140,12 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 
 	// TODO: Read on-chain state of the worker, if not register, notice user and quit
 	let substrate_url = config.substrate_rpc_url.as_str();
-	info!("Connecting to: {}", substrate_url);
-	let substrate_api = Arc::new(OnlineClient::<CybrosConfig>::from_url(substrate_url).await.unwrap());
+	let Ok(substrate_api) = OnlineClient::<CybrosConfig>::from_url(substrate_url).await else {
+		return Err(crate::service::Error::Other("Can't connect to Substrate node".to_owned()));
+	};
+	let substrate_api = Arc::new(substrate_api);
+	info!("Connected to: {}", substrate_url);
+
 	let storage_address = subxt::dynamic::storage(
 		"ComputingWorkers",
 		"Workers",
@@ -139,25 +154,23 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 			Value::from_bytes(&keyring.public()),
 		],
 	);
-	let account = substrate_api
+
+	// Show worker info
+	let Ok(raw_worker_info) = substrate_api
 		.storage()
 		.fetch(&storage_address, None)
-		.await.unwrap();
-	if let Some(account) = account {
-		let decoded = WorkerInfo::<AccountId, Balance, BlockNumber>::decode::<&[u8]>(&mut account.encoded()).unwrap();
-		println!("Bob's account details: {:?}", decoded);
-	}
+		.await else {
+		return Err(crate::service::Error::Other("Can't read worker info on-chain".to_owned()))
+	};
+	let Some(raw_worker_info) = raw_worker_info else {
+		return Err(crate::service::Error::Other("Can't read worker info on-chain".to_owned()))
+	};
+	let Ok(worker_info) = WorkerInfo::decode::<&[u8]>(&mut raw_worker_info.encoded()) else {
+		return Err(crate::service::Error::Other("Can't decode on-chain data, you may need to update the worker".to_owned()))
+	};
+	info!("On-chain status: {}", worker_info.status);
 
-	// TODO: Start services, such as polling latest (finalized?) blocks, Prometheus service, etc.
-	let spawn_handle = task_manager.spawn_handle();
-
-	if let Some(PrometheusConfig { port, registry }) = config.prometheus_config.clone() {
-		spawn_handle.spawn(
-			"prometheus-endpoint",
-			None,
-			prometheus_endpoint::init_prometheus(port, registry).map(drop),
-		);
-	}
+	// TODO: Start services, such as polling latest (finalized?) blocks, etc.
 
 	Ok(task_manager)
 }
