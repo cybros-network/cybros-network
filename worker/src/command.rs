@@ -1,6 +1,15 @@
 use crate::cli::{WorkerCli, RunCmd, Result};
 use crate::service::{Configuration, TaskManager};
 
+use std::{str::FromStr, sync::Arc};
+use futures::StreamExt;
+use subxt::{
+	dynamic::Value,
+	tx::PairSigner,
+	OnlineClient,
+};
+use crate::chain::CybrosConfig;
+
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
 	#[clap(flatten)]
@@ -52,13 +61,36 @@ pub fn run() -> Result<()> {
 
 	let runner = cli.create_runner(&cli.run)?;
 	runner.run_node_until_exit(|config| async move {
-		let task_manger = init_worker(&config).await?;
+		let (task_manger, substrate_api) = init_worker(&config).await?;
+
+		let mut block_sub = substrate_api.blocks().subscribe_finalized().await.unwrap();
+		// Get each finalized block as it arrives.
+		while let Some(block) = block_sub.next().await {
+			let block = block.unwrap();
+
+			// Ask for the events for this block.
+			let events = block.events().await.unwrap();
+
+			let block_hash = block.hash();
+
+			// We can dynamically decode events:
+			println!("  Dynamic event details: {block_hash:?}:");
+			for event in events.iter() {
+				let event = event.unwrap();
+				let pallet = event.pallet_name();
+				let variant = event.variant_name();
+				println!(
+					"    {pallet}::{variant}"
+				);
+			}
+		}
+
 
 		Ok(task_manger)
 	})
 }
 
-async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManager, crate::service::Error> {
+async fn init_worker(config: &Configuration) -> crate::service::Result<(TaskManager, Arc<OnlineClient<CybrosConfig>>), crate::service::Error> {
 	use futures::FutureExt;
 	use redb::{Database, ReadableTable, TableDefinition};
 	use log::{info, warn, error};
@@ -67,16 +99,10 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 		Pair as PairT,
 		crypto::{SecretUri, ExposeSecret},
 	};
-	use std::{str::FromStr, sync::Arc};
-	use subxt::{
-		dynamic::Value,
-		tx::PairSigner,
-		OnlineClient,
-	};
+
 	use scale_codec::Decode;
 	use runtime_primitives::types::{AccountId, Balance, BlockNumber};
 	use crate::service::config::PrometheusConfig;
-	use crate::chain::CybrosConfig;
 
 	type WorkerInfo = pallet_computing_workers_primitives::WorkerInfo<AccountId, Balance, BlockNumber>;
 
@@ -172,7 +198,7 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<TaskManag
 
 	// TODO: Start services, such as polling latest (finalized?) blocks, etc.
 
-	Ok(task_manager)
+	Ok((task_manager, substrate_api))
 }
 
 fn init_task_manager(config: &Configuration) -> crate::service::Result<TaskManager, crate::service::Error> {
