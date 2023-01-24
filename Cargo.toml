@@ -39,7 +39,3 @@ exclude = [
 [patch.crates-io]
 # I know this is bad but there's `zeroize` version conflict between `vodozemac` and `substrate`
 x25519-dalek = { path = "vendor/x25519-dalek" }
-
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-io = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }

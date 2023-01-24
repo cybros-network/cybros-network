@@ -150,7 +150,7 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<(TaskMana
 		let write_txn = db.begin_write()?;
 		{
 			let mut table = write_txn.open_table(TABLE_SECRETS)?;
-			table.insert("worker_identity", &secret)?;
+			table.insert("worker_identity", secret.as_slice())?;
 		}
 		write_txn.commit()?;
 	}
@@ -184,7 +184,9 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<(TaskMana
 	// Show worker info
 	let Ok(raw_worker_info) = substrate_api
 		.storage()
-		.fetch(&storage_address, None)
+		.at(None)
+		.await.unwrap()
+		.fetch(&storage_address)
 		.await else {
 		return Err(crate::service::Error::Other("Can't read worker info on-chain".to_owned()))
 	};
