@@ -1,20 +1,28 @@
 //! Benchmarking setup for pallet-computing_workers
 
-use super::*;
+// Only enable this module for benchmarking.
+#![cfg(feature = "runtime-benchmarks")]
 
-use frame_benchmarking::{account, benchmarks, whitelisted_caller};
-use frame_support::{
-	assert_ok, fail,
-	sp_runtime::{SaturatedConversion, Saturating},
-};
+use frame_benchmarking::{account, impl_benchmark_test_suite, whitelisted_caller};
+#[allow(unused_imports)]
+use frame_support::benchmarking::{benchmarks, Linear};
+#[allow(unused_imports)]
 use frame_system::{Account, RawOrigin};
-use sp_runtime::app_crypto::{sr25519, KeyTypeId, RuntimePublic};
+
+use frame_support::{
+	sp_runtime::{
+		app_crypto::{sr25519, KeyTypeId, RuntimePublic},
+		SaturatedConversion, Saturating
+	},
+	assert_ok, fail,
+};
 use primitives::{
 	AttestationMethod, AttestationPayload, ExtraOnlinePayload, FlipFlopStage, NonTEEAttestation, OnlinePayload,
 	WorkerStatus,
 };
-#[allow(unused)]
+
 use crate::Pallet as ComputingWorkers;
+use super::*;
 
 const DOLLARS: u128 = 1_000_000_000_000;
 const WORKER_KEY_TYPE: KeyTypeId = KeyTypeId(*b"work");
@@ -66,82 +74,103 @@ fn add_mock_online_worker<T: Config>(worker_public: &sr25519::Public, owner: &T:
 	worker
 }
 
-benchmarks! {
-	register {
+#[benchmarks]
+mod benchmarks {
+	use super::*;
+
+	#[benchmark]
+	fn register() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker = account::<T::AccountId>("worker", 0, 0);
 
 		let reserved_deposit = T::ReservedDeposit::get();
 		let balance = reserved_deposit.saturating_add((1 * DOLLARS).saturated_into::<BalanceOf<T>>());
 		let _ = T::Currency::make_free_balance_be(&owner, balance);
-	}: _(RawOrigin::Signed(owner.clone()), worker.clone(), reserved_deposit)
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(owner.clone()), worker.clone(), reserved_deposit);
+
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.owner, owner);
 		assert_eq!(T::Currency::reserved_balance(&worker), reserved_deposit);
 		assert_eq!(worker_info.status, WorkerStatus::Registered);
 	}
 
-	deregister {
+	#[benchmark]
+	fn deregister() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
-	}: _(RawOrigin::Signed(owner.clone()), worker.clone())
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(owner.clone()), worker.clone());
+
 		assert_eq!(Workers::<T>::contains_key(&worker), false);
 		assert_eq!(Account::<T>::contains_key(&worker), false);
 	}
 
-	deposit {
+	#[benchmark]
+	fn deposit() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
 
 		let worker_balance = T::Currency::free_balance(&worker);
 		let amount = (10 * DOLLARS).saturated_into::<BalanceOf<T>>();
-	}: _(RawOrigin::Signed(owner.clone()), worker.clone(), amount)
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(owner.clone()), worker.clone(), amount);
+
 		assert_eq!(
 			T::Currency::free_balance(&worker),
 			worker_balance.saturating_add(amount)
 		);
 	}
 
-	withdraw {
+	#[benchmark]
+	fn withdraw() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
 
 		let worker_balance = T::Currency::free_balance(&worker);
 		let amount = (10 * DOLLARS).saturated_into::<BalanceOf<T>>();
-	}: _(RawOrigin::Signed(owner.clone()), worker.clone(), amount)
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(owner.clone()), worker.clone(), amount);
+
 		assert_eq!(
 			T::Currency::free_balance(&worker),
 			worker_balance.saturating_sub(amount)
 		);
 	}
 
-	online {
+	#[benchmark]
+	fn online() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
 		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public);
-	}: _(RawOrigin::Signed(worker.clone()), payload, attestation)
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(worker.clone()), payload, attestation);
+
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::NonTEE));
 		assert_eq!(worker_info.status, WorkerStatus::Online);
 	}
 
-	refresh_attestation {
+	#[benchmark]
+	fn refresh_attestation() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
 		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public);
 		let current_block = frame_system::Pallet::<T>::block_number();
-	}: _(RawOrigin::Signed(worker.clone()), payload, attestation)
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(worker.clone()), payload, attestation);
+
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::NonTEE));
 		assert!(worker_info.attested_at > current_block)
@@ -149,50 +178,63 @@ benchmarks! {
 
 	// This is the slow path,
 	// worker shall offline immediately instead of becoming `RequestingOffline`
-	request_offline {
+	#[benchmark]
+	fn request_offline() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
-	}: _(RawOrigin::Signed(worker.clone()))
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(worker.clone()));
+
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
 	}
 
 	// This is the slow path,
 	// worker shall offline immediately instead of becoming `RequestingOffline`
-	request_offline_for {
+	#[benchmark]
+	fn request_offline_for() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
-	}: _(RawOrigin::Signed(owner.clone()), worker.clone())
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(owner.clone()), worker.clone());
+
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
 	}
 
-	force_offline {
+	#[benchmark]
+	fn force_offline() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
-	}: _(RawOrigin::Signed(worker.clone()))
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(worker.clone()));
+
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
 	}
 
-	force_offline_for {
+	#[benchmark]
+	fn force_offline_for() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
-	}: _(RawOrigin::Signed(owner.clone()), worker.clone())
-	verify {
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(owner.clone()), worker.clone());
+
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
 	}
 
 	// This is the normal path
-	heartbeat {
+	#[benchmark]
+	fn heartbeat() {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
@@ -212,8 +254,10 @@ benchmarks! {
 			},
 			_ => fail!("Other stages is unexpected")
 		};
-	}: _(RawOrigin::Signed(worker.clone()))
-	verify {
+
+		# [extrinsic_call]
+		_(RawOrigin::Signed(worker.clone()));
+
 		let stage = FlipOrFlop::<T>::get();
 		match stage {
 			FlipFlopStage::Flip => {
@@ -230,5 +274,9 @@ benchmarks! {
 
 	// TODO: benchmark other paths of heartbeat
 
-	impl_benchmark_test_suite!(ComputingWorkers, crate::mock::new_test_ext(), crate::mock::Test);
+	impl_benchmark_test_suite!(
+		ComputingWorkers,
+		crate::mock::new_test_ext(),
+		crate::mock::Test
+	);
 }
