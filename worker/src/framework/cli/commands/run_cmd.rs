@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::cli::{
+use crate::framework::cli::{
 	error::Result,
 	params::{
 		SharedParams,
@@ -24,7 +24,7 @@ use crate::cli::{
 	CliConfiguration,
 };
 use clap::Parser;
-use crate::service::config::{BasePath, PrometheusConfig};
+use crate::framework::service::config::{BasePath, PrometheusConfig};
 use std::net::{Ipv4Addr, SocketAddr};
 
 /// The `run` command used to run a node.

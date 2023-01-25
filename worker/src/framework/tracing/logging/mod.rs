@@ -198,8 +198,8 @@ where
 /// A builder that is used to initialize the global logger.
 pub struct LoggerBuilder {
 	directives: String,
-	profiling: Option<(crate::tracing::TracingReceiver, String)>,
-	custom_profiler: Option<Box<dyn crate::tracing::TraceHandler>>,
+	profiling: Option<(crate::framework::tracing::TracingReceiver, String)>,
+	custom_profiler: Option<Box<dyn crate::framework::tracing::TraceHandler>>,
 	log_reloading: bool,
 	force_colors: Option<bool>,
 	detailed_output: bool,
@@ -221,7 +221,7 @@ impl LoggerBuilder {
 	/// Set up the profiling.
 	pub fn with_profiling<S: Into<String>>(
 		&mut self,
-		tracing_receiver: crate::tracing::TracingReceiver,
+		tracing_receiver: crate::framework::tracing::TracingReceiver,
 		profiling_targets: S,
 	) -> &mut Self {
 		self.profiling = Some((tracing_receiver, profiling_targets.into()));
@@ -231,7 +231,7 @@ impl LoggerBuilder {
 	/// Add a custom profiler.
 	pub fn with_custom_profiling(
 		&mut self,
-		custom_profiler: Box<dyn crate::tracing::TraceHandler>,
+		custom_profiler: Box<dyn crate::framework::tracing::TraceHandler>,
 	) -> &mut Self {
 		self.custom_profiler = Some(custom_profiler);
 		self
@@ -274,7 +274,7 @@ impl LoggerBuilder {
 					|builder| enable_log_reloading!(builder),
 				)?;
 				let mut profiling =
-					crate::tracing::ProfilingLayer::new(tracing_receiver, &profiling_targets);
+					crate::framework::tracing::ProfilingLayer::new(tracing_receiver, &profiling_targets);
 
 				self.custom_profiler
 					.into_iter()
@@ -292,7 +292,7 @@ impl LoggerBuilder {
 					|builder| builder,
 				)?;
 				let mut profiling =
-					crate::tracing::ProfilingLayer::new(tracing_receiver, &profiling_targets);
+					crate::framework::tracing::ProfilingLayer::new(tracing_receiver, &profiling_targets);
 
 				self.custom_profiler
 					.into_iter()
@@ -537,7 +537,7 @@ mod tests {
 			let mut builder = LoggerBuilder::new("");
 
 			if let Ok(targets) = env::var("TRACING_TARGETS") {
-				builder.with_profiling(crate::tracing::TracingReceiver::Log, targets);
+				builder.with_profiling(crate::framework::tracing::TracingReceiver::Log, targets);
 			}
 
 			builder.init().unwrap();

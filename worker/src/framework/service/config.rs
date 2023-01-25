@@ -53,7 +53,7 @@ pub struct Configuration {
 	/// Tracing targets
 	pub tracing_targets: Option<String>,
 	/// Tracing receiver
-	pub tracing_receiver: crate::tracing::TracingReceiver,
+	pub tracing_receiver: crate::framework::tracing::TracingReceiver,
 	/// Base path of the configuration
 	pub base_path: Option<BasePath>,
 }

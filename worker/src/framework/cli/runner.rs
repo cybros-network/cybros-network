@@ -16,11 +16,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::cli::{error::Error as CliError, Result, WorkerCli};
+use crate::framework::cli::{error::Error as CliError, Result, WorkerCli};
 use chrono::prelude::*;
 use futures::{future, future::FutureExt, pin_mut, select, Future};
 use log::info;
-use crate::service::{Configuration, Error as ServiceError, TaskManager};
+use crate::framework::service::{Configuration, Error as ServiceError, TaskManager};
 use sc_utils::metrics::{TOKIO_THREADS_ALIVE, TOKIO_THREADS_TOTAL};
 use std::{marker::PhantomData, time::Duration};
 
@@ -324,7 +324,7 @@ mod tests {
 					let _ = receiver.await;
 				});
 
-				Ok::<_, crate::service::Error>(task_manager)
+				Ok::<_, crate::framework::service::Error>(task_manager)
 			})
 			.unwrap_err();
 
@@ -391,7 +391,7 @@ mod tests {
 							},
 						);
 
-						Ok::<_, crate::service::Error>(task_manager)
+						Ok::<_, crate::framework::service::Error>(task_manager)
 					})
 					.unwrap_err();
 			},

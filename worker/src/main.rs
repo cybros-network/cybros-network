@@ -1,10 +1,8 @@
-mod tracing;
-mod service;
-mod cli;
+mod framework;
 
 mod command;
 mod chain;
 
-fn main() -> cli::Result<()> {
+fn main() -> framework::cli::Result<()> {
 	command::run()
 }

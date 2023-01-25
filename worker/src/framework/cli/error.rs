@@ -32,7 +32,7 @@ pub enum Error {
 	Cli(#[from] clap::Error),
 
 	#[error(transparent)]
-	Service(#[from] crate::service::error::Error),
+	Service(#[from] crate::framework::service::error::Error),
 
 	#[error("Invalid input: {0}")]
 	Input(String),
@@ -45,7 +45,7 @@ pub enum Error {
 	Application(#[from] Box<dyn std::error::Error + Send + Sync + 'static>),
 
 	#[error(transparent)]
-	GlobalLoggerError(#[from] crate::tracing::logging::Error),
+	GlobalLoggerError(#[from] crate::framework::tracing::logging::Error),
 }
 
 impl From<&str> for Error {

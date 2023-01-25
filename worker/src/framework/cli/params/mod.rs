@@ -20,9 +20,9 @@ mod shared_params;
 
 use clap::Args;
 use std::fmt::Debug;
-use crate::cli::arg_enums::OutputType;
+use crate::framework::cli::arg_enums::OutputType;
 
-pub use crate::cli::params::{
+pub use crate::framework::cli::params::{
 	shared_params::*,
 };
 

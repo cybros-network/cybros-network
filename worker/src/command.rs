@@ -1,5 +1,5 @@
-use crate::cli::{WorkerCli, RunCmd, Result};
-use crate::service::{Configuration, TaskManager};
+use crate::framework::cli::{WorkerCli, RunCmd, Result};
+use crate::framework::service::{Configuration, TaskManager};
 
 use std::{str::FromStr, sync::Arc};
 use futures::StreamExt;
@@ -55,7 +55,7 @@ pub fn run() -> Result<()> {
 		Pair as PairT,
 		crypto::{SecretUri, ExposeSecret},
 	};
-	use crate::service::config::PrometheusConfig;
+	use crate::framework::service::config::PrometheusConfig;
 
 	let cli = Cli::from_args();
 
@@ -90,7 +90,7 @@ pub fn run() -> Result<()> {
 	})
 }
 
-async fn init_worker(config: &Configuration) -> crate::service::Result<(TaskManager, Arc<OnlineClient<CybrosConfig>>), crate::service::Error> {
+async fn init_worker(config: &Configuration) -> crate::framework::service::Result<(TaskManager, Arc<OnlineClient<CybrosConfig>>), crate::framework::service::Error> {
 	use futures::FutureExt;
 	use redb::{Database, ReadableTable, TableDefinition};
 	use log::{info, warn, error};
@@ -102,7 +102,7 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<(TaskMana
 
 	use scale_codec::Decode;
 	use runtime_primitives::types::{AccountId, Balance, BlockNumber};
-	use crate::service::config::PrometheusConfig;
+	use crate::framework::service::config::PrometheusConfig;
 
 	type WorkerInfo = pallet_computing_workers_primitives::WorkerInfo<AccountId, Balance, BlockNumber>;
 
@@ -167,7 +167,7 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<(TaskMana
 	// TODO: Read on-chain state of the worker, if not register, notice user and quit
 	let substrate_url = config.substrate_rpc_url.as_str();
 	let Ok(substrate_api) = OnlineClient::<CybrosConfig>::from_url(substrate_url).await else {
-		return Err(crate::service::Error::Other("Can't connect to Substrate node".to_owned()));
+		return Err(crate::framework::service::Error::Other("Can't connect to Substrate node".to_owned()));
 	};
 	let substrate_api = Arc::new(substrate_api);
 	info!("Connected to: {}", substrate_url);
@@ -188,13 +188,13 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<(TaskMana
 		.await.unwrap()
 		.fetch(&storage_address)
 		.await else {
-		return Err(crate::service::Error::Other("Can't read worker info on-chain".to_owned()))
+		return Err(crate::framework::service::Error::Other("Can't read worker info on-chain".to_owned()))
 	};
 	let Some(raw_worker_info) = raw_worker_info else {
-		return Err(crate::service::Error::Other("Can't read worker info on-chain".to_owned()))
+		return Err(crate::framework::service::Error::Other("Can't read worker info on-chain".to_owned()))
 	};
 	let Ok(worker_info) = WorkerInfo::decode::<&[u8]>(&mut raw_worker_info.encoded()) else {
-		return Err(crate::service::Error::Other("Can't decode on-chain data, you may need to update the worker".to_owned()))
+		return Err(crate::framework::service::Error::Other("Can't decode on-chain data, you may need to update the worker".to_owned()))
 	};
 	info!("On-chain status: {}", worker_info.status);
 
@@ -203,12 +203,12 @@ async fn init_worker(config: &Configuration) -> crate::service::Result<(TaskMana
 	Ok((task_manager, substrate_api))
 }
 
-fn init_task_manager(config: &Configuration) -> crate::service::Result<TaskManager, crate::service::Error> {
+fn init_task_manager(config: &Configuration) -> crate::framework::service::Result<TaskManager, crate::framework::service::Error> {
 	let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
 	TaskManager::new(config.tokio_handle.clone(), registry).map_err(|e| e.into())
 }
 
-fn init_db(work_path: &std::path::Path) -> std::result::Result<redb::Database, crate::service::Error> {
+fn init_db(work_path: &std::path::Path) -> std::result::Result<redb::Database, crate::framework::service::Error> {
 	let db_path = work_path.join(DB_FILE_NAME);
 	redb::Database::create(db_path).map_err(|e| e.into())
 }

@@ -5,7 +5,7 @@
 #![warn(unused_imports)]
 
 use clap::{CommandFactory, FromArgMatches, Parser};
-use crate::service::Configuration;
+use crate::framework::service::Configuration;
 
 mod config;
 mod params;
@@ -23,7 +23,7 @@ pub use params::*;
 pub use runner::*;
 pub use commands::*;
 
-pub use crate::tracing::logging::LoggerBuilder;
+pub use crate::framework::tracing::logging::LoggerBuilder;
 
 /// Worker CLI
 ///
@@ -182,15 +182,15 @@ pub trait WorkerCli: Sized {
 	///
 	/// Example:
 	/// ```
-	/// use crate::tracing::{SpanDatum, TraceEvent};
+	/// use crate::framework::tracing::{SpanDatum, TraceEvent};
 	/// struct TestProfiler;
 	///
-	/// impl crate::tracing::TraceHandler for TestProfiler {
+	/// impl crate::framework::tracing::TraceHandler for TestProfiler {
 	///  	fn handle_span(&self, sd: &SpanDatum) {}
 	/// 		fn handle_event(&self, _event: &TraceEvent) {}
 	/// };
 	///
-	/// fn logger_hook() -> impl FnOnce(&mut crate::cli::LoggerBuilder, &sc_service::Configuration) -> () {
+	/// fn logger_hook() -> impl FnOnce(&mut crate::framework::cli::LoggerBuilder, &sc_service::Configuration) -> () {
 	/// 	|logger_builder, config| {
 	/// 			logger_builder.with_custom_profiling(Box::new(TestProfiler{}));
 	/// 	}

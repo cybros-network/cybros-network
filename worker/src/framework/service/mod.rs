@@ -8,7 +8,7 @@ pub mod error;
 
 #[doc(hidden)]
 pub use std::{ops::Deref, result::Result, sync::Arc};
-pub use crate::tracing::TracingReceiver;
+pub use crate::framework::tracing::TracingReceiver;
 pub use self::{
 	config::{
 		BasePath, Configuration, TaskType,

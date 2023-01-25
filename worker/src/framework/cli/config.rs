@@ -20,16 +20,16 @@
 
 use log::warn;
 use std::net::SocketAddr;
-use crate::cli::{
+use crate::framework::cli::{
 	error::Result, SharedParams, WorkerCli,
 };
-use crate::service::{
+use crate::framework::service::{
 	config::{
 		BasePath, Configuration, PrometheusConfig,
 	},
 	TracingReceiver,
 };
-use crate::tracing::logging::LoggerBuilder;
+use crate::framework::tracing::logging::LoggerBuilder;
 
 /// The recommended open file descriptor limit to be configured for the process.
 const RECOMMENDED_OPEN_FILE_DESCRIPTOR_LIMIT: u64 = 10_000;
@@ -205,15 +205,15 @@ pub trait CliConfiguration<DCV: DefaultConfigurationValues = ()>: Sized {
 	///
 	/// Example:
 	/// ```
-	/// use crate::tracing::{SpanDatum, TraceEvent};
+	/// use crate::framework::tracing::{SpanDatum, TraceEvent};
 	/// struct TestProfiler;
 	///
-	/// impl crate::tracing::TraceHandler for TestProfiler {
+	/// impl crate::framework::tracing::TraceHandler for TestProfiler {
 	///  	fn handle_span(&self, sd: &SpanDatum) {}
 	/// 		fn handle_event(&self, _event: &TraceEvent) {}
 	/// };
 	///
-	/// fn logger_hook() -> impl FnOnce(&mut crate::cli::LoggerBuilder, &sc_service::Configuration) -> () {
+	/// fn logger_hook() -> impl FnOnce(&mut crate::framework::cli::LoggerBuilder, &sc_service::Configuration) -> () {
 	/// 	|logger_builder, config| {
 	/// 			logger_builder.with_custom_profiling(Box::new(TestProfiler{}));
 	/// 	}

@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::service::task_manager::TaskManager;
+use crate::framework::service::task_manager::TaskManager;
 use futures::{future::FutureExt, pin_mut, select};
 use parking_lot::Mutex;
 use std::{any::Any, sync::Arc, time::Duration};

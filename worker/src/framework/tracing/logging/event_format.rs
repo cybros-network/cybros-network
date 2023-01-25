@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::tracing::logging::fast_local_time::FastLocalTime;
+use crate::framework::tracing::logging::fast_local_time::FastLocalTime;
 use ansi_term::Color;
 use regex::Regex;
 use std::fmt::{self, Write};

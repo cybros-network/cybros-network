@@ -28,10 +28,10 @@ pub enum TracingReceiver {
 	Log,
 }
 
-impl Into<crate::tracing::TracingReceiver> for TracingReceiver {
-	fn into(self) -> crate::tracing::TracingReceiver {
+impl Into<crate::framework::tracing::TracingReceiver> for TracingReceiver {
+	fn into(self) -> crate::framework::tracing::TracingReceiver {
 		match self {
-			TracingReceiver::Log => crate::tracing::TracingReceiver::Log,
+			TracingReceiver::Log => crate::framework::tracing::TracingReceiver::Log,
 		}
 	}
 }

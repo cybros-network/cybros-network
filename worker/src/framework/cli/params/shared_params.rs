@@ -16,9 +16,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::cli::arg_enums::TracingReceiver;
+use crate::framework::cli::arg_enums::TracingReceiver;
 use clap::Args;
-use crate::service::config::BasePath;
+use crate::framework::service::config::BasePath;
 use std::path::PathBuf;
 
 /// Shared parameters used by all `CoreParams`.
@@ -73,7 +73,7 @@ pub struct SharedParams {
 
 impl SharedParams {
 	/// Specify custom base path.
-	pub fn base_path(&self) -> Result<Option<BasePath>, crate::cli::Error> {
+	pub fn base_path(&self) -> Result<Option<BasePath>, crate::framework::cli::Error> {
 		match &self.base_path {
 			Some(r) => Ok(Some(r.clone().into())),
 			// If `dev` is enabled, we use the temp base path.
@@ -108,7 +108,7 @@ impl SharedParams {
 	}
 
 	/// Receiver to process tracing messages.
-	pub fn tracing_receiver(&self) -> crate::service::TracingReceiver {
+	pub fn tracing_receiver(&self) -> crate::framework::service::TracingReceiver {
 		self.tracing_receiver.into()
 	}
 
