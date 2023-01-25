@@ -1,5 +1,6 @@
 mod framework;
 
+mod services;
 mod command;
 mod chain;
 

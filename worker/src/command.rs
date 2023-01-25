@@ -61,36 +61,13 @@ pub fn run() -> Result<()> {
 
 	let runner = cli.create_runner(&cli.run)?;
 	runner.run_node_until_exit(|config| async move {
-		let (task_manger, substrate_api) = init_worker(&config).await?;
-
-		let mut block_sub = substrate_api.blocks().subscribe_finalized().await.unwrap();
-		// Get each finalized block as it arrives.
-		while let Some(block) = block_sub.next().await {
-			let block = block.unwrap();
-
-			// Ask for the events for this block.
-			let events = block.events().await.unwrap();
-
-			let block_hash = block.hash();
-
-			// We can dynamically decode events:
-			println!("  Dynamic event details: {block_hash:?}:");
-			for event in events.iter() {
-				let event = event.unwrap();
-				let pallet = event.pallet_name();
-				let variant = event.variant_name();
-				println!(
-					"    {pallet}::{variant}"
-				);
-			}
-		}
-
+		let task_manger = init_worker(&config).await?;
 
 		Ok(task_manger)
 	})
 }
 
-async fn init_worker(config: &Configuration) -> crate::framework::service::Result<(TaskManager, Arc<OnlineClient<CybrosConfig>>), crate::framework::service::Error> {
+async fn init_worker(config: &Configuration) -> crate::framework::service::Result<TaskManager, crate::framework::service::Error> {
 	use futures::FutureExt;
 	use redb::{Database, ReadableTable, TableDefinition};
 	use log::{info, warn, error};
@@ -200,7 +177,12 @@ async fn init_worker(config: &Configuration) -> crate::framework::service::Resul
 
 	// TODO: Start services, such as polling latest (finalized?) blocks, etc.
 
-	Ok((task_manager, substrate_api))
+	crate::services::ChainSyncService::try_spawn(
+		substrate_api,
+		&task_manager.spawn_essential_handle(),
+	).unwrap();
+
+	Ok(task_manager)
 }
 
 fn init_task_manager(config: &Configuration) -> crate::framework::service::Result<TaskManager, crate::framework::service::Error> {
