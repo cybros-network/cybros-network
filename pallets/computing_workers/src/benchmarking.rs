@@ -4,9 +4,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use frame_benchmarking::{account, impl_benchmark_test_suite, whitelisted_caller};
-#[allow(unused_imports)]
-use frame_support::benchmarking::{benchmarks, Linear};
-#[allow(unused_imports)]
+use frame_support::benchmarking::*;
 use frame_system::{Account, RawOrigin};
 
 use frame_support::{
@@ -274,9 +272,9 @@ mod benchmarks {
 
 	// TODO: benchmark other paths of heartbeat
 
-	impl_benchmark_test_suite!(
+	impl_benchmark_test_suite! {
 		ComputingWorkers,
 		crate::mock::new_test_ext(),
 		crate::mock::Test
-	);
+	}
 }

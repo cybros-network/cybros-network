@@ -168,13 +168,13 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		// System support
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>} = 0,
+		System: frame_system::{Pallet, Call, Storage, Config, Event<T>} = 0,
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 1,
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage} = 2,
 
 		// Consensus
 		Aura: pallet_aura::{Pallet, Config<T>, Storage} = 20,
-		Grandpa: pallet_grandpa::{Pallet, Call, Config, Event, Storage} = 21,
+		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event} = 21,
 
 		// Utilities
 		Utility: pallet_utility::{Pallet, Call, Event} = 40,
@@ -184,7 +184,7 @@ construct_runtime!(
 		// Monetary
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 60,
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Config, Event<T>} = 61,
-		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 62,
+		Vesting: pallet_vesting::{Pallet, Call, Storage, Config<T>, Event<T>} = 62,
 
 		// The main stage
 		MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 100,
@@ -194,7 +194,8 @@ construct_runtime!(
 		SimpleComputing: pallet_simple_computing::{Pallet, Call, Storage, Event<T>} = 111,
 
 		// Non-permanent
-		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Event<T>, Storage} = 255,
+		Pov: frame_benchmarking_pallet_pov::{Pallet, Call, Storage, Event<T>} = 254,
+		Sudo: pallet_sudo::{Pallet, Call, Storage, Config<T>, Event<T>} = 255,
 	}
 );
 
@@ -206,6 +207,7 @@ extern crate frame_benchmarking;
 mod benches {
 	define_benchmarks!(
 		[frame_benchmarking, BaselineBench::<Runtime>]
+		[frame_benchmarking_pallet_pov, Pov]
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_timestamp, Timestamp]
 		[pallet_grandpa, Grandpa]
