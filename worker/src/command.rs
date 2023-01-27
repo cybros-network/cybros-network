@@ -149,35 +149,10 @@ async fn init_worker(config: &Configuration) -> crate::framework::service::Resul
 	let substrate_api = Arc::new(substrate_api);
 	info!("Connected to: {}", substrate_url);
 
-	let storage_address = subxt::dynamic::storage(
-		"ComputingWorkers",
-		"Workers",
-		vec![
-			// Something that encodes to an AccountId32 is what we need for the map key here:
-			Value::from_bytes(&keyring.public()),
-		],
-	);
-
-	// Show worker info
-	let Ok(raw_worker_info) = substrate_api
-		.storage()
-		.at(None)
-		.await.unwrap()
-		.fetch(&storage_address)
-		.await else {
-		return Err(crate::framework::service::Error::Other("Can't read worker info on-chain".to_owned()))
-	};
-	let Some(raw_worker_info) = raw_worker_info else {
-		return Err(crate::framework::service::Error::Other("Can't read worker info on-chain".to_owned()))
-	};
-	let Ok(worker_info) = WorkerInfo::decode::<&[u8]>(&mut raw_worker_info.encoded()) else {
-		return Err(crate::framework::service::Error::Other("Can't decode on-chain data, you may need to update the worker".to_owned()))
-	};
-	info!("On-chain status: {}", worker_info.status);
-
 	// TODO: Start services, such as polling latest (finalized?) blocks, etc.
 
 	crate::services::ChainSyncService::try_spawn(
+		keyring,
 		substrate_api,
 		&task_manager.spawn_essential_handle(),
 	).unwrap();
