@@ -149,8 +149,6 @@ async fn init_worker(config: &Configuration) -> crate::framework::service::Resul
 	let substrate_api = Arc::new(substrate_api);
 	info!("Connected to: {}", substrate_url);
 
-	// TODO: Start services, such as polling latest (finalized?) blocks, etc.
-
 	crate::services::ChainSyncService::try_spawn(
 		keyring,
 		substrate_api,
