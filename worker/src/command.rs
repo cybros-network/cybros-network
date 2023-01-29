@@ -8,7 +8,7 @@ use subxt::{
 	tx::PairSigner,
 	OnlineClient,
 };
-use crate::chain::CybrosConfig;
+use crate::chain::RuntimeConfig;
 
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
@@ -143,7 +143,7 @@ async fn init_worker(config: &Configuration) -> crate::framework::service::Resul
 
 	// TODO: Read on-chain state of the worker, if not register, notice user and quit
 	let substrate_url = config.substrate_rpc_url.as_str();
-	let Ok(substrate_api) = OnlineClient::<CybrosConfig>::from_url(substrate_url).await else {
+	let Ok(substrate_api) = OnlineClient::<RuntimeConfig>::from_url(substrate_url).await else {
 		return Err(crate::framework::service::Error::Other("Can't connect to Substrate node".to_owned()));
 	};
 	let substrate_api = Arc::new(substrate_api);

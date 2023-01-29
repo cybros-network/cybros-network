@@ -15,7 +15,7 @@ use subxt::{
 	OnlineClient,
 };
 
-use crate::chain::CybrosConfig;
+use crate::chain::RuntimeConfig;
 
 use runtime_primitives::types::{AccountId, Balance, BlockNumber};
 type WorkerInfo = pallet_computing_workers_primitives::WorkerInfo<AccountId, Balance, BlockNumber>;
@@ -38,14 +38,14 @@ pub struct ChainSyncService {
 	/// The keyring of the worker
 	keyring: Pair,
 	/// The Substrate node API client
-	substrate_api: Arc<OnlineClient<CybrosConfig>>,
+	substrate_api: Arc<OnlineClient<RuntimeConfig>>,
 }
 
 impl ChainSyncService {
 	/// Creates new StorageMonitorService for given client config
 	pub fn try_spawn(
 		keyring: Pair,
-		substrate_api: Arc<OnlineClient<CybrosConfig>>,
+		substrate_api: Arc<OnlineClient<RuntimeConfig>>,
 		spawner: &impl SpawnEssentialNamed,
 	) -> Result<(), Error> {
 		let service = ChainSyncService {

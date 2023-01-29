@@ -15,7 +15,8 @@ build = "build.rs"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [[bin]]
-name = "cybros-node"
+name = "node"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.1.1", features = ["derive"] }

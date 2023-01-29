@@ -16,11 +16,11 @@ use subxt::{
 
 /// A struct representing the signed extra and additional parameters required
 /// to construct a transaction for a polkadot node.
-pub type CybrosExtrinsicParams<T> = BaseExtrinsicParams<T, PlainTip>;
+pub type RuntimeExtrinsicParams<T> = BaseExtrinsicParams<T, PlainTip>;
 
-/// A builder which leads to [`CybrosExtrinsicParams`] being constructed.
+/// A builder which leads to [`RuntimeExtrinsicParams`] being constructed.
 /// This is what you provide to methods like `sign_and_submit()`.
-pub type CybrosExtrinsicParamsBuilder<T> = BaseExtrinsicParamsBuilder<T, PlainTip>;
+pub type RuntimeExtrinsicParamsBuilder<T> = BaseExtrinsicParamsBuilder<T, PlainTip>;
 
 /// Default set of commonly used types by Substrate runtimes.
 // Note: We only use this at the type level, so it should be impossible to
@@ -37,11 +37,11 @@ impl Config for SubstrateConfig {
 	type Signature = MultiSignature;
 	type Hasher = BlakeTwo256;
 	type Header = SubstrateHeader<Self::BlockNumber, BlakeTwo256>;
-	type ExtrinsicParams = CybrosExtrinsicParams<Self>;
+	type ExtrinsicParams = RuntimeExtrinsicParams<Self>;
 }
 
-/// Default set of commonly used types by Cybros nodes.
-pub type CybrosConfig = WithExtrinsicParams<
+/// Default set of commonly used types by runtime.
+pub type RuntimeConfig = WithExtrinsicParams<
 	SubstrateConfig,
-	CybrosExtrinsicParams<SubstrateConfig>,
+	RuntimeExtrinsicParams<SubstrateConfig>,
 >;
