@@ -3,8 +3,7 @@
 // Only enable this module for benchmarking.
 #![cfg(feature = "runtime-benchmarks")]
 
-use frame_benchmarking::{account, impl_benchmark_test_suite, whitelisted_caller};
-use frame_support::benchmarking::*;
+use frame_benchmarking::{v2::*, account, impl_benchmark_test_suite, whitelisted_caller};
 use frame_system::{Account, RawOrigin};
 
 use frame_support::{

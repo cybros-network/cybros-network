@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
+
 # This script is meant to be run on Unix/Linux based systems
 set -e
 
 echo "*** Run benchmark for pallet-computing_workers ***"
 
-target/release/cybros-node benchmark pallet \
+target/release/node benchmark pallet \
   --pallet=pallet_computing_workers \
   --chain=dev \
   --steps=50 \
