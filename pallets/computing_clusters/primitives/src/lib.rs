@@ -1,9 +1,11 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(feature = "std")]
 use scale_codec::{Encode, Decode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use frame_support::{
 	RuntimeDebug
 };
-use crate::pallet::Config;
 
 /// Type used for unique identifier of each cluster.
 pub type ClusterId = u32;

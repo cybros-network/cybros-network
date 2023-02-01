@@ -1,5 +1,5 @@
 [package]
-name = "computing-cluster"
+name = "computing-clusters"
 version = "0.0.1-dev"
 description = "Substrate pallet for managing groups of workers and orchestrate jobs."
 authors.workspace = true
@@ -14,12 +14,14 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 log = { version = "0.4.17", default-features = false }
 
-scale-codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
+scale-codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false, optional = true }
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+
+primitives = { package = "pallet-computing_clusters-primitives", path = "primitives", default-features = false }
 
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
@@ -35,6 +37,7 @@ std = [
 	"frame-benchmarking?/std",
 	"frame-support/std",
 	"frame-system/std",
+	"primitives/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
