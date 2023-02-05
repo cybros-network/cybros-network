@@ -10,14 +10,16 @@ use frame_support::{
 /// Type used for unique identifier of each cluster.
 pub type ClusterId = u32;
 
-// #[derive(Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug)]
-// #[scale_info(skip_type_params(T))]
-// pub struct Cluster<T: Config> {
-// 	/// The identifier of the pool to which `who` belongs.
-// 	pub id: ClusterId,
-// 	// TODO: Who can use the cluster? All / Member-only
-// }
-//
+#[derive(Clone, Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug)]
+#[scale_info(skip_type_params(T))]
+pub struct Cluster<AccountId> {
+	/// The id of the cluster
+	pub id: ClusterId,
+	/// The creator of
+	pub owner: AccountId,
+	// TODO: Who can use the cluster? All / Member-only
+}
+
 // #[derive(Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug)]
 // #[scale_info(skip_type_params(T))]
 // pub struct ClusterWorker<T: Config> {

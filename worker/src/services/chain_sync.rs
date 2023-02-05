@@ -4,13 +4,11 @@ use log::{error, info, debug, warn};
 use scale_codec::Decode;
 use sp_core::{
 	traits::SpawnEssentialNamed,
-	sr25519::{Pair, Public, Signature},
+	sr25519::Pair,
 	Pair as PairT,
-	crypto::{SecretUri, ExposeSecret},
 };
 use subxt::{
 	dynamic::Value,
-	tx::PairSigner,
 	config::substrate::H256,
 	OnlineClient,
 };
@@ -92,13 +90,9 @@ impl ChainSyncService {
 						error!("[Finalized #{}] Couldn't decode the worker info: {:?}", block_number, e);
 						break;
 					},
-					Err(e) => {
-						error!("[Finalized #{:?}] Unknown error when fetching worker info: {:?}", block_number, e);
-						break;
-					}
 				};
 			let status = worker_info.status;
-			debug!("[Finalized #{}] Worker status: {}", block_number, worker_info.status);
+			debug!("[Finalized #{}] Worker status: {}", block_number, status);
 
 			// TODO: make online if offline or registered
 			// Perhaps we need a child-task-manager

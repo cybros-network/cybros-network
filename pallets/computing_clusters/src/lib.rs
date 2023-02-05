@@ -49,10 +49,10 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
 
-	// #[pallet::storage]
-	// #[pallet::getter(fn running_workers)]
-	// pub type Clusters<T: Config> = StorageMap<_, Identity, ClusterId, Cluster<T>>;
-	//
+	#[pallet::storage]
+	#[pallet::getter(fn clusters)]
+	pub type Clusters<T: Config> = StorageMap<_, Identity, ClusterId, Cluster<T::AccountId>>;
+
 	// #[pallet::storage]
 	// #[pallet::getter(fn running_workers)]
 	// pub type ClusterWorkers<T: Config> = StorageMap<_, Identity, T::AccountId, ClusterWorker<T>>;

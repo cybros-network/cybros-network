@@ -2,12 +2,7 @@ use crate::framework::cli::{WorkerCli, RunCmd, Result};
 use crate::framework::service::{Configuration, TaskManager};
 
 use std::{str::FromStr, sync::Arc};
-use futures::StreamExt;
-use subxt::{
-	dynamic::Value,
-	tx::PairSigner,
-	OnlineClient,
-};
+use subxt::OnlineClient;
 use crate::chain::RuntimeConfig;
 
 #[derive(Debug, clap::Parser)]
@@ -47,16 +42,6 @@ const TABLE_SECRETS: redb::TableDefinition<&str, &[u8]> = redb::TableDefinition:
 
 /// Parse and run command line arguments
 pub fn run() -> Result<()> {
-	use futures::FutureExt;
-	use redb::{Database, ReadableTable, TableDefinition};
-	use log::{info, warn, error};
-	use sp_core::{
-		sr25519::{Pair, Public, Signature},
-		Pair as PairT,
-		crypto::{SecretUri, ExposeSecret},
-	};
-	use crate::framework::service::config::PrometheusConfig;
-
 	let cli = Cli::from_args();
 
 	let runner = cli.create_runner(&cli.run)?;
@@ -69,15 +54,14 @@ pub fn run() -> Result<()> {
 
 async fn init_worker(config: &Configuration) -> crate::framework::service::Result<TaskManager, crate::framework::service::Error> {
 	use futures::FutureExt;
-	use redb::{Database, ReadableTable, TableDefinition};
-	use log::{info, warn, error};
+	use redb::ReadableTable;
+	use log::info;
 	use sp_core::{
-		sr25519::{Pair, Public, Signature},
+		sr25519::Pair,
 		Pair as PairT,
 		crypto::{SecretUri, ExposeSecret},
 	};
 
-	use scale_codec::Decode;
 	use runtime_primitives::types::{AccountId, Balance, BlockNumber};
 	use crate::framework::service::config::PrometheusConfig;
 
@@ -108,7 +92,7 @@ async fn init_worker(config: &Configuration) -> crate::framework::service::Resul
 
 	// If not found, generate one.
 	let read_txn = db.begin_read()?;
-	if let Err(table) = read_txn.open_table(TABLE_SECRETS) {
+	if let Err(_table) = read_txn.open_table(TABLE_SECRETS) {
 		let secret =
 			if let Some(dev_seed) = &config.dev_key_seed {
 				let suri = SecretUri::from_str(&dev_seed).unwrap();
