@@ -170,7 +170,7 @@ construct_runtime!(
 		// System support
 		System: frame_system::{Pallet, Call, Storage, Config, Event<T>} = 0,
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 1,
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage} = 2,
+		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip::{Pallet, Storage} = 2,
 
 		// Consensus
 		Aura: pallet_aura::{Pallet, Config<T>, Storage} = 20,

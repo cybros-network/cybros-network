@@ -1,6 +1,6 @@
 mod system;
 mod timestamp;
-mod randomness_collective_flip;
+mod insecure_randomness_collective_flip;
 
 mod multisig;
 mod proxy;

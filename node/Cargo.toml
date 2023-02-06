@@ -60,8 +60,8 @@ frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch =
 frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 # Local Dependencies
-runtime-primitives = { package = "cybros-runtime-primitives", path = "../runtime-primitives" }
-runtime = { path = "../runtime", package = "cybros-primal-runtime" }
+runtime = { package = "cybros-primal-runtime", path = "../runtime" }
+runtime-primitives = { package = "cybros-primal-runtime-primitives", path = "../runtime/primitives" }
 
 # CLI-specific dependencies
 try-runtime-cli = { git = "https://github.com/paritytech/substrate", branch = "master", optional = true }

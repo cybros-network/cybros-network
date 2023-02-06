@@ -41,7 +41,7 @@ frame-benchmarking-pallet-pov = { git = "https://github.com/paritytech/substrate
 pallet-aura = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-pallet-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
@@ -58,7 +58,7 @@ pallet-computing_workers = { path = "../pallets/computing_workers", default-feat
 pallet-simple_computing = { path = "../pallets/simple_computing", default-features = false }
 
 # Local Dependencies
-runtime-primitives = { package = "cybros-runtime-primitives", path = "../runtime-primitives", default-features = false }
+runtime-primitives = { package = "cybros-primal-runtime-primitives", path = "primitives", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "master", optional = true }
@@ -93,7 +93,7 @@ std = [
 	"pallet-aura/std",
 	"pallet-grandpa/std",
 	"pallet-sudo/std",
-	"pallet-randomness-collective-flip/std",
+	"pallet-insecure-randomness-collective-flip/std",
 	"pallet-balances/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment/std",
@@ -134,7 +134,7 @@ try-runtime = [
 	"pallet-aura/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-sudo/try-runtime",
-	"pallet-randomness-collective-flip/try-runtime",
+	"pallet-insecure-randomness-collective-flip/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
