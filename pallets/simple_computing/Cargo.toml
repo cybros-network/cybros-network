@@ -25,6 +25,8 @@ pallet-insecure-randomness-collective-flip = { git = "https://github.com/parityt
 
 pallet-computing_workers = { path = "../computing_workers", default-features = false }
 
+primitives = { package = "pallet-simple_computing-primitives", path = "primitives", default-features = false }
+
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "master" }
@@ -43,6 +45,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-insecure-randomness-collective-flip/std",
 	"pallet-computing_workers/std",
+	"primitives/std",
 ]
 try-runtime = [
 	"frame-support/try-runtime",

@@ -5880,12 +5880,22 @@ dependencies = [
  "pallet-balances",
  "pallet-computing_workers",
  "pallet-insecure-randomness-collective-flip",
+ "pallet-simple_computing-primitives",
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "sp-core 7.0.0",
  "sp-io 7.0.0",
  "sp-runtime 7.0.0",
+]
+
+[[package]]
+name = "pallet-simple_computing-primitives"
+version = "0.0.1-dev"
+dependencies = [
+ "frame-support",
+ "parity-scale-codec",
+ "scale-info",
 ]
 
 [[package]]

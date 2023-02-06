@@ -2,9 +2,9 @@
 
 pub use pallet::*;
 
-pub mod types;
-
 pub mod macros;
+
+pub mod traits;
 
 #[cfg(test)]
 mod mock;
@@ -35,7 +35,14 @@ use pallet_computing_workers::{
 	primitives::{OfflineReason, OnlinePayload, VerifiedAttestation},
 	BalanceOf,
 };
-use crate::types::*;
+use crate::traits::*;
+use primitives::*;
+
+pub type Job<T> = primitives::Job<
+	<T as frame_system::Config>::AccountId, BalanceOf<T>, <T as frame_system::Config>::BlockNumber,
+	<T as Config>::JobId,
+	<T as Config>::MaxJobCommandLen, <T as Config>::MaxJobInputLen, <T as Config>::MaxJobOutputLen
+>;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -133,8 +140,8 @@ pub mod pallet {
 		pub fn create_job(
 			origin: OriginFor<T>,
 			worker: T::AccountId,
-			command: JobCommand<T>,
-			input: JobInput<T>,
+			command: BoundedVec<u8, T::MaxJobCommandLen>,
+			input: BoundedVec<u8, T::MaxJobInputLen>,
 			max_running_duration: Option<T::BlockNumber>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -159,7 +166,7 @@ pub mod pallet {
 			let job_id  =
 				NextJobId::<T>::get(&worker).unwrap_or(T::JobId::initial_value());
 
-			let job = Job {
+			let job = Job::<T> {
 				id: job_id,
 				command,
 				status: JobStatus::Created,
@@ -220,7 +227,7 @@ pub mod pallet {
 		pub fn complete_job(
 			origin: OriginFor<T>,
 			result: JobResult,
-			output: Option<JobOutput<T>>,
+			output: Option<BoundedVec<u8, T::MaxJobOutputLen>>,
 		) -> DispatchResult {
 			let worker = ensure_signed(origin)?;
 			Self::ensure_worker(&worker)?;
