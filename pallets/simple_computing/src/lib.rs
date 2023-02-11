@@ -88,11 +88,9 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	#[pallet::getter(fn assigned_jobs)]
 	pub(crate) type AssignedJobs<T: Config> = StorageMap<_, Identity, T::AccountId, Job<T>>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn completed_jobs)]
 	pub(crate) type CompletedJobs<T: Config> = StorageDoubleMap<
 		_,
 		Identity,

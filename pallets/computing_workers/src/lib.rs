@@ -128,38 +128,31 @@ mod pallet {
 
 	/// Storage for worker's implementations permission.
 	#[pallet::storage]
-	#[pallet::getter(fn worker_impl_permissions)]
 	pub(crate) type WorkerImplPermissions<T: Config> = StorageMap<_, Identity, WorkerImplName, WorkerImplPermission>;
 
 	/// Storage for worker's implementations' hashes.
 	#[pallet::storage]
-	#[pallet::getter(fn worker_impl_hashes)]
 	pub(crate) type WorkerImplHashes<T: Config> =
 		StorageDoubleMap<_, Identity, WorkerImplName, Identity, WorkerImplVersion, WorkerImplHash>;
 
 	/// Storage for computing_workers.
 	#[pallet::storage]
-	#[pallet::getter(fn workers)]
 	pub(crate) type Workers<T: Config> = CountedStorageMap<_, Identity, T::AccountId, WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>>;
 
 	/// Storage for flip set, this is for online checking
 	#[pallet::storage]
-	#[pallet::getter(fn flip_set)]
 	pub(crate) type FlipSet<T: Config> = CountedStorageMap<_, Identity, T::AccountId, T::BlockNumber>;
 
 	/// Storage for flop set, this is for online checking
 	#[pallet::storage]
-	#[pallet::getter(fn flop_set)]
 	pub(crate) type FlopSet<T: Config> = CountedStorageMap<_, Identity, T::AccountId, T::BlockNumber>;
 
 	/// Storage for stage of flip-flop, this is used for online checking
 	#[pallet::storage]
-	#[pallet::getter(fn flip_flop_stage)]
 	pub(crate) type FlipOrFlop<T: Config> = StorageValue<_, FlipFlopStage, ValueQuery>;
 
 	/// Storage for stage of flip-flop, this is used for online checking
 	#[pallet::storage]
-	#[pallet::getter(fn current_flip_flop_started_at)]
 	pub(crate) type CurrentFlipFlopStartedAt<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
 
 	#[pallet::event]

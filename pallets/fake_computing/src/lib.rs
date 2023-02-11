@@ -59,11 +59,9 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	#[pallet::getter(fn running_workers)]
 	pub type RunningWorkers<T: Config> = StorageMap<_, Identity, T::AccountId, ()>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn blocked_workers)]
 	pub type BlockedWorkers<T: Config> = StorageMap<_, Identity, T::AccountId, ()>;
 
 	#[pallet::event]
