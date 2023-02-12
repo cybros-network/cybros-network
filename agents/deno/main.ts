@@ -3,7 +3,7 @@ import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
 import { copySync } from "https://deno.land/std/fs/mod.ts";
 
-import { BN, hexToU8a, isHex, u8aToHex, u8aToString } from "https://deno.land/x/polkadot/util/mod.ts";
+import { BN, hexToU8a, isHex, u8aToHex, u8aToString, stringToU8a, hexToString } from "https://deno.land/x/polkadot/util/mod.ts";
 import { cryptoWaitReady, mnemonicGenerate } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import { KeyringPair } from "https://deno.land/x/polkadot/keyring/types.ts";
 import { ApiPromise, HttpProvider, Keyring, WsProvider } from "https://deno.land/x/polkadot/api/mod.ts";
@@ -327,6 +327,7 @@ async function handleJob() {
   // - Clean up `tmp/${JID}/` when a job is finished and archived on chain
 
   console.log(job)
+  console.log(hexToString(job.input))
 
   const jobExecName = "my_job.ts";
   const jobSource = path.join(dataPath, jobExecName);
@@ -349,14 +350,24 @@ async function handleJob() {
       `--allow-read=${jobWorkPath}`,
       `--allow-write=${jobWorkPath}`,
       path.join(jobWorkPath, jobExecName),
-      job.payload.toString()
+      hexToString(job.input)
     ],
+    stdout: "piped",
+    stderr: "piped",
   });
 
-  process.status().then(async (status) => {
-    const result = status.code === 0 ? "Success" : "Failed";
+  Promise.all([
+    process.status(),
+    process.output(),
+    process.stderrOutput(),
+  ]).then(async ([{ code }, rawOutput, rawError]) => {
+    console.log(new TextDecoder().decode(rawOutput));
+    const result = code === 0 ? "Success" : "Failed";
     const jobResult = api.createType("JobResult", result);
-    const jobOutput = api.createType("Option<JobOutput>", null)
+    const jobOutput = api.createType("Option<JobOutput>", new TextDecoder().decode(rawOutput))
+
+    const errorString = new TextDecoder().decode(rawError);
+    console.log(errorString);
 
     logger.info(`Sending "simple_computing.complete_job()`);
     const txPromise = api.tx.simpleComputing.completeJob(jobResult, jobOutput);
@@ -366,7 +377,7 @@ async function handleJob() {
     // TODO: Catch whether failed
 
     window.locals.sentCompleteJobAt = window.latestBlockNumber;
-  });
+  })
 
   window.locals.runningJob = process;
 }
