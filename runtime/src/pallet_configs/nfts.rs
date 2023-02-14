@@ -1,9 +1,10 @@
 use crate::*;
 use frame_support::{
 	parameter_types,
-	traits::AsEnsureOriginWithArg
+	traits::AsEnsureOriginWithArg,
 };
 use frame_system::EnsureSigned;
+use sp_runtime::traits::Verify;
 use pallet_nfts::PalletFeatures;
 
 parameter_types! {
@@ -18,6 +19,7 @@ parameter_types! {
 	pub const ItemAttributesApprovalsLimit: u32 = 20;
 	pub const MaxTips: u32 = 10;
 	pub const MaxDeadlineDuration: BlockNumber = 12 * 30 * DAYS;
+	pub const MaxAttributesPerCall: u32 = 10;
 	pub Features: PalletFeatures = PalletFeatures::all_enabled();
 }
 
@@ -39,6 +41,9 @@ impl pallet_nfts::Config for Runtime {
 	type ItemAttributesApprovalsLimit = ItemAttributesApprovalsLimit;
 	type MaxTips = MaxTips;
 	type MaxDeadlineDuration = MaxDeadlineDuration;
+	type MaxAttributesPerCall = MaxAttributesPerCall;
+	type OffchainSignature = Signature;
+	type OffchainPublic = <Signature as Verify>::Signer;
 	type Features = Features;
 	type WeightInfo = pallet_nfts::weights::SubstrateWeight<Runtime>;
 	#[cfg(feature = "runtime-benchmarks")]
