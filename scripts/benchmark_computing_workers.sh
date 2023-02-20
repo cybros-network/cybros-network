@@ -7,10 +7,10 @@ echo "*** Run benchmark for pallet-computing_workers ***"
 
 target/production/node benchmark pallet \
   --pallet=pallet_computing_workers \
+  --extrinsic="*" \
   --chain=dev \
   --steps=50 \
   --repeat=50 \
-  --extrinsic="*" \
   --execution=wasm \
   --wasm-execution=compiled \
   --heap-pages=4096 \
