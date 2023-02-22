@@ -76,7 +76,7 @@ mod benchmarks {
 	use super::*;
 
 	#[benchmark]
-	fn register() {
+	fn register() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker = account::<T::AccountId>("worker", 0, 0);
 
@@ -91,10 +91,12 @@ mod benchmarks {
 		assert_eq!(worker_info.owner, owner);
 		assert_eq!(T::Currency::reserved_balance(&worker), reserved_deposit);
 		assert_eq!(worker_info.status, WorkerStatus::Registered);
+
+		Ok(())
 	}
 
 	#[benchmark]
-	fn deregister() {
+	fn deregister() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
@@ -104,10 +106,12 @@ mod benchmarks {
 
 		assert_eq!(Workers::<T>::contains_key(&worker), false);
 		assert_eq!(Account::<T>::contains_key(&worker), false);
+
+		Ok(())
 	}
 
 	#[benchmark]
-	fn deposit() {
+	fn deposit() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
@@ -122,10 +126,12 @@ mod benchmarks {
 			T::Currency::free_balance(&worker),
 			worker_balance.saturating_add(amount)
 		);
+
+		Ok(())
 	}
 
 	#[benchmark]
-	fn withdraw() {
+	fn withdraw() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
@@ -140,10 +146,12 @@ mod benchmarks {
 			T::Currency::free_balance(&worker),
 			worker_balance.saturating_sub(amount)
 		);
+
+		Ok(())
 	}
 
 	#[benchmark]
-	fn online() {
+	fn online() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
@@ -155,10 +163,12 @@ mod benchmarks {
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::NonTEE));
 		assert_eq!(worker_info.status, WorkerStatus::Online);
+
+		Ok(())
 	}
 
 	#[benchmark]
-	fn refresh_attestation() {
+	fn refresh_attestation() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
@@ -170,13 +180,15 @@ mod benchmarks {
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::NonTEE));
-		assert!(worker_info.attested_at > current_block)
+		assert!(worker_info.attested_at > current_block);
+
+		Ok(())
 	}
 
 	// This is the slow path,
 	// worker shall offline immediately instead of becoming `RequestingOffline`
 	#[benchmark]
-	fn request_offline() {
+	fn request_offline() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
@@ -186,12 +198,14 @@ mod benchmarks {
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
+
+		Ok(())
 	}
 
 	// This is the slow path,
 	// worker shall offline immediately instead of becoming `RequestingOffline`
 	#[benchmark]
-	fn request_offline_for() {
+	fn request_offline_for() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
@@ -201,10 +215,12 @@ mod benchmarks {
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
+
+		Ok(())
 	}
 
 	#[benchmark]
-	fn force_offline() {
+	fn force_offline() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
@@ -214,10 +230,12 @@ mod benchmarks {
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
+
+		Ok(())
 	}
 
 	#[benchmark]
-	fn force_offline_for() {
+	fn force_offline_for() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
@@ -227,11 +245,13 @@ mod benchmarks {
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
+
+		Ok(())
 	}
 
 	// This is the normal path
 	#[benchmark]
-	fn heartbeat() {
+	fn heartbeat() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
@@ -267,6 +287,8 @@ mod benchmarks {
 			},
 			_ => fail!("Other stages is unexpected")
 		};
+
+		Ok(())
 	}
 
 	// TODO: benchmark other paths of heartbeat

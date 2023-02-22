@@ -173,7 +173,7 @@ construct_runtime!(
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip::{Pallet, Storage} = 2,
 
 		// Consensus
-		Aura: pallet_aura::{Pallet, Config<T>, Storage} = 20,
+		Aura: pallet_aura::{Pallet, Storage, Config<T>} = 20,
 		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event} = 21,
 
 		// Utilities
@@ -186,15 +186,14 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Config, Event<T>} = 61,
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Config<T>, Event<T>} = 62,
 
-		// The main stage
-		MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 100,
-		Nfts: pallet_nfts::{Pallet, Call, Storage, Event<T>} = 101,
+		// NFT
+		Nfts: pallet_nfts::{Pallet, Call, Storage, Event<T>} = 80,
 
-		ComputingWorkers: pallet_computing_workers::{Pallet, Call, Storage, Event<T>} = 110,
-		SimpleComputing: pallet_simple_computing::{Pallet, Call, Storage, Event<T>} = 111,
+		// The main stage
+		ComputingWorkers: pallet_computing_workers::{Pallet, Call, Storage, Event<T>} = 100,
+		SimpleComputing: pallet_simple_computing::{Pallet, Call, Storage, Event<T>} = 101,
 
 		// Non-permanent
-		Pov: frame_benchmarking_pallet_pov::{Pallet, Call, Storage, Event<T>} = 254,
 		Sudo: pallet_sudo::{Pallet, Call, Storage, Config<T>, Event<T>} = 255,
 	}
 );
@@ -207,7 +206,6 @@ extern crate frame_benchmarking;
 mod benches {
 	define_benchmarks!(
 		[frame_benchmarking, BaselineBench::<Runtime>]
-		[frame_benchmarking_pallet_pov, Pov]
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_timestamp, Timestamp]
 		[pallet_grandpa, Grandpa]

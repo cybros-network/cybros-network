@@ -78,3 +78,7 @@ pallet-computing_workers-primitives = { path = "../pallets/computing_workers/pri
 # CLI
 futures-timer = "3.0.1"
 sp-tracing = { git = "https://github.com/paritytech/substrate", branch = "master" }
+
+[patch.crates-io]
+# I know this is bad but there's `zeroize` version conflict between `vodozemac` and `substrate`
+x25519-dalek = { path = "../vendor/x25519-dalek" }

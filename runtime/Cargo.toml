@@ -29,29 +29,30 @@ sp-std = { git = "https://github.com/paritytech/substrate", branch = "master", d
 sp-transaction-pool = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-version = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+frame-executive = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+frame-try-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false, optional = true }
+
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 frame-system-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false, optional = true }
-frame-executive = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-frame-try-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false, optional = true }
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-frame-benchmarking-pallet-pov = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
 pallet-aura = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-utility = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-multisig = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-proxy = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-vesting = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
-pallet-message-queue = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+
 pallet-nfts = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
 pallet-computing_workers = { path = "../pallets/computing_workers", default-features = false }
@@ -82,27 +83,25 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-version/std",
 	"substrate-wasm-builder",
+	"frame-benchmarking/std",
 	"frame-executive/std",
 	"frame-support/std",
+	"frame-try-runtime?/std",
 	"frame-system/std",
 	"frame-system-rpc-runtime-api/std",
-	"frame-try-runtime?/std",
 	"frame-system-benchmarking?/std",
-	"frame-benchmarking/std",
-	"frame-benchmarking-pallet-pov/std",
+	"pallet-timestamp/std",
+	"pallet-insecure-randomness-collective-flip/std",
 	"pallet-aura/std",
 	"pallet-grandpa/std",
-	"pallet-sudo/std",
-	"pallet-insecure-randomness-collective-flip/std",
-	"pallet-balances/std",
-	"pallet-timestamp/std",
-	"pallet-transaction-payment/std",
-	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-utility/std",
 	"pallet-multisig/std",
 	"pallet-proxy/std",
+	"pallet-balances/std",
+	"pallet-transaction-payment/std",
+	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-vesting/std",
-	"pallet-message-queue/std",
+	"pallet-sudo/std",
 	"pallet-nfts/std",
 	"pallet-computing_workers/std",
 	"pallet-simple_computing/std",
@@ -110,39 +109,35 @@ std = [
 runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
-	"frame-benchmarking-pallet-pov/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
-	"frame-system-benchmarking/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
-	"pallet-grandpa/runtime-benchmarks",
-	"pallet-balances/runtime-benchmarks",
+	"frame-system-benchmarking/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
+	"pallet-grandpa/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
 	"pallet-vesting/runtime-benchmarks",
-	"pallet-message-queue/runtime-benchmarks",
 	"pallet-nfts/runtime-benchmarks",
 	"pallet-computing_workers/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-try-runtime/try-runtime",
-	"frame-benchmarking-pallet-pov/try-runtime",
 	"frame-executive/try-runtime",
-	"frame-system/try-runtime",
 	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+	"pallet-timestamp/try-runtime",
+	"pallet-insecure-randomness-collective-flip/try-runtime",
 	"pallet-aura/try-runtime",
 	"pallet-grandpa/try-runtime",
-	"pallet-sudo/try-runtime",
-	"pallet-insecure-randomness-collective-flip/try-runtime",
-	"pallet-balances/try-runtime",
-	"pallet-timestamp/try-runtime",
-	"pallet-transaction-payment/try-runtime",
 	"pallet-utility/try-runtime",
 	"pallet-multisig/try-runtime",
 	"pallet-proxy/try-runtime",
+	"pallet-balances/try-runtime",
+	"pallet-transaction-payment/try-runtime",
 	"pallet-vesting/try-runtime",
-	"pallet-message-queue/try-runtime",
+	"pallet-sudo/try-runtime",
 	"pallet-nfts/try-runtime",
 	"pallet-computing_workers/try-runtime",
 	"pallet-simple_computing/try-runtime",

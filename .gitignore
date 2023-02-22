@@ -15,3 +15,5 @@ rls*.log
 agents/deno/data/
 agents/deno/log/
 agents/deno/main.js
+
+tools/session_keys.json
