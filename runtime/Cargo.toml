@@ -54,6 +54,7 @@ pallet-vesting = { git = "https://github.com/paritytech/substrate", branch = "ma
 pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
 pallet-nfts = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+pallet-nfts-runtime-api = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
 pallet-computing_workers = { path = "../pallets/computing_workers", default-features = false }
 pallet-simple_computing = { path = "../pallets/simple_computing", default-features = false }
@@ -103,6 +104,7 @@ std = [
 	"pallet-vesting/std",
 	"pallet-sudo/std",
 	"pallet-nfts/std",
+	"pallet-nfts-runtime-api/std",
 	"pallet-computing_workers/std",
 	"pallet-simple_computing/std",
 ]
