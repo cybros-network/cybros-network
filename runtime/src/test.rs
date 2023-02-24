@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::*;
+use crate::*;
 use frame_support::traits::WhitelistedStorageKeys;
 use sp_core::hexdisplay::HexDisplay;
 use std::collections::HashSet;

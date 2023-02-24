@@ -171,57 +171,35 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		// System support
-		System: frame_system::{Pallet, Call, Storage, Config, Event<T>} = 0,
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 1,
-		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip::{Pallet, Storage} = 2,
+		System: frame_system = 0,
+		Timestamp: pallet_timestamp = 1,
+		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 2,
 
 		// Consensus
-		Aura: pallet_aura::{Pallet, Storage, Config<T>} = 20,
-		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event} = 21,
+		Aura: pallet_aura = 20,
+		Grandpa: pallet_grandpa = 21,
 
 		// Utilities
-		Utility: pallet_utility::{Pallet, Call, Event} = 40,
-		Multisig: pallet_multisig::{Pallet, Call, Storage, Event<T>} = 41,
-		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 42,
+		Utility: pallet_utility = 40,
+		Multisig: pallet_multisig = 41,
+		Proxy: pallet_proxy = 42,
 
 		// Monetary
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 60,
-		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Config, Event<T>} = 61,
-		Vesting: pallet_vesting::{Pallet, Call, Storage, Config<T>, Event<T>} = 62,
+		Balances: pallet_balances = 60,
+		TransactionPayment: pallet_transaction_payment = 61,
+		Vesting: pallet_vesting = 62,
 
 		// NFT
-		Nfts: pallet_nfts::{Pallet, Call, Storage, Event<T>} = 80,
+		Nfts: pallet_nfts = 80,
 
 		// The main stage
-		ComputingWorkers: pallet_computing_workers::{Pallet, Call, Storage, Event<T>} = 100,
-		SimpleComputing: pallet_simple_computing::{Pallet, Call, Storage, Event<T>} = 101,
+		ComputingWorkers: pallet_computing_workers = 100,
+		SimpleComputing: pallet_simple_computing = 101,
 
 		// Non-permanent
-		Sudo: pallet_sudo::{Pallet, Call, Storage, Config<T>, Event<T>} = 255,
+		Sudo: pallet_sudo = 255,
 	}
 );
-
-#[cfg(feature = "runtime-benchmarks")]
-#[macro_use]
-extern crate frame_benchmarking;
-
-#[cfg(feature = "runtime-benchmarks")]
-mod benches {
-	define_benchmarks!(
-		[frame_benchmarking, BaselineBench::<Runtime>]
-		[frame_system, SystemBench::<Runtime>]
-		[pallet_timestamp, Timestamp]
-		[pallet_grandpa, Grandpa]
-		[pallet_proxy, Proxy]
-		[pallet_utility, Utility]
-		[pallet_multisig, Multisig]
-		[pallet_balances, Balances]
-		[pallet_vesting, Vesting]
-		[pallet_message_queue, MessageQueue]
-		[pallet_nfts, Nfts]
-		[pallet_computing_workers, ComputingWorkers]
-	);
-}
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -495,4 +473,26 @@ impl_runtime_apis! {
 			Executive::try_execute_block(block, state_root_check, select).unwrap()
 		}
 	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+#[macro_use]
+extern crate frame_benchmarking;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benches {
+	define_benchmarks!(
+		[frame_benchmarking, BaselineBench::<Runtime>]
+		[frame_system, SystemBench::<Runtime>]
+		[pallet_timestamp, Timestamp]
+		[pallet_grandpa, Grandpa]
+		[pallet_proxy, Proxy]
+		[pallet_utility, Utility]
+		[pallet_multisig, Multisig]
+		[pallet_balances, Balances]
+		[pallet_vesting, Vesting]
+		[pallet_message_queue, MessageQueue]
+		[pallet_nfts, Nfts]
+		[pallet_computing_workers, ComputingWorkers]
+	);
 }
