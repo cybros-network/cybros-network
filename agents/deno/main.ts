@@ -341,9 +341,8 @@ async function handleJob() {
   copySync(jobSource, path.join(jobWorkPath, jobExecName), { overwrite: true })
 
   // Run the job
-  const process = Deno.run({
-    cmd: [
-      "deno",
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
       "run",
       "--no-prompt",
       "--allow-env",
@@ -351,24 +350,24 @@ async function handleJob() {
       `--allow-read=${jobWorkPath}`,
       `--allow-write=${jobWorkPath}`,
       path.join(jobWorkPath, jobExecName),
-      hexToString(job.input)
+      hexToString(job.input),
     ],
+    cwd: jobWorkPath,
+    clearEnv: true,
     stdout: "piped",
     stderr: "piped",
   });
+  const child = command.spawn();
+  child.output().then(async ({code, stdout, stderr}) => {
+    const parsedOut = new TextDecoder().decode(stdout);
+    const parsedErrorOut = new TextDecoder().decode(stderr);
 
-  Promise.all([
-    process.status(),
-    process.output(),
-    process.stderrOutput(),
-  ]).then(async ([{ code }, rawOutput, rawError]) => {
-    console.log(new TextDecoder().decode(rawOutput));
+    console.log(parsedOut);
+    console.log(parsedErrorOut);
+
     const result = code === 0 ? "Success" : "Failed";
     const jobResult = api.createType("JobResult", result);
-    const jobOutput = api.createType("Option<JobOutput>", new TextDecoder().decode(rawOutput))
-
-    const errorString = new TextDecoder().decode(rawError);
-    console.log(errorString);
+    const jobOutput = api.createType("Option<JobOutput>", parsedOut)
 
     logger.info(`Sending "simple_computing.complete_job()`);
     const txPromise = api.tx.simpleComputing.completeJob(jobResult, jobOutput);
@@ -378,9 +377,9 @@ async function handleJob() {
     // TODO: Catch whether failed
 
     window.locals.sentCompleteJobAt = window.latestBlockNumber;
-  })
+  });
 
-  window.locals.runningJob = process;
+  window.locals.runningJob = child;
 }
 
 if (parsedArgs.version) {
