@@ -4,9 +4,7 @@ set -e
 pushd .
 
 # The following lines ensure we run from the project root
-DOCKER_DIR=$(dirname "$(readlink -f "$0")")
-PROJECT_ROOT=$(dirname "$DOCKER_DIR")
-
+PROJECT_ROOT=$(dirname $(dirname "$(readlink -f "$0")"))
 cd "$PROJECT_ROOT"
 
 DOCKER_ORG=cybros-network
