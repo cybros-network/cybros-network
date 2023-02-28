@@ -20,6 +20,7 @@ scale-info = { version = "2.3.1", default-features = false, features = ["derive"
 sp-api = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+sp-consensus-grandpa = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-inherents = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-offchain = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
@@ -75,6 +76,7 @@ std = [
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
+	"sp-consensus-grandpa/std",
 	"sp-core/std",
 	"sp-inherents/std",
 	"sp-offchain/std",

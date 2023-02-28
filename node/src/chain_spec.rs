@@ -6,7 +6,7 @@ use runtime::{
 use sc_chain_spec::Properties;
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_finality_grandpa::AuthorityId as GrandpaId;
+use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use serde::Deserialize;
 
 /// The struct for JSON format genesis config

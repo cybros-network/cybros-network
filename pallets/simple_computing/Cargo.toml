@@ -17,15 +17,12 @@ log = { version = "0.4.17", default-features = false }
 scale-codec = { package = "parity-scale-codec", version = "3.3.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.3.1", default-features = false, features = ["derive"] }
 
+primitives = { package = "pallet-simple_computing-primitives", path = "primitives", default-features = false }
+
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-
-pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-
+pallet-nfts = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-computing_workers = { path = "../computing_workers", default-features = false }
-
-primitives = { package = "pallet-simple_computing-primitives", path = "primitives", default-features = false }
 
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
@@ -33,23 +30,23 @@ sp-io = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master" }
+pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master" }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 [features]
 default = ["std"]
 std = [
 	"log/std",
 	"scale-codec/std",
+	"scale-info/std",
 	"frame-support/std",
 	"frame-system/std",
-	"scale-info/std",
-	"pallet-balances/std",
-	"pallet-insecure-randomness-collective-flip/std",
+	"pallet-nfts/std",
 	"pallet-computing_workers/std",
 	"primitives/std",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
-	"pallet-balances/try-runtime",
-	"pallet-insecure-randomness-collective-flip/try-runtime",
+	"pallet-nfts/try-runtime",
 	"pallet-computing_workers/try-runtime",
 ]

@@ -5,7 +5,7 @@ use frame_support::{
 };
 use frame_system::EnsureSigned;
 use sp_runtime::traits::Verify;
-use pallet_nfts::PalletFeatures;
+use pallet_nfts::{PalletFeature, PalletFeatures};
 
 parameter_types! {
 	pub const CollectionDeposit: Balance = 100 * UNITS;
@@ -20,7 +20,9 @@ parameter_types! {
 	pub const MaxTips: u32 = 10;
 	pub const MaxDeadlineDuration: BlockNumber = 12 * 30 * DAYS;
 	pub const MaxAttributesPerCall: u32 = 10;
-	pub Features: PalletFeatures = PalletFeatures::all_enabled();
+	pub Features: PalletFeatures = PalletFeatures::from_disabled(
+		PalletFeature::Attributes.into()
+	);
 }
 
 impl pallet_nfts::Config for Runtime {
@@ -29,6 +31,8 @@ impl pallet_nfts::Config for Runtime {
 	type ItemId = u32;
 	type Currency = Balances;
 	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
+	type Locker = ();
 	type CollectionDeposit = CollectionDeposit;
 	type ItemDeposit = ItemDeposit;
 	type MetadataDepositBase = MetadataDepositBase;
@@ -42,12 +46,10 @@ impl pallet_nfts::Config for Runtime {
 	type MaxTips = MaxTips;
 	type MaxDeadlineDuration = MaxDeadlineDuration;
 	type MaxAttributesPerCall = MaxAttributesPerCall;
+	type Features = Features;
 	type OffchainSignature = Signature;
 	type OffchainPublic = <Signature as Verify>::Signer;
-	type Features = Features;
-	type WeightInfo = pallet_nfts::weights::SubstrateWeight<Runtime>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type Helper = ();
-	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
-	type Locker = ();
+	type WeightInfo = pallet_nfts::weights::SubstrateWeight<Runtime>;
 }
