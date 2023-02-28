@@ -21,7 +21,6 @@ primitives = { package = "pallet-simple_computing-primitives", path = "primitive
 
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-pallet-nfts = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-computing_workers = { path = "../computing_workers", default-features = false }
 
 [dev-dependencies]
@@ -41,12 +40,10 @@ std = [
 	"scale-info/std",
 	"frame-support/std",
 	"frame-system/std",
-	"pallet-nfts/std",
 	"pallet-computing_workers/std",
 	"primitives/std",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
-	"pallet-nfts/try-runtime",
 	"pallet-computing_workers/try-runtime",
 ]
