@@ -25,12 +25,19 @@ macro_rules! log {
 	};
 }
 
-use frame_support::{sp_runtime::Saturating, sp_std::prelude::*};
+use frame_support::{
+	sp_runtime::Saturating,
+};
 use pallet_computing_workers::{
 	traits::{WorkerLifecycleHooks, WorkerManageable},
 	primitives::{OfflineReason, OnlinePayload, VerifiedAttestation},
-	BalanceOf,
 };
+
+// pub(crate) type BalanceOf<T> =
+// 	<<T as Config>::Currency as WorkerManageable<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::BlockNumber>>::Balance;
+
+pub(crate) type BalanceOf<T> =
+	<<T as Config>::WorkerManageable as WorkerManageable<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::BlockNumber>>::Balance;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -48,11 +55,11 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_computing_workers::Config {
+	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-		type WorkerManageable: WorkerManageable<Self>;
+		type WorkerManageable: WorkerManageable<Self::AccountId, Self::BlockNumber>;
 
 		#[pallet::constant]
 		type SlashingCardinal: Get<BalanceOf<Self>>;
@@ -132,7 +139,7 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> WorkerLifecycleHooks<T::AccountId, BalanceOf<T>> for Pallet<T> {
+	impl<T: Config> WorkerLifecycleHooks<T::AccountId> for Pallet<T> {
 		fn can_online(worker: &T::AccountId, _payload: &OnlinePayload, _verified_attestation: &Option<VerifiedAttestation>) -> DispatchResult {
 			log!(info, "can_online: {:?}", worker);
 
@@ -164,7 +171,7 @@ pub mod pallet {
 			}
 
 			if reason != OfflineReason::Graceful {
-				<T::WorkerManageable as WorkerManageable<_>>::slash(
+				T::WorkerManageable::slash(
 					worker,
 					T::SlashingCardinal::get().saturating_mul(10u32.into()),
 				);

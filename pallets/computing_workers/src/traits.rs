@@ -1,12 +1,17 @@
-use frame_support::dispatch::DispatchResult;
+use frame_support::{
+	dispatch::DispatchResult,
+	traits::{
+		tokens::Balance,
+		Imbalance,
+		ReservableCurrency
+	},
+};
 use sp_std::prelude::*;
-
 use primitives::{OfflineReason, OnlinePayload, WorkerInfo};
-use crate::{BalanceOf, NegativeImbalanceOf, Config};
 
 /// Trait describing something that implements a hook for any operations to perform when a staker is
 /// slashed.
-pub trait WorkerLifecycleHooks<AccountId, Balance> {
+pub trait WorkerLifecycleHooks<AccountId> {
 	/// A hook for checking the worker whether can online,
 	/// can use for add extra conditions check, if returns error, the worker will not be online
 	fn can_online(worker: &AccountId, payload: &OnlinePayload, verified_attestation: &Option<VerifiedAttestation>) -> DispatchResult;
@@ -36,7 +41,7 @@ pub trait WorkerLifecycleHooks<AccountId, Balance> {
 	fn before_deregister(worker: &AccountId);
 }
 
-impl<AccountId, Balance> WorkerLifecycleHooks<AccountId, Balance> for () {
+impl<AccountId> WorkerLifecycleHooks<AccountId> for () {
 	fn can_online(_: &AccountId, _: &OnlinePayload, _: &Option<VerifiedAttestation>) -> DispatchResult {
 		Ok(())
 	}
@@ -66,44 +71,52 @@ impl<AccountId, Balance> WorkerLifecycleHooks<AccountId, Balance> for () {
 	}
 }
 
-pub trait WorkerManageable<T: Config> {
-	fn worker_info(worker: &T::AccountId) -> Option<WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>>;
+pub trait WorkerManageable<AccountId, BlockNumber> {
+	type Currency: ReservableCurrency<AccountId>;
+	type Balance: Balance;
+	type PositiveImbalance: Imbalance<Self::Balance, Opposite = Self::NegativeImbalance>;
+	type NegativeImbalance: Imbalance<Self::Balance, Opposite = Self::PositiveImbalance>;
 
-	fn worker_exists(worker: &T::AccountId) -> bool;
+	fn worker_info(worker: &AccountId) -> Option<WorkerInfo<AccountId, Self::Balance, BlockNumber>>;
 
-	fn reward(worker: &T::AccountId, source: &T::AccountId, value: BalanceOf<T>) -> DispatchResult;
+	fn worker_exists(worker: &AccountId) -> bool;
 
-	fn slash(worker: &T::AccountId, value: BalanceOf<T>) -> (NegativeImbalanceOf<T>, BalanceOf<T>);
+	fn reward(worker: &AccountId, source: &AccountId, value: Self::Balance) -> DispatchResult;
 
-	fn offline(worker: &T::AccountId, reason: Option<Vec<u8>>) -> DispatchResult;
+	fn slash(worker: &AccountId, value: Self::Balance) -> (Self::NegativeImbalance, Self::Balance);
+
+	fn offline(worker: &AccountId, reason: Option<Vec<u8>>) -> DispatchResult;
 }
 
-#[cfg(feature = "std")]
-use frame_support::traits::Imbalance;
 #[cfg(feature = "std")]
 use sp_runtime::traits::Zero;
 
 use primitives::VerifiedAttestation;
 
 #[cfg(feature = "std")]
-impl<T: Config> WorkerManageable<T> for () {
-	fn worker_info(_: &T::AccountId) -> Option<WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>> {
+impl<AccountId, BlockNumber> WorkerManageable<AccountId, BlockNumber> for () {
+	type Currency = ();
+	type Balance = u32;
+	type PositiveImbalance = ();
+	type NegativeImbalance = ();
+
+	fn worker_info(_: &AccountId) -> Option<WorkerInfo<AccountId, Self::Balance, BlockNumber>> {
 		None
 	}
 
-	fn worker_exists(_: &T::AccountId) -> bool {
+	fn worker_exists(_: &AccountId) -> bool {
 		false
 	}
 
-	fn reward(_: &T::AccountId, _: &T::AccountId, _: BalanceOf<T>) -> DispatchResult {
+	fn reward(_: &AccountId, _: &AccountId, _: Self::Balance) -> DispatchResult {
 		Ok(())
 	}
 
-	fn slash(_: &T::AccountId, _: BalanceOf<T>) -> (NegativeImbalanceOf<T>, BalanceOf<T>) {
-		(NegativeImbalanceOf::<T>::zero(), BalanceOf::<T>::zero())
+	fn slash(_: &AccountId, _: Self::Balance) -> (Self::NegativeImbalance, Self::Balance) {
+		((), Self::Balance::zero())
 	}
 
-	fn offline(_: &T::AccountId, _: Option<Vec<u8>>) -> DispatchResult {
+	fn offline(_: &AccountId, _: Option<Vec<u8>>) -> DispatchResult {
 		Ok(())
 	}
 }

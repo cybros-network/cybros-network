@@ -47,9 +47,9 @@ use crate::{
 	weights::WeightInfo,
 };
 
-pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-pub type PositiveImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::PositiveImbalance;
-pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
+pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub(crate) type PositiveImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::PositiveImbalance;
+pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
 #[frame_support::pallet]
 mod pallet {
@@ -123,7 +123,7 @@ mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// A handler for manging worker slashing
-		type WorkerLifecycleHooks: WorkerLifecycleHooks<Self::AccountId, BalanceOf<Self>>;
+		type WorkerLifecycleHooks: WorkerLifecycleHooks<Self::AccountId>;
 	}
 
 	/// Storage for worker's implementations permission.
@@ -969,8 +969,13 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl<T: Config> WorkerManageable<T> for Pallet<T> {
-	fn worker_info(worker: &T::AccountId) -> Option<WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>> {
+impl<T: Config> WorkerManageable<T::AccountId, T::BlockNumber> for Pallet<T> {
+	type Currency = T::Currency;
+	type Balance = BalanceOf<T>;
+	type PositiveImbalance = PositiveImbalanceOf<T>;
+	type NegativeImbalance = NegativeImbalanceOf<T>;
+
+	fn worker_info(worker: &T::AccountId) -> Option<WorkerInfo<T::AccountId, Self::Balance, T::BlockNumber>> {
 		Workers::<T>::get(worker)
 	}
 
@@ -978,11 +983,11 @@ impl<T: Config> WorkerManageable<T> for Pallet<T> {
 		Workers::<T>::contains_key(worker)
 	}
 
-	fn reward(worker: &T::AccountId, source: &T::AccountId, value: BalanceOf<T>) -> DispatchResult {
+	fn reward(worker: &T::AccountId, source: &T::AccountId, value: Self::Balance) -> DispatchResult {
 		<T as Config>::Currency::transfer(source, worker, value, ExistenceRequirement::KeepAlive)
 	}
 
-	fn slash(worker: &T::AccountId, value: BalanceOf<T>) -> (NegativeImbalanceOf<T>, BalanceOf<T>) {
+	fn slash(worker: &T::AccountId, value: Self::Balance) -> (Self::NegativeImbalance, Self::Balance) {
 		<T as Config>::Currency::slash(worker, value)
 	}
 

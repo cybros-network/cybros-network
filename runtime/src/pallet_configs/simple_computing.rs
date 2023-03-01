@@ -12,6 +12,7 @@ parameter_types! {
 
 impl pallet_simple_computing::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
 	type WorkerManageable = ComputingWorkers;
 	type JobId = u32;
 	type JobDepositBase = JobDepositBase;

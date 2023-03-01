@@ -1,14 +1,15 @@
-use crate as pallet_simple_computing;
+use crate as pallet_nft_computing;
 
 use frame_support::{
 	assert_ok, parameter_types,
-	traits::{OnFinalize, OnInitialize},
+	traits::{OnFinalize, OnInitialize, AsEnsureOriginWithArg},
 };
 use frame_system::EnsureRoot;
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -16,7 +17,10 @@ type Block = frame_system::mocking::MockBlock<Test>;
 
 pub(crate) type BlockNumber = u64;
 pub(crate) type Balance = u128;
-pub(crate) type AccountId = u64;
+
+pub(crate) type Signature = MultiSignature;
+pub(crate) type AccountPublic = <Signature as Verify>::Signer;
+pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
 pub(crate) const MILLI_CENTS: Balance = 1_000_000;
 pub(crate) const CENTS: Balance = 1_000 * MILLI_CENTS;
@@ -33,8 +37,9 @@ frame_support::construct_runtime!(
 		Balances: pallet_balances,
 		Timestamp: pallet_timestamp,
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
+		Nfts: pallet_nfts,
 		ComputingWorkers: pallet_computing_workers,
-		SimpleComputing: pallet_simple_computing,
+		NFTComputing: pallet_nft_computing,
 	}
 );
 
@@ -86,6 +91,43 @@ impl pallet_timestamp::Config for Test {
 
 impl pallet_insecure_randomness_collective_flip::Config for Test {}
 
+parameter_types! {
+	pub storage Features: pallet_nfts::PalletFeatures =
+		pallet_nfts::PalletFeatures::all_enabled();
+}
+
+impl pallet_nfts::Config for Test {
+	type RuntimeEvent = RuntimeEvent;
+	type CollectionId = u32;
+	type ItemId = u32;
+	type Currency = Balances;
+	type CreateOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<Self::AccountId>>;
+	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type Locker = ();
+	type CollectionDeposit = ConstU128<{ 2 * DOLLARS }>;
+	type ItemDeposit = ConstU128<{ 1 * DOLLARS }>;
+	type MetadataDepositBase = ConstU128<{ 1 * DOLLARS }>;
+	type AttributeDepositBase = ConstU128<{ 1 * DOLLARS }>;
+	type DepositPerByte = ConstU128<{ 1 * DOLLARS }>;
+	type StringLimit = ConstU32<50>;
+	type KeyLimit = ConstU32<50>;
+	type ValueLimit = ConstU32<50>;
+	type ApprovalsLimit = ConstU32<10>;
+	type ItemAttributesApprovalsLimit = ConstU32<2>;
+	type MaxTips = ConstU32<10>;
+	type MaxDeadlineDuration = ConstU64<10000>;
+	type MaxAttributesPerCall = ConstU32<2>;
+	type Features = Features;
+	/// Off-chain = signature On-chain - therefore no conversion needed.
+	/// It needs to be From<MultiSignature> for benchmarking.
+	type OffchainSignature = Signature;
+	/// Using `AccountPublic` here makes it trivial to convert to `AccountId` via `into_account()`.
+	type OffchainPublic = AccountPublic;
+	type WeightInfo = ();
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = ();
+}
+
 impl pallet_computing_workers::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
@@ -101,7 +143,7 @@ impl pallet_computing_workers::Config for Test {
 	type ValidateWorkerImplHash = ConstBool<false>;
 	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
 	type WeightInfo = ();
-	type WorkerLifecycleHooks = SimpleComputing;
+	type WorkerLifecycleHooks = NFTComputing;
 }
 
 parameter_types! {
@@ -113,17 +155,11 @@ parameter_types! {
 	pub const MaxJobOutputLen: u32 = 2 * 1024;
 }
 
-impl pallet_simple_computing::Config for Test {
+impl pallet_nft_computing::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
+	type NFTCollection = Nfts;
 	type WorkerManageable = ComputingWorkers;
-	type JobId = u32;
-	type JobDepositBase = JobDepositBase;
-	type JobInputDepositPerByte = JobInputDepositPerByte;
-	type MinJobRunningDurationLen = MinJobRunningDurationLen;
-	type MaxJobCommandLen = MaxJobCommandLen;
-	type MaxJobInputLen = MaxJobInputLen;
-	type MaxJobOutputLen = MaxJobOutputLen;
 }
 
 // Build genesis storage according to the mock runtime.
@@ -159,7 +195,7 @@ pub(crate) fn take_events() -> Vec<RuntimeEvent> {
 
 #[allow(unused)]
 pub(crate) fn set_balance(who: AccountId, new_free: Balance, new_reserved: Balance) {
-	assert_ok!(Balances::set_balance(RuntimeOrigin::root(), who.into(), new_free, new_reserved));
+	assert_ok!(Balances::set_balance(RuntimeOrigin::root(), who.clone().into(), new_free, new_reserved));
 	assert_eq!(Balances::free_balance(&who), new_free);
 	assert_eq!(Balances::reserved_balance(&who), new_reserved);
 }

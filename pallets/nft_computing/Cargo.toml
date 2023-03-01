@@ -1,7 +1,7 @@
 [package]
-name = "computing-clusters"
+name = "pallet-nft_computing"
 version = "0.0.1-dev"
-description = "Substrate pallet for managing groups of workers and orchestrate jobs."
+description = "Substrate pallet to providing NFT-based off-chain computing, powered by pallet-computing_workers"
 authors.workspace = true
 repository.workspace = true
 license = "Apache-2.0"
@@ -17,16 +17,19 @@ log = { version = "0.4.17", default-features = false }
 scale-codec = { package = "parity-scale-codec", version = "3.3.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.3.1", default-features = false, features = ["derive"] }
 
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false, optional = true }
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-
-primitives = { package = "pallet-computing_clusters-primitives", path = "primitives", default-features = false }
+pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+pallet-nfts = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+pallet-computing_workers = { path = "../computing_workers", default-features = false }
 
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
+
+pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master" }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 [features]
 default = ["std"]
@@ -34,14 +37,15 @@ std = [
 	"log/std",
 	"scale-codec/std",
 	"scale-info/std",
-	"frame-benchmarking?/std",
 	"frame-support/std",
 	"frame-system/std",
-	"primitives/std",
-]
-runtime-benchmarks = [
-	"frame-benchmarking/runtime-benchmarks",
+	"pallet-balances/std",
+	"pallet-nfts/std",
+	"pallet-computing_workers/std",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
+	"pallet-balances/try-runtime",
+	"pallet-nfts/try-runtime",
+	"pallet-computing_workers/try-runtime",
 ]

@@ -28,15 +28,17 @@ macro_rules! log {
 
 use frame_support::{
 	sp_runtime::Saturating,
-	traits::ReservableCurrency,
+	traits::{Currency, ReservableCurrency},
 };
 use pallet_computing_workers::{
 	traits::{WorkerLifecycleHooks, WorkerManageable},
 	primitives::{OfflineReason, OnlinePayload, VerifiedAttestation},
-	BalanceOf,
 };
 use crate::traits::*;
 use primitives::*;
+
+pub(crate) type BalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 pub type Job<T> = primitives::Job<
 	<T as frame_system::Config>::AccountId, BalanceOf<T>, <T as frame_system::Config>::BlockNumber,
@@ -60,11 +62,14 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_computing_workers::Config {
+	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-		type WorkerManageable: WorkerManageable<Self>;
+		/// The system's currency for payment.
+		type Currency: ReservableCurrency<Self::AccountId>;
+
+		type WorkerManageable: WorkerManageable<Self::AccountId, Self::BlockNumber>;
 
 		type JobId: Member + Parameter + MaxEncodedLen + Copy + AutoIncrement;
 
@@ -159,7 +164,7 @@ pub mod pallet {
 			let reserved =
 				deposit_base.saturating_add(per_byte.saturating_mul((input.len() as u32).into()));
 
-			<T as pallet_computing_workers::Config>::Currency::reserve(&who, reserved)?;
+			T::Currency::reserve(&who, reserved)?;
 
 			let job_id  =
 				NextJobId::<T>::get(&worker).unwrap_or(T::JobId::initial_value());
@@ -268,7 +273,7 @@ pub mod pallet {
 				return Err(Error::<T>::JobNotExists.into())
 			};
 
-			<T as pallet_computing_workers::Config>::Currency::unreserve(&job.created_by, job.reserved);
+			T::Currency::unreserve(&job.created_by, job.reserved);
 
 			Self::deposit_event(Event::JobReclaimed { worker, job_id });
 
@@ -299,7 +304,7 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> WorkerLifecycleHooks<T::AccountId, BalanceOf<T>> for Pallet<T> {
+	impl<T: Config> WorkerLifecycleHooks<T::AccountId> for Pallet<T> {
 		fn can_online(_worker: &T::AccountId, _payload: &OnlinePayload, _verified_attestation: &Option<VerifiedAttestation>) -> DispatchResult {
 			Ok(())
 		}
@@ -321,7 +326,7 @@ pub mod pallet {
 				return
 			};
 
-			<T as pallet_computing_workers::Config>::Currency::unreserve(&job.created_by, job.reserved);
+			T::Currency::unreserve(&job.created_by, job.reserved);
 			AssignedJobs::<T>::remove(worker)
 		}
 
