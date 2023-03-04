@@ -18,7 +18,7 @@ impl pallet_computing_workers::Config for Runtime {
 	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
 	type WeightInfo = pallet_computing_workers::weights::SubstrateWeight<Runtime>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type WorkerLifecycleHooks = SimpleComputing;
+	type WorkerLifecycleHooks = NftComputing;
 	#[cfg(feature = "runtime-benchmarks")]
 	type WorkerLifecycleHooks = ();
 }

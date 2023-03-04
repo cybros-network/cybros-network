@@ -11,6 +11,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
 };
+use pallet_nfts::{PalletFeatures, PalletFeature};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -92,8 +93,9 @@ impl pallet_timestamp::Config for Test {
 impl pallet_insecure_randomness_collective_flip::Config for Test {}
 
 parameter_types! {
-	pub storage Features: pallet_nfts::PalletFeatures =
-		pallet_nfts::PalletFeatures::all_enabled();
+	pub storage Features: PalletFeatures = PalletFeatures::from_disabled(
+		PalletFeature::Trading | PalletFeature::Swaps
+	);
 }
 
 impl pallet_nfts::Config for Test {
@@ -146,19 +148,8 @@ impl pallet_computing_workers::Config for Test {
 	type WorkerLifecycleHooks = NFTComputing;
 }
 
-parameter_types! {
-	pub const JobDepositBase: Balance = 10 * DOLLARS;
-	pub const JobInputDepositPerByte: Balance = 1 * DOLLARS;
-	pub const MinJobRunningDurationLen: u32 = 20;
-	pub const MaxJobCommandLen: u32 = 32;
-	pub const MaxJobInputLen: u32 = 2 * 1024;
-	pub const MaxJobOutputLen: u32 = 2 * 1024;
-}
-
 impl pallet_nft_computing::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type NFTCollection = Nfts;
 	type WorkerManageable = ComputingWorkers;
 }
 

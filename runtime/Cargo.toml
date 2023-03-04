@@ -58,7 +58,7 @@ pallet-nfts = { git = "https://github.com/paritytech/substrate", branch = "maste
 pallet-nfts-runtime-api = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
 pallet-computing_workers = { path = "../pallets/computing_workers", default-features = false }
-pallet-simple_computing = { path = "../pallets/simple_computing", default-features = false }
+pallet-nft_computing = { path = "../pallets/nft_computing", default-features = false }
 
 # Local Dependencies
 runtime-primitives = { package = "cybros-primal-runtime-primitives", path = "primitives", default-features = false }
@@ -108,7 +108,7 @@ std = [
 	"pallet-nfts/std",
 	"pallet-nfts-runtime-api/std",
 	"pallet-computing_workers/std",
-	"pallet-simple_computing/std",
+	"pallet-nft_computing/std",
 ]
 runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
@@ -144,5 +144,5 @@ try-runtime = [
 	"pallet-sudo/try-runtime",
 	"pallet-nfts/try-runtime",
 	"pallet-computing_workers/try-runtime",
-	"pallet-simple_computing/try-runtime",
+	"pallet-nft_computing/try-runtime",
 ]

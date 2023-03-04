@@ -16,7 +16,7 @@ mod vesting;
 mod nfts;
 
 mod computing_workers;
-mod simple_computing;
+mod nft_computing;
 
 mod sudo;
 

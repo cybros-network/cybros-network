@@ -194,7 +194,7 @@ construct_runtime!(
 
 		// The main stage
 		ComputingWorkers: pallet_computing_workers = 100,
-		SimpleComputing: pallet_simple_computing = 101,
+		NftComputing: pallet_nft_computing = 101,
 
 		// Non-permanent
 		Sudo: pallet_sudo = 255,
