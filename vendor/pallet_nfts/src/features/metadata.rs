@@ -20,7 +20,7 @@ use frame_support::pallet_prelude::*;
 
 impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	/// Note: if `maybe_depositor` is None, that means the depositor will be a collection's owner
-	pub(crate) fn do_set_item_metadata(
+	pub fn do_set_item_metadata(
 		maybe_check_owner: Option<T::AccountId>,
 		collection: T::CollectionId,
 		item: T::ItemId,
@@ -88,7 +88,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		})
 	}
 
-	pub(crate) fn do_clear_item_metadata(
+	pub fn do_clear_item_metadata(
 		maybe_check_owner: Option<T::AccountId>,
 		collection: T::CollectionId,
 		item: T::ItemId,
@@ -124,7 +124,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		Ok(())
 	}
 
-	pub(crate) fn do_set_collection_metadata(
+	pub fn do_set_collection_metadata(
 		maybe_check_owner: Option<T::AccountId>,
 		collection: T::CollectionId,
 		data: BoundedVec<u8, T::StringLimit>,
@@ -169,7 +169,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		})
 	}
 
-	pub(crate) fn do_clear_collection_metadata(
+	pub fn do_clear_collection_metadata(
 		maybe_check_owner: Option<T::AccountId>,
 		collection: T::CollectionId,
 	) -> DispatchResult {

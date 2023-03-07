@@ -22,9 +22,12 @@ macro_rules! log {
 }
 
 use sp_runtime::traits::Zero;
-use frame_support::traits::{
-	tokens::AttributeNamespace,
-	Currency, ExistenceRequirement,
+use frame_support::{
+	traits::{
+		tokens::AttributeNamespace,
+		Currency, ExistenceRequirement,
+	},
+	BoundedVec,
 };
 use pallet_computing_workers::{
 	traits::{WorkerLifecycleHooks, WorkerManageable},
@@ -34,7 +37,7 @@ use pallet_nfts::{
 	CollectionSettings, CollectionSetting, ItemSettings, ItemSetting,
 	ItemConfig, MintType, Incrementable,
 	CollectionRole, Attribute, AttributeDeposit, MintWitness, PalletAttributes,
-	Account
+	Account,
 };
 use primitives::NFTMintSettings;
 
@@ -62,6 +65,10 @@ pub type NFTMintSettingsOf<T, I = ()> = NFTMintSettings<
 	<T as frame_system::Config>::BlockNumber,
 	CollectionIdOf<T, I>
 >;
+
+pub type KeyBoundedVec<T, I = ()> = BoundedVec::<u8, <T as pallet_nfts::Config<I>>::KeyLimit>;
+pub type ValueBoundedVec<T, I = ()> = BoundedVec::<u8, <T as pallet_nfts::Config<I>>::ValueLimit>;
+pub type StringBoundedVec<T, I = ()> = BoundedVec::<u8, <T as pallet_nfts::Config<I>>::StringLimit>;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -98,6 +105,18 @@ pub mod pallet {
 		NotTheOwner,
 		WorkerNotExists,
 	}
+
+	/// Stores the `CollectionId` that is going to be used for the next collection.
+	/// This gets incremented whenever a new collection is created.
+	#[pallet::storage]
+	pub type NextItemId<T: Config<I>, I: 'static = ()> =
+		StorageMap<
+			_,
+			Blake2_128Concat,
+			CollectionIdOf<T, I>,
+			ItemIdOf<T, I>,
+			OptionQuery,
+		>;
 
 	#[pallet::call]
 	impl<T: Config<I>, I: 'static> Pallet<T, I> {
@@ -160,10 +179,11 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			collection_id: CollectionIdOf<T, I>,
 			witness_data: Option<MintWitness<ItemIdOf<T, I>>>,
+			metadata: StringBoundedVec<T, I>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			// let item_id: ItemIdOf<T, I> = 0u32;
+			let item_id = NextItemId::<T, I>::get(&collection_id).unwrap_or(0u32.into());
 			let item_config = ItemConfig {
 				settings: ItemSettings::from_disabled(
 					ItemSetting::Transferable | ItemSetting::UnlockedMetadata
@@ -172,7 +192,7 @@ pub mod pallet {
 
 			pallet_nfts::Pallet::<T, I>::do_mint(
 				collection_id,
-				0u32.into(),
+				item_id.into(),
 				Some(who.clone()),
 				who.clone(),
 				item_config,
@@ -240,6 +260,36 @@ pub mod pallet {
 					Ok(())
 				},
 			)?;
+
+			PalletNFT::<T, I>::do_set_item_metadata(
+				None,
+				collection_id,
+				item_id.into(),
+				metadata,
+				Some(who.clone()),
+			)?;
+
+			// PalletNFT::<T, I>::do_set_attribute(
+			// 	who.clone(),
+			// 	collection_id,
+			// 	Some(item_id.into()),
+			// 	AttributeNamespace::<T::AccountId>::CollectionOwner,
+			// 	BoundedVec::<u8, <T as pallet_nfts::Config<I>>::KeyLimit>::truncate_from("foo".into()),
+			// 	ValueBoundedVec::<T, I>,
+			// 	who.clone(),
+			// )?;
+
+			// PalletNFT::<T, I>::do_force_set_attribute(
+			// 	set_as: None,
+			// 	collection_id,
+			// 	Some(item_id.into()),
+			// 	AttributeNamespace::<T::AccountId>::Pallet,
+			// 	KeyBoundedVec::<T, I>::truncate_from("validated".into()),
+			// 	ValueBoundedVec::<T, I>::,
+			// )?;
+
+			let next_item_id = item_id + 1u32.into();
+			NextItemId::<T, I>::insert(&collection_id, next_item_id);
 
 			Ok(())
 		}

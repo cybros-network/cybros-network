@@ -19,7 +19,7 @@ use crate::*;
 use frame_support::pallet_prelude::*;
 
 impl<T: Config<I>, I: 'static> Pallet<T, I> {
-	pub(crate) fn do_set_attribute(
+	pub fn do_set_attribute(
 		origin: T::AccountId,
 		collection: T::CollectionId,
 		maybe_item: Option<T::ItemId>,
@@ -134,7 +134,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		Ok(())
 	}
 
-	pub(crate) fn do_force_set_attribute(
+	pub fn do_force_set_attribute(
 		set_as: Option<T::AccountId>,
 		collection: T::CollectionId,
 		maybe_item: Option<T::ItemId>,
@@ -165,7 +165,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		Ok(())
 	}
 
-	pub(crate) fn do_set_attributes_pre_signed(
+	pub fn do_set_attributes_pre_signed(
 		origin: T::AccountId,
 		data: PreSignedAttributesOf<T, I>,
 		signer: T::AccountId,
@@ -218,7 +218,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		Ok(())
 	}
 
-	pub(crate) fn do_clear_attribute(
+	pub fn do_clear_attribute(
 		maybe_check_owner: Option<T::AccountId>,
 		collection: T::CollectionId,
 		maybe_item: Option<T::ItemId>,
@@ -301,7 +301,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		Ok(())
 	}
 
-	pub(crate) fn do_approve_item_attributes(
+	pub fn do_approve_item_attributes(
 		check_origin: T::AccountId,
 		collection: T::CollectionId,
 		item: T::ItemId,
@@ -325,7 +325,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		})
 	}
 
-	pub(crate) fn do_cancel_item_attributes_approval(
+	pub fn do_cancel_item_attributes_approval(
 		check_origin: T::AccountId,
 		collection: T::CollectionId,
 		item: T::ItemId,

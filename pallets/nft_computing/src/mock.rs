@@ -94,7 +94,7 @@ impl pallet_insecure_randomness_collective_flip::Config for Test {}
 
 parameter_types! {
 	pub storage Features: PalletFeatures = PalletFeatures::from_disabled(
-		PalletFeature::Trading | PalletFeature::Swaps
+		PalletFeature::Trading | PalletFeature::Swaps | PalletFeature::Approvals
 	);
 }
 

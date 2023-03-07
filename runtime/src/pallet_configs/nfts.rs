@@ -21,7 +21,7 @@ parameter_types! {
 	pub const MaxDeadlineDuration: BlockNumber = 12 * 30 * DAYS;
 	pub const MaxAttributesPerCall: u32 = 10;
 	pub storage Features: PalletFeatures = PalletFeatures::from_disabled(
-		PalletFeature::Trading | PalletFeature::Swaps
+		PalletFeature::Trading | PalletFeature::Swaps | PalletFeature::Approvals
 	);
 }
 
