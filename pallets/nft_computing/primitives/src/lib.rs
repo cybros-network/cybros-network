@@ -9,9 +9,9 @@ use pallet_nfts::MintType;
 
 /// Holds the information about minting.
 #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct NFTMintSettings<Price, BlockNumber, CollectionId> {
+pub struct NftMintSettings<Price, BlockNumber, CollectionId> {
 	/// Whether anyone can mint or if minters are restricted to some subset.
-	pub mint_type: MintType<CollectionId>,
+	pub mint_type: MintType<CollectionId>, // TODO: remove dependency of pallet_nfts
 	/// An optional price per mint.
 	pub price: Option<Price>,
 	/// When the mint starts.
@@ -20,7 +20,7 @@ pub struct NFTMintSettings<Price, BlockNumber, CollectionId> {
 	pub end_block: Option<BlockNumber>,
 }
 
-impl<Price, BlockNumber, CollectionId> Default for NFTMintSettings<Price, BlockNumber, CollectionId> {
+impl<Price, BlockNumber, CollectionId> Default for NftMintSettings<Price, BlockNumber, CollectionId> {
 	fn default() -> Self {
 		Self {
 			mint_type: MintType::Issuer,
@@ -29,4 +29,9 @@ impl<Price, BlockNumber, CollectionId> Default for NFTMintSettings<Price, BlockN
 			end_block: None,
 		}
 	}
+}
+
+#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum NftItemAttributeKey {
+	Validated
 }

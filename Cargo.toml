@@ -40,10 +40,6 @@ exclude = [
 # I know this is bad but there's `zeroize` version conflict between `vodozemac` and `substrate`
 x25519-dalek = { path = "vendor/x25519-dalek" }
 
-[patch."https://github.com/paritytech/substrate"]
-pallet-nfts = { path = "vendor/pallet_nfts" }
-pallet-nfts-runtime-api = { path = "vendor/pallet_nfts/runtime-api" }
-
 # The list of dependencies below (which can be both direct and indirect dependencies) are crates
 # that are suspected to be CPU-intensive, and that are unlikely to require debugging (as some of
 # their debug info might be missing) or to require to be frequently recompiled. We compile these

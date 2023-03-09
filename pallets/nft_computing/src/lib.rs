@@ -21,14 +21,16 @@ macro_rules! log {
 	};
 }
 
-// use sp_std::prelude::*;
-use sp_runtime::traits::Zero;
 use frame_support::{
 	traits::{
-		tokens::AttributeNamespace,
-		Currency, ExistenceRequirement,
+		tokens::nonfungibles_v2::{
+			Inspect as NonFungiblesInspect,
+			Create as NonFungiblesCreate,
+			Destroy as NonFungiblesDestroy,
+			Mutate as NonFungiblesMutate,
+		},
+		Currency, ReservableCurrency,
 	},
-	BoundedVec, bounded_vec,
 };
 use pallet_computing_workers::{
 	traits::{WorkerLifecycleHooks, WorkerManageable},
@@ -36,101 +38,112 @@ use pallet_computing_workers::{
 };
 use pallet_nfts::{
 	CollectionSettings, CollectionSetting, ItemSettings, ItemSetting,
-	ItemConfig, MintType, Incrementable,
-	CollectionRole, Attribute, AttributeDeposit, MintWitness, PalletAttributes,
-	Account, Collection, Item,
+	ItemConfig, Incrementable, CollectionConfig,
 };
-use primitives::NFTMintSettings;
+use primitives::{NftMintSettings, NftItemAttributeKey};
 
-pub type BalanceOf<T, I = ()> =
-	<<T as pallet_nfts::Config<I>>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-pub type CollectionIdOf<T, I = ()> = <T as pallet_nfts::Config<I>>::CollectionId;
-pub type ItemIdOf<T, I = ()> = <T as pallet_nfts::Config<I>>::ItemId;
-pub type CollectionDepositOf<T, I = ()> = <T as pallet_nfts::Config<I>>::CollectionDeposit;
-pub type CollectionConfigOf<T, I = ()> = pallet_nfts::CollectionConfig<
-	BalanceOf<T, I>,
+pub(crate) type CollectionConfigOf<T> = CollectionConfig<
+	BalanceOf<T>,
 	<T as frame_system::Config>::BlockNumber,
-	CollectionIdOf<T, I>
+	<T as Config>::NftCollectionId
 >;
-pub type MintSettingsOf<T, I = ()> = pallet_nfts::MintSettings<
-	BalanceOf<T, I>,
+pub type MintSettingsOf<T> = pallet_nfts::MintSettings<
+	BalanceOf<T>,
 	<T as frame_system::Config>::BlockNumber,
-	CollectionIdOf<T, I>
+	<T as Config>::NftCollectionId
 >;
-
-pub type PalletNFT<T, I = ()> = pallet_nfts::Pallet<T, I>;
-
-pub type NFTMintSettingsOf<T, I = ()> = NFTMintSettings<
-	BalanceOf<T, I>,
-	<T as frame_system::Config>::BlockNumber,
-	CollectionIdOf<T, I>
->;
-
-pub type KeyBoundedVec<T, I = ()> = BoundedVec::<u8, <T as pallet_nfts::Config<I>>::KeyLimit>;
-pub type ValueBoundedVec<T, I = ()> = BoundedVec::<u8, <T as pallet_nfts::Config<I>>::ValueLimit>;
-pub type StringBoundedVec<T, I = ()> = BoundedVec::<u8, <T as pallet_nfts::Config<I>>::StringLimit>;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+	use sp_std::{fmt::Display, prelude::*};
+	use sp_runtime::traits::AtLeast32BitUnsigned;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
-	pub struct Pallet<T, I = ()>(_);
+	pub struct Pallet<T>(_);
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config<I: 'static = ()>: frame_system::Config + pallet_nfts::Config<I> {
+	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
-		type RuntimeEvent: From<Event<Self, I>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		type WorkerManageable: WorkerManageable<Self::AccountId, Self::BlockNumber>;
+
+		type Currency: ReservableCurrency<Self::AccountId>;
+
+		/// Identifier for the collection of NFT.
+		type NftCollectionId: Member + Parameter + MaxEncodedLen + Copy + Display + AtLeast32BitUnsigned;
+
+		/// The type used to identify an NFT within a collection.
+		type NftItemId: Member + Parameter + MaxEncodedLen + Copy + Display + Incrementable;
+
+		type Nfts: NonFungiblesInspect<
+			Self::AccountId,
+			ItemId = Self::NftItemId,
+			CollectionId = Self::NftCollectionId,
+		> + NonFungiblesCreate<
+			Self::AccountId, CollectionConfigOf<Self>
+		> + NonFungiblesDestroy<
+			Self::AccountId
+		> + NonFungiblesMutate<
+			Self::AccountId, ItemConfig
+		>;
+
+		/// The maximum length of data stored on-chain.
+		#[pallet::constant]
+		type MetadataLimit: Get<u32>;
 	}
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config<I>, I: 'static = ()> {
-		CollectionCreated { worker: T::AccountId, collection_id: CollectionIdOf<T, I> },
+	pub enum Event<T: Config> {
+		CollectionCreated { worker: T::AccountId, collection_id: T::NftCollectionId },
 	}
 
 	// Errors inform users that something went wrong.
 	#[pallet::error]
-	pub enum Error<T, I = ()> {
-		NotTheOwner,
-		WorkerNotExists,
+	pub enum Error<T> {
+		WorkerNotFound,
+		CollectionNotFound,
+		ItemNotFound,
+		NoPermission,
 	}
 
 	/// Stores the `CollectionId` that is going to be used for the next collection.
 	/// This gets incremented whenever a new collection is created.
 	#[pallet::storage]
-	pub type NextItemId<T: Config<I>, I: 'static = ()> =
+	pub type NextCollectionItemId<T: Config> =
 		StorageMap<
 			_,
 			Blake2_128Concat,
-			CollectionIdOf<T, I>,
-			ItemIdOf<T, I>,
+			T::NftCollectionId,
+			T::NftItemId,
 			OptionQuery,
 		>;
 
 	#[pallet::call]
-	impl<T: Config<I>, I: 'static> Pallet<T, I> {
+	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
 		pub fn create_collection(
 			origin: OriginFor<T>,
 			worker: T::AccountId,
-			mint_settings: NFTMintSettingsOf<T, I>
+			mint_settings: NftMintSettings<BalanceOf<T>, T::BlockNumber, T::NftCollectionId>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::ensure_owner(&who, &worker)?;
 
-			let collection_config = CollectionConfigOf::<T, I> {
+			let collection_config = CollectionConfigOf::<T> {
 				settings: CollectionSettings::from_disabled(
 					CollectionSetting::TransferableItems |
 						CollectionSetting::UnlockedMetadata |
@@ -138,7 +151,7 @@ pub mod pallet {
 						CollectionSetting::UnlockedMaxSupply
 				),
 				max_supply: None,
-				mint_settings: MintSettingsOf::<T, I> {
+				mint_settings: MintSettingsOf::<T> {
 					mint_type: mint_settings.mint_type,
 					price: mint_settings.price,
 					start_block: mint_settings.start_block,
@@ -151,24 +164,12 @@ pub mod pallet {
 				}
 			};
 
-			let collection =
-				pallet_nfts::NextCollectionId::<T, I>::get().unwrap_or(CollectionIdOf::<T, I>::initial_value());
+			// TODO: I'm thinking the owner should be the pallet account
+			let collection_id =
+				T::Nfts::create_collection(&worker, &worker, &collection_config)?;
 
-			pallet_nfts::Pallet::<T, I>::do_create_collection(
-				collection,
-				who.clone(),
-				who.clone(),
-				collection_config,
-				CollectionDepositOf::<T, I>::get(),
-				pallet_nfts::Event::<T, I>::Created { collection, creator: who.clone(), owner: who.clone() },
-			)?;
-
-			// let collection_id =
-			// 	T::NonFungibles::create_collection(&worker, &worker, &collection_config)?;
-			// // TODO: add a mapping
-			//
-			// // TODO: CollectionId need Debug and Clone, need PR to Substrate
-			// Self::deposit_event(Event::CollectionCreated { worker: worker.clone(), collection_id });
+			// TODO: remove this, just a test
+			Self::deposit_event(Event::CollectionCreated { worker: worker.clone(), collection_id });
 
 			Ok(())
 		}
@@ -177,119 +178,38 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn mint(
 			origin: OriginFor<T>,
-			collection_id: CollectionIdOf<T, I>,
-			witness_data: Option<MintWitness<ItemIdOf<T, I>>>,
-			metadata: StringBoundedVec<T, I>
+			collection_id: T::NftCollectionId,
+			metadata: BoundedVec<u8, T::MetadataLimit>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let item_id = NextItemId::<T, I>::get(&collection_id).unwrap_or(0u32.into());
+			let item_id = NextCollectionItemId::<T>::get(&collection_id).unwrap_or(T::NftItemId::initial_value());
 			let item_config = ItemConfig {
 				settings: ItemSettings::from_disabled(
-					ItemSetting::Transferable | ItemSetting::UnlockedMetadata
+					ItemSetting::Transferable | ItemSetting::UnlockedMetadata | ItemSetting::UnlockedAttributes
 				)
 			};
 
-			pallet_nfts::Pallet::<T, I>::do_mint(
-				collection_id,
-				item_id.into(),
-				Some(who.clone()),
-				who.clone(),
-				item_config,
-				|collection_details, collection_config| {
-					// Issuer can mint regardless of mint settings
-					if PalletNFT::<T, I>::has_role(&collection_id, &who, CollectionRole::Issuer) {
-						return Ok(())
-					}
-
-					let mint_settings = collection_config.mint_settings;
-					let now = frame_system::Pallet::<T>::block_number();
-
-					if let Some(start_block) = mint_settings.start_block {
-						ensure!(start_block <= now, pallet_nfts::Error::<T, I>::MintNotStarted);
-					}
-					if let Some(end_block) = mint_settings.end_block {
-						ensure!(end_block >= now, pallet_nfts::Error::<T, I>::MintEnded);
-					}
-
-					match mint_settings.mint_type {
-						MintType::Issuer => return Err(pallet_nfts::Error::<T, I>::NoPermission.into()),
-						MintType::HolderOf(collection_id) => {
-							let MintWitness { owner_of_item } =
-								witness_data.ok_or(pallet_nfts::Error::<T, I>::BadWitness)?;
-
-							let has_item = Account::<T, I>::contains_key((
-								&who,
-								&collection_id,
-								&owner_of_item,
-							));
-							ensure!(has_item, pallet_nfts::Error::<T, I>::BadWitness);
-
-							let attribute_key = PalletNFT::<T, I>::construct_attribute_key(
-								PalletAttributes::<T::CollectionId>::UsedToClaim(collection_id)
-									.encode(),
-							)?;
-
-							let key = (
-								&collection_id,
-								Some(owner_of_item),
-								AttributeNamespace::Pallet,
-								&attribute_key,
-							);
-							let already_claimed = Attribute::<T, I>::contains_key(key.clone());
-							ensure!(!already_claimed, pallet_nfts::Error::<T, I>::AlreadyClaimed);
-
-							let value = PalletNFT::<T, I>::construct_attribute_value(vec![0])?;
-							Attribute::<T, I>::insert(
-								key,
-								(value, AttributeDeposit { account: None, amount: Zero::zero() }),
-							);
-						},
-						_ => {},
-					}
-
-					if let Some(price) = mint_settings.price {
-						T::Currency::transfer(
-							&who,
-							&collection_details.owner,
-							price,
-							ExistenceRequirement::KeepAlive,
-						)?;
-					}
-
-					Ok(())
-				},
+			T::Nfts::mint_into(
+				&collection_id,
+				&item_id,
+				&who,
+				&item_config,
+				false,
 			)?;
 
-			PalletNFT::<T, I>::do_set_item_metadata(
-				None,
-				collection_id,
-				item_id.into(),
-				metadata,
-				Some(who.clone()),
+			// empty key is metadata, this should be improved
+			// TODO: need add `maybe_depositor` or something, or it won't reserve money !!!
+			let metadata_key = Vec::<u8>::default();
+			T::Nfts::set_attribute(
+				&collection_id,
+				&item_id,
+				&metadata_key,
+				&metadata
 			)?;
 
-			// PalletNFT::<T, I>::do_set_attribute(
-			// 	who.clone(),
-			// 	collection_id,
-			// 	Some(item_id.into()),
-			// 	AttributeNamespace::<T::AccountId>::CollectionOwner,
-			// 	BoundedVec::<u8, <T as pallet_nfts::Config<I>>::KeyLimit>::truncate_from("foo".into()),
-			// 	ValueBoundedVec::<T, I>,
-			// 	who.clone(),
-			// )?;
-
-			// PalletNFT::<T, I>::do_force_set_attribute(
-			// 	set_as: None,
-			// 	collection_id,
-			// 	Some(item_id.into()),
-			// 	AttributeNamespace::<T::AccountId>::Pallet,
-			// 	KeyBoundedVec::<T, I>::truncate_from("validated".into()),
-			// 	ValueBoundedVec::<T, I>::,
-			// )?;
-
-			let next_item_id = item_id + 1u32.into();
-			NextItemId::<T, I>::insert(&collection_id, next_item_id);
+			let next_collection_item_id = item_id.increment();
+			NextCollectionItemId::<T>::insert(&collection_id, next_collection_item_id);
 
 			Ok(())
 		}
@@ -299,30 +219,23 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn burn(
 			origin: OriginFor<T>,
-			collection_id: CollectionIdOf<T, I>,
-			item_id: ItemIdOf<T, I>,
+			collection_id: T::NftCollectionId,
+			item_id: T::NftItemId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+
+			// TODO: some case we should allow non-owner burn the item.
 			Self::ensure_nft_owner(&who, &collection_id, &item_id)?;
 
 			// TODO: Check status.
 			// Q: allow burn when the worker processing it?
 
-			// TODO: Burn
-			PalletNFT::<T, I>::do_burn(
-			collection_id,
-			item_id,
-			|details| {
-				// TODO: it seems we don't need to check permission here, in some case (e.g. expired job), anyone can burn it.
-				let is_admin = PalletNFT::<T, I>::has_role(&collection_id, &who, CollectionRole::Admin);
-				let is_permitted = is_admin || details.owner == who;
-				ensure!(is_permitted, pallet_nfts::Error::<T, I>::NoPermission);
-				ensure!(
-					who == details.owner,
-					pallet_nfts::Error::<T, I>::WrongOwner
-				);
-				Ok(())
-			})?;
+			// TODO: some case we should allow non-owner burn the item.
+			T::Nfts::burn(
+				&collection_id,
+				&item_id,
+				None, // we have validate this above
+			)?;
 
 			// TODO: deposit event
 
@@ -334,8 +247,8 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn approve(
 			origin: OriginFor<T>,
-			collection_id: CollectionIdOf<T, I>,
-			item_id: ItemIdOf<T, I>,
+			collection_id: T::NftCollectionId,
+			item_id: T::NftItemId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::ensure_worker_collection(&who, &collection_id)?;
@@ -343,14 +256,11 @@ pub mod pallet {
 			// TODO: Performance can be improved
 			// TODO: Make a constant for key
 			// TODO: the value frame_system::Pallet::<T>::block_number()
-			PalletNFT::<T, I>::do_set_attribute(
-				who.clone(),
-				collection_id,
-				Some(item_id.into()),
-				AttributeNamespace::<T::AccountId>::CollectionOwner,
-				bounded_vec![0],
-				bounded_vec![1],
-				who.clone(),
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, T::BlockNumber>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::Validated,
+				&frame_system::Pallet::<T>::block_number()
 			)?;
 
 			// TODO: deposit event
@@ -362,35 +272,35 @@ pub mod pallet {
 		// TODO: Update, the worker update progress / result of the processing
 	}
 
-	impl<T: Config<I>, I: 'static> Pallet<T, I> {
-		fn ensure_owner(who: &T::AccountId, worker: &T::AccountId) -> DispatchResult {
-			if let Some(worker_info) = T::WorkerManageable::worker_info(worker) {
-				ensure!(who == &worker_info.owner, Error::<T, I>::NotTheOwner);
-			} else {
-				return Err(Error::<T, I>::WorkerNotExists.into())
-			}
+	impl<T: Config> Pallet<T> {
+		fn ensure_worker(who: &T::AccountId) -> DispatchResult {
+			ensure!(T::WorkerManageable::worker_exists(who), Error::<T>::WorkerNotFound);
 
 			Ok(())
 		}
 
-		fn ensure_worker(who: &T::AccountId) -> DispatchResult {
-			ensure!(T::WorkerManageable::worker_exists(who), Error::<T, I>::WorkerNotExists);
+		fn ensure_owner(who: &T::AccountId, worker: &T::AccountId) -> DispatchResult {
+			if let Some(worker_info) = T::WorkerManageable::worker_info(worker) {
+				ensure!(who == &worker_info.owner, Error::<T>::NoPermission);
+			} else {
+				return Err(Error::<T>::WorkerNotFound.into())
+			}
 
 			Ok(())
 		}
 
 		fn ensure_worker_collection(
 			who: &T::AccountId,
-			collection_id: &CollectionIdOf<T, I>
+			collection_id: &T::NftCollectionId
 		) -> DispatchResult {
-			let details = Collection::<T, I>::get(collection_id).ok_or(pallet_nfts::Error::<T, I>::UnknownCollection)?;
+			Self::ensure_worker(who)?;
+
+			let Some(owner) = T::Nfts::collection_owner(collection_id) else {
+				return Err(Error::<T>::CollectionNotFound.into())
+			};
 			ensure!(
-				who == &details.owner,
-				pallet_nfts::Error::<T, I>::NoPermission
-			);
-			ensure!(
-				T::WorkerManageable::worker_exists(who),
-				Error::<T, I>::WorkerNotExists
+				who == &owner,
+				Error::<T>::NoPermission
 			);
 
 			Ok(())
@@ -398,21 +308,24 @@ pub mod pallet {
 
 		fn ensure_nft_owner(
 			who: &T::AccountId,
-			collection_id: &CollectionIdOf<T, I>,
-			item_id: &ItemIdOf<T, I>
+			collection_id: &T::NftCollectionId,
+			item_id: &T::NftItemId
 		) -> DispatchResult {
 			// Q: Do we need verify this is Worker's collection?
-			let details = Item::<T, I>::get(collection_id, item_id).ok_or(pallet_nfts::Error::<T, I>::UnknownItem)?;
+			let Some(owner) = T::Nfts::owner(collection_id, item_id) else {
+				return Err(Error::<T>::NoPermission.into())
+			};
+
 			ensure!(
-				who == &details.owner,
-				pallet_nfts::Error::<T, I>::NoPermission
+				who == &owner,
+				Error::<T>::NoPermission
 			);
 
 			Ok(())
 		}
 	}
 
-	impl<T: Config<I>, I: 'static> WorkerLifecycleHooks<T::AccountId> for Pallet<T, I> {
+	impl<T: Config> WorkerLifecycleHooks<T::AccountId> for Pallet<T> {
 		fn can_online(_worker: &T::AccountId, _payload: &OnlinePayload, _verified_attestation: &Option<VerifiedAttestation>) -> DispatchResult {
 			Ok(())
 		}

@@ -151,6 +151,11 @@ impl pallet_computing_workers::Config for Test {
 impl pallet_nft_computing::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WorkerManageable = ComputingWorkers;
+	type Currency = Balances;
+	type NftCollectionId = u32;
+	type NftItemId = u32;
+	type Nfts = Nfts;
+	type MetadataLimit = ConstU32<50>;
 }
 
 // Build genesis storage according to the mock runtime.

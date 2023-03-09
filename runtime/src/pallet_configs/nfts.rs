@@ -14,7 +14,7 @@ parameter_types! {
 	pub const MetadataDepositPerByte: Balance = 1 * UNITS;
 	pub const KeyLimit: u32 = 32;
 	pub const ValueLimit: u32 = 256;
-	pub const StringLimit: u32 = 50;
+	pub const StringLimit: u32 = 256;
 	pub const ApprovalsLimit: u32 = 20;
 	pub const ItemAttributesApprovalsLimit: u32 = 20;
 	pub const MaxTips: u32 = 10;
