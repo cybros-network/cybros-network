@@ -21,13 +21,14 @@ macro_rules! log {
 	};
 }
 
+// use sp_std::prelude::*;
 use sp_runtime::traits::Zero;
 use frame_support::{
 	traits::{
 		tokens::AttributeNamespace,
 		Currency, ExistenceRequirement,
 	},
-	BoundedVec,
+	BoundedVec, bounded_vec,
 };
 use pallet_computing_workers::{
 	traits::{WorkerLifecycleHooks, WorkerManageable},
@@ -37,7 +38,7 @@ use pallet_nfts::{
 	CollectionSettings, CollectionSetting, ItemSettings, ItemSetting,
 	ItemConfig, MintType, Incrementable,
 	CollectionRole, Attribute, AttributeDeposit, MintWitness, PalletAttributes,
-	Account,
+	Account, Collection, Item,
 };
 use primitives::NFTMintSettings;
 
@@ -75,7 +76,6 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use sp_std::prelude::*;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -293,6 +293,73 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		/// Burn, the NFT owner burn it to recycle deposits.
+		#[pallet::call_index(2)]
+		#[pallet::weight(0)]
+		pub fn burn(
+			origin: OriginFor<T>,
+			collection_id: CollectionIdOf<T, I>,
+			item_id: ItemIdOf<T, I>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			Self::ensure_nft_owner(&who, &collection_id, &item_id)?;
+
+			// TODO: Check status.
+			// Q: allow burn when the worker processing it?
+
+			// TODO: Burn
+			PalletNFT::<T, I>::do_burn(
+			collection_id,
+			item_id,
+			|details| {
+				// TODO: it seems we don't need to check permission here, in some case (e.g. expired job), anyone can burn it.
+				let is_admin = PalletNFT::<T, I>::has_role(&collection_id, &who, CollectionRole::Admin);
+				let is_permitted = is_admin || details.owner == who;
+				ensure!(is_permitted, pallet_nfts::Error::<T, I>::NoPermission);
+				ensure!(
+					who == details.owner,
+					pallet_nfts::Error::<T, I>::WrongOwner
+				);
+				Ok(())
+			})?;
+
+			// TODO: deposit event
+
+			Ok(())
+		}
+
+		/// Approve, the worker validated the NFT metadata, and start to process it
+		#[pallet::call_index(3)]
+		#[pallet::weight(0)]
+		pub fn approve(
+			origin: OriginFor<T>,
+			collection_id: CollectionIdOf<T, I>,
+			item_id: ItemIdOf<T, I>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			Self::ensure_worker_collection(&who, &collection_id)?;
+
+			// TODO: Performance can be improved
+			// TODO: Make a constant for key
+			// TODO: the value frame_system::Pallet::<T>::block_number()
+			PalletNFT::<T, I>::do_set_attribute(
+				who.clone(),
+				collection_id,
+				Some(item_id.into()),
+				AttributeNamespace::<T::AccountId>::CollectionOwner,
+				bounded_vec![0],
+				bounded_vec![1],
+				who.clone(),
+			)?;
+
+			// TODO: deposit event
+
+			Ok(())
+		}
+
+		// TODO: Reject, the worker can't verify the NFT metadata
+		// TODO: Update, the worker update progress / result of the processing
 	}
 
 	impl<T: Config<I>, I: 'static> Pallet<T, I> {
@@ -308,6 +375,38 @@ pub mod pallet {
 
 		fn ensure_worker(who: &T::AccountId) -> DispatchResult {
 			ensure!(T::WorkerManageable::worker_exists(who), Error::<T, I>::WorkerNotExists);
+
+			Ok(())
+		}
+
+		fn ensure_worker_collection(
+			who: &T::AccountId,
+			collection_id: &CollectionIdOf<T, I>
+		) -> DispatchResult {
+			let details = Collection::<T, I>::get(collection_id).ok_or(pallet_nfts::Error::<T, I>::UnknownCollection)?;
+			ensure!(
+				who == &details.owner,
+				pallet_nfts::Error::<T, I>::NoPermission
+			);
+			ensure!(
+				T::WorkerManageable::worker_exists(who),
+				Error::<T, I>::WorkerNotExists
+			);
+
+			Ok(())
+		}
+
+		fn ensure_nft_owner(
+			who: &T::AccountId,
+			collection_id: &CollectionIdOf<T, I>,
+			item_id: &ItemIdOf<T, I>
+		) -> DispatchResult {
+			// Q: Do we need verify this is Worker's collection?
+			let details = Item::<T, I>::get(collection_id, item_id).ok_or(pallet_nfts::Error::<T, I>::UnknownItem)?;
+			ensure!(
+				who == &details.owner,
+				pallet_nfts::Error::<T, I>::NoPermission
+			);
 
 			Ok(())
 		}
