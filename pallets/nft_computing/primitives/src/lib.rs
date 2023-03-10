@@ -33,5 +33,35 @@ impl<Price, BlockNumber, CollectionId> Default for NftMintSettings<Price, BlockN
 
 #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum NftItemAttributeKey {
-	Validated
+	AcquiredBy,
+	Status,
+	Result,
+	Output,
+	CreatedAt,
+	AcquiredAt,
+	RejectedAt,
+	ProcessingAt,
+	ProcessedAt,
+}
+
+#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum NftItemStatus {
+	/// Initial status, the item is pending to be processed
+	Pending,
+	/// Ending status, the worker reject to process the item, maybe the metadata is invalid.
+	Rejected,
+	/// The worker is processing the item
+	Processing,
+	/// Ending status, the worker processed the item
+	Processed,
+}
+
+#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum NftItemResult {
+	///  and report success
+	Success,
+	/// Ending status, the worker processed the item and report failed
+	Failed,
+	/// Ending status, the worker processed the item and report success
+	Errored,
 }

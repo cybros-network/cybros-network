@@ -156,6 +156,7 @@ impl pallet_nft_computing::Config for Test {
 	type NftItemId = u32;
 	type Nfts = Nfts;
 	type MetadataLimit = ConstU32<50>;
+	type OutputLimit = ConstU32<50>;
 }
 
 // Build genesis storage according to the mock runtime.

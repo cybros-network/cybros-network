@@ -40,7 +40,7 @@ use pallet_nfts::{
 	CollectionSettings, CollectionSetting, ItemSettings, ItemSetting,
 	ItemConfig, Incrementable, CollectionConfig,
 };
-use primitives::{NftMintSettings, NftItemAttributeKey};
+use primitives::{NftMintSettings, NftItemAttributeKey, NftItemStatus, NftItemResult};
 
 pub type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -99,9 +99,13 @@ pub mod pallet {
 			Self::AccountId, ItemConfig
 		>;
 
-		/// The maximum length of data stored on-chain.
+		/// The maximum length of metadata stored on-chain.
 		#[pallet::constant]
 		type MetadataLimit: Get<u32>;
+
+		/// The maximum length of processed output stored on-chain.
+		#[pallet::constant]
+		type OutputLimit: Get<u32>;
 	}
 
 	#[pallet::event]
@@ -168,7 +172,7 @@ pub mod pallet {
 			let collection_id =
 				T::Nfts::create_collection(&worker, &worker, &collection_config)?;
 
-			// TODO: remove this, just a test
+			// TODO: remove this later, it just a test
 			Self::deposit_event(Event::CollectionCreated { worker: worker.clone(), collection_id });
 
 			Ok(())
@@ -208,6 +212,20 @@ pub mod pallet {
 				&metadata
 			)?;
 
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemStatus>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::Status,
+				&NftItemStatus::Pending
+			)?;
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, T::BlockNumber>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::CreatedAt,
+				&frame_system::Pallet::<T>::block_number()
+			)?;
+			// TODO: maybe more attributes? e.g. expires_at
+
 			let next_collection_item_id = item_id.increment();
 			NextCollectionItemId::<T>::insert(&collection_id, next_collection_item_id);
 
@@ -229,6 +247,7 @@ pub mod pallet {
 
 			// TODO: Check status.
 			// Q: allow burn when the worker processing it?
+			// TODO: Handle when processing
 
 			// TODO: some case we should allow non-owner burn the item.
 			T::Nfts::burn(
@@ -242,10 +261,13 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Approve, the worker validated the NFT metadata, and start to process it
+		/// Acquire, the worker acquire a NFT, other workers will not attempt it
+		/// Currently the collection only have one worker, so this step actually is unnecessary,
+		/// but I still make the step, I should keep in mind in a same block many works would try to
+		/// acquire an item, that's should be avoid
 		#[pallet::call_index(3)]
 		#[pallet::weight(0)]
-		pub fn approve(
+		pub fn acquire(
 			origin: OriginFor<T>,
 			collection_id: T::NftCollectionId,
 			item_id: T::NftItemId,
@@ -254,12 +276,79 @@ pub mod pallet {
 			Self::ensure_worker_collection(&who, &collection_id)?;
 
 			// TODO: Performance can be improved
-			// TODO: Make a constant for key
-			// TODO: the value frame_system::Pallet::<T>::block_number()
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, T::AccountId>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::AcquiredBy,
+				&who
+			)?;
 			T::Nfts::set_typed_attribute::<NftItemAttributeKey, T::BlockNumber>(
 				&collection_id,
 				&item_id,
-				&NftItemAttributeKey::Validated,
+				&NftItemAttributeKey::AcquiredAt,
+				&frame_system::Pallet::<T>::block_number()
+			)?;
+
+			// TODO: Make a storage that store the worker acquired items
+			// TODO: Add a constant for a worker maximum amount of acquired items
+
+			// TODO: deposit event
+
+			Ok(())
+		}
+
+		#[pallet::call_index(4)]
+		#[pallet::weight(0)]
+		pub fn reject(
+			origin: OriginFor<T>,
+			collection_id: T::NftCollectionId,
+			item_id: T::NftItemId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			Self::ensure_worker_collection(&who, &collection_id)?;
+
+			// TODO: Performance can be improved
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemStatus>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::Status,
+				&NftItemStatus::Rejected
+			)?;
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, T::BlockNumber>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::RejectedAt,
+				&frame_system::Pallet::<T>::block_number()
+			)?;
+
+			// TODO: Release acquired
+
+			// TODO: deposit event
+
+			Ok(())
+		}
+
+		#[pallet::call_index(5)]
+		#[pallet::weight(0)]
+		pub fn processing(
+			origin: OriginFor<T>,
+			collection_id: T::NftCollectionId,
+			item_id: T::NftItemId
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			Self::ensure_worker_collection(&who, &collection_id)?;
+
+			// TODO: Performance can be improved
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemStatus>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::Status,
+				&NftItemStatus::Processing
+			)?;
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, T::BlockNumber>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::ProcessingAt,
 				&frame_system::Pallet::<T>::block_number()
 			)?;
 
@@ -268,8 +357,50 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO: Reject, the worker can't verify the NFT metadata
-		// TODO: Update, the worker update progress / result of the processing
+		#[pallet::call_index(6)]
+		#[pallet::weight(0)]
+		pub fn processed(
+			origin: OriginFor<T>,
+			collection_id: T::NftCollectionId,
+			item_id: T::NftItemId,
+			result: NftItemResult,
+			output: BoundedVec<u8, T::OutputLimit>
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			Self::ensure_worker_collection(&who, &collection_id)?;
+
+			// TODO: Performance can be improved
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemStatus>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::Status,
+				&NftItemStatus::Processed
+			)?;
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, T::BlockNumber>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::ProcessedAt,
+				&frame_system::Pallet::<T>::block_number()
+			)?;
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemResult>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::Result,
+				&result
+			)?;
+			T::Nfts::set_typed_attribute::<NftItemAttributeKey, Vec<u8>>(
+				&collection_id,
+				&item_id,
+				&NftItemAttributeKey::Output,
+				&output
+			)?;
+
+			// TODO: Release acquired
+
+			// TODO: deposit event
+
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
