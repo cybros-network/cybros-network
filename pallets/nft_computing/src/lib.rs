@@ -125,6 +125,7 @@ pub mod pallet {
 		ItemNotFound,
 		NoPermission,
 		WorkerAcquiredItemsExceeded,
+		ItemStatusUnexpected,
 	}
 
 	/// Stores the `CollectionId` that is going to be used for the next collection.
@@ -274,7 +275,7 @@ pub mod pallet {
 			// Q: allow burn when the worker processing it?
 			// TODO: Handle when processing
 
-			if let Some(item) = T::Nfts::typed_attribute::<NftItemAttributeKey, T::AccountId>(&collection_id, &item_id, &NftItemAttributeKey::AcquiredBy) {
+			if let Some(item) = T::Nfts::typed_system_attribute::<NftItemAttributeKey, T::AccountId>(&collection_id, &item_id, &NftItemAttributeKey::AcquiredBy) {
 				let worker_acquired_items_count = WorkerAcquiredItemsCounter::<T>::get(&item);
 				WorkerAcquiredItemsCounter::<T>::insert(&who, worker_acquired_items_count - 1);
 			}
@@ -340,6 +341,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::ensure_item_acquirer(&who, &collection_id, &item_id)?;
+			Self::ensure_item_status(&collection_id, &item_id, NftItemStatus::Pending)?;
 
 			// TODO: Performance can be improved
 			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemStatus>(
@@ -372,6 +374,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::ensure_item_acquirer(&who, &collection_id, &item_id)?;
+			Self::ensure_item_status(&collection_id, &item_id, NftItemStatus::Pending)?;
 
 			// TODO: Performance can be improved
 			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemStatus>(
@@ -403,6 +406,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::ensure_item_acquirer(&who, &collection_id, &item_id)?;
+			Self::ensure_item_status(&collection_id, &item_id, NftItemStatus::Processing)?;
 
 			// TODO: Performance can be improved
 			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemStatus>(
@@ -496,10 +500,10 @@ pub mod pallet {
 			collection_id: &T::NftCollectionId,
 			item_id: &T::NftItemId
 		) -> DispatchResult {
-			Self::ensure_worker(who)?; // This can be simplified
+			Self::ensure_worker(who)?; // This can be skipped
 
 			let Some(acquirer) =
-				T::Nfts::typed_attribute::<NftItemAttributeKey, T::AccountId>(
+				T::Nfts::typed_system_attribute::<NftItemAttributeKey, T::AccountId>(
 					collection_id, item_id, &NftItemAttributeKey::AcquiredBy
 				) else {
 				return Err(Error::<T>::NoPermission.into())
@@ -508,6 +512,26 @@ pub mod pallet {
 			ensure!(
 				who == &acquirer,
 				Error::<T>::NoPermission
+			);
+
+			Ok(())
+		}
+
+		fn ensure_item_status(
+			collection_id: &T::NftCollectionId,
+			item_id: &T::NftItemId,
+			expect_status: NftItemStatus
+		) -> DispatchResult {
+			let Some(status) =
+				T::Nfts::typed_system_attribute::<NftItemAttributeKey, NftItemStatus>(
+					collection_id, item_id, &NftItemAttributeKey::Status
+				) else {
+				return Err(Error::<T>::ItemStatusUnexpected.into())
+			};
+
+			ensure!(
+				expect_status == status,
+				Error::<T>::ItemStatusUnexpected
 			);
 
 			Ok(())

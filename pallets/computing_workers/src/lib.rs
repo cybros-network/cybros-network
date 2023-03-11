@@ -127,24 +127,24 @@ mod pallet {
 
 	/// Storage for worker's implementations permission.
 	#[pallet::storage]
-	pub(crate) type WorkerImplPermissions<T: Config> = StorageMap<_, Identity, WorkerImplName, WorkerImplPermission>;
+	pub(crate) type WorkerImplPermissions<T: Config> = StorageMap<_, Blake2_128Concat, WorkerImplName, WorkerImplPermission>;
 
 	/// Storage for worker's implementations' hashes.
 	#[pallet::storage]
 	pub(crate) type WorkerImplHashes<T: Config> =
-		StorageDoubleMap<_, Identity, WorkerImplName, Identity, WorkerImplVersion, WorkerImplHash>;
+		StorageDoubleMap<_, Blake2_128Concat, WorkerImplName, Blake2_128Concat, WorkerImplVersion, WorkerImplHash>;
 
 	/// Storage for computing_workers.
 	#[pallet::storage]
-	pub(crate) type Workers<T: Config> = CountedStorageMap<_, Identity, T::AccountId, WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>>;
+	pub(crate) type Workers<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::AccountId, WorkerInfo<T::AccountId, BalanceOf<T>, T::BlockNumber>>;
 
 	/// Storage for flip set, this is for online checking
 	#[pallet::storage]
-	pub(crate) type FlipSet<T: Config> = CountedStorageMap<_, Identity, T::AccountId, T::BlockNumber>;
+	pub(crate) type FlipSet<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::AccountId, T::BlockNumber>;
 
 	/// Storage for flop set, this is for online checking
 	#[pallet::storage]
-	pub(crate) type FlopSet<T: Config> = CountedStorageMap<_, Identity, T::AccountId, T::BlockNumber>;
+	pub(crate) type FlopSet<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::AccountId, T::BlockNumber>;
 
 	/// Storage for stage of flip-flop, this is used for online checking
 	#[pallet::storage]
