@@ -1,5 +1,5 @@
 use crate::*;
-use sp_core::{ConstU32, ConstU64};
+use frame_support::traits::{ConstU32, ConstU64};
 
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;

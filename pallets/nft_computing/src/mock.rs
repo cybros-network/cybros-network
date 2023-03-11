@@ -155,6 +155,7 @@ impl pallet_nft_computing::Config for Test {
 	type NftCollectionId = u32;
 	type NftItemId = u32;
 	type Nfts = Nfts;
+	type MaxAcquiredItemsPerWorker = ConstU32<8>;
 	type MetadataLimit = ConstU32<50>;
 	type OutputLimit = ConstU32<50>;
 }

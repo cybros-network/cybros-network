@@ -1,7 +1,6 @@
 use crate::*;
-use frame_support::{parameter_types, weights::IdentityFee};
+use frame_support::{parameter_types, weights::IdentityFee, traits::ConstU8};
 use pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter};
-use sp_core::ConstU8;
 
 parameter_types! {
 	pub FeeMultiplier: Multiplier = Multiplier::one();

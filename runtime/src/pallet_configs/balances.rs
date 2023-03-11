@@ -1,5 +1,5 @@
 use crate::*;
-use sp_core::{ConstU128, ConstU32};
+use frame_support::traits::{ConstU128, ConstU32};
 
 impl pallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.

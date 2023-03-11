@@ -99,6 +99,9 @@ pub mod pallet {
 			Self::AccountId, ItemConfig
 		>;
 
+		#[pallet::constant]
+		type MaxAcquiredItemsPerWorker: Get<u32>;
+
 		/// The maximum length of metadata stored on-chain.
 		#[pallet::constant]
 		type MetadataLimit: Get<u32>;
@@ -121,6 +124,7 @@ pub mod pallet {
 		CollectionNotFound,
 		ItemNotFound,
 		NoPermission,
+		WorkerAcquiredItemsExceeded,
 	}
 
 	/// Stores the `CollectionId` that is going to be used for the next collection.
@@ -135,6 +139,16 @@ pub mod pallet {
 			OptionQuery,
 		>;
 
+	#[pallet::storage]
+	pub type WorkerAcquiredItemsCounter<T: Config> =
+		StorageMap<
+			_,
+			Blake2_128Concat,
+			T::AccountId,
+			u32,
+			ValueQuery
+		>;
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
@@ -142,10 +156,13 @@ pub mod pallet {
 		pub fn create_collection(
 			origin: OriginFor<T>,
 			worker: T::AccountId,
-			mint_settings: NftMintSettings<BalanceOf<T>, T::BlockNumber, T::NftCollectionId>
+			mint_settings: NftMintSettings<BalanceOf<T>, T::BlockNumber, T::NftCollectionId>,
+			metadata: BoundedVec<u8, T::MetadataLimit>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::ensure_owner(&who, &worker)?;
+
+			// TODO: I'm thinking the worker shouldn't be the owner, maybe admin role
 
 			let collection_config = CollectionConfigOf::<T> {
 				settings: CollectionSettings::from_disabled(
@@ -171,6 +188,14 @@ pub mod pallet {
 			// TODO: I'm thinking the owner should be the pallet account
 			let collection_id =
 				T::Nfts::create_collection(&worker, &worker, &collection_config)?;
+
+			// TODO: need add `maybe_depositor` or something, or it won't reserve money !!!
+			let metadata_key = Vec::<u8>::default();
+			T::Nfts::set_collection_attribute(
+				&collection_id,
+				&metadata_key,
+				&metadata
+			)?;
 
 			// TODO: remove this later, it just a test
 			Self::deposit_event(Event::CollectionCreated { worker: worker.clone(), collection_id });
@@ -249,7 +274,11 @@ pub mod pallet {
 			// Q: allow burn when the worker processing it?
 			// TODO: Handle when processing
 
-			// TODO: some case we should allow non-owner burn the item.
+			if let Some(item) = T::Nfts::typed_attribute::<NftItemAttributeKey, T::AccountId>(&collection_id, &item_id, &NftItemAttributeKey::AcquiredBy) {
+				let worker_acquired_items_count = WorkerAcquiredItemsCounter::<T>::get(&item);
+				WorkerAcquiredItemsCounter::<T>::insert(&who, worker_acquired_items_count - 1);
+			}
+
 			T::Nfts::burn(
 				&collection_id,
 				&item_id,
@@ -275,6 +304,12 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 			Self::ensure_worker_collection(&who, &collection_id)?;
 
+			let worker_acquired_items_count = WorkerAcquiredItemsCounter::<T>::get(&who);
+			ensure!(
+				worker_acquired_items_count <= T::MaxAcquiredItemsPerWorker::get(),
+				Error::<T>::WorkerAcquiredItemsExceeded
+			);
+
 			// TODO: Performance can be improved
 			T::Nfts::set_typed_attribute::<NftItemAttributeKey, T::AccountId>(
 				&collection_id,
@@ -289,8 +324,7 @@ pub mod pallet {
 				&frame_system::Pallet::<T>::block_number()
 			)?;
 
-			// TODO: Make a storage that store the worker acquired items
-			// TODO: Add a constant for a worker maximum amount of acquired items
+			WorkerAcquiredItemsCounter::<T>::insert(&who, worker_acquired_items_count + 1);
 
 			// TODO: deposit event
 
@@ -305,7 +339,7 @@ pub mod pallet {
 			item_id: T::NftItemId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			Self::ensure_worker_collection(&who, &collection_id)?;
+			Self::ensure_item_acquirer(&who, &collection_id, &item_id)?;
 
 			// TODO: Performance can be improved
 			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemStatus>(
@@ -321,7 +355,8 @@ pub mod pallet {
 				&frame_system::Pallet::<T>::block_number()
 			)?;
 
-			// TODO: Release acquired
+			let worker_acquired_items_count = WorkerAcquiredItemsCounter::<T>::get(&who);
+			WorkerAcquiredItemsCounter::<T>::insert(&who, worker_acquired_items_count - 1);
 
 			// TODO: deposit event
 
@@ -336,7 +371,7 @@ pub mod pallet {
 			item_id: T::NftItemId
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			Self::ensure_worker_collection(&who, &collection_id)?;
+			Self::ensure_item_acquirer(&who, &collection_id, &item_id)?;
 
 			// TODO: Performance can be improved
 			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemStatus>(
@@ -367,7 +402,7 @@ pub mod pallet {
 			output: BoundedVec<u8, T::OutputLimit>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			Self::ensure_worker_collection(&who, &collection_id)?;
+			Self::ensure_item_acquirer(&who, &collection_id, &item_id)?;
 
 			// TODO: Performance can be improved
 			T::Nfts::set_typed_attribute::<NftItemAttributeKey, NftItemStatus>(
@@ -395,7 +430,8 @@ pub mod pallet {
 				&output
 			)?;
 
-			// TODO: Release acquired
+			let worker_acquired_items_count = WorkerAcquiredItemsCounter::<T>::get(&who);
+			WorkerAcquiredItemsCounter::<T>::insert(&who, worker_acquired_items_count - 1);
 
 			// TODO: deposit event
 
@@ -449,6 +485,28 @@ pub mod pallet {
 
 			ensure!(
 				who == &owner,
+				Error::<T>::NoPermission
+			);
+
+			Ok(())
+		}
+
+		fn ensure_item_acquirer(
+			who: &T::AccountId,
+			collection_id: &T::NftCollectionId,
+			item_id: &T::NftItemId
+		) -> DispatchResult {
+			Self::ensure_worker(who)?; // This can be simplified
+
+			let Some(acquirer) =
+				T::Nfts::typed_attribute::<NftItemAttributeKey, T::AccountId>(
+					collection_id, item_id, &NftItemAttributeKey::AcquiredBy
+				) else {
+				return Err(Error::<T>::NoPermission.into())
+			};
+
+			ensure!(
+				who == &acquirer,
 				Error::<T>::NoPermission
 			);
 

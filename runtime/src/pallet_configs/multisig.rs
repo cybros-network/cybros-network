@@ -1,6 +1,5 @@
 use crate::*;
-use frame_support::parameter_types;
-use sp_core::ConstU32;
+use frame_support::{parameter_types, traits::ConstU32};
 
 parameter_types! {
 	// One storage item; key size is 32; value is size 4+4+16+32 bytes = 56 bytes.

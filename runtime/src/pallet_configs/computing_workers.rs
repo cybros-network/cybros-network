@@ -1,6 +1,6 @@
 use crate::*;
 use frame_system::EnsureRoot;
-use sp_core::{ConstBool, ConstU128, ConstU32};
+use frame_support::traits::{ConstBool, ConstU128, ConstU32};
 
 impl pallet_computing_workers::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;

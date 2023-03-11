@@ -1,6 +1,5 @@
 use crate::*;
-use frame_support::parameter_types;
-use sp_core::ConstU32;
+use frame_support::{parameter_types, traits::ConstU32};
 use sp_runtime::traits::BlakeTwo256;
 
 parameter_types! {
