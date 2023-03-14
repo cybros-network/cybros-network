@@ -12,6 +12,6 @@ services:
     volumes:
       - ./data:/data
     command:
-      - "--chain=local"
+      - "--chain=dev"
       - "--rpc-external"
       - "--ws-external"
