@@ -37,6 +37,11 @@ pub trait WorkerLifecycleHooks<AccountId> {
 	/// can use for add additional business logic, e.g. stop assigning job
 	fn after_requesting_offline(worker: &AccountId);
 
+	/// A hook for checking the worker whether can deregister,
+	/// can use for add extra conditions check,
+	/// if returns error (e.g. still have job running), the worker will not be deregistered
+	fn can_deregister(worker: &AccountId) -> bool;
+
 	/// A hook before the worker deregister
 	fn before_deregister(worker: &AccountId);
 }
@@ -64,6 +69,10 @@ impl<AccountId> WorkerLifecycleHooks<AccountId> for () {
 
 	fn after_requesting_offline(_: &AccountId) {
 		// Do nothing
+	}
+
+	fn can_deregister(_: &AccountId) -> bool {
+		true
 	}
 
 	fn before_deregister(_: &AccountId) {

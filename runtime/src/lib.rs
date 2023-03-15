@@ -25,7 +25,6 @@ use sp_version::RuntimeVersion;
 use frame_support::{
 	construct_runtime,
 	traits::{
-		tokens::nonfungibles_v2::Inspect,
 		Contains, InstanceFilter, WithdrawReasons
 	},
 	weights::Weight,
@@ -36,8 +35,8 @@ use pallet_grandpa::AuthorityId as GrandpaId;
 use pallet_transaction_payment::Multiplier;
 
 use runtime_primitives::constants::{
-	currency::{deposit, EXISTENTIAL_DEPOSIT, UNITS},
-	time::{SLOT_DURATION, DAYS},
+	currency::{deposit, EXISTENTIAL_DEPOSIT, UNITS, CENTS},
+	time::SLOT_DURATION,
 	weight::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO},
 };
 
@@ -189,12 +188,9 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment = 61,
 		Vesting: pallet_vesting = 62,
 
-		// NFT
-		Nfts: pallet_nfts = 80,
-
 		// The main stage
 		ComputingWorkers: pallet_computing_workers = 100,
-		NftComputing: pallet_nft_computing = 101,
+		PoolComputing: pallet_pool_computing = 101,
 
 		// Non-permanent
 		Sudo: pallet_sudo = 255,
@@ -219,6 +215,14 @@ impl_runtime_apis! {
 	impl sp_api::Metadata<Block> for Runtime {
 		fn metadata() -> OpaqueMetadata {
 			OpaqueMetadata::new(Runtime::metadata().into())
+		}
+
+		fn metadata_at_version(version: u32) -> Option<OpaqueMetadata> {
+			Runtime::metadata_at_version(version)
+		}
+
+		fn metadata_versions() -> sp_std::vec::Vec<u32> {
+			Runtime::metadata_versions()
 		}
 	}
 
@@ -361,50 +365,6 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_nfts_runtime_api::NftsApi<Block, AccountId, u32, u32> for Runtime {
-		fn owner(collection: u32, item: u32) -> Option<AccountId> {
-			<Nfts as Inspect<AccountId>>::owner(&collection, &item)
-		}
-
-		fn collection_owner(collection: u32) -> Option<AccountId> {
-			<Nfts as Inspect<AccountId>>::collection_owner(&collection)
-		}
-
-		fn attribute(
-			collection: u32,
-			item: u32,
-			key: Vec<u8>,
-		) -> Option<Vec<u8>> {
-			<Nfts as Inspect<AccountId>>::attribute(&collection, &item, &key)
-		}
-
-		fn custom_attribute(
-			account: AccountId,
-			collection: u32,
-			item: u32,
-			key: Vec<u8>,
-		) -> Option<Vec<u8>> {
-			<Nfts as Inspect<AccountId>>::custom_attribute(
-				&account,
-				&collection,
-				&item,
-				&key,
-			)
-		}
-
-		fn system_attribute(
-			collection: u32,
-			item: u32,
-			key: Vec<u8>,
-		) -> Option<Vec<u8>> {
-			<Nfts as Inspect<AccountId>>::system_attribute(&collection, &item, &key)
-		}
-
-		fn collection_attribute(collection: u32, key: Vec<u8>) -> Option<Vec<u8>> {
-			<Nfts as Inspect<AccountId>>::collection_attribute(&collection, &key)
-		}
-	}
-
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (
@@ -491,7 +451,6 @@ mod benches {
 		[pallet_multisig, Multisig]
 		[pallet_balances, Balances]
 		[pallet_vesting, Vesting]
-		[pallet_nfts, Nfts]
 		[pallet_computing_workers, ComputingWorkers]
 	);
 }

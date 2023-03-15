@@ -17,8 +17,5 @@ impl pallet_computing_workers::Config for Runtime {
 	type ValidateWorkerImplHash = ConstBool<false>;
 	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
 	type WeightInfo = pallet_computing_workers::weights::SubstrateWeight<Runtime>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type WorkerLifecycleHooks = NftComputing;
-	#[cfg(feature = "runtime-benchmarks")]
-	type WorkerLifecycleHooks = ();
+	type WorkerLifecycleHooks = PoolComputing;
 }

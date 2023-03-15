@@ -54,11 +54,8 @@ pallet-vesting = { git = "https://github.com/paritytech/substrate", branch = "ma
 
 pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
-pallet-nfts = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-pallet-nfts-runtime-api = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-
 pallet-computing_workers = { path = "../pallets/computing_workers", default-features = false }
-pallet-nft_computing = { path = "../pallets/nft_computing", default-features = false }
+pallet-pool_computing = { path = "../pallets/pool_computing", default-features = false }
 
 # Local Dependencies
 runtime-primitives = { package = "cybros-primal-runtime-primitives", path = "primitives", default-features = false }
@@ -105,10 +102,8 @@ std = [
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-vesting/std",
 	"pallet-sudo/std",
-	"pallet-nfts/std",
-	"pallet-nfts-runtime-api/std",
 	"pallet-computing_workers/std",
-	"pallet-nft_computing/std",
+	"pallet-pool_computing/std",
 ]
 runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
@@ -123,7 +118,6 @@ runtime-benchmarks = [
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-vesting/runtime-benchmarks",
-	"pallet-nfts/runtime-benchmarks",
 	"pallet-computing_workers/runtime-benchmarks",
 ]
 try-runtime = [
@@ -142,7 +136,6 @@ try-runtime = [
 	"pallet-transaction-payment/try-runtime",
 	"pallet-vesting/try-runtime",
 	"pallet-sudo/try-runtime",
-	"pallet-nfts/try-runtime",
 	"pallet-computing_workers/try-runtime",
-	"pallet-nft_computing/try-runtime",
+	"pallet-pool_computing/try-runtime",
 ]

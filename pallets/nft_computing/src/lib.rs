@@ -563,6 +563,10 @@ pub mod pallet {
 			// Nothing to do
 		}
 
+		fn can_deregister(_worker: &T::AccountId) -> bool {
+			true
+		}
+
 		fn before_deregister(_worker: &T::AccountId) {
 			// Nothing to do
 		}

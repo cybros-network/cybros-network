@@ -3,11 +3,13 @@ import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
 import { copySync } from "https://deno.land/std/fs/mod.ts";
 
-import { BN, hexToU8a, isHex, u8aToHex, u8aToString, hexToString } from "https://deno.land/x/polkadot/util/mod.ts";
+import { BN, hexToU8a, isHex, u8aToHex, u8aToString } from "https://deno.land/x/polkadot/util/mod.ts";
 import { cryptoWaitReady, mnemonicGenerate } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import { KeyringPair } from "https://deno.land/x/polkadot/keyring/types.ts";
 import { ApiPromise, HttpProvider, Keyring, WsProvider } from "https://deno.land/x/polkadot/api/mod.ts";
 import { Application, Router } from "https://deno.land/x/oak/mod.ts";
+
+import { AnyJson } from "https://deno.land/x/polkadot/types-codec/types/helpers.ts";
 
 const APP_NAME = "Research computing worker";
 const APP_VERSION = "v0.0.1-dev";
@@ -24,6 +26,7 @@ const parsedArgs = parse(Deno.args, {
     "ownerPhrase": "owner-phrase",
     "refreshAttestationInterval": "refresh-attestation-interval",
     "noHeartbeat": "no-heartbeat",
+    "subscribePool": "subscribe-pool",
   },
   boolean: [
     "help",
@@ -36,6 +39,7 @@ const parsedArgs = parse(Deno.args, {
     "port",
     "workPath",
     "ownerPhrase",
+    "subscribePool",
   ],
   default: {
     rpcUrl: "ws://127.0.0.1:9944",
@@ -79,8 +83,8 @@ ${APP_NAME} implementation in Deno.
 Warning: This is just a prototype implementation,
          in final product, it should be protected by TEE (Trusted Execution Environment) technology,
          which means the app's memories, instructions, and persists data will encrypt by CPU, and only the exact CPU can load them.
-         Job deployers' can get an attestation for their job is running in a TEE.
-         Without TEE protection, bad job may harm your OS, or you may discover sensitive data,
+         Task deployers' can get an attestation for their task is running in a TEE.
+         Without TEE protection, bad task may harm your OS, or you may discover sensitive data,
          so PLEASE DO NOT USE FOR PRODUCTION.
          `.trim());
 }
@@ -214,14 +218,20 @@ function createSubstrateApi(rpcUrl: string): ApiPromise | null {
         attestation_method: "Option<AttestationMethod>",
         attested_at: "BlockNumber",
       },
-      JobResult: {
+      ChainStoredData: {
+        depositor: "AccountId",
+        actual_deposit: "Balance",
+        surplus_deposit: "Balance",
+        data: "BoundedVec<u8, 2048>",
+      },
+      TaskResult: {
         _enum: [
           "Success",
           "Failed",
           "Errored",
         ],
       },
-      JobOutput: "BoundedVec<u8, 128000>"
+      TaskOutput: "BoundedVec<u8, 2048>"
     },
   });
 }
@@ -249,12 +259,10 @@ enum FlipFlopStage {
   // FlopToFlip = "FlopToFlip",
 }
 
-enum JobStatus {
-  Created = "Created",
-  Started = "Started",
-  Completed = "Completed",
-  // Timeout = "Timeout",
-  // Cancelled = "Cancelled",
+enum TaskStatus {
+  Pending = "Pending",
+  Processing = "Processing",
+  Processed = "Processed",
 }
 
 function numberToBalance(value: BN | string | number) {
@@ -269,90 +277,89 @@ function balanceToNumber(value: BN | string) {
   return bnValue.div(bn1e9).toNumber() / 1e3;
 }
 
-async function handleJob() {
+async function handleTask() {
   const logger = log.getLogger("background");
   const api = window.substrateApi;
-  const job = window.locals.currentJob;
+  const task = window.locals.currentTask;
 
-  if (job.status === JobStatus.Started && window.locals.sentCompleteJobAt) {
-    logger.debug("Waiting complete job extrinsic finalize");
+  if (task.status === TaskStatus.Processing && window.locals.sentProcessedTaskAt) {
+    logger.debug("Waiting processed task extrinsic finalize");
 
     return;
   }
 
   // TODO: Handle timeout or canceled
 
-  if (window.locals.runningJob) {
-    console.log("Job is running...");
+  if (window.locals.runningTask) {
+    console.log("Task is running...");
     return;
   }
 
-  if (job.status === JobStatus.Created) {
-    if (window.locals.sentStartJobAt && window.locals.sentStartJobAt >= window.finalizedBlockNumber) {
-      logger.debug("Waiting start job extrinsic finalize");
+  if (task.status === TaskStatus.Pending) {
+    if (window.locals.sentTakeTaskAt && window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
+      logger.debug("Waiting take task extrinsic finalize");
 
       return;
     }
 
-    logger.info("new job incoming");
+    logger.info("new task incoming");
 
-    logger.info(`Sending "simple_computing.start_job()`);
-    const txPromise = api.tx.simpleComputing.startJob();
+    logger.info(`Sending "pool_computing.take_task(${window.subscribePool}, ${task.id})`);
+    const txPromise = api.tx.poolComputing.takeTask(window.subscribePool, task.id);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
     // TODO: Catch whether failed
 
-    window.locals.sentStartJobAt = window.latestBlockNumber;
+    window.locals.sentTakeTaskAt = window.latestBlockNumber;
 
     return;
   }
 
-  if (job.status === JobStatus.Started && window.locals.sentStartJobAt !== undefined) {
-    window.locals.sentStartJobAt = undefined;
+  if (task.status === TaskStatus.Processing && window.locals.sentTakeTaskAt !== undefined) {
+    window.locals.sentTakeTaskAt = undefined;
   }
 
-  // TODO: This is only a demo, the job should fetch from the chain
+  // TODO: This is only a demo, the task should fetch from the chain
   // Basically I'm thinking
-  // - People can upload job executables to the chain, maybe seal in a NFT
-  // - The job executable should be a single file, normally it should be a compiled JS, maybe we should support tarball as well?
-  // - Requires a validation for deployed job executable, the entry must be `main.js` or `main.ts`
+  // - People can upload task executables to the chain, maybe seal in a NFT
+  // - The task executable should be a single file, normally it should be a compiled JS, maybe we should support tarball as well?
+  // - Requires a validation for deployed task executable, the entry must be `main.js` or `main.ts`
   // - Some way to deploy to workers
-  // - Job should has an unique JID
-  // - Job should has a hard timeout, and (MAYBE) should keeping report when processing the job
-  // - Job should has a metadata, for permission controls and declaration resources
-  // - Copy the job executable to `tmp/${JID}/`
-  // - Run the job in `tmp/${JID}/`, the job executable has full control of the directory (but it should have hard limit)
+  // - Task should has an unique JID
+  // - Task should has a hard timeout, and (MAYBE) should keeping report when processing the task
+  // - Task should has a metadata, for permission controls and declaration resources
+  // - Copy the task executable to `tmp/${TID}/`
+  // - Run the task in `tmp/${TID}/`, the task executable has full control of the directory (but it should have hard limit)
   // - Allow upload materials to somewhere because logs are valuable
-  // - Clean up `tmp/${JID}/` when a job is finished and archived on chain
+  // - Clean up `tmp/${TID}/` when a task is finished and archived on chain
 
-  console.log(job)
-  console.log(hexToString(job.input))
+  console.log(task)
 
-  const jobExecName = "my_job.ts";
-  const jobSource = path.join(dataPath, jobExecName);
-  const jobWorkPath = path.join(tempPath, "my_job");
+  const taskExecName = "my_job.ts";
+  const taskSource = path.join(dataPath, taskExecName);
+  const taskWorkPath = path.join(tempPath, "my_job");
 
-  await prepareDirectory(jobWorkPath).catch((e) => {
+  await prepareDirectory(taskWorkPath).catch((e) => {
     console.error(e.message);
     Deno.exit(1);
   });
 
-  copySync(jobSource, path.join(jobWorkPath, jobExecName), { overwrite: true })
+  copySync(taskSource, path.join(taskWorkPath, taskExecName), { overwrite: true })
 
-  // Run the job
+  // Run the task
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
       "--no-prompt",
       "--allow-env",
       "--allow-net",
-      `--allow-read=${jobWorkPath}`,
-      `--allow-write=${jobWorkPath}`,
-      path.join(jobWorkPath, jobExecName),
-      hexToString(job.input),
+      `--allow-read=${taskWorkPath}`,
+      `--allow-write=${taskWorkPath}`,
+      path.join(taskWorkPath, taskExecName),
+      task.input,
     ],
-    cwd: jobWorkPath,
+    cwd: taskWorkPath,
     clearEnv: true,
     stdout: "piped",
     stderr: "piped",
@@ -366,20 +373,21 @@ async function handleJob() {
     console.log(parsedErrorOut);
 
     const result = code === 0 ? "Success" : "Failed";
-    const jobResult = api.createType("JobResult", result);
-    const jobOutput = api.createType("Option<JobOutput>", parsedOut)
+    const taskResult = api.createType("TaskResult", result);
+    const taskOutput = api.createType("Option<TaskOutput>", parsedOut)
 
-    logger.info(`Sending "simple_computing.complete_job()`);
-    const txPromise = api.tx.simpleComputing.completeJob(jobResult, jobOutput);
+    logger.info(`Sending "pool_computing.submitTaskResult()`);
+    const txPromise = api.tx.poolComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
     // TODO: Catch whether failed
 
-    window.locals.sentCompleteJobAt = window.latestBlockNumber;
+    window.locals.sentProcessedTaskAt = window.latestBlockNumber;
+    window.locals.runningTask = undefined;
   });
 
-  window.locals.runningJob = child;
+  window.locals.runningTask = child;
 }
 
 if (parsedArgs.version) {
@@ -462,16 +470,23 @@ api.on("error", (e) => {
 
 await api.isReady.catch((e) => console.error(e));
 
+const subscribePool = parseInt(parsedArgs.subscribePool);
+if (isNaN(subscribePool)) {
+  console.error("`--subscribe-pool` arg missing or invalid, worker won't listen any pool");
+} else {
+  console.log(`Listening pool ${subscribePool}`);
+}
+
 interface Locals {
   sentRegisterAt?: number;
   sentOnlineAt?: number;
   sentHeartbeatAt?: number;
   sentRefreshAttestationAt?: number;
-  sentStartJobAt?: number;
-  sentCompleteJobAt?: number;
+  sentTakeTaskAt?: number;
+  sentProcessedTaskAt?: number;
 
-  currentJob?: any;
-  runningJob?: Deno.Process;
+  currentTask?: any;
+  runningTask?: Deno.Process;
 }
 
 declare global {
@@ -482,6 +497,7 @@ declare global {
 
     refreshAttestationInterval: number;
     noHeartbeat: boolean;
+    subscribePool: number;
 
     finalizedBlockHash: string;
     finalizedBlockNumber: number;
@@ -505,6 +521,7 @@ if (isNaN(window.refreshAttestationInterval)) {
   window.refreshAttestationInterval = 40000;
 }
 window.noHeartbeat = parsedArgs.noHeartbeat;
+window.subscribePool = subscribePool;
 
 window.finalizedBlockNumber = 0;
 window.finalizedBlockHash = "";
@@ -560,7 +577,7 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
 
     logger.warning("Worker hasn't registered");
     if (window.ownerKeyPair !== null) {
-      const initialDeposit = numberToBalance(500);
+      const initialDeposit = numberToBalance(10000);
       logger.info(`Sending "computing_workers.register(worker, initialDeposit)`);
       const txPromise = api.tx.computingWorkers.register(window.workerKeyPair.address, initialDeposit);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
@@ -689,17 +706,37 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
   //   console.log(event.toHuman());
   // });
 
-  // We only handle finalized job
-  const job = (await apiAt.query.simpleComputing.assignedJobs(window.workerKeyPair.address)).unwrapOr(null);
-  if (job) {
-    const jsonifyJob = job.toJSON();
-    jsonifyJob.payload = u8aToString(job.payload);
-    window.locals.currentJob = jsonifyJob
+  if (isNaN(window.subscribePool)) {
+    return;
+  }
 
-    await handleJob();
-  } else if (window.locals.sentCompleteJobAt) {
-    window.locals.sentCompleteJobAt = undefined;
-    window.locals.runningJob = undefined;
+  // We only handle finalized task
+  
+  const tasks =
+    (await apiAt.query.poolComputing.tasks.entries(window.subscribePool))
+      .map(([_k, task]) => task.toJSON())
+      .filter((task: AnyJson) => task.status != TaskStatus.Processed );
+  // console.log(tasks);
+  const task = tasks[0];
+  // console.log(task);
+  if (task === undefined) {
+    // console.log("No new task");
+    return;
+  }
+
+  if ((task && window.locals.currentTask === undefined) || window.locals.currentTask.id == task.id) {
+    const input = (await apiAt.query.poolComputing.taskInputs(window.subscribePool, task.id)).unwrapOr(null);
+    // console.log(input);
+    task.input = input !== null ? u8aToString(input.data) : "";
+    // console.log(task.input);
+
+    window.locals.currentTask = task
+
+    await handleTask();
+  } else if (window.locals.sentProcessedTaskAt) {
+    window.locals.sentProcessedTaskAt = undefined;
+    window.locals.runningTask = undefined;
+    window.locals.currentTask = undefined;
 
     return;
   }

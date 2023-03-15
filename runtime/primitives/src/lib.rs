@@ -14,6 +14,7 @@ pub mod types {
 	use sp_core::H256;
 
 	/// An index to a block.
+	/// 32-bits will allow for 136 years of blocks assuming 1 block per second.
 	pub type BlockNumber = u32;
 
 	/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.

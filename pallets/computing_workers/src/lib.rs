@@ -196,6 +196,8 @@ mod pallet {
 		InitialDepositTooLow,
 		/// Worker already registered
 		AlreadyRegistered,
+		/// Downstream pallet report the worker can't deregister
+		CanNotDeregister,
 		/// Worker's wallet reserved money smaller than should be reserved
 		InsufficientReserved,
 		/// The extrinsic origin isn't the worker's owner
@@ -513,6 +515,10 @@ impl<T: Config> Pallet<T> {
 		ensure!(
 			worker_info.status == WorkerStatus::Offline || worker_info.status == WorkerStatus::Registered,
 			Error::<T>::NotOffline
+		);
+		ensure!(
+			T::WorkerLifecycleHooks::can_deregister(&worker),
+			Error::<T>::CanNotDeregister
 		);
 
 		let reserved = worker_info.reserved;

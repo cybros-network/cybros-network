@@ -13,10 +13,8 @@ mod balances;
 mod transaction_payment;
 mod vesting;
 
-mod nfts;
-
 mod computing_workers;
-mod nft_computing;
+mod pool_computing;
 
 mod sudo;
 
