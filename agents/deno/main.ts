@@ -39,6 +39,7 @@ const parsedArgs = parse(Deno.args, {
     "bind",
     "port",
     "workPath",
+    "taskTypesPath",
     "ownerPhrase",
     "subscribePool",
   ],
@@ -405,8 +406,8 @@ if (parsedArgs.version) {
   console.log("");
 }
 
-const dataPath = path.resolve(path.join(parsedArgs.workPath, "data"));
 const taskTypesPath = path.resolve(parsedArgs.taskTypesPath);
+const dataPath = path.resolve(path.join(parsedArgs.workPath, "data"));
 const tempPath = path.resolve(path.join(parsedArgs.workPath, "tmp"));
 const logPath = path.resolve(path.join(parsedArgs.workPath, "log"));
 await prepareDirectory(dataPath).catch((e) => {
@@ -426,10 +427,10 @@ await prepareDirectory(logPath).catch((e) => {
   Deno.exit(1);
 });
 
+console.log(`Task types path: ${taskTypesPath}`);
 console.log(`Data path: ${dataPath}`);
-console.log(`Task types path: ${dataPath}`);
-console.log(`Temp path: ${dataPath}`);
-console.log(`Log path: ${dataPath}`);
+console.log(`Temp path: ${tempPath}`);
+console.log(`Log path: ${logPath}`);
 
 await initializeLogger(logPath).catch((e) => {
   console.error(e.message);
