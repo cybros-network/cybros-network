@@ -335,18 +335,18 @@ mod pallet {
 		///
 		/// ## Events
 		/// The `Registered` event is emitted in case of success.
+		#[transactional]
 		#[pallet::call_index(0)]
 		#[pallet::weight(T::WeightInfo::register())]
-		#[transactional]
 		pub fn register(origin: OriginFor<T>, worker: T::AccountId, initial_deposit: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::do_register(who, worker, initial_deposit)
 		}
 
 		/// The worker claim for online
+		#[transactional]
 		#[pallet::call_index(1)]
 		#[pallet::weight(T::WeightInfo::online())]
-		#[transactional]
 		pub fn online(
 			origin: OriginFor<T>,
 			payload: OnlinePayload,
@@ -357,35 +357,35 @@ mod pallet {
 		}
 
 		/// The worker requesting offline
+		#[transactional]
 		#[pallet::call_index(2)]
 		#[pallet::weight(T::WeightInfo::request_offline())]
-		#[transactional]
 		pub fn request_offline(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::do_request_offline(who, None)
 		}
 
 		/// The worker force offline, slashing will apply
+		#[transactional]
 		#[pallet::call_index(3)]
 		#[pallet::weight(T::WeightInfo::force_offline())]
-		#[transactional]
 		pub fn force_offline(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::do_force_offline(who, None)
 		}
 
 		/// Deregister a computing workers.
+		#[transactional]
 		#[pallet::call_index(4)]
 		#[pallet::weight(T::WeightInfo::deregister())]
-		#[transactional]
 		pub fn deregister(origin: OriginFor<T>, worker: T::AccountId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::do_deregister(who, worker)
 		}
 
+		#[transactional]
 		#[pallet::call_index(5)]
 		#[pallet::weight(T::WeightInfo::refresh_attestation())]
-		#[transactional]
 		pub fn refresh_attestation(
 			origin: OriginFor<T>,
 			payload: OnlinePayload,
@@ -396,18 +396,18 @@ mod pallet {
 		}
 
 		/// Worker report it is still online, must called by the worker
+		#[transactional]
 		#[pallet::call_index(6)]
 		#[pallet::weight(T::WeightInfo::heartbeat())]
-		#[transactional]
 		pub fn heartbeat(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::do_heartbeat(who)
 		}
 
 		/// The same with balances.transfer_keep_alive(owner, worker, balance)
+		#[transactional]
 		#[pallet::call_index(7)]
 		#[pallet::weight(T::WeightInfo::deposit())]
-		#[transactional]
 		pub fn deposit(origin: OriginFor<T>, worker: T::AccountId, value: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
@@ -418,9 +418,9 @@ mod pallet {
 		}
 
 		/// The same with balances.transfer_keep_alive(worker, owner, balance)
+		#[transactional]
 		#[pallet::call_index(8)]
 		#[pallet::weight(T::WeightInfo::withdraw())]
-		#[transactional]
 		pub fn withdraw(origin: OriginFor<T>, worker: T::AccountId, value: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
@@ -431,18 +431,18 @@ mod pallet {
 		}
 
 		/// The owner (or his proxy) requesting a worker to offline
+		#[transactional]
 		#[pallet::call_index(9)]
 		#[pallet::weight(T::WeightInfo::request_offline_for())]
-		#[transactional]
 		pub fn request_offline_for(origin: OriginFor<T>, worker: T::AccountId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::do_request_offline(worker, Some(who))
 		}
 
 		/// The owner (or his proxy) force a worker to offline, will apply slash
+		#[transactional]
 		#[pallet::call_index(10)]
 		#[pallet::weight(T::WeightInfo::force_offline_for())]
-		#[transactional]
 		pub fn force_offline_for(origin: OriginFor<T>, worker: T::AccountId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::do_force_offline(worker, Some(who))
@@ -450,9 +450,9 @@ mod pallet {
 
 
 		/// Set worker's implementations' permissions
+		#[transactional]
 		#[pallet::call_index(11)]
 		#[pallet::weight(0)]
-		#[transactional]
 		pub fn set_worker_impl_permission(
 			origin: OriginFor<T>,
 			impl_name: WorkerImplName,
@@ -463,9 +463,9 @@ mod pallet {
 		}
 
 		/// Set worker's implementations' hashes
+		#[transactional]
 		#[pallet::call_index(12)]
 		#[pallet::weight(0)]
-		#[transactional]
 		pub fn set_worker_impl_hashes(
 			origin: OriginFor<T>,
 			impl_name: WorkerImplName,

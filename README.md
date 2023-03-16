@@ -1,6 +1,6 @@
 # Cybros Network
 
-A fresh FRAME-based [Substrate](https://www.substrate.io/) node, ready for hacking :rocket:
+Web3+ computing.
 
 ## Getting Started
 

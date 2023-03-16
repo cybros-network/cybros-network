@@ -111,8 +111,9 @@ pub struct Task<TaskId, AccountId, Balance, BlockNumber> {
 	pub created_by: AccountId,
 	pub created_at: BlockNumber,
 	pub taken_by: Option<AccountId>,
-	pub taken_at: Option<BlockNumber>,
-	pub start_processing_at: Option<BlockNumber>,
+	pub taking_at: Option<BlockNumber>,
+	pub released_at: Option<BlockNumber>,
+	pub processing_at: Option<BlockNumber>,
 	pub processed_at: Option<BlockNumber>,
 }
 

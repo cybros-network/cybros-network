@@ -31,8 +31,9 @@ impl<T: Config> Pallet<T> {
 			created_by: owner.clone(),
 			created_at: current_block,
 			taken_by: None,
-			taken_at: None,
-			start_processing_at: None,
+			taking_at: None,
+			released_at: None,
+			processing_at: None,
 			processed_at: None,
 		};
 		Tasks::<T>::insert(&pool_info.id, task_id, task);
@@ -93,12 +94,6 @@ impl<T: Config> Pallet<T> {
 		pool_id: &T::PoolId,
 		task: &Task::<T::TaskId, T::AccountId, BalanceOf<T>, T::BlockNumber>,
 	) -> DispatchResult {
-		if let Some(worker) = &task.taken_by {
-			WorkerTakenTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
-				*counter -= 1;
-				Ok(())
-			})?;
-		}
 		let task_id = task.id;
 
 		T::Currency::unreserve(&task.owner, task.owner_deposit);
@@ -123,6 +118,15 @@ impl<T: Config> Pallet<T> {
 
 			Ok(())
 		})?;
+
+		if task.released_at.is_none() {
+			if let Some(worker) = &task.taken_by {
+				WorkerTakenTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
+					*counter -= 1;
+					Ok(())
+				})?;
+			}
+		}
 
 		Ok(())
 	}

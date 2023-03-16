@@ -696,7 +696,7 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
   // // We only handle finalized event
   // const events = await apiAt.query.system.events();
   // events.forEach(({ event }) => {
-  //   if (event.section !== "simpleComputing") {
+  //   if (event.section !== "poolComputing") {
   //     return;
   //   }
   //   if (event.data.worker === undefined || event.data.worker.toString() !== window.workerKeyPair.address) {
@@ -715,10 +715,10 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
   const tasks =
     (await apiAt.query.poolComputing.tasks.entries(window.subscribePool))
       .map(([_k, task]) => task.toJSON())
-      .filter((task: AnyJson) => task.status != TaskStatus.Processed );
-  // console.log(tasks);
+      .filter((task: AnyJson) => task.status != TaskStatus.Processed ).sort((a: AnyJson, b: AnyJson) => a.id - b.id);
+  console.log(tasks);
   const task = tasks[0];
-  // console.log(task);
+  console.log(task);
   if (task === undefined) {
     // console.log("No new task");
     return;

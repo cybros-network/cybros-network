@@ -26,7 +26,10 @@ macro_rules! log {
 	};
 }
 
-use frame_support::traits::{Currency, ReservableCurrency, EnsureOriginWithArg};
+use frame_support::{
+	traits::{Currency, ReservableCurrency, EnsureOriginWithArg},
+	transactional,
+};
 use sp_runtime::traits::{
 	AtLeast32BitUnsigned, StaticLookup,
 	// IdentifyAccount, Verify,
@@ -187,12 +190,13 @@ pub mod pallet {
 		WorkerAlreadyAdded,
 		TasksPerPoolLimitExceeded,
 		TaskNotFound,
-		WorkerTakenItemsLimitExceeded,
+		WorkerTakenTasksLimitExceeded,
 		TaskIsProcessing,
 		TaskIsProcessed,
 		TaskStillValid,
 		TaskExpired,
-		TaskTakenByOtherWorker,
+		TaskAlreadyTaken,
+		TaskAlreadyReleased,
 	}
 
 	/// Pools info.
@@ -338,6 +342,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		#[transactional]
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
 		pub fn create_pool(
@@ -359,6 +364,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(1)]
 		#[pallet::weight(0)]
 		pub fn destroy_pool(
@@ -373,6 +379,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(2)]
 		#[pallet::weight(0)]
 		pub fn update_pool_custom_info(
@@ -396,6 +403,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(3)]
 		#[pallet::weight(0)]
 		pub fn update_pool_stash_account(
@@ -415,6 +423,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(4)]
 		#[pallet::weight(0)]
 		pub fn toggle_pool_create_task(
@@ -438,6 +447,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(5)]
 		#[pallet::weight(0)]
 		pub fn create_create_task_policy(
@@ -469,6 +479,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(6)]
 		#[pallet::weight(0)]
 		pub fn destroy_create_task_policy(
@@ -490,6 +501,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(7)]
 		#[pallet::weight(0)]
 		pub fn add_worker(
@@ -512,6 +524,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(8)]
 		#[pallet::weight(0)]
 		pub fn remove_worker(
@@ -534,6 +547,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(9)]
 		#[pallet::weight(0)]
 		pub fn create_task(
@@ -590,6 +604,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(10)]
 		#[pallet::weight(0)]
 		pub fn destroy_task(
@@ -609,6 +624,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(11)]
 		#[pallet::weight(0)]
 		pub fn reclaim_expired_task(
@@ -629,6 +645,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(12)]
 		#[pallet::weight(0)]
 		pub fn take_task(
@@ -639,14 +656,32 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let current_block = frame_system::Pallet::<T>::block_number();
-			Self::do_take_task(&pool_id, &task_id, &who, current_block)?;
+			Self::do_take_task(&pool_id, &task_id, &who, current_block, true)?;
 
 			Self::deposit_event(Event::TaskTaken { pool_id, task_id, taken_by: who });
 			Self::deposit_event(Event::TaskStatusUpdated { pool_id, task_id, status: TaskStatus::Processing });
 			Ok(())
 		}
 
+		#[transactional]
 		#[pallet::call_index(13)]
+		#[pallet::weight(0)]
+		pub fn release_task(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			task_id: T::TaskId,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let current_block = frame_system::Pallet::<T>::block_number();
+			Self::do_release_task(&pool_id, &task_id, &who, current_block)?;
+
+			Self::deposit_event(Event::TaskReleased { pool_id, task_id });
+			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::call_index(14)]
 		#[pallet::weight(0)]
 		pub fn submit_task_result(
 			origin: OriginFor<T>,
@@ -658,7 +693,7 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let current_block = frame_system::Pallet::<T>::block_number();
-			Self::do_submit_task_result(&pool_id, &task_id, &who, current_block, &output)?;
+			Self::do_submit_task_result(&pool_id, &task_id, &who, current_block, &output, true)?;
 
 			Self::deposit_event(Event::TaskResultUpdated { pool_id, task_id, result, output });
 			Self::deposit_event(Event::TaskStatusUpdated { pool_id, task_id, status: TaskStatus::Processed });
