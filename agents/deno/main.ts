@@ -23,6 +23,7 @@ const parsedArgs = parse(Deno.args, {
     "port": "p",
     "rpcUrl": "rpc-url",
     "workPath": "work-path",
+    "taskTypesPath": "task-types-path",
     "ownerPhrase": "owner-phrase",
     "refreshAttestationInterval": "refresh-attestation-interval",
     "noHeartbeat": "no-heartbeat",
@@ -46,6 +47,7 @@ const parsedArgs = parse(Deno.args, {
     bind: "127.0.0.1",
     port: "8080",
     workPath: path.dirname(path.fromFileUrl(import.meta.url)),
+    taskTypesPath: path.join(path.dirname(path.fromFileUrl(import.meta.url)), "data"),
     help: false,
     version: false,
     ownerPhrase: "",
@@ -336,16 +338,16 @@ async function handleTask() {
 
   console.log(task)
 
-  const taskExecName = "my_job.ts";
-  const taskSource = path.join(dataPath, taskExecName);
-  const taskWorkPath = path.join(tempPath, "my_job");
+  const taskType = "my_task";
+  const taskSource = path.join(taskTypesPath, taskType);
+  const taskWorkPath = path.join(tempPath, taskType);
 
   await prepareDirectory(taskWorkPath).catch((e) => {
     console.error(e.message);
     Deno.exit(1);
   });
 
-  copySync(taskSource, path.join(taskWorkPath, taskExecName), { overwrite: true })
+  copySync(taskSource, taskWorkPath, { overwrite: true })
 
   // Run the task
   const command = new Deno.Command(Deno.execPath(), {
@@ -356,7 +358,7 @@ async function handleTask() {
       "--allow-net",
       `--allow-read=${taskWorkPath}`,
       `--allow-write=${taskWorkPath}`,
-      path.join(taskWorkPath, taskExecName),
+      path.join(taskWorkPath, "main.ts"),
       task.input,
     ],
     cwd: taskWorkPath,
@@ -404,9 +406,14 @@ if (parsedArgs.version) {
 }
 
 const dataPath = path.resolve(path.join(parsedArgs.workPath, "data"));
+const taskTypesPath = path.resolve(parsedArgs.taskTypesPath);
 const tempPath = path.resolve(path.join(parsedArgs.workPath, "tmp"));
 const logPath = path.resolve(path.join(parsedArgs.workPath, "log"));
 await prepareDirectory(dataPath).catch((e) => {
+  console.error(e.message);
+  Deno.exit(1);
+});
+await prepareDirectory(taskTypesPath).catch((e) => {
   console.error(e.message);
   Deno.exit(1);
 });
@@ -418,6 +425,11 @@ await prepareDirectory(logPath).catch((e) => {
   console.error(e.message);
   Deno.exit(1);
 });
+
+console.log(`Data path: ${dataPath}`);
+console.log(`Task types path: ${dataPath}`);
+console.log(`Temp path: ${dataPath}`);
+console.log(`Log path: ${dataPath}`);
 
 await initializeLogger(logPath).catch((e) => {
   console.error(e.message);
@@ -715,12 +727,21 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
   const tasks =
     (await apiAt.query.poolComputing.tasks.entries(window.subscribePool))
       .map(([_k, task]) => task.toJSON())
-      .filter((task: AnyJson) => task.status != TaskStatus.Processed ).sort((a: AnyJson, b: AnyJson) => a.id - b.id);
-  console.log(tasks);
+      .filter((task: AnyJson) => task.status != TaskStatus.Processed && (task.takenBy === window.workerKeyPair.address || task.takenBy === null) )
+      .sort((a: AnyJson, b: AnyJson) => a.id - b.id);
+  // console.log(tasks);
   const task = tasks[0];
-  console.log(task);
+  // console.log(task);
   if (task === undefined) {
     // console.log("No new task");
+    return;
+  } else if (window.locals.currentTask && window.locals.currentTask.id !== task.id) {
+    console.log(`task #${window.locals.currentTask.id} taken by other worker`);
+
+    window.locals.sentProcessedTaskAt = undefined;
+    window.locals.runningTask = undefined;
+    window.locals.currentTask = undefined;
+
     return;
   }
 
