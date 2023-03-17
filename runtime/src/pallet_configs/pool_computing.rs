@@ -1,12 +1,13 @@
 use crate::*;
 use frame_support::traits::{
-	AsEnsureOriginWithArg, ConstU32, ConstU128,
+	AsEnsureOriginWithArg, ConstU32, ConstU64, ConstU128,
 };
 
 impl pallet_pool_computing::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WorkerManageable = ComputingWorkers;
 	type Currency = Balances;
+	type UnixTime = Timestamp;
 	type PoolId = u32;
 	type TaskId = u32;
 	type PolicyId = u32;
@@ -19,7 +20,9 @@ impl pallet_pool_computing::Config for Runtime {
 	type MaxPoliciesPerPool = ConstU32<8>;
 	type MaxTasksPerPool = ConstU32<1000>;
 	type MaxWorkersPerPool = ConstU32<100>;
-	type MaxTaskDuration = ConstU32<1200>; // ~20min
+	type MinTaskExpiresIn = ConstU64<600>;
+	type MaxTaskExpiresIn = ConstU64<86400>;
+	type DefaultTaskExpiresIn = ConstU64<3600>;
 	type PoolCustomInfoLimit = ConstU32<2048>; // 2KiB
 	type InputLimit = ConstU32<2048>; // 2KiB
 	type OutputLimit = ConstU32<2048>; // 2KiB

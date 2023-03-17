@@ -307,8 +307,8 @@ async function handleTask() {
 
     logger.info("new task incoming");
 
-    logger.info(`Sending "pool_computing.take_task(${window.subscribePool}, ${task.id})`);
-    const txPromise = api.tx.poolComputing.takeTask(window.subscribePool, task.id);
+    logger.info(`Sending "pool_computing.take_task(${window.subscribePool}, ${task.id}, null)`);
+    const txPromise = api.tx.poolComputing.takeTask(window.subscribePool, task.id, null);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -380,7 +380,7 @@ async function handleTask() {
     const taskOutput = api.createType("Option<TaskOutput>", parsedOut)
 
     logger.info(`Sending "pool_computing.submitTaskResult()`);
-    const txPromise = api.tx.poolComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput);
+    const txPromise = api.tx.poolComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput, null);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);

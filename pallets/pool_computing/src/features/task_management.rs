@@ -10,9 +10,12 @@ impl<T: Config> Pallet<T> {
 		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
 		task_id: &T::TaskId,
 		owner: &T::AccountId,
-		current_block: T::BlockNumber,
 		input_data: &Option<BoundedVec<u8, T::InputLimit>>,
+		now: u64,
+		expires_in: u64,
 	) -> DispatchResult {
+		ensure!(expires_in >= T::MinTaskExpiresIn::get(), Error::<T>::ExpiresInTooSmall);
+		ensure!(expires_in <= T::MaxTaskExpiresIn::get(), Error::<T>::ExpiresInTooLarge);
 		ensure!(!Tasks::<T>::contains_key(&pool_info.id, task_id), Error::<T>::TaskIdTaken);
 
 		let input_deposit = T::DepositPerByte::get()
@@ -21,15 +24,16 @@ impl<T: Config> Pallet<T> {
 		let deposit = input_deposit.saturating_add(task_deposit);
 		T::Currency::reserve(owner, deposit)?;
 
-		let task = Task::<T::TaskId, T::AccountId, BalanceOf<T>, T::BlockNumber> {
+		let task = TaskInfo::<T::TaskId, T::AccountId, BalanceOf<T>> {
 			id: task_id.clone(),
 			creator: owner.clone(),
 			owner: owner.clone(),
 			owner_deposit: task_deposit,
 			status: TaskStatus::Pending,
 			result: None,
+			expires_at: now + expires_in,
 			created_by: owner.clone(),
-			created_at: current_block,
+			created_at: now,
 			taken_by: None,
 			taking_at: None,
 			released_at: None,
@@ -80,10 +84,10 @@ impl<T: Config> Pallet<T> {
 	pub fn do_reclaim_expired_task(
 		pool_id: &T::PoolId,
 		task_id: &T::TaskId,
-		current_block: T::BlockNumber
+		now: u64
 	) -> DispatchResult {
 		let task = Tasks::<T>::get(&pool_id, task_id).ok_or(Error::<T>::TaskNotFound)?;
-		Self::ensure_task_expired(current_block, &task)?;
+		Self::ensure_task_expired(&task, now)?;
 
 		Self::remove_task(pool_id, &task)?;
 
@@ -92,7 +96,7 @@ impl<T: Config> Pallet<T> {
 
 	fn remove_task(
 		pool_id: &T::PoolId,
-		task: &Task::<T::TaskId, T::AccountId, BalanceOf<T>, T::BlockNumber>,
+		task: &TaskInfo::<T::TaskId, T::AccountId, BalanceOf<T>>,
 	) -> DispatchResult {
 		let task_id = task.id;
 

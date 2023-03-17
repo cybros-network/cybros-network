@@ -10,8 +10,9 @@ impl<T: Config> Pallet<T> {
 		pool_id: &T::PoolId,
 		task_id: &T::TaskId,
 		worker: &T::AccountId,
-		current_block: T::BlockNumber,
-		processing: bool
+		processing: bool,
+		now: u64,
+		expires_in: u64,
 	) -> DispatchResult {
 		Self::ensure_worker_in_pool(pool_id, worker)?;
 
@@ -19,7 +20,7 @@ impl<T: Config> Pallet<T> {
 			let Some(task) = task else {
 				return Err(Error::<T>::TaskNotFound.into())
 			};
-			Self::ensure_task_not_expired(current_block, &task)?;
+			Self::ensure_task_not_expired(&task, now)?;
 			ensure!(
 				task.taken_by.is_none() || (task.taken_by.is_some() && task.released_at.is_some()),
 				Error::<T>::TaskAlreadyTaken
@@ -35,12 +36,13 @@ impl<T: Config> Pallet<T> {
 				Ok(())
 			})?;
 
+			task.expires_at = now + expires_in;
 			task.taken_by = Some(worker.clone());
-			task.taking_at = Some(current_block);
+			task.taking_at = Some(now);
 			task.released_at = None;
 			if processing {
 				task.status = TaskStatus::Processing;
-				task.processing_at = Some(current_block);
+				task.processing_at = Some(now);
 			}
 
 			Ok(())
@@ -53,7 +55,8 @@ impl<T: Config> Pallet<T> {
 		pool_id: &T::PoolId,
 		task_id: &T::TaskId,
 		worker: &T::AccountId,
-		current_block: T::BlockNumber,
+		now: u64,
+		expires_in: u64,
 	) -> DispatchResult {
 		Self::ensure_worker_in_pool(pool_id, worker)?;
 
@@ -61,7 +64,7 @@ impl<T: Config> Pallet<T> {
 			let Some(task) = task else {
 				return Err(Error::<T>::TaskNotFound.into())
 			};
-			Self::ensure_task_not_expired(current_block, &task)?;
+			Self::ensure_task_not_expired(&task, now)?;
 			ensure!(task.released_at.is_none(), Error::<T>::TaskAlreadyReleased);
 
 			let taker = task.taken_by.as_ref().ok_or(Error::<T>::NoPermission)?;
@@ -75,7 +78,8 @@ impl<T: Config> Pallet<T> {
 				Error::<T>::TaskIsProcessing
 			);
 
-			task.released_at = Some(current_block);
+			task.expires_at = now + expires_in;
+			task.released_at = Some(now);
 
 			WorkerTakenTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
 				*counter -= 1;
@@ -92,9 +96,10 @@ impl<T: Config> Pallet<T> {
 		pool_id: &T::PoolId,
 		task_id: &T::TaskId,
 		worker: &T::AccountId,
-		current_block: T::BlockNumber,
 		output_data: &Option<BoundedVec<u8, T::OutputLimit>>,
-		release: bool
+		release: bool,
+		now: u64,
+		expires_in: u64,
 	) -> DispatchResult {
 		Tasks::<T>::try_mutate_exists(&pool_id, task_id, |task| -> Result<(), DispatchError> {
 			let Some(task) = task else {
@@ -107,13 +112,14 @@ impl<T: Config> Pallet<T> {
 				},
 				Error::<T>::TaskIsProcessed
 			);
-			Self::ensure_task_not_expired(current_block, &task)?;
+			Self::ensure_task_not_expired(&task, now)?;
 			Self::ensure_task_taker(task, worker)?;
 
+			task.expires_at = now + expires_in;
 			task.status = TaskStatus::Processed;
-			task.processed_at = Some(current_block);
+			task.processed_at = Some(now);
 			if release {
-				task.released_at = Some(current_block);
+				task.released_at = Some(now);
 			}
 
 			if let Some(output_data) = output_data {

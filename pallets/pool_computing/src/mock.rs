@@ -112,6 +112,7 @@ impl pallet_pool_computing::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WorkerManageable = ComputingWorkers;
 	type Currency = Balances;
+	type UnixTime = Timestamp;
 	type PoolId = u32;
 	type TaskId = u32;
 	type PolicyId = u32;
@@ -124,7 +125,9 @@ impl pallet_pool_computing::Config for Test {
 	type MaxPoliciesPerPool = ConstU32<3>;
 	type MaxTasksPerPool = ConstU32<100>;
 	type MaxWorkersPerPool = ConstU32<100>;
-	type MaxTaskDuration = ConstU64<100>;
+	type MinTaskExpiresIn = ConstU64<6>;
+	type MaxTaskExpiresIn = ConstU64<24>;
+	type DefaultTaskExpiresIn = ConstU64<18>;
 	type PoolCustomInfoLimit = ConstU32<50>;
 	type InputLimit = ConstU32<50>;
 	type OutputLimit = ConstU32<50>;

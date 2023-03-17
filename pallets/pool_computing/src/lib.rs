@@ -27,12 +27,15 @@ macro_rules! log {
 }
 
 use frame_support::{
-	traits::{Currency, ReservableCurrency, EnsureOriginWithArg},
+	traits::{Currency, ReservableCurrency, EnsureOriginWithArg, UnixTime},
 	transactional,
 };
-use sp_runtime::traits::{
-	AtLeast32BitUnsigned, StaticLookup,
-	// IdentifyAccount, Verify,
+use sp_runtime::{
+	traits::{
+		AtLeast32BitUnsigned, StaticLookup,
+		// IdentifyAccount, Verify,
+	},
+	SaturatedConversion,
 };
 
 use pallet_computing_workers::{
@@ -40,9 +43,9 @@ use pallet_computing_workers::{
 	primitives::{OfflineReason, OnlinePayload, VerifiedAttestation},
 };
 
+pub(crate) type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
 pub(crate) type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-pub(crate) type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -68,6 +71,8 @@ pub mod pallet {
 		type WorkerManageable: WorkerManageable<Self::AccountId, Self::BlockNumber>;
 
 		type Currency: ReservableCurrency<Self::AccountId>;
+
+		type UnixTime: UnixTime;
 
 		/// Identifier for the tasks' pool.
 		type PoolId: Member + Parameter + MaxEncodedLen + Copy + Display + AtLeast32BitUnsigned + AutoIncrement;
@@ -118,9 +123,17 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxWorkersPerPool: Get<u32>;
 
-		/// The max duration in blocks for tasks.
+		/// The min `expires_in` can be set
 		#[pallet::constant]
-		type MaxTaskDuration: Get<<Self as frame_system::Config>::BlockNumber>;
+		type MinTaskExpiresIn: Get<u64>;
+
+		/// The max `expires_in` can be set
+		#[pallet::constant]
+		type MaxTaskExpiresIn: Get<u64>;
+
+		/// The default `expires_in` if not given
+		#[pallet::constant]
+		type DefaultTaskExpiresIn: Get<u64>;
 
 		// TODO: Keep processed task duration?
 
@@ -186,6 +199,8 @@ pub mod pallet {
 		CreateTaskPolicyNotFound,
 		CreateTaskPoliciesPerPoolLimitExceeded,
 		CreateTaskPolicyNotApplicable,
+		ExpiresInTooSmall,
+		ExpiresInTooLarge,
 		WorkersPerPoolLimitExceeded,
 		WorkerAlreadyAdded,
 		TasksPerPoolLimitExceeded,
@@ -263,7 +278,7 @@ pub mod pallet {
 		T::PoolId,
 		Blake2_128Concat,
 		T::TaskId,
-		Task<T::TaskId, T::AccountId, BalanceOf<T>, T::BlockNumber>,
+		TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
 		OptionQuery,
 	>;
 
@@ -555,6 +570,7 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
+			expires_in: Option<u64>,
 			// TODO: Tips? how?
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -588,13 +604,15 @@ pub mod pallet {
 			};
 
 			let task_id = NextTaskId::<T>::get(&pool_id).unwrap_or(T::TaskId::initial_value());
-
+			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
+			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
 			Self::do_create_task(
 				&pool_info,
 				&task_id,
 				&who,
-				current_block,
-				&input
+				&input,
+				now,
+				expires_in
 			)?;
 
 			let next_id = task_id.increment();
@@ -634,11 +652,11 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let current_block = frame_system::Pallet::<T>::block_number();
+			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
 			Self::do_reclaim_expired_task(
 				&pool_id,
 				&task_id,
-				current_block
+				now
 			)?;
 
 			Self::deposit_event(Event::TaskReclaimed { pool_id, task_id, reclaimed_by: who });
@@ -652,11 +670,13 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			task_id: T::TaskId,
+			expires_in: Option<u64>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let current_block = frame_system::Pallet::<T>::block_number();
-			Self::do_take_task(&pool_id, &task_id, &who, current_block, true)?;
+			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
+			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
+			Self::do_take_task(&pool_id, &task_id, &who, true, now, expires_in)?;
 
 			Self::deposit_event(Event::TaskTaken { pool_id, task_id, taken_by: who });
 			Self::deposit_event(Event::TaskStatusUpdated { pool_id, task_id, status: TaskStatus::Processing });
@@ -670,11 +690,13 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			task_id: T::TaskId,
+			expires_in: Option<u64>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let current_block = frame_system::Pallet::<T>::block_number();
-			Self::do_release_task(&pool_id, &task_id, &who, current_block)?;
+			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
+			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
+			Self::do_release_task(&pool_id, &task_id, &who, now, expires_in)?;
 
 			Self::deposit_event(Event::TaskReleased { pool_id, task_id });
 			Ok(())
@@ -688,12 +710,14 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			task_id: T::TaskId,
 			result: TaskResult,
-			output: Option<BoundedVec<u8, T::OutputLimit>>
+			output: Option<BoundedVec<u8, T::OutputLimit>>,
+			expires_in: Option<u64>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let current_block = frame_system::Pallet::<T>::block_number();
-			Self::do_submit_task_result(&pool_id, &task_id, &who, current_block, &output, true)?;
+			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
+			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
+			Self::do_submit_task_result(&pool_id, &task_id, &who, &output, true, now, expires_in)?;
 
 			Self::deposit_event(Event::TaskResultUpdated { pool_id, task_id, result, output });
 			Self::deposit_event(Event::TaskStatusUpdated { pool_id, task_id, status: TaskStatus::Processed });
@@ -717,7 +741,7 @@ pub mod pallet {
 
 		pub(crate) fn ensure_task_owner(
 			who: &T::AccountId,
-			task: &Task<T::TaskId, T::AccountId, BalanceOf<T>, T::BlockNumber>
+			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>
 		) -> DispatchResult {
 			ensure!(
 				who == &task.owner,
@@ -728,11 +752,12 @@ pub mod pallet {
 		}
 
 		pub(crate) fn ensure_task_expired(
-			current_block: T::BlockNumber,
-			task: &Task<T::TaskId, T::AccountId, BalanceOf<T>, T::BlockNumber>
+			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
+			now: u64
 		) -> DispatchResult {
+			// TODO: need deadline
 			ensure!(
-				task.created_at + T::MaxTaskDuration::get() <= current_block,
+				task.expires_at < now,
 				Error::<T>::TaskStillValid
 			);
 
@@ -740,11 +765,11 @@ pub mod pallet {
 		}
 
 		pub(crate) fn ensure_task_not_expired(
-			current_block: T::BlockNumber,
-			task: &Task<T::TaskId, T::AccountId, BalanceOf<T>, T::BlockNumber>
+			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
+			now: u64
 		) -> DispatchResult {
 			ensure!(
-				task.created_at + T::MaxTaskDuration::get() > current_block,
+				task.expires_at >= now,
 				Error::<T>::TaskExpired
 			);
 
@@ -772,7 +797,7 @@ pub mod pallet {
 		}
 
 		pub(crate) fn ensure_task_taker(
-			task: &Task<T::TaskId, T::AccountId, BalanceOf<T>, T::BlockNumber>,
+			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
 			worker: &T::AccountId,
 		) -> DispatchResult {
 			let taker = task.taken_by.clone().ok_or(Error::<T>::NoPermission)?;

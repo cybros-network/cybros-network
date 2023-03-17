@@ -54,7 +54,6 @@ pub struct CreateTaskPolicy<BlockNumber> {
 }
 
 // TODO: Rates strategy (bound to CreateTaskPolicy), e.g. Pay a constant or by duration of processing fee for each task, pay to worker or the owner
-// TODO: Idea: TaskType: identifier: [u8; 4], minimum_deposit (more than actual will save to surplus_deposit)
 // TODO: WorkerPolicy: How to slashing, max processing duration, and etc.
 
 /// Information about a pool.
@@ -99,8 +98,10 @@ pub enum TaskResult {
 	Errored,
 }
 
+// TODO: Idea: TaskType: info will copy to Task, advanceable, creatable, minimum_deposit (more than actual will save to surplus_deposit)
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct Task<TaskId, AccountId, Balance, BlockNumber> {
+pub struct TaskInfo<TaskId, AccountId, Balance> {
 	pub id: TaskId,
 	pub creator: AccountId,
 	pub owner: AccountId,
@@ -108,24 +109,13 @@ pub struct Task<TaskId, AccountId, Balance, BlockNumber> {
 	pub owner_deposit: Balance,
 	pub status: TaskStatus,
 	pub result: Option<TaskResult>,
+	pub expires_at: u64,
 	pub created_by: AccountId,
-	pub created_at: BlockNumber,
+	pub created_at: u64,
 	pub taken_by: Option<AccountId>,
-	pub taking_at: Option<BlockNumber>,
-	pub released_at: Option<BlockNumber>,
-	pub processing_at: Option<BlockNumber>,
-	pub processed_at: Option<BlockNumber>,
-}
-
-#[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum NftItemAttributeKey {
-	AcquiredBy,
-	Status,
-	Result,
-	Output,
-	CreatedAt,
-	AcquiredAt,
-	RejectedAt,
-	ProcessingAt,
-	ProcessedAt,
+	pub taking_at: Option<u64>,
+	pub released_at: Option<u64>,
+	pub processing_at: Option<u64>,
+	pub processed_at: Option<u64>,
+	// TODO: idea: optional scheduled_at, on and after this block, workers can take and process
 }
