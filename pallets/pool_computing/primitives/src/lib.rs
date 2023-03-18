@@ -119,5 +119,4 @@ pub struct TaskInfo<TaskId, AccountId, Balance> {
 	pub released_at: Option<u64>,
 	pub processing_at: Option<u64>,
 	pub processed_at: Option<u64>,
-	// TODO: idea: optional scheduled_at, on and after this block, workers can take and process
 }
