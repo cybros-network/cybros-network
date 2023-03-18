@@ -119,7 +119,7 @@ impl pallet_pool_computing::Config for Test {
 	type CreatePoolOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<Self::AccountId>>;
 	type CreatePoolDeposit = ConstU128<{ 1 * DOLLARS }>;
 	type CreateTaskDeposit = ConstU128<{ 1 * DOLLARS }>;
-	type CustomInfoDepositBase = ConstU128<{ 1 * CENTS }>;
+	type MetadataDepositBase = ConstU128<{ 1 * CENTS }>;
 	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
 	type MaxTakenTasksPerWorker = ConstU32<8>;
 	type MaxPoliciesPerPool = ConstU32<3>;
@@ -129,9 +129,10 @@ impl pallet_pool_computing::Config for Test {
 	type MaxTaskExpiresIn = ConstU64<24>;
 	type DefaultTaskExpiresIn = ConstU64<18>;
 	type MaxTaskScheduledTime = ConstU64<12>;
-	type PoolCustomInfoLimit = ConstU32<50>;
+	type PoolMetadataLimit = ConstU32<50>;
 	type InputLimit = ConstU32<50>;
 	type OutputLimit = ConstU32<50>;
+	type ProofLimit = ConstU32<50>;
 }
 
 // Build genesis storage according to the mock runtime.

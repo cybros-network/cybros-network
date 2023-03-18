@@ -380,7 +380,7 @@ async function handleTask() {
     const taskOutput = api.createType("Option<TaskOutput>", parsedOut)
 
     logger.info(`Sending "pool_computing.submitTaskResult()`);
-    const txPromise = api.tx.poolComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput, null);
+    const txPromise = api.tx.poolComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput, null, null);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);

@@ -104,6 +104,7 @@ impl<T: Config> Pallet<T> {
 		task_id: &T::TaskId,
 		worker: &T::AccountId,
 		output_data: &Option<BoundedVec<u8, T::OutputLimit>>,
+		proof_data: &Option<BoundedVec<u8, T::ProofLimit>>,
 		release: bool,
 		now: u64,
 		expires_in: u64,
@@ -130,18 +131,32 @@ impl<T: Config> Pallet<T> {
 			}
 
 			if let Some(output_data) = output_data {
-				let output_deposit = T::DepositPerByte::get()
+				let deposit = T::DepositPerByte::get()
 					.saturating_mul(((output_data.len()) as u32).into());
-				let output_depositor = task.taken_by.clone().ok_or(Error::<T>::NoPermission)?;
-				T::Currency::reserve(&output_depositor, output_deposit)?;
+				let depositor = task.taken_by.clone().ok_or(Error::<T>::NoPermission)?;
+				T::Currency::reserve(&depositor, deposit)?;
 
-				let output = ChainStoredData::<T::AccountId, BalanceOf<T>, T::OutputLimit> {
-					depositor: output_depositor,
-					actual_deposit: output_deposit,
+				let output_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::OutputLimit> {
+					depositor,
+					actual_deposit: deposit,
 					surplus_deposit: Zero::zero(),
 					data: output_data.clone(),
 				};
-				TaskOutputs::<T>::insert(pool_id, task_id, output);
+				TaskOutputs::<T>::insert(pool_id, task_id, output_entry);
+			}
+			if let Some(proof_data) = proof_data {
+				let deposit = T::DepositPerByte::get()
+					.saturating_mul(((proof_data.len()) as u32).into());
+				let depositor = task.taken_by.clone().ok_or(Error::<T>::NoPermission)?;
+				T::Currency::reserve(&depositor, deposit)?;
+
+				let proof_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::ProofLimit> {
+					depositor,
+					actual_deposit: deposit,
+					surplus_deposit: Zero::zero(),
+					data: proof_data.clone(),
+				};
+				TaskProofs::<T>::insert(pool_id, task_id, proof_entry);
 			}
 
 			Ok(())

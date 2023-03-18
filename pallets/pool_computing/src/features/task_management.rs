@@ -117,13 +117,17 @@ impl<T: Config> Pallet<T> {
 		let task_id = task.id;
 
 		T::Currency::unreserve(&task.owner, task.owner_deposit);
-		if let Some(task_input) = TaskInputs::<T>::take(pool_id, task_id) {
-			let deposit = task_input.actual_deposit.saturating_add(task_input.surplus_deposit);
-			T::Currency::unreserve(&task_input.depositor, deposit);
+		if let Some(input_entry) = TaskInputs::<T>::take(pool_id, task_id) {
+			let deposit = input_entry.actual_deposit.saturating_add(input_entry.surplus_deposit);
+			T::Currency::unreserve(&input_entry.depositor, deposit);
 		}
-		if let Some(task_output) = TaskOutputs::<T>::take(pool_id, task_id) {
-			let deposit = task_output.actual_deposit.saturating_add(task_output.surplus_deposit);
-			T::Currency::unreserve(&task_output.depositor, deposit);
+		if let Some(output_entry) = TaskOutputs::<T>::take(pool_id, task_id) {
+			let deposit = output_entry.actual_deposit.saturating_add(output_entry.surplus_deposit);
+			T::Currency::unreserve(&output_entry.depositor, deposit);
+		}
+		if let Some(proof_entry) = TaskProofs::<T>::take(pool_id, task_id) {
+			let deposit = proof_entry.actual_deposit.saturating_add(proof_entry.surplus_deposit);
+			T::Currency::unreserve(&proof_entry.depositor, deposit);
 		}
 
 		Tasks::<T>::remove(pool_id, task_id);

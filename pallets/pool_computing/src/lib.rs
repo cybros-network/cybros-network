@@ -101,7 +101,7 @@ pub mod pallet {
 
 		/// The basic amount of funds that must be reserved when adding metadata to your item.
 		#[pallet::constant]
-		type CustomInfoDepositBase: Get<BalanceOf<Self>>;
+		type MetadataDepositBase: Get<BalanceOf<Self>>;
 
 		/// The additional funds that must be reserved for the number of bytes store in input and output.
 		#[pallet::constant]
@@ -139,9 +139,9 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxTaskScheduledTime: Get<u64>;
 
-		/// The maximum length of custom info stored on-chain.
+		/// The maximum length of pool's metadata stored on-chain.
 		#[pallet::constant]
-		type PoolCustomInfoLimit: Get<u32>;
+		type PoolMetadataLimit: Get<u32>;
 
 		/// The maximum length of input stored on-chain.
 		#[pallet::constant]
@@ -150,6 +150,10 @@ pub mod pallet {
 		/// The maximum length of processed output stored on-chain.
 		#[pallet::constant]
 		type OutputLimit: Get<u32>;
+
+		/// The maximum length of proof stored on-chain.
+		#[pallet::constant]
+		type ProofLimit: Get<u32>;
 
 		// TODO: Support create task by off-chain pre-sign message
 		// /// Off-Chain signature type.
@@ -169,8 +173,8 @@ pub mod pallet {
 		PoolCreated { owner: T::AccountId, pool_id: T::PoolId },
 		PoolDestroyed { pool_id: T::PoolId },
 		PoolStashAccountUpdated { pool_id: T::PoolId, stash_account: T::AccountId },
-		PoolCustomInfoUpdated { pool_id: T::PoolId, data: BoundedVec<u8, T::PoolCustomInfoLimit> },
-		PoolCustomInfoRemoved { pool_id: T::PoolId },
+		PoolMetadataUpdated { pool_id: T::PoolId, new_metadata: BoundedVec<u8, T::PoolMetadataLimit> },
+		PoolMetadataRemoved { pool_id: T::PoolId },
 		PoolCreateTaskAbilityEnabled { pool_id: T::PoolId },
 		PoolCreateTaskAbilityDisabled { pool_id: T::PoolId },
 		CreateTaskPolicyCreated { pool_id: T::PoolId, policy_id: T::PolicyId, policy: CreateTaskPolicy<T::BlockNumber> },
@@ -183,7 +187,7 @@ pub mod pallet {
 		TaskTaken { pool_id: T::PoolId, task_id: T::TaskId, taken_by: T::AccountId },
 		TaskReleased { pool_id: T::PoolId, task_id: T::TaskId },
 		TaskStatusUpdated { pool_id: T::PoolId, task_id: T::TaskId, status: TaskStatus },
-		TaskResultUpdated { pool_id: T::PoolId, task_id: T::TaskId, result: TaskResult, output: Option<BoundedVec<u8, T::OutputLimit>> },
+		TaskResultUpdated { pool_id: T::PoolId, task_id: T::TaskId, result: TaskResult, output: Option<BoundedVec<u8, T::OutputLimit>>, proof: Option<BoundedVec<u8, T::ProofLimit>> },
 	}
 
 	// Errors inform users that something went wrong.
@@ -227,13 +231,13 @@ pub mod pallet {
 		PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
 	>;
 
-	/// Custom info of a pool.
+	/// Metadata of a pool.
 	#[pallet::storage]
-	pub type PoolCustomInfos<T: Config> = StorageMap<
+	pub type PoolMetadata<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
-		ChainStoredData<T::AccountId, BalanceOf<T>, T::PoolCustomInfoLimit>,
+		ChainStoredData<T::AccountId, BalanceOf<T>, T::PoolMetadataLimit>,
 		OptionQuery,
 	>;
 
@@ -305,6 +309,17 @@ pub mod pallet {
 		Blake2_128Concat,
 		T::TaskId,
 		ChainStoredData<T::AccountId, BalanceOf<T>, T::OutputLimit>,
+		OptionQuery,
+	>;
+
+	#[pallet::storage]
+	pub type TaskProofs<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::PoolId,
+		Blake2_128Concat,
+		T::TaskId,
+		ChainStoredData<T::AccountId, BalanceOf<T>, T::ProofLimit>,
 		OptionQuery,
 	>;
 
@@ -401,22 +416,22 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(2)]
 		#[pallet::weight(0)]
-		pub fn update_pool_custom_info(
+		pub fn update_pool_metadata(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			data: Option<BoundedVec<u8, T::PoolCustomInfoLimit>>,
+			new_metadata: Option<BoundedVec<u8, T::PoolMetadataLimit>>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			if let Some(data) = data {
-				Self::do_update_pool_custom_info(&pool_info, &data)?;
-				Self::deposit_event(Event::PoolCustomInfoUpdated { pool_id, data });
+			if let Some(new_metadata) = new_metadata {
+				Self::do_update_pool_metadata(&pool_info, &new_metadata)?;
+				Self::deposit_event(Event::PoolMetadataUpdated { pool_id, new_metadata });
 			} else {
-				Self::do_remove_pool_custom_info(&pool_info)?;
-				Self::deposit_event(Event::PoolCustomInfoRemoved { pool_id });
+				Self::do_remove_pool_metadata(&pool_info)?;
+				Self::deposit_event(Event::PoolMetadataRemoved { pool_id });
 			}
 
 			Ok(())
@@ -716,15 +731,16 @@ pub mod pallet {
 			task_id: T::TaskId,
 			result: TaskResult,
 			output: Option<BoundedVec<u8, T::OutputLimit>>,
+			proof: Option<BoundedVec<u8, T::ProofLimit>>,
 			expires_in: Option<u64>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
 			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
-			Self::do_submit_task_result(&pool_id, &task_id, &who, &output, true, now, expires_in)?;
+			Self::do_submit_task_result(&pool_id, &task_id, &who, &output, &proof, true, now, expires_in)?;
 
-			Self::deposit_event(Event::TaskResultUpdated { pool_id, task_id, result, output });
+			Self::deposit_event(Event::TaskResultUpdated { pool_id, task_id, result, output, proof });
 			Self::deposit_event(Event::TaskStatusUpdated { pool_id, task_id, status: TaskStatus::Processed });
 			Self::deposit_event(Event::TaskReleased { pool_id, task_id });
 			Ok(())

@@ -41,8 +41,8 @@ impl<T: Config> Pallet<T> {
 		ensure!(pool_info.tasks_count == 0, Error::<T>::PoolNotEmpty);
 		ensure!(pool_info.workers_count == 0, Error::<T>::PoolNotEmpty);
 
-		if let Some(custom_info) = PoolCustomInfos::<T>::take(&pool_id) {
-			T::Currency::unreserve(&pool_info.owner, custom_info.actual_deposit);
+		if let Some(metadata_entry) = PoolMetadata::<T>::take(&pool_id) {
+			T::Currency::unreserve(&pool_info.owner, metadata_entry.actual_deposit);
 		}
 
 		let _ = CreateTaskPolicies::<T>::clear_prefix(&pool_id, pool_info.create_task_policies_count, None);
@@ -55,41 +55,41 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub fn do_update_pool_custom_info(
+	pub fn do_update_pool_metadata(
 		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
-		data: &BoundedVec<u8, T::PoolCustomInfoLimit>
+		new_metadata: &BoundedVec<u8, T::PoolMetadataLimit>
 	) -> DispatchResult {
-		PoolCustomInfos::<T>::try_mutate_exists(pool_info.id, |custom_info| {
+		PoolMetadata::<T>::try_mutate_exists(pool_info.id, |metadata_entry| {
 			let deposit = T::DepositPerByte::get()
-				.saturating_mul(((data.len()) as u32).into())
-				.saturating_add(T::CustomInfoDepositBase::get());
+				.saturating_mul(((new_metadata.len()) as u32).into())
+				.saturating_add(T::MetadataDepositBase::get());
 
-			let old_deposit = custom_info.take().map_or(Zero::zero(), |m| m.actual_deposit);
+			let old_deposit = metadata_entry.take().map_or(Zero::zero(), |m| m.actual_deposit);
 			if deposit > old_deposit {
 				T::Currency::reserve(&pool_info.owner, deposit - old_deposit)?;
 			} else if deposit < old_deposit {
 				T::Currency::unreserve(&pool_info.owner, old_deposit - deposit);
 			}
 
-			*custom_info = Some(ChainStoredData {
+			*metadata_entry = Some(ChainStoredData {
 				depositor: pool_info.owner.clone(),
 				actual_deposit: deposit,
 				surplus_deposit: Zero::zero(),
-				data: data.clone()
+				data: new_metadata.clone()
 			});
 			Ok(())
 		})
 	}
 
-	pub fn do_remove_pool_custom_info(
+	pub fn do_remove_pool_metadata(
 		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>
 	) -> DispatchResult {
-		let Some(custom_info) = PoolCustomInfos::<T>::get(&pool_info.id) else {
+		let Some(metadata_entry) = PoolMetadata::<T>::get(&pool_info.id) else {
 			return Ok(())
 		};
 
-		PoolCustomInfos::<T>::remove(&pool_info.id);
-		T::Currency::unreserve(&pool_info.owner, custom_info.actual_deposit);
+		PoolMetadata::<T>::remove(&pool_info.id);
+		T::Currency::unreserve(&pool_info.owner, metadata_entry.actual_deposit);
 
 		Ok(())
 	}
