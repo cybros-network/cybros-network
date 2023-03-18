@@ -170,7 +170,7 @@ fn genesis_config(
 fn chain_properties() -> Option<Properties> {
 	let mut p = Properties::new();
 
-	p.insert("tokenSymbol".into(), "UNIT".into());
+	p.insert("tokenSymbol".into(), "CBT".into());
 	p.insert("tokenDecimals".into(), 12.into());
 	p.insert("ss58Format".into(), 42.into());
 
