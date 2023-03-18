@@ -724,11 +724,16 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
   }
 
   // We only handle finalized task
-  
+
+  const now = Math.floor(Date.now() / 1000);
   const tasks =
     (await apiAt.query.poolComputing.tasks.entries(window.subscribePool))
       .map(([_k, task]) => task.toJSON())
-      .filter((task: AnyJson) => task.status != TaskStatus.Processed && (task.takenBy === window.workerKeyPair.address || task.takenBy === null) )
+      .filter((task: AnyJson) => {
+        return task.status != TaskStatus.Processed &&
+          (task.takenBy === window.workerKeyPair.address || task.takenBy === null) &&
+          (task.scheduled_at !== null && task.scheduled_at >= now);
+      } )
       .sort((a: AnyJson, b: AnyJson) => a.id - b.id);
   // console.log(tasks);
   const task = tasks[0];

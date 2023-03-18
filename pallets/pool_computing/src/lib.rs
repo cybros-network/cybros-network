@@ -135,7 +135,9 @@ pub mod pallet {
 		#[pallet::constant]
 		type DefaultTaskExpiresIn: Get<u64>;
 
-		// TODO: Keep processed task duration?
+		/// The default `expires_in` if not given
+		#[pallet::constant]
+		type MaxTaskScheduledTime: Get<u64>;
 
 		/// The maximum length of custom info stored on-chain.
 		#[pallet::constant]
@@ -201,6 +203,7 @@ pub mod pallet {
 		CreateTaskPolicyNotApplicable,
 		ExpiresInTooSmall,
 		ExpiresInTooLarge,
+		ScheduledTimeTooFar,
 		WorkersPerPoolLimitExceeded,
 		WorkerAlreadyAdded,
 		TasksPerPoolLimitExceeded,
@@ -210,6 +213,7 @@ pub mod pallet {
 		TaskIsProcessed,
 		TaskStillValid,
 		TaskExpired,
+		TaskTooEarlyToTake,
 		TaskAlreadyTaken,
 		TaskAlreadyReleased,
 	}
@@ -571,6 +575,7 @@ pub mod pallet {
 			policy_id: T::PolicyId,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			expires_in: Option<u64>,
+			scheduled_at: Option<u64>,
 			// TODO: Tips? how?
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -605,14 +610,14 @@ pub mod pallet {
 
 			let task_id = NextTaskId::<T>::get(&pool_id).unwrap_or(T::TaskId::initial_value());
 			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
-			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
 			Self::do_create_task(
 				&pool_info,
 				&task_id,
 				&who,
 				&input,
 				now,
-				expires_in
+				expires_in,
+				scheduled_at
 			)?;
 
 			let next_id = task_id.increment();

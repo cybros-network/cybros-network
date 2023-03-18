@@ -47,6 +47,7 @@ pub struct CreateTaskPolicy<BlockNumber> {
 	// TODO：rates strategy
 	// /// An optional price per create task.
 	// pub price: Option<Balance>,
+	// TODO: allow create scheduled task and rule
 	/// When the policy starts.
 	pub start_block: Option<BlockNumber>,
 	/// When the policy ends.
@@ -109,6 +110,7 @@ pub struct TaskInfo<TaskId, AccountId, Balance> {
 	pub owner_deposit: Balance,
 	pub status: TaskStatus,
 	pub result: Option<TaskResult>,
+	pub scheduled_at: Option<u64>,
 	pub expires_at: u64,
 	pub created_by: AccountId,
 	pub created_at: u64,

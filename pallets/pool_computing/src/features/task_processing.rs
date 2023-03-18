@@ -26,6 +26,13 @@ impl<T: Config> Pallet<T> {
 				Error::<T>::TaskAlreadyTaken
 			);
 
+			if let Some(scheduled_at) = task.scheduled_at {
+				ensure!(
+					now >= scheduled_at,
+					Error::<T>::TaskTooEarlyToTake
+				);
+			}
+
 			WorkerTakenTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
 				ensure!(
 					*counter <= T::MaxTakenTasksPerWorker::get(),

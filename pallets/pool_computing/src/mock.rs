@@ -128,6 +128,7 @@ impl pallet_pool_computing::Config for Test {
 	type MinTaskExpiresIn = ConstU64<6>;
 	type MaxTaskExpiresIn = ConstU64<24>;
 	type DefaultTaskExpiresIn = ConstU64<18>;
+	type MaxTaskScheduledTime = ConstU64<12>;
 	type PoolCustomInfoLimit = ConstU32<50>;
 	type InputLimit = ConstU32<50>;
 	type OutputLimit = ConstU32<50>;

@@ -12,10 +12,20 @@ impl<T: Config> Pallet<T> {
 		owner: &T::AccountId,
 		input_data: &Option<BoundedVec<u8, T::InputLimit>>,
 		now: u64,
-		expires_in: u64,
+		expires_in: Option<u64>,
+		scheduled_at: Option<u64>,
 	) -> DispatchResult {
+		let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
 		ensure!(expires_in >= T::MinTaskExpiresIn::get(), Error::<T>::ExpiresInTooSmall);
 		ensure!(expires_in <= T::MaxTaskExpiresIn::get(), Error::<T>::ExpiresInTooLarge);
+
+		if let Some(scheduled_at) = scheduled_at {
+			ensure!(
+				scheduled_at <= now + T::MaxTaskScheduledTime::get(),
+				Error::<T>::ScheduledTimeTooFar
+			);
+		}
+
 		ensure!(!Tasks::<T>::contains_key(&pool_info.id, task_id), Error::<T>::TaskIdTaken);
 
 		let input_deposit = T::DepositPerByte::get()
@@ -24,6 +34,11 @@ impl<T: Config> Pallet<T> {
 		let deposit = input_deposit.saturating_add(task_deposit);
 		T::Currency::reserve(owner, deposit)?;
 
+		let expires_at = if let Some(scheduled_at) = scheduled_at {
+			scheduled_at + expires_in
+		} else {
+			now + expires_in
+		};
 		let task = TaskInfo::<T::TaskId, T::AccountId, BalanceOf<T>> {
 			id: task_id.clone(),
 			creator: owner.clone(),
@@ -31,7 +46,8 @@ impl<T: Config> Pallet<T> {
 			owner_deposit: task_deposit,
 			status: TaskStatus::Pending,
 			result: None,
-			expires_at: now + expires_in,
+			scheduled_at,
+			expires_at,
 			created_by: owner.clone(),
 			created_at: now,
 			taken_by: None,
