@@ -60,6 +60,7 @@ CMakeLists.txt
 tools
 templates
 docs
+misc
 docker
 **/tmp
 **/log
