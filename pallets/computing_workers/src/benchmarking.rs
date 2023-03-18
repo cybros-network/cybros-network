@@ -33,7 +33,7 @@ fn mock_online_payload_and_attestation<T: Config>(
 	let signature = worker_public.sign(WORKER_KEY_TYPE, &encoded_payload).unwrap();
 
 	let attestation = Attestation::NonTEE(NonTEEAttestation {
-		issued_at: T::UnixTime::now().as_millis().saturated_into::<u64>() - 1000,
+		issued_at: T::UnixTime::now().as_secs().saturated_into::<u64>() - 1000,
 		payload: AttestationPayload::truncate_from(signature.0.to_vec()),
 	});
 

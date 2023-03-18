@@ -3,7 +3,7 @@ import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
 import { copySync } from "https://deno.land/std/fs/mod.ts";
 
-import { BN, hexToU8a, isHex, u8aToHex, u8aToString } from "https://deno.land/x/polkadot/util/mod.ts";
+import { BN, hexToU8a, isHex, u8aToHex, hexToString } from "https://deno.land/x/polkadot/util/mod.ts";
 import { cryptoWaitReady, mnemonicGenerate } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import { KeyringPair } from "https://deno.land/x/polkadot/keyring/types.ts";
 import { ApiPromise, HttpProvider, Keyring, WsProvider } from "https://deno.land/x/polkadot/api/mod.ts";
@@ -11,7 +11,7 @@ import { Application, Router } from "https://deno.land/x/oak/mod.ts";
 
 import { AnyJson } from "https://deno.land/x/polkadot/types-codec/types/helpers.ts";
 
-const APP_NAME = "Research computing worker";
+const APP_NAME = "Cybros protocol reference implementation";
 const APP_VERSION = "v0.0.1-dev";
 const IMPL_NAME = "deno".split("").map(c => c.charCodeAt(0));
 const IMPL_VERSION = 1;
@@ -23,7 +23,7 @@ const parsedArgs = parse(Deno.args, {
     "port": "p",
     "rpcUrl": "rpc-url",
     "workPath": "work-path",
-    "taskTypesPath": "task-types-path",
+    "taskExecutorPath": "task-executor-path",
     "ownerPhrase": "owner-phrase",
     "refreshAttestationInterval": "refresh-attestation-interval",
     "noHeartbeat": "no-heartbeat",
@@ -39,7 +39,7 @@ const parsedArgs = parse(Deno.args, {
     "bind",
     "port",
     "workPath",
-    "taskTypesPath",
+    "taskExecutorPath",
     "ownerPhrase",
     "subscribePool",
   ],
@@ -48,7 +48,7 @@ const parsedArgs = parse(Deno.args, {
     bind: "127.0.0.1",
     port: "8080",
     workPath: path.dirname(path.fromFileUrl(import.meta.url)),
-    taskTypesPath: path.join(path.dirname(path.fromFileUrl(import.meta.url)), "data"),
+    taskExecutorPath: path.join(path.dirname(path.fromFileUrl(import.meta.url)), "task_executor"),
     help: false,
     version: false,
     ownerPhrase: "",
@@ -81,7 +81,7 @@ async function prepareDirectory(path: string): Promise<boolean> {
 
 function welcome() {
   console.log(`
-${APP_NAME} implementation in Deno.
+${APP_NAME}
 
 Warning: This is just a prototype implementation,
          in final product, it should be protected by TEE (Trusted Execution Environment) technology,
@@ -94,13 +94,15 @@ Warning: This is just a prototype implementation,
 
 function help() {
   console.log(`
-Usage: deno run ./app.ts [OPTIONS]
+Usage: deno run ./main.ts [OPTIONS]
 
 Options:
     --rpc-url <WS_OR_HTTP_NODE_RPC_ENDPOINT>
       The RPC endpoint URL of Substrate node, default is "ws://127.0.0.1:9944"
     --work-path <PATH>
       The work path of the app, default is the app located path
+    --subscribe-pool <POOL_ID>
+      Subscribe tasks of the given pool
     --owner-phrase <PHRASE>
       Inject the owner wallet, will enable some shortcuts (e.g. auto do register if it hasn't).
       WARNING: Keep safe of your owner wallet
@@ -234,14 +236,15 @@ function createSubstrateApi(rpcUrl: string): ApiPromise | null {
           "Errored",
         ],
       },
-      TaskOutput: "BoundedVec<u8, 2048>"
+      TaskOutput: "BoundedVec<u8, 2048>",
+      Proof: "BoundedVec<u8, 2048>",
     },
   });
 }
 
 function createAttestation(api: ApiPromise, payload: any) {
   const attestation = api.createType("NonTEEAttestation", {
-    issued_at: Date.now(),
+    issued_at: Math.floor(Date.now() / 1000),
     payload: payload,
   });
   return api.createType("Option<Attestation>", { "NonTEE": attestation })
@@ -323,32 +326,16 @@ async function handleTask() {
     window.locals.sentTakeTaskAt = undefined;
   }
 
-  // TODO: This is only a demo, the task should fetch from the chain
-  // Basically I'm thinking
-  // - People can upload task executables to the chain, maybe seal in a NFT
-  // - The task executable should be a single file, normally it should be a compiled JS, maybe we should support tarball as well?
-  // - Requires a validation for deployed task executable, the entry must be `main.js` or `main.ts`
-  // - Some way to deploy to workers
-  // - Task should has an unique JID
-  // - Task should has a hard timeout, and (MAYBE) should keeping report when processing the task
-  // - Task should has a metadata, for permission controls and declaration resources
-  // - Copy the task executable to `tmp/${TID}/`
-  // - Run the task in `tmp/${TID}/`, the task executable has full control of the directory (but it should have hard limit)
-  // - Allow upload materials to somewhere because logs are valuable
-  // - Clean up `tmp/${TID}/` when a task is finished and archived on chain
-
   console.log(task)
 
-  const taskType = "my_task";
-  const taskSource = path.join(taskTypesPath, taskType);
-  const taskWorkPath = path.join(tempPath, taskType);
+  const taskWorkPath = path.join(tempPath, taskExecutorPath);
 
   await prepareDirectory(taskWorkPath).catch((e) => {
     console.error(e.message);
     Deno.exit(1);
   });
 
-  copySync(taskSource, taskWorkPath, { overwrite: true })
+  copySync(taskExecutorPath, taskWorkPath, { overwrite: true })
 
   // Run the task
   const command = new Deno.Command(Deno.execPath(), {
@@ -377,7 +364,7 @@ async function handleTask() {
 
     const result = code === 0 ? "Success" : "Failed";
     const taskResult = api.createType("TaskResult", result);
-    const taskOutput = api.createType("Option<TaskOutput>", parsedOut)
+    const taskOutput = api.createType("String", hexToString(parsedOut)) // TODO:
 
     logger.info(`Sending "pool_computing.submitTaskResult()`);
     const txPromise = api.tx.poolComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput, null, null);
@@ -406,15 +393,11 @@ if (parsedArgs.version) {
   console.log("");
 }
 
-const taskTypesPath = path.resolve(parsedArgs.taskTypesPath);
+const taskExecutorPath = path.resolve(parsedArgs.taskExecutorPath);
 const dataPath = path.resolve(path.join(parsedArgs.workPath, "data"));
 const tempPath = path.resolve(path.join(parsedArgs.workPath, "tmp"));
 const logPath = path.resolve(path.join(parsedArgs.workPath, "log"));
 await prepareDirectory(dataPath).catch((e) => {
-  console.error(e.message);
-  Deno.exit(1);
-});
-await prepareDirectory(taskTypesPath).catch((e) => {
   console.error(e.message);
   Deno.exit(1);
 });
@@ -427,7 +410,7 @@ await prepareDirectory(logPath).catch((e) => {
   Deno.exit(1);
 });
 
-console.log(`Task types path: ${taskTypesPath}`);
+console.log(`Task executor path: ${taskExecutorPath}`);
 console.log(`Data path: ${dataPath}`);
 console.log(`Temp path: ${tempPath}`);
 console.log(`Log path: ${logPath}`);
@@ -732,7 +715,8 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
       .filter((task: AnyJson) => {
         return task.status != TaskStatus.Processed &&
           (task.takenBy === window.workerKeyPair.address || task.takenBy === null) &&
-          (task.scheduled_at !== null && task.scheduled_at >= now);
+          (task.scheduledAt === null || (task.scheduledAt !== null && task.scheduledAt <= now)) &&
+          task.expiresAt > now;
       } )
       .sort((a: AnyJson, b: AnyJson) => a.id - b.id);
   // console.log(tasks);
@@ -754,7 +738,8 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
   if ((task && window.locals.currentTask === undefined) || window.locals.currentTask.id == task.id) {
     const input = (await apiAt.query.poolComputing.taskInputs(window.subscribePool, task.id)).unwrapOr(null);
     // console.log(input);
-    task.input = input !== null ? u8aToString(input.data) : "";
+    task.input = input !== null ? u8aToHex(input.data) : "";
+    task.rawInput = input;
     // console.log(task.input);
 
     window.locals.currentTask = task

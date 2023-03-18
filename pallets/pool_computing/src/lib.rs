@@ -624,7 +624,7 @@ pub mod pallet {
 			};
 
 			let task_id = NextTaskId::<T>::get(&pool_id).unwrap_or(T::TaskId::initial_value());
-			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
+			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			Self::do_create_task(
 				&pool_info,
 				&task_id,
@@ -672,7 +672,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
+			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			Self::do_reclaim_expired_task(
 				&pool_id,
 				&task_id,
@@ -694,7 +694,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
+			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
 			Self::do_take_task(&pool_id, &task_id, &who, true, now, expires_in)?;
 
@@ -714,7 +714,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
+			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
 			Self::do_release_task(&pool_id, &task_id, &who, now, expires_in)?;
 
@@ -736,7 +736,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
+			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
 			Self::do_submit_task_result(&pool_id, &task_id, &who, &output, &proof, true, now, expires_in)?;
 

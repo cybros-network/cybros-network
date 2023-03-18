@@ -871,7 +871,7 @@ impl<T: Config> Pallet<T> {
 			return Ok(None)
 		};
 
-		let now = T::UnixTime::now().as_millis().saturated_into::<u64>();
+		let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 		let verified = attestation.verify(now);
 		match verified {
 			Ok(verified) => Ok(Some(verified)),
