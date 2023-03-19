@@ -10,6 +10,7 @@ impl<T: Config> Pallet<T> {
 			!Workers::<T>::contains_key(&pool_info.id, &worker),
 			Error::<T>::WorkerAlreadyAdded
 		);
+		Self::ensure_worker(worker)?;
 
 		Workers::<T>::insert(&pool_info.id, worker, ());
 
