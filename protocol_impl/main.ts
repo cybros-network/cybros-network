@@ -364,7 +364,7 @@ async function handleTask() {
 
     const result = code === 0 ? "Success" : "Failed";
     const taskResult = api.createType("TaskResult", result);
-    const taskOutput = api.createType("String", hexToString(parsedOut)) // TODO: FIXME, polkadot.js double encode hex
+    const taskOutput = api.createType("TaskOutput", parsedOut.trim())
 
     logger.info(`Sending "pool_computing.submitTaskResult()`);
     const txPromise = api.tx.poolComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput, null, null);
