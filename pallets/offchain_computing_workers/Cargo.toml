@@ -1,5 +1,5 @@
 [package]
-name = "pallet-computing_workers"
+name = "pallet-offchain_computing_workers"
 version = "0.0.1-dev"
 description = "Substrate pallet for managing lifecycle of decentralized offchain computing workers."
 authors.workspace = true
@@ -28,7 +28,7 @@ sp-io = { git = "https://github.com/paritytech/substrate", branch = "master", de
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
-primitives = { package = "pallet-computing_workers-primitives", path = "primitives", default-features = false }
+primitives = { package = "pallet-offchain_computing_workers-primitives", path = "primitives", default-features = false }
 
 pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }

@@ -189,8 +189,8 @@ construct_runtime!(
 		Vesting: pallet_vesting = 62,
 
 		// The main stage
-		ComputingWorkers: pallet_computing_workers = 100,
-		PoolComputing: pallet_pool_computing = 101,
+		OffchainComputingWorkers: pallet_offchain_computing_workers = 100,
+		OffchainComputing: pallet_offchain_computing = 101,
 
 		// Non-permanent
 		Sudo: pallet_sudo = 255,
@@ -436,12 +436,8 @@ impl_runtime_apis! {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-#[macro_use]
-extern crate frame_benchmarking;
-
-#[cfg(feature = "runtime-benchmarks")]
 mod benches {
-	define_benchmarks!(
+	frame_benchmarking::define_benchmarks!(
 		[frame_benchmarking, BaselineBench::<Runtime>]
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_timestamp, Timestamp]
@@ -451,6 +447,6 @@ mod benches {
 		[pallet_multisig, Multisig]
 		[pallet_balances, Balances]
 		[pallet_vesting, Vesting]
-		[pallet_computing_workers, ComputingWorkers]
+		[pallet_offchain_computing_workers, OffchainComputingWorkers]
 	);
 }

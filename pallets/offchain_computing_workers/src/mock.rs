@@ -1,7 +1,7 @@
-use crate as pallet_fake_computing;
+use crate as pallet_offchain_computing_workers;
 
 use frame_support::{
-	assert_ok, parameter_types,
+	assert_ok,
 	traits::{OnFinalize, OnInitialize},
 };
 use frame_system::EnsureRoot;
@@ -33,8 +33,7 @@ frame_support::construct_runtime!(
 		Balances: pallet_balances,
 		Timestamp: pallet_timestamp,
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
-		ComputingWorkers: pallet_computing_workers,
-		FakeComputing: pallet_fake_computing,
+		OffchainComputingWorkers: pallet_offchain_computing_workers,
 	}
 );
 
@@ -86,7 +85,7 @@ impl pallet_timestamp::Config for Test {
 
 impl pallet_insecure_randomness_collective_flip::Config for Test {}
 
-impl pallet_computing_workers::Config for Test {
+impl pallet_offchain_computing_workers::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type UnixTime = Timestamp;
@@ -101,17 +100,7 @@ impl pallet_computing_workers::Config for Test {
 	type ValidateWorkerImplHash = ConstBool<false>;
 	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
 	type WeightInfo = ();
-	type WorkerLifecycleHooks = FakeComputing;
-}
-
-parameter_types! {
-	pub const SlashingCardinal: Balance = DOLLARS;
-}
-
-impl pallet_fake_computing::Config for Test {
-	type RuntimeEvent = RuntimeEvent;
-	type WorkerManageable = ComputingWorkers;
-	type SlashingCardinal = SlashingCardinal;
+	type OffchainWorkerLifecycleHooks = ();
 }
 
 // Build genesis storage according to the mock runtime.

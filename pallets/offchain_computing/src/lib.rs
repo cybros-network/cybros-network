@@ -38,8 +38,8 @@ use sp_runtime::{
 	SaturatedConversion,
 };
 
-use pallet_computing_workers::{
-	traits::{WorkerLifecycleHooks, WorkerManageable},
+use pallet_offchain_computing_workers::{
+	traits::{OffchainWorkerLifecycleHooks, OffchainWorkerManageable},
 	primitives::{OfflineReason, OnlinePayload, VerifiedAttestation},
 };
 
@@ -68,7 +68,7 @@ pub mod pallet {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-		type WorkerManageable: WorkerManageable<Self::AccountId, Self::BlockNumber>;
+		type OffchainWorkerManageable: OffchainWorkerManageable<Self::AccountId, Self::BlockNumber>;
 
 		type Currency: ReservableCurrency<Self::AccountId>;
 
@@ -798,7 +798,7 @@ pub mod pallet {
 		}
 
 		pub(crate) fn ensure_worker(who: &T::AccountId) -> DispatchResult {
-			ensure!(T::WorkerManageable::worker_exists(who), Error::<T>::WorkerNotFound);
+			ensure!(T::OffchainWorkerManageable::worker_exists(who), Error::<T>::WorkerNotFound);
 
 			Ok(())
 		}
@@ -832,7 +832,7 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> WorkerLifecycleHooks<T::AccountId> for Pallet<T> {
+	impl<T: Config> OffchainWorkerLifecycleHooks<T::AccountId> for Pallet<T> {
 		fn can_online(_worker: &T::AccountId, _payload: &OnlinePayload, _verified_attestation: &Option<VerifiedAttestation>) -> DispatchResult {
 			Ok(())
 		}

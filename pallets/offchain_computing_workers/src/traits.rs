@@ -11,7 +11,7 @@ use primitives::{OfflineReason, OnlinePayload, WorkerInfo};
 
 /// Trait describing something that implements a hook for any operations to perform when a staker is
 /// slashed.
-pub trait WorkerLifecycleHooks<AccountId> {
+pub trait OffchainWorkerLifecycleHooks<AccountId> {
 	/// A hook for checking the worker whether can online,
 	/// can use for add extra conditions check, if returns error, the worker will not be online
 	fn can_online(worker: &AccountId, payload: &OnlinePayload, verified_attestation: &Option<VerifiedAttestation>) -> DispatchResult;
@@ -46,7 +46,7 @@ pub trait WorkerLifecycleHooks<AccountId> {
 	fn before_deregister(worker: &AccountId);
 }
 
-impl<AccountId> WorkerLifecycleHooks<AccountId> for () {
+impl<AccountId> OffchainWorkerLifecycleHooks<AccountId> for () {
 	fn can_online(_: &AccountId, _: &OnlinePayload, _: &Option<VerifiedAttestation>) -> DispatchResult {
 		Ok(())
 	}
@@ -80,7 +80,7 @@ impl<AccountId> WorkerLifecycleHooks<AccountId> for () {
 	}
 }
 
-pub trait WorkerManageable<AccountId, BlockNumber> {
+pub trait OffchainWorkerManageable<AccountId, BlockNumber> {
 	type Currency: ReservableCurrency<AccountId>;
 	type Balance: Balance;
 	type PositiveImbalance: Imbalance<Self::Balance, Opposite = Self::NegativeImbalance>;
@@ -103,7 +103,7 @@ use sp_runtime::traits::Zero;
 use primitives::VerifiedAttestation;
 
 #[cfg(feature = "std")]
-impl<AccountId, BlockNumber> WorkerManageable<AccountId, BlockNumber> for () {
+impl<AccountId, BlockNumber> OffchainWorkerManageable<AccountId, BlockNumber> for () {
 	type Currency = ();
 	type Balance = u32;
 	type PositiveImbalance = ();

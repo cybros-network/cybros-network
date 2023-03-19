@@ -2,7 +2,7 @@ use crate::*;
 use frame_system::EnsureRoot;
 use frame_support::traits::{ConstBool, ConstU128, ConstU32};
 
-impl pallet_computing_workers::Config for Runtime {
+impl pallet_offchain_computing_workers::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type UnixTime = Timestamp;
@@ -16,6 +16,6 @@ impl pallet_computing_workers::Config for Runtime {
 	type ValidateWorkerImpl = ConstBool<false>;
 	type ValidateWorkerImplHash = ConstBool<false>;
 	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
-	type WeightInfo = pallet_computing_workers::weights::SubstrateWeight<Runtime>;
-	type WorkerLifecycleHooks = PoolComputing;
+	type WeightInfo = pallet_offchain_computing_workers::weights::SubstrateWeight<Runtime>;
+	type OffchainWorkerLifecycleHooks = OffchainComputing;
 }

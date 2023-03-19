@@ -122,7 +122,7 @@ mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// A handler for manging worker slashing
-		type WorkerLifecycleHooks: WorkerLifecycleHooks<Self::AccountId>;
+		type OffchainWorkerLifecycleHooks: OffchainWorkerLifecycleHooks<Self::AccountId>;
 	}
 
 	/// Storage for worker's implementations permission.
@@ -517,7 +517,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::NotOffline
 		);
 		ensure!(
-			T::WorkerLifecycleHooks::can_deregister(&worker),
+			T::OffchainWorkerLifecycleHooks::can_deregister(&worker),
 			Error::<T>::CanNotDeregister
 		);
 
@@ -588,7 +588,7 @@ impl<T: Config> Pallet<T> {
 		Self::ensure_attestation_provided(&attestation)?;
 		let verified_attestation = Self::verify_attestation(&attestation)?;
 		Self::verify_online_payload(&worker, &payload, &verified_attestation)?;
-		T::WorkerLifecycleHooks::can_online(&worker, &payload, &verified_attestation)?;
+		T::OffchainWorkerLifecycleHooks::can_online(&worker, &payload, &verified_attestation)?;
 
 		let attestation_method: Option<AttestationMethod> = attestation.map(|a| a.method());
 
@@ -610,7 +610,7 @@ impl<T: Config> Pallet<T> {
 			next_heartbeat,
 		});
 
-		T::WorkerLifecycleHooks::after_online(&worker);
+		T::OffchainWorkerLifecycleHooks::after_online(&worker);
 
 		Ok(())
 	}
@@ -641,7 +641,7 @@ impl<T: Config> Pallet<T> {
 
 		Self::deposit_event(Event::<T>::AttestationRefreshed { worker: worker.clone() });
 
-		T::WorkerLifecycleHooks::after_refresh_attestation(&worker, &payload, &verified_attestation);
+		T::OffchainWorkerLifecycleHooks::after_refresh_attestation(&worker, &payload, &verified_attestation);
 
 		Ok(())
 	}
@@ -660,8 +660,8 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::NotOnline
 		);
 
-		if T::WorkerLifecycleHooks::can_offline(&worker) {
-			T::WorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
+		if T::OffchainWorkerLifecycleHooks::can_offline(&worker) {
+			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
 			Self::offline_worker(&worker);
 
 			Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::Graceful });
@@ -680,7 +680,7 @@ impl<T: Config> Pallet<T> {
 
 			Self::deposit_event(Event::<T>::RequestingOffline { worker: worker.clone() });
 
-			T::WorkerLifecycleHooks::after_requesting_offline(&worker);
+			T::OffchainWorkerLifecycleHooks::after_requesting_offline(&worker);
 		}
 
 		Ok(())
@@ -699,7 +699,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::NotOnline
 		);
 
-		T::WorkerLifecycleHooks::before_offline(&worker, OfflineReason::Forced);
+		T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Forced);
 		Self::offline_worker(&worker);
 
 		Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::Forced });
@@ -718,7 +718,7 @@ impl<T: Config> Pallet<T> {
 
 		// Check whether attestation expired, if yes, treat as force offline
 		if current_block - worker_info.attested_at > T::AttestationValidityDuration::get().into() {
-			T::WorkerLifecycleHooks::before_offline(&worker, OfflineReason::AttestationExpired);
+			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::AttestationExpired);
 			Self::offline_worker(&worker);
 
 			Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::AttestationExpired });
@@ -727,9 +727,9 @@ impl<T: Config> Pallet<T> {
 
 		// Check whether can offline now, We ignore error here
 		if worker_info.status == WorkerStatus::RequestingOffline &&
-			T::WorkerLifecycleHooks::can_offline(&worker)
+			T::OffchainWorkerLifecycleHooks::can_offline(&worker)
 		{
-			T::WorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
+			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
 			Self::offline_worker(&worker);
 
 			Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::Graceful });
@@ -738,7 +738,7 @@ impl<T: Config> Pallet<T> {
 
 		// Check the worker's reserved money
 		if <T as Config>::Currency::reserved_balance(&worker) < T::ReservedDeposit::get() {
-			T::WorkerLifecycleHooks::before_offline(&worker, OfflineReason::InsufficientReservedFunds);
+			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::InsufficientReservedFunds);
 			Self::offline_worker(&worker);
 
 			Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::InsufficientReservedFunds });
@@ -755,7 +755,7 @@ impl<T: Config> Pallet<T> {
 			};
 
 			if !valid_impl {
-				T::WorkerLifecycleHooks::before_offline(&worker, OfflineReason::WorkerImplBlocked);
+				T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::WorkerImplBlocked);
 				Self::offline_worker(&worker);
 
 				Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::WorkerImplBlocked });
@@ -855,7 +855,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn handle_worker_unresponsive(worker: &T::AccountId) {
-		T::WorkerLifecycleHooks::before_offline(worker, OfflineReason::Unresponsive);
+		T::OffchainWorkerLifecycleHooks::before_offline(worker, OfflineReason::Unresponsive);
 
 		Workers::<T>::mutate(worker, |worker_info| {
 			if let Some(mut info) = worker_info.as_mut() {
@@ -974,7 +974,7 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl<T: Config> WorkerManageable<T::AccountId, T::BlockNumber> for Pallet<T> {
+impl<T: Config> OffchainWorkerManageable<T::AccountId, T::BlockNumber> for Pallet<T> {
 	type Currency = T::Currency;
 	type Balance = BalanceOf<T>;
 	type PositiveImbalance = PositiveImbalanceOf<T>;

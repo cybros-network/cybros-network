@@ -3,9 +3,9 @@ use frame_support::traits::{
 	AsEnsureOriginWithArg, ConstU32, ConstU64, ConstU128,
 };
 
-impl pallet_pool_computing::Config for Runtime {
+impl pallet_offchain_computing::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type WorkerManageable = ComputingWorkers;
+	type OffchainWorkerManageable = OffchainComputingWorkers;
 	type Currency = Balances;
 	type UnixTime = Timestamp;
 	type PoolId = u32;

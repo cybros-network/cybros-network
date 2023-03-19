@@ -1,4 +1,4 @@
-//! Benchmarking setup for pallet-computing_workers
+//! Benchmarking setup for pallet-offchain_computing_workers
 
 // Only enable this module for benchmarking.
 #![cfg(feature = "runtime-benchmarks")]
@@ -18,7 +18,7 @@ use primitives::{
 	WorkerStatus,
 };
 
-use crate::Pallet as ComputingWorkers;
+use crate::Pallet as OffchainComputingWorkers;
 use super::*;
 
 const DOLLARS: u128 = 1_000_000_000_000;
@@ -49,7 +49,7 @@ fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::Accoun
 
 	let initial_deposit = reserved_deposit.saturating_add((10 * DOLLARS).saturated_into::<BalanceOf<T>>());
 
-	assert_ok!(ComputingWorkers::<T>::register(
+	assert_ok!(OffchainComputingWorkers::<T>::register(
 		RawOrigin::Signed(owner.clone()).into(),
 		worker.clone(),
 		initial_deposit
@@ -63,7 +63,7 @@ fn add_mock_online_worker<T: Config>(worker_public: &sr25519::Public, owner: &T:
 	let worker = add_mock_worker::<T>(worker_public, owner);
 
 	let (payload, attestation) = mock_online_payload_and_attestation::<T>(worker_public);
-	assert_ok!(ComputingWorkers::<T>::online(RawOrigin::Signed(worker.clone()).into(), payload, attestation));
+	assert_ok!(OffchainComputingWorkers::<T>::online(RawOrigin::Signed(worker.clone()).into(), payload, attestation));
 
 	let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 	assert_eq!(worker_info.attestation_method, Some(AttestationMethod::NonTEE));
@@ -294,7 +294,7 @@ mod benchmarks {
 	// TODO: benchmark other paths of heartbeat
 
 	impl_benchmark_test_suite! {
-		ComputingWorkers,
+		OffchainComputingWorkers,
 		crate::mock::new_test_ext(),
 		crate::mock::Test
 	}

@@ -310,8 +310,8 @@ async function handleTask() {
 
     logger.info("new task incoming");
 
-    logger.info(`Sending "pool_computing.take_task(${window.subscribePool}, ${task.id}, null)`);
-    const txPromise = api.tx.poolComputing.takeTask(window.subscribePool, task.id, null);
+    logger.info(`Sending "offchain_computing.take_task(${window.subscribePool}, ${task.id}, null)`);
+    const txPromise = api.tx.offchainComputing.takeTask(window.subscribePool, task.id, null);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -366,8 +366,8 @@ async function handleTask() {
     const taskResult = api.createType("TaskResult", result);
     const taskOutput = api.createType("TaskOutput", parsedOut.trim())
 
-    logger.info(`Sending "pool_computing.submitTaskResult()`);
-    const txPromise = api.tx.poolComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput, null, null);
+    logger.info(`Sending "offchain_computing.submitTaskResult()`);
+    const txPromise = api.tx.offchainComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput, null, null);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -555,12 +555,12 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
   // Use the latest block instead of finalized one, so we don't delay handle any operation,
   // but confirm use finalized block
   const [workerInfo, flipOrFlop, inFlipSet, inFlopSet, { data: workerBalance }] = await Promise.all([
-    api.query.computingWorkers.workers(window.workerKeyPair.address).then((v) =>
+    api.query.offchainComputingWorkers.workers(window.workerKeyPair.address).then((v) =>
       v === null || v === undefined ? null : v.toJSON()
     ),
-    api.query.computingWorkers.flipOrFlop().then(stage => stage.toString()),
-    api.query.computingWorkers.flipSet(window.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
-    api.query.computingWorkers.flopSet(window.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
+    api.query.offchainComputingWorkers.flipOrFlop().then(stage => stage.toString()),
+    api.query.offchainComputingWorkers.flipSet(window.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
+    api.query.offchainComputingWorkers.flopSet(window.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
     api.query.system.account(window.workerKeyPair.address),
   ]);
 
@@ -574,8 +574,8 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
     logger.warning("Worker hasn't registered");
     if (window.ownerKeyPair !== null) {
       const initialDeposit = numberToBalance(10000);
-      logger.info(`Sending "computing_workers.register(worker, initialDeposit)`);
-      const txPromise = api.tx.computingWorkers.register(window.workerKeyPair.address, initialDeposit);
+      logger.info(`Sending "offchain_computing_workers.register(worker, initialDeposit)`);
+      const txPromise = api.tx.offchainComputingWorkers.register(window.workerKeyPair.address, initialDeposit);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.ownerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -610,8 +610,8 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
     const payloadSig = window.workerKeyPair.sign(payload.toU8a());
     const attestation = createAttestation(api, u8aToHex(payloadSig));
 
-    logger.info(`Sending "computing_workers.online(payload, attestation)`);
-    const txPromise = api.tx.computingWorkers.online(payload, attestation);
+    logger.info(`Sending "offchain_computing_workers.online(payload, attestation)`);
+    const txPromise = api.tx.offchainComputingWorkers.online(payload, attestation);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -636,8 +636,8 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
       const payloadSig = window.workerKeyPair.sign(payload.toU8a());
       const attestation = createAttestation(api, u8aToHex(payloadSig));
 
-      logger.info(`Sending "computing_workers.refreshAttestation(payload, attestation)`);
-      const txPromise = api.tx.computingWorkers.refreshAttestation(payload, attestation);
+      logger.info(`Sending "offchain_computing_workers.refreshAttestation(payload, attestation)`);
+      const txPromise = api.tx.offchainComputingWorkers.refreshAttestation(payload, attestation);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -657,8 +657,8 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
       flipOrFlop === FlipFlopStage.Flop && inFlopSet && latestBlockNumber >= inFlopSet
     );
     if (shouldHeartBeat && window.locals.sentHeartbeatAt === undefined) {
-      logger.info(`Sending "computing_workers.heartbeat()`);
-      const txPromise = api.tx.computingWorkers.heartbeat();
+      logger.info(`Sending "offchain_computing_workers.heartbeat()`);
+      const txPromise = api.tx.offchainComputingWorkers.heartbeat();
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -681,8 +681,8 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
 
     if (window.ownerKeyPair !== null) {
       const deposit = numberToBalance(workerBalanceThreshold);
-      logger.info(`Sending "computingWorkers.deposit('${window.workerKeyPair.address}', '${deposit}')"`);
-      const txPromise = api.tx.computingWorkers.deposit(window.workerKeyPair.address, deposit);
+      logger.info(`Sending "offchainComputingWorkers.deposit('${window.workerKeyPair.address}', '${deposit}')"`);
+      const txPromise = api.tx.offchainComputingWorkers.deposit(window.workerKeyPair.address, deposit);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.ownerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -692,7 +692,7 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
   // // We only handle finalized event
   // const events = await apiAt.query.system.events();
   // events.forEach(({ event }) => {
-  //   if (event.section !== "poolComputing") {
+  //   if (event.section !== "offchainComputing") {
   //     return;
   //   }
   //   if (event.data.worker === undefined || event.data.worker.toString() !== window.workerKeyPair.address) {
@@ -710,7 +710,7 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
 
   const now = Math.floor(Date.now() / 1000);
   const tasks =
-    (await apiAt.query.poolComputing.tasks.entries(window.subscribePool))
+    (await apiAt.query.offchainComputing.tasks.entries(window.subscribePool))
       .map(([_k, task]) => task.toJSON())
       .filter((task: AnyJson) => {
         return task.status != TaskStatus.Processed &&
@@ -736,7 +736,7 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
   }
 
   if ((task && window.locals.currentTask === undefined) || window.locals.currentTask.id == task.id) {
-    const input = (await apiAt.query.poolComputing.taskInputs(window.subscribePool, task.id)).unwrapOr(null);
+    const input = (await apiAt.query.offchainComputing.taskInputs(window.subscribePool, task.id)).unwrapOr(null);
     // console.log(input);
     task.input = input !== null ? u8aToHex(input.data) : "";
     task.rawInput = input;

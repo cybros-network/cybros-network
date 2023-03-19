@@ -21,7 +21,7 @@ type WorkerInfo = primitives::WorkerInfo<<Test as frame_system::Config>::Account
 fn register_worker_for(owner: AccountId, worker: AccountId, initial_deposit: Balance) -> WorkerInfo {
 	let owner_balance = Balances::free_balance(owner);
 
-	assert_ok!(ComputingWorkers::register(RuntimeOrigin::signed(owner), worker, initial_deposit));
+	assert_ok!(OffchainComputingWorkers::register(RuntimeOrigin::signed(owner), worker, initial_deposit));
 
 	let worker_info = Workers::<Test>::get(worker).unwrap();
 
@@ -44,12 +44,12 @@ fn register_works() {
 		set_balance(ALICE, 101 * DOLLARS, 0);
 
 		assert_noop!(
-			ComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 10 * DOLLARS),
+			OffchainComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 10 * DOLLARS),
 			Error::<Test>::InitialDepositTooLow
 		);
 
 		assert_noop!(
-			ComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 100 * DOLLARS),
+			OffchainComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 100 * DOLLARS),
 			Error::<Test>::AlreadyRegistered
 		);
 	});
@@ -64,7 +64,7 @@ fn deregister_works() {
 
 		run_to_block(1);
 
-		assert_ok!(ComputingWorkers::deregister(RuntimeOrigin::signed(ALICE), ALICE_WORKER));
+		assert_ok!(OffchainComputingWorkers::deregister(RuntimeOrigin::signed(ALICE), ALICE_WORKER));
 
 		assert_eq!(Balances::free_balance(ALICE), 101 * DOLLARS);
 		assert_eq!(Account::<Test>::contains_key(ALICE_WORKER), false);
