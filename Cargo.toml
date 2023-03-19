@@ -33,12 +33,7 @@ members = [
 ]
 exclude = [
     "vendor",
-    "worker" # Temporarily, I shall focusing on Deno worker implementation first.
 ]
-
-[patch.crates-io]
-# I know this is bad but there's `zeroize` version conflict between `vodozemac` and `substrate`
-x25519-dalek = { path = "vendor/x25519-dalek" }
 
 # The list of dependencies below (which can be both direct and indirect dependencies) are crates
 # that are suspected to be CPU-intensive, and that are unlikely to require debugging (as some of
