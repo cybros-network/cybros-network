@@ -1,8 +1,6 @@
 #!/usr/bin/env sh
 set -e
 
-pushd .
-
 # The following lines ensure we run from the project root
 PROJECT_ROOT=$(dirname $(dirname "$(readlink -f "$0")"))
 cd "$PROJECT_ROOT"
@@ -18,5 +16,3 @@ time DOCKER_BUILDKIT=1 docker build -f ./docker/node.Dockerfile -t ${DOCKER_ORG}
 # Show the list of available images for this repo
 echo "Image is ready"
 docker images | grep ${DOCKER_REPO}
-
-popd

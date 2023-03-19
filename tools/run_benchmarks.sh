@@ -1,8 +1,6 @@
 #!/usr/bin/env sh
 set -e
 
-pushd .
-
 # The following lines ensure we run from the project root
 PROJECT_ROOT=$(dirname $(dirname "$(readlink -f "$0")"))
 cd "$PROJECT_ROOT"
@@ -23,5 +21,3 @@ echo "*** Run benchmark for pallet-computing_workers ***"
   --heap-pages=4096 \
   --output=./pallets/offchain_computing_workers/src/weights.rs \
   --template=./templates/pallet-weight-template.hbs
-
-popd
