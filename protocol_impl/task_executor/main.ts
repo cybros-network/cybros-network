@@ -2,9 +2,9 @@ import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
 import { loadSync as loadEnvSync } from "https://deno.land/std/dotenv/mod.ts";
 
-import {u8aToString, hexToString, hexToU8a, stringToHex, u8aToHex} from "https://deno.land/x/polkadot/util/mod.ts";
-import { cryptoWaitReady } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
-import { Keyring } from "https://deno.land/x/polkadot/keyring/mod.ts";
+import { u8aToString, hexToString, hexToU8a, stringToHex, u8aToHex } from "https://deno.land/x/polkadot/util/mod.ts";
+import {cryptoWaitReady, ed25519PairFromSeed} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
+import { encryptMessage, decryptMessage } from "./message_utils.ts"
 
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));
 
@@ -46,9 +46,9 @@ await initializeLogger(path.resolve(path.join(workPath, "run.log"))).catch((e) =
 const logger = log.getLogger("default");
 
 const env = loadEnvSync();
-const e2eKeyring = function () {
+const e2eKeyPair = function () {
   try {
-    return new Keyring({ type: "ed25519" }).addFromUri(env.E2E_PHRASE, { name: "E2E" });
+    return ed25519PairFromSeed(hexToU8a(env.E2E_KEY_SEED));
   } catch (e) {
     logger.error(e.message);
 
@@ -75,7 +75,7 @@ const parsedInput = function (input) {
 }(input);
 
 const e2eRequired = parsedInput.e2e ?? false;
-const parsedArgs = function (input, e2eRequired, keyring) {
+const parsedArgs = function (input, e2eRequired, keyPair) {
   try {
     const e2eRequired = input.e2e ?? false;
     if (!e2eRequired) {
@@ -84,7 +84,7 @@ const parsedArgs = function (input, e2eRequired, keyring) {
 
     return JSON.parse(
       u8aToString(
-        keyring.decryptMessage(hexToU8a(input.encryptedArgs), input.senderPublicKey)
+        decryptMessage(hexToU8a(input.encryptedArgs), keyPair.secretKey, input.senderPublicKey)
       )
     );
   } catch (e) {
@@ -93,7 +93,7 @@ const parsedArgs = function (input, e2eRequired, keyring) {
     console.log(stringToHex("Can't decrypt input"));
     Deno.exit(1);
   }
-}(parsedInput, e2eRequired, e2eKeyring);
+}(parsedInput, e2eRequired, e2eKeyPair);
 
 // Do echo
 
@@ -106,7 +106,7 @@ try {
 
   const output = `Received: ${stringToEcho}`;
   if (e2eRequired) {
-    const encryptedOutput = u8aToHex(e2eKeyring.encryptMessage(output, parsedInput.senderPublicKey));
+    const encryptedOutput = u8aToHex(encryptMessage(output, e2eKeyPair.secretKey, parsedInput.senderPublicKey));
     console.log(encryptedOutput);
   } else {
     console.log(stringToHex(output));
