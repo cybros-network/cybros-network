@@ -1,5 +1,3 @@
-import type { HexString } from 'https://deno.land/x/polkadot/util/types.ts';
-
 import {
   cryptoWaitReady, ed25519PairFromSeed, randomAsU8a
 } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
@@ -13,6 +11,7 @@ await cryptoWaitReady().catch((e) => {
 });
 
 const message = "hello";
+console.log(`Raw message: ${message}`);
 
 const senderSeed = randomAsU8a();
 console.log(`Hexed sender seed: ${u8aToHex(senderSeed)}`);

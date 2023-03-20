@@ -2,7 +2,7 @@
 
 import { parse } from "https://deno.land/std/flags/mod.ts";
 import { cryptoWaitReady, ed25519PairFromSeed, randomAsU8a } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
-import {hexToU8a, stringToHex, u8aToHex, u8aToString} from "https://deno.land/x/polkadot/util/mod.ts";
+import {hexToU8a, u8aToHex, u8aToString} from "https://deno.land/x/polkadot/util/mod.ts";
 import { decryptMessage } from "./message_utils.ts";
 
 const parsedArgs = parse(Deno.args, {

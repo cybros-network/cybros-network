@@ -706,11 +706,9 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
     return;
   }
 
-  // We only handle finalized task
-
   const now = Math.floor(Date.now() / 1000);
   const tasks =
-    (await apiAt.query.offchainComputing.tasks.entries(window.subscribePool))
+    (await api.query.offchainComputing.tasks.entries(window.subscribePool))
       .map(([_k, task]) => task.toJSON())
       .filter((task: AnyJson) => {
         return task.status != TaskStatus.Processed &&
@@ -736,7 +734,7 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
   }
 
   if ((task && window.locals.currentTask === undefined) || window.locals.currentTask.id == task.id) {
-    const input = (await apiAt.query.offchainComputing.taskInputs(window.subscribePool, task.id)).unwrapOr(null);
+    const input = (await api.query.offchainComputing.taskInputs(window.subscribePool, task.id)).unwrapOr(null);
     // console.log(input);
     task.input = input !== null ? u8aToHex(input.data) : "";
     task.rawInput = input;
