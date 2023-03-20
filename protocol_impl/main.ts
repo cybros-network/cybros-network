@@ -328,7 +328,7 @@ async function handleTask() {
 
   console.log(task)
 
-  const taskWorkPath = path.join(tempPath, "task_executor"); // TODO:
+  const taskWorkPath = path.join(tempPath, "task"); // TODO:
 
   await prepareDirectory(taskWorkPath).catch((e) => {
     console.error(e.message);
