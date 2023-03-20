@@ -530,14 +530,19 @@ window.attestedAt = 0;
 
 window.locals = {};
 
-await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHeader) => {
+// await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHeader) => {
+await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
   const logger = log.getLogger("background");
   const api = window.substrateApi;
 
-  const finalizedBlockHash = finalizedHeader.hash.toHex();
-  const finalizedBlockNumber = finalizedHeader.number.toNumber();
+  // const finalizedBlockHash = finalizedHeader.hash.toHex();
+  // const finalizedBlockNumber = finalizedHeader.number.toNumber();
 
-  const latestHeader = await api.rpc.chain.getHeader();
+  const finalizedHeader = await api.rpc.chain.getFinalizedHead();
+  const finalizedBlockHash = finalizedHeader.hash.toHex();
+  const finalizedBlockNumber = (await api.rpc.chain.getHeader(finalizedHeader)).number
+
+  // const latestHeader = await api.rpc.chain.getHeader();
   const latestBlockHash = latestHeader.hash.toHex();
   const latestBlockNumber = latestHeader.number.toNumber();
 
@@ -550,7 +555,7 @@ await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHead
     `best: #${latestBlockNumber} (${latestBlockHash}), finalized #${finalizedBlockNumber} (${finalizedBlockHash})`,
   );
 
-  const apiAt = await api.at(finalizedBlockHash);
+  // const apiAt = await api.at(finalizedBlockHash);
 
   // Use the latest block instead of finalized one, so we don't delay handle any operation,
   // but confirm use finalized block
