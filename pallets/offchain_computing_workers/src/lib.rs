@@ -38,7 +38,10 @@ use frame_support::{
 use scale_codec::{Decode, Encode};
 use sp_core::{sr25519, H256};
 use sp_io::crypto::sr25519_verify;
-use sp_runtime::{traits::Zero, SaturatedConversion, Saturating};
+use sp_runtime::{
+	traits::{Zero, StaticLookup},
+	SaturatedConversion, Saturating
+};
 use sp_std::prelude::*;
 
 use primitives::*;
@@ -47,6 +50,7 @@ use crate::{
 	weights::WeightInfo,
 };
 
+pub(crate) type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
 pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 pub(crate) type PositiveImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::PositiveImbalance;
 pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
@@ -153,6 +157,17 @@ mod pallet {
 	/// Storage for stage of flip-flop, this is used for online checking
 	#[pallet::storage]
 	pub(crate) type CurrentFlipFlopStartedAt<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
+
+	#[pallet::storage]
+	pub type AccountOwnedWorkers<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
+		T::AccountId,
+		(),
+		OptionQuery,
+	>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -338,8 +353,9 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(0)]
 		#[pallet::weight(T::WeightInfo::register())]
-		pub fn register(origin: OriginFor<T>, worker: T::AccountId, initial_deposit: BalanceOf<T>) -> DispatchResult {
+		pub fn register(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, initial_deposit: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			let worker = T::Lookup::lookup(worker)?;
 			Self::do_register(who, worker, initial_deposit)
 		}
 
@@ -378,8 +394,9 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(4)]
 		#[pallet::weight(T::WeightInfo::deregister())]
-		pub fn deregister(origin: OriginFor<T>, worker: T::AccountId) -> DispatchResult {
+		pub fn deregister(origin: OriginFor<T>, worker: AccountIdLookupOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			let worker = T::Lookup::lookup(worker)?;
 			Self::do_deregister(who, worker)
 		}
 
@@ -408,8 +425,9 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(7)]
 		#[pallet::weight(T::WeightInfo::deposit())]
-		pub fn deposit(origin: OriginFor<T>, worker: T::AccountId, value: BalanceOf<T>) -> DispatchResult {
+		pub fn deposit(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			let worker = T::Lookup::lookup(worker)?;
 			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
 			Self::ensure_owner(&who, &worker_info)?;
 
@@ -421,8 +439,9 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(8)]
 		#[pallet::weight(T::WeightInfo::withdraw())]
-		pub fn withdraw(origin: OriginFor<T>, worker: T::AccountId, value: BalanceOf<T>) -> DispatchResult {
+		pub fn withdraw(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			let worker = T::Lookup::lookup(worker)?;
 			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
 			Self::ensure_owner(&who, &worker_info)?;
 
@@ -434,8 +453,9 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(9)]
 		#[pallet::weight(T::WeightInfo::request_offline_for())]
-		pub fn request_offline_for(origin: OriginFor<T>, worker: T::AccountId) -> DispatchResult {
+		pub fn request_offline_for(origin: OriginFor<T>, worker: AccountIdLookupOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			let worker = T::Lookup::lookup(worker)?;
 			Self::do_request_offline(worker, Some(who))
 		}
 
@@ -443,11 +463,11 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(10)]
 		#[pallet::weight(T::WeightInfo::force_offline_for())]
-		pub fn force_offline_for(origin: OriginFor<T>, worker: T::AccountId) -> DispatchResult {
+		pub fn force_offline_for(origin: OriginFor<T>, worker: AccountIdLookupOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			let worker = T::Lookup::lookup(worker)?;
 			Self::do_force_offline(worker, Some(who))
 		}
-
 
 		/// Set worker's implementations' permissions
 		#[transactional]
@@ -504,6 +524,7 @@ impl<T: Config> Pallet<T> {
 		}
 
 		Workers::<T>::insert(&worker, worker_info);
+		AccountOwnedWorkers::<T>::insert(owner, &worker, ());
 
 		Self::deposit_event(Event::<T>::Registered { worker });
 		Ok(())
@@ -534,6 +555,7 @@ impl<T: Config> Pallet<T> {
 		)?;
 
 		Workers::<T>::remove(&worker);
+		AccountOwnedWorkers::<T>::remove(&owner, &worker);
 
 		Self::deposit_event(Event::<T>::Deregistered { worker, force: false });
 		Ok(())

@@ -13,6 +13,7 @@ impl<T: Config> Pallet<T> {
 		Self::ensure_worker(worker)?;
 
 		Workers::<T>::insert(&pool_info.id, worker, ());
+		WorkerInServicePools::<T>::insert(worker, &pool_info.id, ());
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.workers_count += 1;
@@ -31,6 +32,7 @@ impl<T: Config> Pallet<T> {
 		);
 
 		Workers::<T>::remove(&pool_info.id, worker);
+		WorkerInServicePools::<T>::remove(worker, &pool_info.id);
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.workers_count -= 1;

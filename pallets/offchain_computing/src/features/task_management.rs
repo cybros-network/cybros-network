@@ -72,7 +72,7 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.tasks_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		Accounts::<T>::insert((owner, &pool_info.id, task_id), ());
+		AccountOwnedTasks::<T>::insert((owner, &pool_info.id, task_id), ());
 
 		Ok(())
 	}
@@ -131,7 +131,7 @@ impl<T: Config> Pallet<T> {
 		}
 
 		Tasks::<T>::remove(pool_id, task_id);
-		Accounts::<T>::remove((&task.owner, pool_id, task_id));
+		AccountOwnedTasks::<T>::remove((&task.owner, pool_id, task_id));
 
 		Pools::<T>::try_mutate_exists(pool_id, |pool_info| -> Result<(), DispatchError> {
 			let Some(pool_info) = pool_info else {

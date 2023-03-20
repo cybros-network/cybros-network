@@ -253,19 +253,6 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	/// The pools owned by any given account; set out this way so that pools owned by
-	/// a single account can be enumerated.
-	#[pallet::storage]
-	pub type PoolsAccounts<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		T::AccountId,
-		Blake2_128Concat,
-		T::PoolId,
-		(),
-		OptionQuery,
-	>;
-
 	/// Workers of pools
 	#[pallet::storage]
 	pub type Workers<T: Config> = StorageDoubleMap<
@@ -323,20 +310,6 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	/// The tasks held by any given account; set out this way so that tasks owned by a single
-	/// account can be enumerated.
-	#[pallet::storage]
-	pub type Accounts<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, T::AccountId>, // owner
-			NMapKey<Blake2_128Concat, T::PoolId>,
-			NMapKey<Blake2_128Concat, T::TaskId>,
-		),
-		(),
-		OptionQuery,
-	>;
-
 	/// Stores the `PoolId` that is going to be used for the next pool.
 	/// This gets incremented whenever a new pool is created.
 	#[pallet::storage]
@@ -361,6 +334,44 @@ pub mod pallet {
 		Blake2_128Concat,
 		T::PoolId,
 		T::TaskId,
+		OptionQuery,
+	>;
+
+	/// The pools owned by any given account; set out this way so that pools owned by
+	/// a single account can be enumerated.
+	#[pallet::storage]
+	pub type AccountOwnedPools<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
+		T::PoolId,
+		(),
+		OptionQuery,
+	>;
+
+	#[pallet::storage]
+	pub type WorkerInServicePools<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
+		T::PoolId,
+		(),
+		OptionQuery,
+	>;
+
+	/// The tasks held by any given account; set out this way so that tasks owned by a single
+	/// account can be enumerated.
+	#[pallet::storage]
+	pub type AccountOwnedTasks<T: Config> = StorageNMap<
+		_,
+		(
+			NMapKey<Blake2_128Concat, T::AccountId>, // owner
+			NMapKey<Blake2_128Concat, T::PoolId>,
+			NMapKey<Blake2_128Concat, T::TaskId>,
+		),
+		(),
 		OptionQuery,
 	>;
 
@@ -567,11 +578,18 @@ pub mod pallet {
 			worker: AccountIdLookupOf<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			let worker = T::Lookup::lookup(worker)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
-			Self::ensure_pool_owner(&who, &pool_info)?;
+			let worker_info = T::OffchainWorkerManageable::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 
-			let worker = T::Lookup::lookup(worker)?;
+			let pool_owner = pool_info.owner.clone();
+			let worker_owner = worker_info.owner;
+			ensure!(
+				pool_owner == who || worker_owner == who,
+				Error::<T>::NoPermission
+			);
+
 			Self::do_remove_worker(
 				&pool_info,
 				&worker
@@ -857,9 +875,8 @@ pub mod pallet {
 			// Nothing to do
 		}
 
-		fn can_deregister(_worker: &T::AccountId) -> bool {
-			// TODO: check worker in any pools
-			true
+		fn can_deregister(worker: &T::AccountId) -> bool {
+			WorkerInServicePools::<T>::iter_key_prefix(worker).next().is_none()
 		}
 
 		fn before_deregister(_worker: &T::AccountId) {
