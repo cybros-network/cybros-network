@@ -22,6 +22,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::WorkerAssignedTasksLimitExceeded
 		);
 
+		/// TODO: the current design has thundering herd problem, but it's OK for now.
 		let mut task = 'block: {
 			if let Some(task_id) = task_id {
 				AssignableTasks::<T>::remove(pool_id, &task_id);

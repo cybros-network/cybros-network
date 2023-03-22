@@ -597,7 +597,7 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
-			expires_in: Option<u64>,
+			soft_expires_in: Option<u64>,
 			// TODO: Tips?
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -638,7 +638,7 @@ pub mod pallet {
 				&who,
 				&input,
 				now,
-				expires_in
+				soft_expires_in
 			)?;
 
 			let next_id = task_id.increment();
@@ -695,12 +695,12 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			task_id: Option<T::TaskId>,
 			processing: bool,
-			expires_in: Option<u64>,
+			soft_expires_in: Option<u64>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
-			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
+			let expires_in = soft_expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
 			Self::do_assign_task(&pool_id, &task_id, &who, now, processing, expires_in)?;
 
 			Ok(())
@@ -731,12 +731,12 @@ pub mod pallet {
 			result: TaskResult,
 			output: Option<BoundedVec<u8, T::OutputLimit>>,
 			proof: Option<BoundedVec<u8, T::ProofLimit>>,
-			expires_in: Option<u64>
+			soft_expires_in: Option<u64>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
-			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
+			let expires_in = soft_expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
 			Self::do_submit_task_result(&pool_id, &task_id, &who, result, &output, &proof, now, expires_in)?;
 
 			Ok(())
