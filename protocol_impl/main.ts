@@ -687,21 +687,25 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     return;
   }
 
-  if (window.locals.sentTakeTaskAt && window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
-    logger.debug("Waiting take task extrinsic finalize");
-
-    return;
-  }
+  // if (window.locals.sentTakeTaskAt && window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
+  //   logger.debug("Waiting take task extrinsic finalize");
+  //
+  //   return;
+  // }
 
   if (window.locals.sentProcessedTaskAt) {
-    if (window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
-      logger.debug("Waiting submit task result extrinsic finalize");
-    } else {
-      window.locals.sentTakeTaskAt = undefined;
-      window.locals.sentProcessedTaskAt = undefined;
-      window.locals.runningTask = undefined;
-      window.locals.currentTask = undefined;
-    }
+    // if (window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
+    //   logger.debug("Waiting submit task result extrinsic finalize");
+    // } else {
+    //   window.locals.sentTakeTaskAt = undefined;
+    //   window.locals.sentProcessedTaskAt = undefined;
+    //   window.locals.runningTask = undefined;
+    //   window.locals.currentTask = undefined;
+    // }
+    window.locals.sentTakeTaskAt = undefined;
+    window.locals.sentProcessedTaskAt = undefined;
+    window.locals.runningTask = undefined;
+    window.locals.currentTask = undefined;
   }
 
   if (window.locals.currentTask === undefined) {
