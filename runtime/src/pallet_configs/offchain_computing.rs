@@ -16,14 +16,13 @@ impl pallet_offchain_computing::Config for Runtime {
 	type CreateTaskDeposit = ConstU128<{ 1 * UNITS }>;
 	type MetadataDepositBase = ConstU128<{ 1 * CENTS }>;
 	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
-	type MaxTakenTasksPerWorker = ConstU32<8>;
+	type MaxAssignedTasksPerWorker = ConstU32<8>;
 	type MaxPoliciesPerPool = ConstU32<8>;
 	type MaxTasksPerPool = ConstU32<1000>;
 	type MaxWorkersPerPool = ConstU32<100>;
 	type MinTaskExpiresIn = ConstU64<600>; // ~ 10 min
 	type MaxTaskExpiresIn = ConstU64<86400>; // ~ 1 day
 	type DefaultTaskExpiresIn = ConstU64<3600>; // ~ 1 hour
-	type MaxTaskScheduledTime = ConstU64<2764800>; // ~ 32 days
 	type PoolMetadataLimit = ConstU32<2048>; // 2KiB
 	type InputLimit = ConstU32<2048>; // 2KiB
 	type OutputLimit = ConstU32<2048>; // 2KiB

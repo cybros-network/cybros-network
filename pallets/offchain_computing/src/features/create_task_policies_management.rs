@@ -12,12 +12,13 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::PolicyIdTaken
 		);
 
-		CreateTaskPolicies::<T>::insert(&pool_info.id, &policy_id, policy);
+		CreateTaskPolicies::<T>::insert(&pool_info.id, &policy_id, policy.clone());
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.create_task_policies_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
+		Self::deposit_event(Event::CreateTaskPolicyCreated { pool_id: pool_info.id, policy_id, policy: policy });
 		Ok(())
 	}
 
@@ -36,6 +37,7 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.create_task_policies_count -= 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
+		Self::deposit_event(Event::CreateTaskPolicyDestroyed { pool_id: pool_info.id, policy_id });
 		Ok(())
 	}
 }

@@ -107,9 +107,9 @@ pub mod pallet {
 		#[pallet::constant]
 		type DepositPerByte: Get<BalanceOf<Self>>;
 
-		/// The limit of tasks a worker could take
+		/// The limit of tasks a worker could be assigned
 		#[pallet::constant]
-		type MaxTakenTasksPerWorker: Get<u32>;
+		type MaxAssignedTasksPerWorker: Get<u32>;
 
 		/// The limit of policies of a pool
 		#[pallet::constant]
@@ -134,10 +134,6 @@ pub mod pallet {
 		/// The default `expires_in` if not given
 		#[pallet::constant]
 		type DefaultTaskExpiresIn: Get<u64>;
-
-		/// The default `expires_in` if not given
-		#[pallet::constant]
-		type MaxTaskScheduledTime: Get<u64>;
 
 		/// The maximum length of pool's metadata stored on-chain.
 		#[pallet::constant]
@@ -182,9 +178,8 @@ pub mod pallet {
 		WorkerAdded { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRemoved { pool_id: T::PoolId, worker: T::AccountId },
 		TaskCreated { owner: T::AccountId, pool_id: T::PoolId, task_id: T::TaskId, input: Option<BoundedVec<u8, T::InputLimit>> },
-		TaskDestroyed { pool_id: T::PoolId, task_id: T::TaskId },
-		TaskReclaimed { pool_id: T::PoolId, task_id: T::TaskId, reclaimed_by: T::AccountId },
-		TaskTaken { pool_id: T::PoolId, task_id: T::TaskId, taken_by: T::AccountId },
+		TaskDestroyed { pool_id: T::PoolId, task_id: T::TaskId, destroyer: T::AccountId },
+		TaskAssigned { pool_id: T::PoolId, task_id: T::TaskId, assignee: T::AccountId },
 		TaskReleased { pool_id: T::PoolId, task_id: T::TaskId },
 		TaskStatusUpdated { pool_id: T::PoolId, task_id: T::TaskId, status: TaskStatus },
 		TaskResultUpdated { pool_id: T::PoolId, task_id: T::TaskId, result: TaskResult, output: Option<BoundedVec<u8, T::OutputLimit>>, proof: Option<BoundedVec<u8, T::ProofLimit>> },
@@ -193,6 +188,7 @@ pub mod pallet {
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
+		InternalError,
 		PoolIdTaken,
 		PolicyIdTaken,
 		TaskIdTaken,
@@ -207,19 +203,18 @@ pub mod pallet {
 		CreateTaskPolicyNotApplicable,
 		ExpiresInTooSmall,
 		ExpiresInTooLarge,
-		ScheduledTimeTooFar,
 		WorkersPerPoolLimitExceeded,
 		WorkerAlreadyAdded,
 		TasksPerPoolLimitExceeded,
 		TaskNotFound,
-		WorkerTakenTasksLimitExceeded,
+		WorkerAssignedTasksLimitExceeded,
+		NoAssignableTask,
 		TaskIsProcessing,
 		TaskIsProcessed,
+		TaskAssigneeLocked,
 		TaskStillValid,
 		TaskExpired,
-		TaskTooEarlyToTake,
-		TaskAlreadyTaken,
-		TaskAlreadyReleased,
+		TaskAlreadyAssigned,
 	}
 
 	/// Pools info.
@@ -376,14 +371,24 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	pub type WorkerTakenTasksCounter<T: Config> =
-		StorageMap<
-			_,
-			Blake2_128Concat,
-			T::AccountId,
-			u32,
-			ValueQuery
-		>;
+	pub type AssignableTasks<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::PoolId,
+		Blake2_128Concat,
+		T::TaskId,
+		(),
+		OptionQuery,
+	>;
+
+	#[pallet::storage]
+	pub type WorkerAssignedTasksCounter<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		u32,
+		ValueQuery
+	>;
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -398,14 +403,13 @@ pub mod pallet {
 
 			Self::do_create_pool(
 				&owner,
-				T::CreatePoolDeposit::get(),
-				pool_id
+				&T::CreatePoolDeposit::get(),
+				&pool_id
 			)?;
 
 			let next_id = pool_id.increment();
 			NextPoolId::<T>::set(Some(next_id));
 
-			Self::deposit_event(Event::PoolCreated { owner, pool_id });
 			Ok(())
 		}
 
@@ -420,7 +424,6 @@ pub mod pallet {
 
 			Self::do_destroy_pool(&who, pool_id)?;
 
-			Self::deposit_event(Event::PoolDestroyed { pool_id });
 			Ok(())
 		}
 
@@ -439,10 +442,8 @@ pub mod pallet {
 
 			if let Some(new_metadata) = new_metadata {
 				Self::do_update_pool_metadata(&pool_info, &new_metadata)?;
-				Self::deposit_event(Event::PoolMetadataUpdated { pool_id, new_metadata });
 			} else {
 				Self::do_remove_pool_metadata(&pool_info)?;
-				Self::deposit_event(Event::PoolMetadataRemoved { pool_id });
 			}
 
 			Ok(())
@@ -462,9 +463,8 @@ pub mod pallet {
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
 			let new_stash_account = T::Lookup::lookup(new_stash_account)?;
-			Self::do_update_pool_stash_account(&pool_info, new_stash_account.clone())?;
+			Self::do_update_pool_stash_account(&pool_info, &new_stash_account)?;
 
-			Self::deposit_event(Event::PoolStashAccountUpdated { pool_id, stash_account: new_stash_account });
 			Ok(())
 		}
 
@@ -482,12 +482,6 @@ pub mod pallet {
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
 			Self::do_toggle_pool_create_task_ability(&pool_info, enabled)?;
-
-			if enabled {
-				Self::deposit_event(Event::PoolCreateTaskAbilityEnabled { pool_id });
-			} else {
-				Self::deposit_event(Event::PoolCreateTaskAbilityDisabled { pool_id });
-			}
 
 			Ok(())
 		}
@@ -514,13 +508,12 @@ pub mod pallet {
 			Self::do_create_create_task_policy(
 				&pool_info,
 				policy_id,
-				policy.clone()
+				policy
 			)?;
 
 			let next_id = policy_id.increment();
 			NextCreateTaskPolicyId::<T>::set(&pool_id, Some(next_id));
 
-			Self::deposit_event(Event::CreateTaskPolicyCreated { pool_id, policy_id, policy });
 			Ok(())
 		}
 
@@ -542,7 +535,6 @@ pub mod pallet {
 				policy_id
 			)?;
 
-			Self::deposit_event(Event::CreateTaskPolicyDestroyed { pool_id, policy_id });
 			Ok(())
 		}
 
@@ -565,7 +557,6 @@ pub mod pallet {
 				&worker
 			)?;
 
-			Self::deposit_event(Event::WorkerAdded { pool_id, worker });
 			Ok(())
 		}
 
@@ -595,7 +586,6 @@ pub mod pallet {
 				&worker
 			)?;
 
-			Self::deposit_event(Event::WorkerRemoved { pool_id, worker });
 			Ok(())
 		}
 
@@ -608,8 +598,7 @@ pub mod pallet {
 			policy_id: T::PolicyId,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			expires_in: Option<u64>,
-			scheduled_at: Option<u64>,
-			// TODO: Tips? how?
+			// TODO: Tips?
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -649,14 +638,12 @@ pub mod pallet {
 				&who,
 				&input,
 				now,
-				expires_in,
-				scheduled_at
+				expires_in
 			)?;
 
 			let next_id = task_id.increment();
 			NextTaskId::<T>::set(&pool_id, Some(next_id));
 
-			Self::deposit_event(Event::TaskCreated { owner: who, pool_id, task_id, input });
 			Ok(())
 		}
 
@@ -676,14 +663,13 @@ pub mod pallet {
 				&task_id
 			)?;
 
-			Self::deposit_event(Event::TaskDestroyed { pool_id, task_id });
 			Ok(())
 		}
 
 		#[transactional]
 		#[pallet::call_index(11)]
 		#[pallet::weight(0)]
-		pub fn reclaim_expired_task(
+		pub fn destroy_expired_task(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			task_id: T::TaskId,
@@ -691,13 +677,13 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
-			Self::do_reclaim_expired_task(
+			Self::do_destroy_expired_task(
 				&pool_id,
 				&task_id,
+				&who,
 				now
 			)?;
 
-			Self::deposit_event(Event::TaskReclaimed { pool_id, task_id, reclaimed_by: who });
 			Ok(())
 		}
 
@@ -707,17 +693,16 @@ pub mod pallet {
 		pub fn take_task(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			task_id: T::TaskId,
+			task_id: Option<T::TaskId>,
+			processing: bool,
 			expires_in: Option<u64>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
-			Self::do_take_task(&pool_id, &task_id, &who, true, now, expires_in)?;
+			Self::do_assign_task(&pool_id, &task_id, &who, now, processing, expires_in)?;
 
-			Self::deposit_event(Event::TaskTaken { pool_id, task_id, taken_by: who });
-			Self::deposit_event(Event::TaskStatusUpdated { pool_id, task_id, status: TaskStatus::Processing });
 			Ok(())
 		}
 
@@ -727,16 +712,12 @@ pub mod pallet {
 		pub fn release_task(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			task_id: T::TaskId,
-			expires_in: Option<u64>
+			task_id: T::TaskId
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
-			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
-			Self::do_release_task(&pool_id, &task_id, &who, now, expires_in)?;
+			Self::do_release_task(&pool_id, &task_id, &who)?;
 
-			Self::deposit_event(Event::TaskReleased { pool_id, task_id });
 			Ok(())
 		}
 
@@ -756,11 +737,8 @@ pub mod pallet {
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
-			Self::do_submit_task_result(&pool_id, &task_id, &who, &output, &proof, true, now, expires_in)?;
+			Self::do_submit_task_result(&pool_id, &task_id, &who, result, &output, &proof, now, expires_in)?;
 
-			Self::deposit_event(Event::TaskResultUpdated { pool_id, task_id, result, output, proof });
-			Self::deposit_event(Event::TaskStatusUpdated { pool_id, task_id, status: TaskStatus::Processed });
-			Self::deposit_event(Event::TaskReleased { pool_id, task_id });
 			Ok(())
 		}
 	}
@@ -803,17 +781,19 @@ pub mod pallet {
 			Ok(())
 		}
 
-		pub(crate) fn ensure_task_not_expired(
-			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
-			now: u64
-		) -> DispatchResult {
-			ensure!(
-				task.expires_at >= now,
-				Error::<T>::TaskExpired
-			);
-
-			Ok(())
-		}
+		// Comment this because of difficulty reason,
+		// we decide to let the `expires_at` be soft expiring
+		// pub(crate) fn ensure_task_not_expired(
+		// 	task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
+		// 	now: u64
+		// ) -> DispatchResult {
+		// 	ensure!(
+		// 		task.expires_at >= now,
+		// 		Error::<T>::TaskExpired
+		// 	);
+		//
+		// 	Ok(())
+		// }
 
 		pub(crate) fn ensure_worker(who: &T::AccountId) -> DispatchResult {
 			ensure!(T::OffchainWorkerManageable::worker_exists(who), Error::<T>::WorkerNotFound);
@@ -835,14 +815,14 @@ pub mod pallet {
 			Ok(())
 		}
 
-		pub(crate) fn ensure_task_taker(
+		pub(crate) fn ensure_task_assignee(
 			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
 			worker: &T::AccountId,
 		) -> DispatchResult {
-			let taker = task.taken_by.clone().ok_or(Error::<T>::NoPermission)?;
+			let assignee = task.assignee.clone().ok_or(Error::<T>::NoPermission)?;
 
 			ensure!(
-				&taker == worker,
+				&assignee == worker,
 				Error::<T>::NoPermission
 			);
 
@@ -860,7 +840,7 @@ pub mod pallet {
 		}
 
 		fn can_offline(worker: &T::AccountId) -> bool {
-			WorkerTakenTasksCounter::<T>::get(worker) == 0
+			WorkerAssignedTasksCounter::<T>::get(worker) == 0
 		}
 
 		fn before_offline(_worker: &T::AccountId, _reason: OfflineReason) {

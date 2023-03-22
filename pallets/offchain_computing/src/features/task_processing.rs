@@ -6,55 +6,60 @@ use sp_runtime::{
 };
 
 impl<T: Config> Pallet<T> {
-	pub fn do_take_task(
+	pub fn do_assign_task(
 		pool_id: &T::PoolId,
-		task_id: &T::TaskId,
+		task_id: &Option<T::TaskId>,
 		worker: &T::AccountId,
-		processing: bool,
 		now: u64,
+		processing: bool,
 		expires_in: u64,
 	) -> DispatchResult {
 		Self::ensure_worker_in_pool(pool_id, worker)?;
 
-		Tasks::<T>::try_mutate_exists(&pool_id, task_id, |task| -> Result<(), DispatchError> {
-			let Some(task) = task else {
-				return Err(Error::<T>::TaskNotFound.into())
-			};
-			Self::ensure_task_not_expired(&task, now)?;
-			ensure!(
-				task.taken_by.is_none() || (task.taken_by.is_some() && task.released_at.is_some()),
-				Error::<T>::TaskAlreadyTaken
-			);
+		let current_assigned_tasks_count = WorkerAssignedTasksCounter::<T>::get(worker);
+		ensure!(
+			current_assigned_tasks_count < T::MaxAssignedTasksPerWorker::get(),
+			Error::<T>::WorkerAssignedTasksLimitExceeded
+		);
 
-			if let Some(scheduled_at) = task.scheduled_at {
-				ensure!(
-					now >= scheduled_at,
-					Error::<T>::TaskTooEarlyToTake
-				);
+		let mut task = 'block: {
+			if let Some(task_id) = task_id {
+				AssignableTasks::<T>::remove(pool_id, &task_id);
+				break 'block Tasks::<T>::get(pool_id, &task_id).ok_or(Error::<T>::TaskNotFound)
 			}
 
-			WorkerTakenTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
-				ensure!(
-					*counter <= T::MaxTakenTasksPerWorker::get(),
-					Error::<T>::WorkerTakenTasksLimitExceeded
-				);
+			let task_id = AssignableTasks::<T>::iter_key_prefix(pool_id).next().ok_or(Error::<T>::NoAssignableTask)?;
+			AssignableTasks::<T>::remove(pool_id, &task_id);
 
-				*counter += 1;
-				Ok(())
-			})?;
+			Tasks::<T>::get(pool_id, &task_id).ok_or(Error::<T>::TaskNotFound)
+		}?;
 
+		// It is possible to get a expired job, but actually it is a soft expiring
+		// Comment this because current `expires_at` actually a soft expiring
+		// Self::ensure_task_not_expired(&task, now)?;
+
+		ensure!(
+			task.assignee.is_none(),
+			Error::<T>::TaskAlreadyAssigned
+		);
+
+		task.assignee = Some(worker.clone());
+		task.assigned_at = Some(now);
+		// task.expires_at = now + expires_in; // Not sure we need to expand expiring time
+		if processing {
+			task.status = TaskStatus::Processing;
+			task.processing_at = Some(now);
 			task.expires_at = now + expires_in;
-			task.taken_by = Some(worker.clone());
-			task.taking_at = Some(now);
-			task.released_at = None;
-			if processing {
-				task.status = TaskStatus::Processing;
-				task.processing_at = Some(now);
-			}
+		}
 
-			Ok(())
-		})?;
+		let task_id = task.id.clone();
+		Tasks::<T>::insert(pool_id, task_id, task);
+		WorkerAssignedTasksCounter::<T>::insert(worker, current_assigned_tasks_count + 1);
 
+		Self::deposit_event(Event::TaskAssigned { pool_id: *pool_id, task_id, assignee: worker.clone() });
+		if processing {
+			Self::deposit_event(Event::TaskStatusUpdated { pool_id: *pool_id, task_id, status: TaskStatus::Processing });
+		}
 		Ok(())
 	}
 
@@ -62,8 +67,6 @@ impl<T: Config> Pallet<T> {
 		pool_id: &T::PoolId,
 		task_id: &T::TaskId,
 		worker: &T::AccountId,
-		now: u64,
-		expires_in: u64,
 	) -> DispatchResult {
 		Self::ensure_worker_in_pool(pool_id, worker)?;
 
@@ -71,31 +74,34 @@ impl<T: Config> Pallet<T> {
 			let Some(task) = task else {
 				return Err(Error::<T>::TaskNotFound.into())
 			};
-			Self::ensure_task_not_expired(&task, now)?;
-			ensure!(task.released_at.is_none(), Error::<T>::TaskAlreadyReleased);
+			// Comment this because current `expires_at` actually a soft expiring
+			// Self::ensure_task_not_expired(&task, now)?;
 
-			let taker = task.taken_by.as_ref().ok_or(Error::<T>::NoPermission)?;
-			ensure!(worker == taker, Error::<T>::NoPermission);
+			let assignee = task.assignee.as_ref().ok_or(Error::<T>::NoPermission)?;
+			ensure!(worker == assignee, Error::<T>::NoPermission);
 
 			ensure!(
 				match task.status {
-					TaskStatus::Processing => false,
+					TaskStatus::Processing | TaskStatus::Processed => false,
 					_ => true
 				},
-				Error::<T>::TaskIsProcessing
+				Error::<T>::TaskAssigneeLocked
 			);
 
-			task.expires_at = now + expires_in;
-			task.released_at = Some(now);
+			task.assignee = None;
+			task.assigned_at = None;
+			// task.expires_at = now + expires_in; // Not sure we need to expand expiring time
 
-			WorkerTakenTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
+			WorkerAssignedTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
 				*counter -= 1;
 				Ok(())
 			})?;
+			AssignableTasks::<T>::insert(pool_id, task_id, ());
 
 			Ok(())
 		})?;
 
+		Self::deposit_event(Event::TaskReleased { pool_id: *pool_id, task_id: *task_id });
 		Ok(())
 	}
 
@@ -103,9 +109,9 @@ impl<T: Config> Pallet<T> {
 		pool_id: &T::PoolId,
 		task_id: &T::TaskId,
 		worker: &T::AccountId,
+		result: TaskResult,
 		output_data: &Option<BoundedVec<u8, T::OutputLimit>>,
 		proof_data: &Option<BoundedVec<u8, T::ProofLimit>>,
-		release: bool,
 		now: u64,
 		expires_in: u64,
 	) -> DispatchResult {
@@ -120,20 +126,19 @@ impl<T: Config> Pallet<T> {
 				},
 				Error::<T>::TaskIsProcessed
 			);
-			Self::ensure_task_not_expired(&task, now)?;
-			Self::ensure_task_taker(task, worker)?;
+			// Comment this because current `expires_at` actually a soft expiring
+			// Self::ensure_task_not_expired(&task, now)?;
+			Self::ensure_task_assignee(task, worker)?;
 
 			task.expires_at = now + expires_in;
 			task.status = TaskStatus::Processed;
+			task.result = Some(result.clone());
 			task.processed_at = Some(now);
-			if release {
-				task.released_at = Some(now);
-			}
 
 			if let Some(output_data) = output_data {
 				let deposit = T::DepositPerByte::get()
 					.saturating_mul(((output_data.len()) as u32).into());
-				let depositor = task.taken_by.clone().ok_or(Error::<T>::NoPermission)?;
+				let depositor = task.assignee.clone().ok_or(Error::<T>::NoPermission)?;
 				T::Currency::reserve(&depositor, deposit)?;
 
 				let output_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::OutputLimit> {
@@ -147,7 +152,7 @@ impl<T: Config> Pallet<T> {
 			if let Some(proof_data) = proof_data {
 				let deposit = T::DepositPerByte::get()
 					.saturating_mul(((proof_data.len()) as u32).into());
-				let depositor = task.taken_by.clone().ok_or(Error::<T>::NoPermission)?;
+				let depositor = task.assignee.clone().ok_or(Error::<T>::NoPermission)?;
 				T::Currency::reserve(&depositor, deposit)?;
 
 				let proof_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::ProofLimit> {
@@ -162,12 +167,13 @@ impl<T: Config> Pallet<T> {
 			Ok(())
 		})?;
 
-		if release {
-			WorkerTakenTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
-				*counter -= 1;
-				Ok(())
-			})?;
-		}
+		WorkerAssignedTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
+			*counter -= 1;
+			Ok(())
+		})?;
+
+		Self::deposit_event(Event::TaskResultUpdated { pool_id: *pool_id, task_id: *task_id, result, output: output_data.clone(), proof: proof_data.clone() });
+		Self::deposit_event(Event::TaskStatusUpdated { pool_id: *pool_id, task_id: *task_id, status: TaskStatus::Processed });
 
 		Ok(())
 	}

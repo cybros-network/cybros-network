@@ -19,6 +19,7 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.workers_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
+		Self::deposit_event(Event::WorkerAdded { pool_id: pool_info.id, worker: worker.clone() });
 		Ok(())
 	}
 
@@ -38,6 +39,7 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.workers_count -= 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
+		Self::deposit_event(Event::WorkerRemoved { pool_id: pool_info.id, worker: worker.clone() });
 		Ok(())
 	}
 }

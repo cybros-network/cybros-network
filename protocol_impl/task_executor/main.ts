@@ -3,7 +3,7 @@ import * as path from "https://deno.land/std/path/mod.ts";
 import { loadSync as loadEnvSync } from "https://deno.land/std/dotenv/mod.ts";
 
 import { u8aToString, hexToString, hexToU8a, stringToHex, u8aToHex } from "https://deno.land/x/polkadot/util/mod.ts";
-import {cryptoWaitReady, ed25519PairFromSeed} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
+import { cryptoWaitReady, ed25519PairFromSeed } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import { encryptMessage, decryptMessage } from "./message_utils.ts"
 
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));

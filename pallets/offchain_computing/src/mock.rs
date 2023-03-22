@@ -121,14 +121,13 @@ impl pallet_offchain_computing::Config for Test {
 	type CreateTaskDeposit = ConstU128<{ 1 * DOLLARS }>;
 	type MetadataDepositBase = ConstU128<{ 1 * CENTS }>;
 	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
-	type MaxTakenTasksPerWorker = ConstU32<8>;
+	type MaxAssignedTasksPerWorker = ConstU32<8>;
 	type MaxPoliciesPerPool = ConstU32<3>;
 	type MaxTasksPerPool = ConstU32<100>;
 	type MaxWorkersPerPool = ConstU32<100>;
 	type MinTaskExpiresIn = ConstU64<6>;
 	type MaxTaskExpiresIn = ConstU64<24>;
 	type DefaultTaskExpiresIn = ConstU64<18>;
-	type MaxTaskScheduledTime = ConstU64<12>;
 	type PoolMetadataLimit = ConstU32<50>;
 	type InputLimit = ConstU32<50>;
 	type OutputLimit = ConstU32<50>;

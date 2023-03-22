@@ -301,32 +301,8 @@ async function handleTask() {
     return;
   }
 
-  if (task.status === TaskStatus.Pending) {
-    if (window.locals.sentTakeTaskAt && window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
-      logger.debug("Waiting take task extrinsic finalize");
-
-      return;
-    }
-
-    logger.info("new task incoming");
-
-    logger.info(`Sending "offchain_computing.take_task(${window.subscribePool}, ${task.id}, null)`);
-    const txPromise = api.tx.offchainComputing.takeTask(window.subscribePool, task.id, null);
-    logger.debug(`Call hash: ${txPromise.toHex()}`);
-    const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
-    logger.info(`Transaction hash: ${txHash.toHex()}`);
-    // TODO: Catch whether failed
-
-    window.locals.sentTakeTaskAt = window.latestBlockNumber;
-
-    return;
-  }
-
-  if (task.status === TaskStatus.Processing && window.locals.sentTakeTaskAt !== undefined) {
-    window.locals.sentTakeTaskAt = undefined;
-  }
-
-  console.log(task)
+  // console.log(task)
+  console.log(`Processing ${task.id}`);
 
   const taskWorkPath = path.join(tempPath, "task"); // TODO:
 
@@ -711,49 +687,69 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     return;
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  const tasks =
-    (await api.query.offchainComputing.tasks.entries(window.subscribePool))
-      .map(([_k, task]) => task.toJSON())
-      .filter((task: AnyJson) => {
-        return task.status != TaskStatus.Processed &&
-          (task.takenBy === window.workerKeyPair.address || task.takenBy === null) &&
-          (task.scheduledAt === null || (task.scheduledAt !== null && task.scheduledAt <= now)) &&
-          task.expiresAt > now;
-      } )
-      .sort((a: AnyJson, b: AnyJson) => a.id - b.id);
-  // console.log(tasks);
-  const task = tasks[0];
-  // console.log(task);
-  if (task === undefined) {
-    // console.log("No new task");
-    return;
-  } else if (window.locals.currentTask && window.locals.currentTask.id !== task.id) {
-    console.log(`task #${window.locals.currentTask.id} taken by other worker`);
-
-    window.locals.sentProcessedTaskAt = undefined;
-    window.locals.runningTask = undefined;
-    window.locals.currentTask = undefined;
+  if (window.locals.sentTakeTaskAt && window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
+    logger.debug("Waiting take task extrinsic finalize");
 
     return;
   }
 
-  if ((task && window.locals.currentTask === undefined) || window.locals.currentTask.id == task.id) {
-    const input = (await api.query.offchainComputing.taskInputs(window.subscribePool, task.id)).unwrapOr(null);
-    // console.log(input);
-    task.input = input !== null ? u8aToHex(input.data) : "";
-    task.rawInput = input;
-    // console.log(task.input);
+  if (window.locals.sentProcessedTaskAt) {
+    if (window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
+      logger.debug("Waiting submit task result extrinsic finalize");
+    } else {
+      window.locals.sentTakeTaskAt = undefined;
+      window.locals.sentProcessedTaskAt = undefined;
+      window.locals.runningTask = undefined;
+      window.locals.currentTask = undefined;
+    }
+  }
 
-    window.locals.currentTask = task
+  if (window.locals.currentTask === undefined) {
+    window.locals.sentTakeTaskAt = undefined;
 
-    await handleTask();
-  } else if (window.locals.sentProcessedTaskAt) {
-    window.locals.sentProcessedTaskAt = undefined;
-    window.locals.runningTask = undefined;
-    window.locals.currentTask = undefined;
+    const tasks =
+      (await api.query.offchainComputing.tasks.entries(window.subscribePool))
+        .map(([_k, task]) => task.toJSON());
 
-    return;
+    const tasksOfMine = tasks
+      .filter((task: AnyJson) => task.status != TaskStatus.Processed && task.assignee === window.workerKeyPair.address)
+      .sort((a: AnyJson, b: AnyJson) => a.id - b.id);
+    if (tasksOfMine.length > 0) {
+      console.log(`Tasks assign to me: ${tasksOfMine.map((i) => i.id)}`);
+      const task = tasksOfMine[0];
+      // console.log(task);
+
+      if ((task && window.locals.currentTask === undefined) || window.locals.currentTask.id == task.id) {
+        const input = (await api.query.offchainComputing.taskInputs(window.subscribePool, task.id)).unwrapOr(null);
+        // console.log(input);
+        task.input = input !== null ? u8aToHex(input.data) : "";
+        task.rawInput = input;
+        // console.log(task.input);
+
+        window.locals.currentTask = task
+
+        await handleTask();
+      }
+    }
+
+    if (tasks.filter((task: AnyJson) => task.status === TaskStatus.Pending && task.assignee === null).length > 0) {
+      logger.info("taking a new task");
+
+      logger.info(`Sending "offchain_computing.take_task(${window.subscribePool}, null, true, null)`);
+      const txPromise = api.tx.offchainComputing.takeTask(window.subscribePool, null, true, null);
+      logger.debug(`Call hash: ${txPromise.toHex()}`);
+      const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
+      logger.info(`Transaction hash: ${txHash.toHex()}`);
+      // TODO: Catch whether failed
+
+      window.locals.sentTakeTaskAt = window.latestBlockNumber;
+
+      return;
+    } else {
+      // logger.info("No new task");
+
+      return;
+    }
   }
 });
 

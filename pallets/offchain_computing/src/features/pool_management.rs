@@ -8,17 +8,17 @@ use sp_runtime::{
 impl<T: Config> Pallet<T> {
 	pub fn do_create_pool(
 		owner: &T::AccountId,
-		owner_deposit: BalanceOf<T>,
-		pool_id: T::PoolId
+		owner_deposit: &BalanceOf<T>,
+		pool_id: &T::PoolId
 	) -> DispatchResult {
-		ensure!(!Pools::<T>::contains_key(&pool_id), Error::<T>::PoolIdTaken);
+		ensure!(!Pools::<T>::contains_key(pool_id), Error::<T>::PoolIdTaken);
 
-		T::Currency::reserve(owner, owner_deposit)?;
+		T::Currency::reserve(owner, *owner_deposit)?;
 
 		let pool_info = PoolInfo::<T::PoolId, T::AccountId, BalanceOf<T>> {
-			id: pool_id,
+			id: *pool_id,
 			owner: owner.clone(),
-			owner_deposit,
+			owner_deposit: *owner_deposit,
 			stash_account: owner.clone(),
 			create_task_ability: true,
 			create_task_policies_count: 0,
@@ -27,8 +27,9 @@ impl<T: Config> Pallet<T> {
 		};
 
 		Pools::<T>::insert(pool_id, pool_info);
-		AccountOwnedPools::<T>::insert(owner, &pool_id, ());
+		AccountOwnedPools::<T>::insert(owner, pool_id, ());
 
+		Self::deposit_event(Event::PoolCreated { owner: owner.clone(), pool_id: pool_id.clone() });
 		Ok(())
 	}
 
@@ -52,6 +53,7 @@ impl<T: Config> Pallet<T> {
 
 		T::Currency::unreserve(&pool_info.owner, pool_info.owner_deposit);
 
+		Self::deposit_event(Event::PoolDestroyed { pool_id });
 		Ok(())
 	}
 
@@ -77,6 +79,8 @@ impl<T: Config> Pallet<T> {
 				surplus_deposit: Zero::zero(),
 				data: new_metadata.clone()
 			});
+
+			Self::deposit_event(Event::PoolMetadataUpdated { pool_id: pool_info.id, new_metadata: new_metadata.clone() });
 			Ok(())
 		})
 	}
@@ -91,18 +95,20 @@ impl<T: Config> Pallet<T> {
 		PoolMetadata::<T>::remove(&pool_info.id);
 		T::Currency::unreserve(&pool_info.owner, metadata_entry.actual_deposit);
 
+		Self::deposit_event(Event::PoolMetadataRemoved { pool_id: pool_info.id });
 		Ok(())
 	}
 
 	pub fn do_update_pool_stash_account(
 		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
-		new_stash_account: T::AccountId
+		new_stash_account: &T::AccountId
 	) -> DispatchResult {
 		let mut new_pool_info = pool_info.clone();
-		new_pool_info.stash_account = new_stash_account;
+		new_pool_info.stash_account = new_stash_account.clone();
 
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
+		Self::deposit_event(Event::PoolStashAccountUpdated { pool_id: pool_info.id, stash_account: new_stash_account.clone() });
 		Ok(())
 	}
 
@@ -115,6 +121,11 @@ impl<T: Config> Pallet<T> {
 
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
+		if enabled {
+			Self::deposit_event(Event::PoolCreateTaskAbilityEnabled { pool_id: pool_info.id });
+		} else {
+			Self::deposit_event(Event::PoolCreateTaskAbilityDisabled { pool_id: pool_info.id });
+		}
 		Ok(())
 	}
 }
