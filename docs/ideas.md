@@ -32,6 +32,12 @@ These are not enough, we should keep finding potential use-cases to prove our va
 
 These are certainty works need to be done.
 
+### Allow to attach a small size of memo on submit heartbeat
+
+The chain doesn't care what it is, it may be useful for monitoring worker metrics.
+
+It will not store on chain, just on event.
+
 ### Multi-steps (Workflow) task support
 
 Introducing `advanceable` for `Task`.
@@ -147,6 +153,7 @@ We need to consider how to avoid to assign to an offline worker.
 We need to consider given tips when create task will influence priority.
 
 Another option is we assign a worker on creating task, for tips, worker must submit result before a promising time.
+Another option is let Validators do the job, using offchain-worker technique.
 
 ### Scheduled (Cron) task support
 
@@ -158,6 +165,8 @@ Besides, I'm not sure how valuable of scheduled task is, so I'm just holding thi
 We may need a scheduler, like a hook in each block, move trigger-able scheduled task into `AssignableTask` queue,
 or we may find some tokenomic way to encourage worker take scheduled tasks,
 or we do it externally.
+
+Another option is let Validators do the job, using offchain-worker technique.
 
 ### Tips for creating task
 

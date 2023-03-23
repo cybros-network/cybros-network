@@ -1,6 +1,6 @@
 # Cybros Network
 
-Web3+ computing.
+Web3+ generic computing.
 
 ## Getting Started
 
