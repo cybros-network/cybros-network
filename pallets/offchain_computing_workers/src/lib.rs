@@ -503,7 +503,10 @@ impl<T: Config> Pallet<T> {
 		ensure!(owner != worker, Error::<T>::InvalidOwner);
 
 		let initial_reserved_deposit = T::ReservedDeposit::get();
-		ensure!(initial_deposit >= initial_reserved_deposit, Error::<T>::InitialDepositTooLow);
+		ensure!(
+			initial_deposit.saturating_add(T::Currency::free_balance(&worker)) > initial_reserved_deposit.saturating_add(T::Currency::minimum_balance()),
+			Error::<T>::InitialDepositTooLow
+		);
 
 		ensure!(!Workers::<T>::contains_key(&worker), Error::<T>::AlreadyRegistered);
 

@@ -28,7 +28,7 @@ pub(crate) const DOLLARS: Balance = 100 * CENTS;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-	pub enum Test where
+	pub struct Test where
 		Block = Block,
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
@@ -70,15 +70,19 @@ impl frame_system::Config for Test {
 }
 
 impl pallet_balances::Config for Test {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
 	type Balance = Balance;
 	type DustRemoval = ();
-	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ConstU128<{ 1 * CENTS }>;
 	type AccountStore = System;
-	type WeightInfo = ();
+	type ReserveIdentifier = [u8; 8];
+	type HoldIdentifier = ();
+	type FreezeIdentifier = ();
 	type MaxLocks = ();
 	type MaxReserves = ();
-	type ReserveIdentifier = [u8; 8];
+	type MaxHolds = ();
+	type MaxFreezes = ();
 }
 
 impl pallet_timestamp::Config for Test {
@@ -167,7 +171,13 @@ pub(crate) fn take_events() -> Vec<RuntimeEvent> {
 
 #[allow(unused)]
 pub(crate) fn set_balance(who: AccountId, new_free: Balance, new_reserved: Balance) {
-	assert_ok!(Balances::set_balance(RuntimeOrigin::root(), who.clone().into(), new_free, new_reserved));
+	assert_ok!(
+		Balances::force_set_balance(
+			RuntimeOrigin::root(),
+			who.clone().into(),
+			new_free.saturating_add(new_reserved)
+		)
+	);
 	assert_eq!(Balances::free_balance(&who), new_free);
 	assert_eq!(Balances::reserved_balance(&who), new_reserved);
 }

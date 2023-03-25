@@ -20,4 +20,4 @@ echo "*** Run benchmark for pallet-computing_workers ***"
   --wasm-execution=compiled \
   --heap-pages=4096 \
   --output=./pallets/offchain_computing_workers/src/weights.rs \
-  --template=./templates/pallet-weight-template.hbs
+  --template=./pallet-weight-template.hbs

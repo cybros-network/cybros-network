@@ -21,14 +21,20 @@ type WorkerInfo = primitives::WorkerInfo<<Test as frame_system::Config>::Account
 fn register_worker_for(owner: AccountId, worker: AccountId, initial_deposit: Balance) -> WorkerInfo {
 	let owner_balance = Balances::free_balance(owner);
 
-	assert_ok!(OffchainComputingWorkers::register(RuntimeOrigin::signed(owner), worker, initial_deposit));
+	assert_ok!(
+		OffchainComputingWorkers::register(
+			RuntimeOrigin::signed(owner),
+			worker.into(),
+			initial_deposit
+		)
+	);
 
 	let worker_info = Workers::<Test>::get(worker).unwrap();
 
 	assert_eq!(worker_info.status, WorkerStatus::Registered);
-	assert_eq!(Balances::free_balance(owner), owner_balance - initial_deposit);
+	assert_eq!(Balances::free_balance(owner), owner_balance.saturating_sub(initial_deposit));
 	assert_eq!(Balances::reserved_balance(worker), worker_info.reserved);
-	assert_eq!(Balances::free_balance(worker), initial_deposit - worker_info.reserved);
+	assert_eq!(Balances::free_balance(worker), initial_deposit.saturating_sub(worker_info.reserved));
 
 	worker_info
 }
@@ -36,20 +42,20 @@ fn register_worker_for(owner: AccountId, worker: AccountId, initial_deposit: Bal
 #[test]
 fn register_works() {
 	new_test_ext().execute_with(|| {
-		set_balance(ALICE, 101 * DOLLARS, 0);
+		set_balance(ALICE, 201 * DOLLARS);
 
-		register_worker_for(ALICE, ALICE_WORKER, 100 * DOLLARS);
+		register_worker_for(ALICE, ALICE_WORKER, 101 * DOLLARS);
 
 		run_to_block(1);
-		set_balance(ALICE, 101 * DOLLARS, 0);
+		set_balance(ALICE, 201 * DOLLARS);
 
 		assert_noop!(
-			OffchainComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 10 * DOLLARS),
+			OffchainComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 11 * DOLLARS),
 			Error::<Test>::InitialDepositTooLow
 		);
 
 		assert_noop!(
-			OffchainComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 100 * DOLLARS),
+			OffchainComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 101 * DOLLARS),
 			Error::<Test>::AlreadyRegistered
 		);
 	});
@@ -58,15 +64,15 @@ fn register_works() {
 #[test]
 fn deregister_works() {
 	new_test_ext().execute_with(|| {
-		set_balance(ALICE, 101 * DOLLARS, 0);
+		set_balance(ALICE, 201 * DOLLARS);
 
-		register_worker_for(ALICE, ALICE_WORKER, 100 * DOLLARS);
+		register_worker_for(ALICE, ALICE_WORKER, 101 * DOLLARS);
 
 		run_to_block(1);
 
 		assert_ok!(OffchainComputingWorkers::deregister(RuntimeOrigin::signed(ALICE), ALICE_WORKER));
 
-		assert_eq!(Balances::free_balance(ALICE), 101 * DOLLARS);
+		assert_eq!(Balances::free_balance(ALICE), 201 * DOLLARS);
 		assert_eq!(Account::<Test>::contains_key(ALICE_WORKER), false);
 	});
 }

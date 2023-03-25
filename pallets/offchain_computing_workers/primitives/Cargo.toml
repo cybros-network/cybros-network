@@ -12,8 +12,8 @@ publish = false
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-scale-codec = { package = "parity-scale-codec", version = "3.3.0", default-features = false, features = ["derive"] }
-scale-info = { version = "2.3.1", default-features = false, features = ["derive"] }
+scale-codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
+scale-info = { version = "2.4.0", default-features = false, features = ["derive"] }
 
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
