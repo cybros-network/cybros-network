@@ -346,7 +346,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	pub type WorkerInServicePools<T: Config> = StorageDoubleMap<
+	pub type WorkerServedPools<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::AccountId,
@@ -856,7 +856,7 @@ pub mod pallet {
 		}
 
 		fn can_deregister(worker: &T::AccountId) -> bool {
-			WorkerInServicePools::<T>::iter_key_prefix(worker).next().is_none()
+			WorkerServedPools::<T>::iter_key_prefix(worker).next().is_none()
 		}
 
 		fn before_deregister(_worker: &T::AccountId) {
