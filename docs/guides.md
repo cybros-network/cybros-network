@@ -76,25 +76,25 @@ Pool is the unit to process tasks
 ### Add creating task policy
 
 Creating task policy controls who can submit new task, in the future, it also contains how to charge for a task, and more. 
-When create new task, user must specify a policy by `policyId`
+When creating new task, user must specify a policy by `policyId`
 
 - Open <https://polkadot.js.org/apps/#/extrinsics>, ensure you are on the correct endpoint
 - You must use the wallet which you used to create the pool
-- Submit `offchainComputing.createCreateTaskPolicy(poolId, policy)`
-  ![offchainComputing.createCreateTaskPolicy(poolId, policy)](./images/create_create_task_policy.png)
+- Submit `offchainComputing.createCreatingTaskPolicy(poolId, policy)`
+  ![offchainComputing.createCreatingTaskPolicy(poolId, policy)](./images/create_create_task_policy.png)
   - `permission` can choose `Owner` or `Public`
     - When choose `Owner`, only the pool's owner can create task
     - When choose `Public`, anyone can create task
     - In the future, it will support `AllowList` for only selected people can create task
-  - Optional `startBlock` and `endBlock` use for control the valid period of the policy
-  - You can delete a policy, call `offchainComputing.destroyCreateTaskPolicy(poolId, policyId)`
+  - Optional `startBlock` and `endBlock` are used for control the valid period of the policy
+  - You can delete a policy, call `offchainComputing.destroyCreatingTaskPolicy(poolId, policyId)`
 
 ## How to create task
 
 - Open <https://polkadot.js.org/apps/#/extrinsics>, ensure you are on the correct endpoint
 - Ensure you have enough CBT to create task
 - Submit `offchainComputing.createTask(poolId, policyId, input, softExpiresIn)`
-  ![offchainComputing.addWorker(poolId, worker)](./images/create_task.png)
+  ![offchainComputing.createTask(poolId, policyId, input, softExpiresIn)](./images/create_task.png)
   - You need to choose a valid creating task policy by `policyId`
   - `input` depends on your task processor
   - `softExpiresInSeconds` is optional

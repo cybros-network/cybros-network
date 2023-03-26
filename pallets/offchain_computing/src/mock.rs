@@ -122,7 +122,7 @@ impl pallet_offchain_computing::Config for Test {
 	type PolicyId = u32;
 	type CreatePoolOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<Self::AccountId>>;
 	type CreatePoolDeposit = ConstU128<{ 1 * DOLLARS }>;
-	type CreateTaskDeposit = ConstU128<{ 1 * DOLLARS }>;
+	type CreatingTaskDeposit = ConstU128<{ 1 * DOLLARS }>;
 	type MetadataDepositBase = ConstU128<{ 1 * CENTS }>;
 	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
 	type MaxAssignedTasksPerWorker = ConstU32<8>;

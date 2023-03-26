@@ -113,6 +113,8 @@ Trustable is the first priority concern.
 
 We already have protocol implementations registry, but we haven't enabled the verification yet.
 
+We need to improve current design, ensure `impl_name` is unique, separate `spec_version` and `impl_version`, and etc.
+
 ### Improving handling for task expiring
 
 Currently, the `expires_at` is actually a soft expiring, worker can still process it even the task has expired.

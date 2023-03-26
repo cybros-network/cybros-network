@@ -22,7 +22,7 @@ impl<T: Config> Pallet<T> {
 
 		let input_deposit = T::DepositPerByte::get()
 			.saturating_mul(((input_data.as_ref().map(|x| x.len()).unwrap_or_default()) as u32).into());
-		let task_deposit = T::CreateTaskDeposit::get();
+		let task_deposit = T::CreatingTaskDeposit::get();
 		let deposit = input_deposit.saturating_add(task_deposit);
 		T::Currency::reserve(owner, deposit)?;
 

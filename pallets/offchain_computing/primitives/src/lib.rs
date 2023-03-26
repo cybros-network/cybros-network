@@ -28,7 +28,7 @@ pub struct ChainStoredData<AccountId, Balance, DataLimit: Get<u32>> {
 }
 
 #[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
-pub enum CreateTaskPermission {
+pub enum CreatingTaskPermission {
 	/// Only the owner could create tasks.
 	#[default]
 	Owner,
@@ -39,11 +39,10 @@ pub enum CreateTaskPermission {
 	// AllowList,
 }
 
-/// Holds the information about minting.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct CreateTaskPolicy<BlockNumber> {
+pub struct CreatingTaskPolicy<BlockNumber> {
 	/// Whether anyone can mint or if minters are restricted to some subset.
-	pub permission: CreateTaskPermission,
+	pub permission: CreatingTaskPermission,
 	// TODO：rates strategy
 	// /// An optional price per create task.
 	// pub price: Option<Balance>,
@@ -54,7 +53,7 @@ pub struct CreateTaskPolicy<BlockNumber> {
 	pub end_block: Option<BlockNumber>,
 }
 
-// TODO: Rates strategy (bound to CreateTaskPolicy), e.g. Pay a constant or by duration of processing fee for each task, pay to worker or the owner
+// TODO: Rates strategy (bound to CreatingTaskPolicy), e.g. Pay a constant or by duration of processing fee for each task, pay to worker or the owner
 // TODO: WorkerPolicy: How to slashing, max processing duration, and etc.
 
 /// Information about a pool.
@@ -69,10 +68,10 @@ pub struct PoolInfo<PoolId, AccountId, Balance> {
 	pub owner_deposit: Balance,
 	/// Pool's stash account.
 	pub stash_account: AccountId,
-	/// Create task disabled
-	pub create_task_ability: bool,
+	/// Allow creating task
+	pub creating_task_ability: bool,
 	/// The total number of outstanding create task policies of this pool.
-	pub create_task_policies_count: u32,
+	pub creating_task_policies_count: u32,
 	/// The total number of outstanding tasks of this pool.
 	pub tasks_count: u32,
 	/// The total number of outstanding workers of this pool.

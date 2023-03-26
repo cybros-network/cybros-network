@@ -97,7 +97,7 @@ pub mod pallet {
 
 		/// The basic amount of funds that must be reserved for a task.
 		#[pallet::constant]
-		type CreateTaskDeposit: Get<BalanceOf<Self>>;
+		type CreatingTaskDeposit: Get<BalanceOf<Self>>;
 
 		/// The basic amount of funds that must be reserved when adding metadata to your item.
 		#[pallet::constant]
@@ -171,10 +171,10 @@ pub mod pallet {
 		PoolStashAccountUpdated { pool_id: T::PoolId, stash_account: T::AccountId },
 		PoolMetadataUpdated { pool_id: T::PoolId, new_metadata: BoundedVec<u8, T::PoolMetadataLimit> },
 		PoolMetadataRemoved { pool_id: T::PoolId },
-		PoolCreateTaskAbilityEnabled { pool_id: T::PoolId },
-		PoolCreateTaskAbilityDisabled { pool_id: T::PoolId },
-		CreateTaskPolicyCreated { pool_id: T::PoolId, policy_id: T::PolicyId, policy: CreateTaskPolicy<T::BlockNumber> },
-		CreateTaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
+		PoolCreatingTaskAbilityEnabled { pool_id: T::PoolId },
+		PoolCreatingTaskAbilityDisabled { pool_id: T::PoolId },
+		CreatingTaskPolicyCreated { pool_id: T::PoolId, policy_id: T::PolicyId, policy: CreatingTaskPolicy<T::BlockNumber> },
+		CreatingTaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
 		WorkerAdded { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRemoved { pool_id: T::PoolId, worker: T::AccountId },
 		TaskCreated { owner: T::AccountId, pool_id: T::PoolId, task_id: T::TaskId, input: Option<BoundedVec<u8, T::InputLimit>> },
@@ -197,10 +197,10 @@ pub mod pallet {
 		WorkerNotFound,
 		WorkerNotInThePool,
 		PoolNotFound,
-		PoolCreateTaskAbilityDisabled,
-		CreateTaskPolicyNotFound,
-		CreateTaskPoliciesPerPoolLimitExceeded,
-		CreateTaskPolicyNotApplicable,
+		PoolCreatingTaskAbilityDisabled,
+		CreatingTaskPoliciesPerPoolLimitExceeded,
+		PolicyNotApplicable,
+		PolicyNotFound,
 		ExpiresInTooSmall,
 		ExpiresInTooLarge,
 		WorkersPerPoolLimitExceeded,
@@ -238,13 +238,13 @@ pub mod pallet {
 
 	/// Tasks info.
 	#[pallet::storage]
-	pub type CreateTaskPolicies<T: Config> = StorageDoubleMap<
+	pub type CreatingTaskPolicies<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
 		Blake2_128Concat,
 		T::PolicyId,
-		CreateTaskPolicy<T::BlockNumber>,
+		CreatingTaskPolicy<T::BlockNumber>,
 		OptionQuery,
 	>;
 
@@ -313,7 +313,7 @@ pub mod pallet {
 	/// Stores the `TaskId` that is going to be used for the next task.
 	/// This gets incremented whenever a new task is created.
 	#[pallet::storage]
-	pub type NextCreateTaskPolicyId<T: Config> = StorageMap<
+	pub type NextCreatingTaskPolicyId<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
@@ -471,7 +471,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(4)]
 		#[pallet::weight(0)]
-		pub fn toggle_pool_create_task(
+		pub fn toggle_pool_global_creating_task_ability(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			enabled: bool
@@ -481,7 +481,7 @@ pub mod pallet {
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_toggle_pool_create_task_ability(&pool_info, enabled)?;
+			Self::do_toggle_pool_creating_task_ability(&pool_info, enabled)?;
 
 			Ok(())
 		}
@@ -489,10 +489,10 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(5)]
 		#[pallet::weight(0)]
-		pub fn create_create_task_policy(
+		pub fn create_creating_task_policy(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			policy: CreateTaskPolicy<T::BlockNumber>,
+			policy: CreatingTaskPolicy<T::BlockNumber>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -500,19 +500,19 @@ pub mod pallet {
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
 			ensure!(
-				pool_info.create_task_policies_count <= T::MaxPoliciesPerPool::get(),
-				Error::<T>::CreateTaskPoliciesPerPoolLimitExceeded
+				pool_info.creating_task_policies_count <= T::MaxPoliciesPerPool::get(),
+				Error::<T>::CreatingTaskPoliciesPerPoolLimitExceeded
 			);
 
-			let policy_id = NextCreateTaskPolicyId::<T>::get(&pool_id).unwrap_or(T::PolicyId::initial_value());
-			Self::do_create_create_task_policy(
+			let policy_id = NextCreatingTaskPolicyId::<T>::get(&pool_id).unwrap_or(T::PolicyId::initial_value());
+			Self::do_create_creating_task_policy(
 				&pool_info,
 				policy_id,
 				policy
 			)?;
 
 			let next_id = policy_id.increment();
-			NextCreateTaskPolicyId::<T>::set(&pool_id, Some(next_id));
+			NextCreatingTaskPolicyId::<T>::set(&pool_id, Some(next_id));
 
 			Ok(())
 		}
@@ -520,7 +520,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(6)]
 		#[pallet::weight(0)]
-		pub fn destroy_create_task_policy(
+		pub fn destroy_creating_task_policy(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
@@ -530,7 +530,7 @@ pub mod pallet {
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_destroy_create_task_policy(
+			Self::do_destroy_creating_task_policy(
 				&pool_info,
 				policy_id
 			)?;
@@ -604,30 +604,30 @@ pub mod pallet {
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(
-				pool_info.create_task_ability,
-				Error::<T>::PoolCreateTaskAbilityDisabled
+				pool_info.creating_task_ability,
+				Error::<T>::PoolCreatingTaskAbilityDisabled
 			);
 			ensure!(
 				pool_info.tasks_count <= T::MaxTasksPerPool::get(),
 				Error::<T>::TasksPerPoolLimitExceeded
 			);
 
-			let create_task_policy = CreateTaskPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::CreateTaskPolicyNotFound)?;
+			let policy = CreatingTaskPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::PolicyNotFound)?;
 			let current_block = frame_system::Pallet::<T>::block_number();
-			if let Some(start_block) = create_task_policy.start_block {
-				ensure!(current_block >= start_block , Error::<T>::CreateTaskPolicyNotApplicable);
+			if let Some(start_block) = policy.start_block {
+				ensure!(current_block >= start_block , Error::<T>::PolicyNotApplicable);
 			}
-			if let Some(end_block) = create_task_policy.end_block {
-				ensure!(current_block <= end_block, Error::<T>::CreateTaskPolicyNotApplicable);
+			if let Some(end_block) = policy.end_block {
+				ensure!(current_block <= end_block, Error::<T>::PolicyNotApplicable);
 			}
-			match create_task_policy.permission {
-				CreateTaskPermission::Owner => {
+			match policy.permission {
+				CreatingTaskPermission::Owner => {
 					ensure!(
 						&pool_info.owner == &who,
-						Error::<T>::CreateTaskPolicyNotApplicable
+						Error::<T>::PolicyNotApplicable
 					)
 				},
-				CreateTaskPermission::Public => {}
+				CreatingTaskPermission::Public => {}
 			};
 
 			let task_id = NextTaskId::<T>::get(&pool_id).unwrap_or(T::TaskId::initial_value());
