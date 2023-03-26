@@ -32,12 +32,6 @@ These are not enough, we should keep finding potential use-cases to prove our va
 
 These are certainty works need to be done.
 
-### Allow to attach a small size of memo on submit heartbeat
-
-The chain doesn't care what it is, it may be useful for monitoring worker metrics.
-
-It will not store on chain, just on event.
-
 ### Multi-steps (Workflow) task support
 
 Introducing `advanceable` for `Task`.
@@ -81,6 +75,11 @@ When we examined our design by use-cases, we could make the first version of the
 Current one is poor design and hard to maintain, I'd like to rewrite it entirely, even need to spend some money.
 
 Open source it will allow people join to play with us.
+
+### Move limitations into `PoolInfo`
+
+Current we only have global limitations such as concurrency of workers, default expires in, and etc.
+we should allow pool's owner configure these, but the global settings shall be the upper limit.
 
 ### Fine tests, benchmarks, and documents
 
@@ -225,14 +224,25 @@ base on that, we could design how to share profit between application owner (the
 
 These are must things when it becomes a serious business.
 
-### The Haven production network
+### The Haven main network
 
-It will be the permanent production network.
+It will be the permanent main network.
 
 ### Becoming a public decentralized off-chain computing network
 
 This is the final goal, will achieve when above ideas are cleared,
 so this one should always be placed at the end of the list :)
+
+## Questions
+
+### Allow to attach a small size of memo on submit heartbeat
+
+The chain doesn't care what it is, it may be useful for monitoring worker metrics.
+
+It will not store on chain, just on event.
+
+However, it will increase Call data which would harmful for total TXs in a block,
+and I'm not sure how useful for monitoring workers, people should build their own monitoring for their workers.
 
 ## Archived
 
