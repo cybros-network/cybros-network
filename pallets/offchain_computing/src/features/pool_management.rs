@@ -27,7 +27,7 @@ impl<T: Config> Pallet<T> {
 		};
 
 		Pools::<T>::insert(pool_id, pool_info);
-		AccountOwnedPools::<T>::insert(owner, pool_id, ());
+		AccountOwningPools::<T>::insert(owner, pool_id, ());
 
 		Self::deposit_event(Event::PoolCreated { owner: owner.clone(), pool_id: pool_id.clone() });
 		Ok(())
@@ -49,7 +49,7 @@ impl<T: Config> Pallet<T> {
 		let _ = CreatingTaskPolicies::<T>::clear_prefix(&pool_id, pool_info.creating_task_policies_count, None);
 
 		Pools::<T>::remove(&pool_id);
-		AccountOwnedPools::<T>::remove(&pool_info.owner, &pool_id);
+		AccountOwningPools::<T>::remove(&pool_info.owner, &pool_id);
 
 		T::Currency::unreserve(&pool_info.owner, pool_info.owner_deposit);
 

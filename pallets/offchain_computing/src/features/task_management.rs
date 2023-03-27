@@ -58,7 +58,7 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.tasks_count += 1;
 
 		AssignableTasks::<T>::insert(&pool_info.id, task_id, ());
-		AccountOwnedTasks::<T>::insert((owner, pool_info.id, task_id), ());
+		AccountOwningTasks::<T>::insert((owner, pool_info.id, task_id), ());
 
 		Self::deposit_event(Event::TaskCreated { owner: owner.clone(), pool_id: pool_info.id, task_id: *task_id, input: input_data.clone() });
 		Ok(())
@@ -137,7 +137,7 @@ impl<T: Config> Pallet<T> {
 				Ok(())
 			})?;
 		}
-		AccountOwnedTasks::<T>::remove((&task.owner, pool_id, task_id));
+		AccountOwningTasks::<T>::remove((&task.owner, pool_id, task_id));
 		if task.status == TaskStatus::Pending {
 			AssignableTasks::<T>::remove(pool_id, task_id);
 		}

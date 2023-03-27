@@ -335,7 +335,7 @@ pub mod pallet {
 	/// The pools owned by any given account; set out this way so that pools owned by
 	/// a single account can be enumerated.
 	#[pallet::storage]
-	pub type AccountOwnedPools<T: Config> = StorageDoubleMap<
+	pub type AccountOwningPools<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::AccountId,
@@ -346,7 +346,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	pub type WorkerServedPools<T: Config> = StorageDoubleMap<
+	pub type WorkerServingPools<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::AccountId,
@@ -359,7 +359,7 @@ pub mod pallet {
 	/// The tasks held by any given account; set out this way so that tasks owned by a single
 	/// account can be enumerated.
 	#[pallet::storage]
-	pub type AccountOwnedTasks<T: Config> = StorageNMap<
+	pub type AccountOwningTasks<T: Config> = StorageNMap<
 		_,
 		(
 			NMapKey<Blake2_128Concat, T::AccountId>, // owner
@@ -856,7 +856,7 @@ pub mod pallet {
 		}
 
 		fn can_deregister(worker: &T::AccountId) -> bool {
-			WorkerServedPools::<T>::iter_key_prefix(worker).next().is_none()
+			WorkerServingPools::<T>::iter_key_prefix(worker).next().is_none()
 		}
 
 		fn before_deregister(_worker: &T::AccountId) {
