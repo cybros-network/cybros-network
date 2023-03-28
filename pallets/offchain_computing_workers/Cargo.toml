@@ -30,14 +30,14 @@ sp-std = { git = "https://github.com/paritytech/substrate", branch = "master", d
 
 primitives = { package = "pallet-offchain_computing_workers-primitives", path = "primitives", default-features = false }
 
-pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
+
+pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master" }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master" }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 [features]
 default = ["std"]
@@ -54,9 +54,6 @@ std = [
 	"sp-runtime/std",
 	"sp-std/std",
 	"primitives/std",
-	"pallet-balances/std",
-	"pallet-timestamp/std",
-	"pallet-insecure-randomness-collective-flip/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
@@ -67,9 +64,5 @@ runtime-benchmarks = [
 ]
 try-runtime = [
 	"frame-support/try-runtime",
-	"frame-support/try-runtime",
 	"frame-system/try-runtime",
-	"pallet-balances/try-runtime",
-	"pallet-timestamp/try-runtime",
-	"pallet-insecure-randomness-collective-flip/try-runtime",
 ]
