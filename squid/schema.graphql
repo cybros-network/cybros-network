@@ -1,0 +1,122 @@
+type Account @entity {
+  "Account address"
+  id: ID!
+
+  transfersTo: [Transfer!] @derivedFrom(field: "to")
+  transfersFrom: [Transfer!] @derivedFrom(field: "from")
+
+  owningWorkers: [Worker!] @derivedFrom(field: "owner")
+  owningPools: [Pool!] @derivedFrom(field: "owner")
+  tasks: [Task!] @derivedFrom(field: "owner")
+}
+
+type Transfer @entity {
+  id: ID!
+
+  blockNumber: Int! @index
+  timestamp: DateTime! @index
+  extrinsicHash: String @index
+  from: Account!
+  to: Account!
+  amount: BigInt!
+  fee: BigInt! # fee is calculated at the best effort and may be zero for some old extrinsics
+}
+
+enum AttestationMethod {
+  NoneTEE
+  Root
+}
+
+enum WorkerStatus {
+  Registered
+  Online
+  RequestingOffline
+  Offline
+}
+
+type Worker @entity {
+  id: ID!
+
+  account: Account! @index
+  owner: Account! @index
+  reserved: BigInt!
+  status: WorkerStatus! @index
+  implName: String!
+  implVersion: Int!
+  attestationMethod: AttestationMethod
+  attestedAt: Int
+}
+
+enum OfflineReason {
+  Graceful
+  Forced
+  Unresponsive
+  AttestationExpired
+  WorkerImplBlocked
+  InsufficientReservedFunds
+  Other
+}
+
+type ChainStoredData @entity {
+  id: ID!
+
+  depositor: Account! @index
+  actualDeposit: BigInt!
+  surplusDeposit: BigInt!
+  data: Bytes!
+}
+
+enum CreatingTaskPermission {
+  Owner
+  Public
+}
+
+type CreatingTaskPolicy @entity {
+  id: ID!
+
+  permission: CreatingTaskPermission!
+  price: BigInt
+  startBlock: Int
+  endBlock: Int
+}
+
+type Pool @entity {
+  id: ID!
+
+  owner: Account! @index
+  ownerDeposit: BigInt!
+  stashAccount: Account! @index
+  creatingTaskAbility: Boolean!
+  creatingTaskPoliciesCount: Int!
+  tasksCount: Int!
+  workersCount: Int!
+}
+
+enum TaskStatus {
+  Pending
+  Processing
+  Processed
+}
+
+enum TaskResult {
+  Success
+  Failed
+  Errored
+}
+
+type Task @entity {
+  id: ID!
+
+  creator: Account! @index
+  owner: Account! @index
+  ownerDeposit: Int!
+  status: TaskStatus!
+  result: TaskResult
+  expiresAt: DateTime!
+  createdBy: Account!
+  createdAt: DateTime!
+  assignee: Account
+  assignedAt: DateTime
+  processingAt: DateTime
+  processedAt: DateTime
+}

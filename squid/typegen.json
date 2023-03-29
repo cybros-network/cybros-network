@@ -1,0 +1,39 @@
+{
+  "outDir": "src/types",
+  "specVersions": "http://localhost:8888/graphql",
+  "events": [
+    "Balances.Transfer",
+    "OffchainComputingWorkers.Registered",
+    "OffchainComputingWorkers.Deregistered",
+    "OffchainComputingWorkers.Online",
+    "OffchainComputingWorkers.RequestingOffline",
+    "OffchainComputingWorkers.Offline",
+    "OffchainComputingWorkers.HeartbeatReceived",
+    "OffchainComputingWorkers.AttestationRefreshed",
+    "OffchainComputingWorkers.WorkerImplPermissionUpdated",
+    "OffchainComputingWorkers.WorkerImplPermissionRemoved",
+    "OffchainComputingWorkers.WorkerImplHashUpdated",
+    "OffchainComputingWorkers.WorkerImplHashRemoved",
+    "OffchainComputing.PoolCreated",
+    "OffchainComputing.PoolDestroyed",
+    "OffchainComputing.PoolStashAccountUpdated",
+    "OffchainComputing.PoolMetadataUpdated",
+    "OffchainComputing.PoolMetadataRemoved",
+    "OffchainComputing.PoolCreatingTaskAbilityEnabled",
+    "OffchainComputing.PoolCreatingTaskAbilityDisabled",
+    "OffchainComputing.CreatingTaskPolicyCreated",
+    "OffchainComputing.CreatingTaskPolicyDestroyed",
+    "OffchainComputing.WorkerAdded",
+    "OffchainComputing.WorkerRemoved",
+    "OffchainComputing.TaskCreated",
+    "OffchainComputing.TaskDestroyed",
+    "OffchainComputing.TaskAssigned",
+    "OffchainComputing.TaskReleased",
+    "OffchainComputing.TaskStatusUpdated",
+    "OffchainComputing.TaskResultUpdated"
+  ],
+  "calls": [ 
+  ],
+  "storage": [
+  ]
+}
