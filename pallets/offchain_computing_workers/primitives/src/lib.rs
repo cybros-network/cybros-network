@@ -216,5 +216,5 @@ pub enum OfflineReason {
 	AttestationExpired,
 	WorkerImplBlocked,
 	InsufficientReservedFunds,
-	Other(Option<Vec<u8>>),
+	Other,
 }

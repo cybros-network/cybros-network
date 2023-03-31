@@ -173,7 +173,7 @@ mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// The worker registered successfully
-		Registered { worker: T::AccountId },
+		Registered { worker: T::AccountId, owner: T::AccountId },
 		/// The worker registered successfully
 		Deregistered { worker: T::AccountId, force: bool },
 		/// The worker is online
@@ -527,9 +527,9 @@ impl<T: Config> Pallet<T> {
 		}
 
 		Workers::<T>::insert(&worker, worker_info);
-		AccountOwnedWorkers::<T>::insert(owner, &worker, ());
+		AccountOwnedWorkers::<T>::insert(&owner, &worker, ());
 
-		Self::deposit_event(Event::<T>::Registered { worker });
+		Self::deposit_event(Event::<T>::Registered { worker, owner });
 		Ok(())
 	}
 
@@ -1021,7 +1021,7 @@ impl<T: Config> OffchainWorkerManageable<T::AccountId, T::BlockNumber> for Palle
 		<T as Config>::Currency::slash(worker, value)
 	}
 
-	fn offline(worker: &T::AccountId, reason: Option<Vec<u8>>) -> DispatchResult {
+	fn offline(worker: &T::AccountId, reason: OfflineReason) -> DispatchResult {
 		let mut worker_info = Workers::<T>::get(worker).ok_or(Error::<T>::NotExists)?;
 		ensure!(
 			matches!(worker_info.status, WorkerStatus::Online | WorkerStatus::RequestingOffline),
@@ -1034,7 +1034,7 @@ impl<T: Config> OffchainWorkerManageable<T::AccountId, T::BlockNumber> for Palle
 		FlipSet::<T>::remove(worker);
 		FlopSet::<T>::remove(worker);
 
-		Self::deposit_event(Event::<T>::Offline { worker: worker.clone(), reason: OfflineReason::Other(reason) });
+		Self::deposit_event(Event::<T>::Offline { worker: worker.clone(), reason });
 
 		Ok(())
 	}

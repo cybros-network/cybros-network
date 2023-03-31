@@ -6,7 +6,6 @@ use frame_support::{
 		ReservableCurrency
 	},
 };
-use sp_std::prelude::*;
 use primitives::{OfflineReason, OnlinePayload, WorkerInfo};
 
 /// Trait describing something that implements a hook for any operations to perform when a staker is
@@ -94,7 +93,7 @@ pub trait OffchainWorkerManageable<AccountId, BlockNumber> {
 
 	fn slash(worker: &AccountId, value: Self::Balance) -> (Self::NegativeImbalance, Self::Balance);
 
-	fn offline(worker: &AccountId, reason: Option<Vec<u8>>) -> DispatchResult;
+	fn offline(worker: &AccountId, reason: OfflineReason) -> DispatchResult;
 }
 
 #[cfg(feature = "std")]
@@ -125,7 +124,7 @@ impl<AccountId, BlockNumber> OffchainWorkerManageable<AccountId, BlockNumber> fo
 		((), Self::Balance::zero())
 	}
 
-	fn offline(_: &AccountId, _: Option<Vec<u8>>) -> DispatchResult {
+	fn offline(_: &AccountId, _: OfflineReason) -> DispatchResult {
 		Ok(())
 	}
 }
