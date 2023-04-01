@@ -191,7 +191,7 @@ mod pallet {
 		/// The worker send heartbeat successfully
 		HeartbeatReceived { worker: T::AccountId, next_heartbeat: T::BlockNumber },
 		/// The worker refresh its attestation successfully
-		AttestationRefreshed { worker: T::AccountId },
+		AttestationRefreshed { worker: T::AccountId, method: AttestationMethod },
 		/// Update worker's implementation permission successfully
 		WorkerImplPermissionUpdated { impl_name: WorkerImplName },
 		/// Remove worker's implementation permission successfully
@@ -648,9 +648,9 @@ impl<T: Config> Pallet<T> {
 		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
 		Self::ensure_worker(&worker, &worker_info)?;
 
-		if worker_info.attestation_method.is_none() {
-			return Ok(())
-		}
+		let Some(attestation_method) = worker_info.clone().attestation_method else {
+			return Err(Error::<T>::NotOnline.into())
+		};
 
 		ensure!(worker_info.impl_name == payload.impl_name, Error::<T>::WorkerImplChanged);
 		ensure!(worker_info.impl_version == payload.impl_version, Error::<T>::WorkerImplChanged);
@@ -664,7 +664,7 @@ impl<T: Config> Pallet<T> {
 		worker_info.attested_at = frame_system::Pallet::<T>::block_number();
 		Workers::<T>::insert(&worker, worker_info);
 
-		Self::deposit_event(Event::<T>::AttestationRefreshed { worker: worker.clone() });
+		Self::deposit_event(Event::<T>::AttestationRefreshed { worker: worker.clone(), method: attestation_method });
 
 		T::OffchainWorkerLifecycleHooks::after_refresh_attestation(&worker, &payload, &verified_attestation);
 
