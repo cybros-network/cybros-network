@@ -1,18 +1,9 @@
-import {BatchContext, BatchProcessorItem, SubstrateBatchProcessor} from "@subsquid/substrate-processor"
-import {Store} from "@subsquid/typeorm-store"
-import * as config from "./config"
+import { BatchContext, BatchProcessorItem, SubstrateBatchProcessor } from "@subsquid/substrate-processor"
+import { Store } from "@subsquid/typeorm-store"
+import config from "./config"
 
 export const processor = new SubstrateBatchProcessor()
-    .setDataSource({
-        // Lookup archive by the network name in the Subsquid registry
-        //archive: lookupArchive("kusama", {release: "FireSquid"})
-
-        // Use archive created by archive/docker-compose.yml
-        archive: config.archiveGatewayEndpoint,
-        chain: config.chainNodeRPCEndpoint,
-    })
-    // Balances
-    .addEvent("Balances.Transfer")
+    .setDataSource(config.dataSource)
     // OffchainComputingWorkers
     .addEvent("OffchainComputingWorkers.Registered")
     .addEvent("OffchainComputingWorkers.Deregistered")
@@ -44,5 +35,5 @@ export const processor = new SubstrateBatchProcessor()
     .addEvent("OffchainComputing.TaskStatusUpdated")
     .addEvent("OffchainComputing.TaskResultUpdated")
 
-export type Item = BatchProcessorItem<typeof processor>
-export type Ctx = BatchContext<Store, Item>
+type Item = BatchProcessorItem<typeof processor>
+export type Context = BatchContext<Store, Item>

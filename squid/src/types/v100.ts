@@ -34,6 +34,16 @@ export interface TaskStatus_Processed {
     __kind: 'Processed'
 }
 
+export type AttestationMethod = AttestationMethod_NonTEE | AttestationMethod_Root
+
+export interface AttestationMethod_NonTEE {
+    __kind: 'NonTEE'
+}
+
+export interface AttestationMethod_Root {
+    __kind: 'Root'
+}
+
 export type OfflineReason = OfflineReason_Graceful | OfflineReason_Forced | OfflineReason_Unresponsive | OfflineReason_AttestationExpired | OfflineReason_WorkerImplBlocked | OfflineReason_InsufficientReservedFunds | OfflineReason_Other
 
 export interface OfflineReason_Graceful {
@@ -62,17 +72,6 @@ export interface OfflineReason_InsufficientReservedFunds {
 
 export interface OfflineReason_Other {
     __kind: 'Other'
-    value: (Uint8Array | undefined)
-}
-
-export type AttestationMethod = AttestationMethod_NonTEE | AttestationMethod_Root
-
-export interface AttestationMethod_NonTEE {
-    __kind: 'NonTEE'
-}
-
-export interface AttestationMethod_Root {
-    __kind: 'Root'
 }
 
 export type CreatingTaskPermission = CreatingTaskPermission_Owner | CreatingTaskPermission_Public

@@ -15,10 +15,10 @@ services:
     restart: on-failure
     image: subsquid/substrate-ingest:firesquid
     command: [
-       "-e", "wss://node-rpc.cybros.network",
-       "-c", "5", # allow up to 20 pending requests for the above endpoint (default is 5)
-       #  "--start-block", "1000000", # uncomment to specify a non-zero start block
-       "--out", "postgres://postgres:postgres@db:5432/cybros-squid-archive"
+      "-e", "wss://node-rpc.cybros.network",
+      "-c", "5", # allow up to 20 pending requests for the above endpoint (default is 5)
+      #  "--start-block", "1000000", # uncomment to specify a non-zero start block
+      "--out", "postgres://postgres:postgres@db:5432/cybros-squid-archive"
     ]
 
   gateway:
@@ -28,10 +28,10 @@ services:
     environment:
       RUST_LOG: "substrate_gateway=info,actix_server=info"
     command: [
-       "--database-url", "postgres://postgres:postgres@db:5432/cybros-squid-archive",
-       "--database-max-connections", "3", # max number of concurrent database connections
-       # "--evm-support" # uncomment for chains with Frontier EVM pallet
-                         # (e.g. Moonbeam/Moonriver or Astar/Shiden)
+      "--database-url", "postgres://postgres:postgres@db:5432/cybros-squid-archive",
+      "--database-max-connections", "3", # max number of concurrent database connections
+      # "--evm-support" # uncomment for chains with Frontier EVM pallet
+                        # (e.g. Moonbeam/Moonriver or Astar/Shiden)
     ]
     ports:
       - "8888:8000"

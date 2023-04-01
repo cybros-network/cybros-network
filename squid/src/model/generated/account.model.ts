@@ -1,5 +1,4 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToMany as OneToMany_} from "typeorm"
-import {Transfer} from "./transfer.model"
 import {Worker} from "./worker.model"
 import {Pool} from "./pool.model"
 import {Task} from "./task.model"
@@ -16,12 +15,6 @@ export class Account {
     @PrimaryColumn_()
     id!: string
 
-    @OneToMany_(() => Transfer, e => e.to)
-    transfersTo!: Transfer[]
-
-    @OneToMany_(() => Transfer, e => e.from)
-    transfersFrom!: Transfer[]
-
     @OneToMany_(() => Worker, e => e.owner)
     owningWorkers!: Worker[]
 
@@ -29,5 +22,5 @@ export class Account {
     owningPools!: Pool[]
 
     @OneToMany_(() => Task, e => e.owner)
-    tasks!: Task[]
+    owningTasks!: Task[]
 }

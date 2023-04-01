@@ -2,24 +2,9 @@ type Account @entity {
   "Account address"
   id: ID!
 
-  transfersTo: [Transfer!] @derivedFrom(field: "to")
-  transfersFrom: [Transfer!] @derivedFrom(field: "from")
-
   owningWorkers: [Worker!] @derivedFrom(field: "owner")
   owningPools: [Pool!] @derivedFrom(field: "owner")
-  tasks: [Task!] @derivedFrom(field: "owner")
-}
-
-type Transfer @entity {
-  id: ID!
-
-  blockNumber: Int! @index
-  timestamp: DateTime! @index
-  extrinsicHash: String @index
-  from: Account!
-  to: Account!
-  amount: BigInt!
-  fee: BigInt! # fee is calculated at the best effort and may be zero for some old extrinsics
+  owningTasks: [Task!] @derivedFrom(field: "owner")
 }
 
 enum AttestationMethod {
@@ -28,6 +13,7 @@ enum AttestationMethod {
 }
 
 enum WorkerStatus {
+  Deregistered
   Registered
   Online
   RequestingOffline
@@ -37,14 +23,19 @@ enum WorkerStatus {
 type Worker @entity {
   id: ID!
 
-  account: Account! @index
   owner: Account! @index
-  reserved: BigInt!
   status: WorkerStatus! @index
-  implName: String!
-  implVersion: Int!
+  implName: String
+  implVersion: Int
   attestationMethod: AttestationMethod
-  attestedAt: Int
+  lastAttestedAt: DateTime
+  lastHeartbeatReceivedAt: DateTime
+  offlineAt: DateTime
+  offlineReason: OfflineReason
+  lastUpdatedBlockNumber: Int!
+
+  servingPools: [WorkersPools!] @derivedFrom(field: "worker")
+  assignedTasks: [Task!] @derivedFrom(field: "assignee")
 }
 
 enum OfflineReason {
@@ -55,15 +46,6 @@ enum OfflineReason {
   WorkerImplBlocked
   InsufficientReservedFunds
   Other
-}
-
-type ChainStoredData @entity {
-  id: ID!
-
-  depositor: Account! @index
-  actualDeposit: BigInt!
-  surplusDeposit: BigInt!
-  data: Bytes!
 }
 
 enum CreatingTaskPermission {
@@ -90,6 +72,16 @@ type Pool @entity {
   creatingTaskPoliciesCount: Int!
   tasksCount: Int!
   workersCount: Int!
+
+  workers: [WorkersPools!] @derivedFrom(field: "pool")
+  tasks: [Task!] @derivedFrom(field: "pool")
+}
+
+type WorkersPools @entity {
+  id: ID! # Useless, but required
+
+  worker: Worker!
+  pool: Pool!
 }
 
 enum TaskStatus {
@@ -107,6 +99,7 @@ enum TaskResult {
 type Task @entity {
   id: ID!
 
+  pool: Pool! @index
   creator: Account! @index
   owner: Account! @index
   ownerDeposit: Int!
@@ -115,7 +108,7 @@ type Task @entity {
   expiresAt: DateTime!
   createdBy: Account!
   createdAt: DateTime!
-  assignee: Account
+  assignee: Worker
   assignedAt: DateTime
   processingAt: DateTime
   processedAt: DateTime

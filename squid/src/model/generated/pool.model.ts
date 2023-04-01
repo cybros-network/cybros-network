@@ -1,6 +1,8 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToMany as OneToMany_} from "typeorm"
 import * as marshal from "./marshal"
 import {Account} from "./account.model"
+import {WorkersPools} from "./workersPools.model"
+import {Task} from "./task.model"
 
 @Entity_()
 export class Pool {
@@ -33,4 +35,10 @@ export class Pool {
 
     @Column_("int4", {nullable: false})
     workersCount!: number
+
+    @OneToMany_(() => WorkersPools, e => e.pool)
+    workers!: WorkersPools[]
+
+    @OneToMany_(() => Task, e => e.pool)
+    tasks!: Task[]
 }

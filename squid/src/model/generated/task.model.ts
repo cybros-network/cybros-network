@@ -1,7 +1,9 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
+import {Pool} from "./pool.model"
 import {Account} from "./account.model"
 import {TaskStatus} from "./_taskStatus"
 import {TaskResult} from "./_taskResult"
+import {Worker} from "./worker.model"
 
 @Entity_()
 export class Task {
@@ -11,6 +13,10 @@ export class Task {
 
     @PrimaryColumn_()
     id!: string
+
+    @Index_()
+    @ManyToOne_(() => Pool, {nullable: true})
+    pool!: Pool
 
     @Index_()
     @ManyToOne_(() => Account, {nullable: true})
@@ -40,8 +46,8 @@ export class Task {
     createdAt!: Date
 
     @Index_()
-    @ManyToOne_(() => Account, {nullable: true})
-    assignee!: Account | undefined | null
+    @ManyToOne_(() => Worker, {nullable: true})
+    assignee!: Worker | undefined | null
 
     @Column_("timestamp with time zone", {nullable: true})
     assignedAt!: Date | undefined | null

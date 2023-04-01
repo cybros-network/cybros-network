@@ -1,6 +1,15 @@
 import * as dotenv from "dotenv"
 dotenv.config()
 
-export const chainNodeRPCEndpoint = process.env.CHAIN_NODE_RPC_ENDPOINT || "wss://node-rpc.cybros.network"
+import { type DataSource } from '@subsquid/substrate-processor'
 
-export const archiveGatewayEndpoint = process.env.ARCHIVE_GATEWAY_ENDPOINT || "http://localhost:8888/graphql"
+const config: {
+    dataSource: DataSource
+} = {
+    dataSource: {
+        archive: process.env.ARCHIVE_GATEWAY_ENDPOINT || "http://localhost:8888/graphql",
+        chain: process.env.CHAIN_NODE_RPC_ENDPOINT || "ws://localhost:9944",
+    },
+}
+
+export default config

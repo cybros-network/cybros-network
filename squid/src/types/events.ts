@@ -439,13 +439,13 @@ export class OffchainComputingWorkersAttestationRefreshedEvent {
      * The worker refresh its attestation successfully
      */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.AttestationRefreshed') === '92a756e29fcd5c189000de949169e0c1ab6089e641fedb90b510a59a4b108e28'
+        return this._chain.getEventHash('OffchainComputingWorkers.AttestationRefreshed') === '022f02b3214bd55462f8f93517f8e23036c75ca3159fbb0de643e8a5ac05a569'
     }
 
     /**
      * The worker refresh its attestation successfully
      */
-    get asV100(): {worker: Uint8Array} {
+    get asV100(): {worker: Uint8Array, method: v100.AttestationMethod} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
@@ -526,7 +526,7 @@ export class OffchainComputingWorkersOfflineEvent {
      * The worker is offline
      */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.Offline') === 'dff017ce5a88851b7cc1e31b005e4a372a3e167cfc9278582b04b5b9eb3634f5'
+        return this._chain.getEventHash('OffchainComputingWorkers.Offline') === 'c1c5611ea814a3d72ed198816b9911050b165c18f514a76ca026979da4321bfb'
     }
 
     /**
@@ -584,13 +584,13 @@ export class OffchainComputingWorkersRegisteredEvent {
      * The worker registered successfully
      */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.Registered') === '92a756e29fcd5c189000de949169e0c1ab6089e641fedb90b510a59a4b108e28'
+        return this._chain.getEventHash('OffchainComputingWorkers.Registered') === 'dbc381acde3e58a1dc63279d84f3fde21af33601d2a5e26e6755db85003b8aff'
     }
 
     /**
      * The worker registered successfully
      */
-    get asV100(): {worker: Uint8Array} {
+    get asV100(): {worker: Uint8Array, owner: Uint8Array} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
