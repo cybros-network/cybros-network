@@ -13,7 +13,7 @@ mod tests;
 mod benchmarking;
 
 /// The log target of this pallet.
-pub const LOG_TARGET: &str = "runtime::computing_workers";
+pub const LOG_TARGET: &str = "runtime::offchain_computing_workers";
 
 // Syntactic sugar for logging.
 #[macro_export]

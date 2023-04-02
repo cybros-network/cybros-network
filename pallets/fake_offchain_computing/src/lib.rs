@@ -12,7 +12,7 @@ mod mock;
 mod tests;
 
 /// The log target of this pallet.
-pub const LOG_TARGET: &str = "runtime::fake_computing";
+pub const LOG_TARGET: &str = "runtime::fake_offchain_computing";
 
 // Syntactic sugar for logging.
 #[macro_export]

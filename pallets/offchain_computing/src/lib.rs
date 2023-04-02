@@ -13,7 +13,7 @@ pub use pallet::*;
 pub use primitives::*;
 
 /// The log target of this pallet.
-pub const LOG_TARGET: &str = "runtime::pool_computing";
+pub const LOG_TARGET: &str = "runtime::offchain_computing";
 
 // Syntactic sugar for logging.
 #[macro_export]
