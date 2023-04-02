@@ -27,6 +27,9 @@ const parsedArgs = parse(Deno.args, {
   },
 });
 
+// pool should add metadata like this
+// {"e2ePublicKey":"0x8e4e79005931e3a0e304d6f50ca233a4c5f5acda73f9507506a96307143424b5"}
+
 await cryptoWaitReady().catch((e) => {
   console.error(e.message);
   Deno.exit(1);

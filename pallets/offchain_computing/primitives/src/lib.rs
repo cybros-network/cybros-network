@@ -103,16 +103,15 @@ pub enum TaskResult {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct TaskInfo<TaskId, AccountId, Balance> {
 	pub id: TaskId,
-	pub creator: AccountId,
 	pub owner: AccountId,
-	pub owner_deposit: Balance,
+	pub depositor: AccountId,
+	pub deposit: Balance,
 	pub status: TaskStatus,
 	pub result: Option<TaskResult>,
 	/// This is soft expiring time, which means even the task has expired,
 	/// worker can still process it, and earning from it,
 	/// But other can destroy the task
 	pub expires_at: u64,
-	pub created_by: AccountId,
 	pub created_at: u64,
 	pub assignee: Option<AccountId>,
 	pub assigned_at: Option<u64>,

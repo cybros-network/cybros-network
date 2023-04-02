@@ -10,6 +10,7 @@ impl<T: Config> Pallet<T> {
 		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
 		task_id: &T::TaskId,
 		owner: &T::AccountId,
+		depositor: &T::AccountId,
 		input_data: &Option<BoundedVec<u8, T::InputLimit>>,
 		now: u64,
 		expires_in: Option<u64>,
@@ -23,19 +24,19 @@ impl<T: Config> Pallet<T> {
 		let input_deposit = T::DepositPerByte::get()
 			.saturating_mul(((input_data.as_ref().map(|x| x.len()).unwrap_or_default()) as u32).into());
 		let task_deposit = T::CreatingTaskDeposit::get();
-		let deposit = input_deposit.saturating_add(task_deposit);
-		T::Currency::reserve(owner, deposit)?;
+
+		let total_deposit = input_deposit.saturating_add(task_deposit);
+		T::Currency::reserve(depositor, total_deposit)?;
 
 		let expires_at = now + expires_in;
 		let task = TaskInfo::<T::TaskId, T::AccountId, BalanceOf<T>> {
 			id: task_id.clone(),
-			creator: owner.clone(),
 			owner: owner.clone(),
-			owner_deposit: task_deposit,
+			depositor: depositor.clone(),
+			deposit: task_deposit,
 			status: TaskStatus::Pending,
 			result: None,
 			expires_at,
-			created_by: owner.clone(),
 			created_at: now,
 			assignee: None,
 			assigned_at: None,
@@ -46,7 +47,7 @@ impl<T: Config> Pallet<T> {
 
 		if let Some(input_data) = input_data {
 			let input = ChainStoredData::<T::AccountId, BalanceOf<T>, T::InputLimit> {
-				depositor: owner.clone(),
+				depositor: depositor.clone(),
 				actual_deposit: input_deposit,
 				surplus_deposit: Zero::zero(),
 				data: input_data.clone(),
@@ -106,7 +107,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		let task_id = task.id;
 
-		T::Currency::unreserve(&task.owner, task.owner_deposit);
+		T::Currency::unreserve(&task.depositor, task.deposit);
 		if let Some(input_entry) = TaskInputs::<T>::take(pool_id, task_id) {
 			let deposit = input_entry.actual_deposit.saturating_add(input_entry.surplus_deposit);
 			T::Currency::unreserve(&input_entry.depositor, deposit);

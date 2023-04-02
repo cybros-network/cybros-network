@@ -177,7 +177,7 @@ pub mod pallet {
 		CreatingTaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
 		WorkerAdded { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRemoved { pool_id: T::PoolId, worker: T::AccountId },
-		TaskCreated { owner: T::AccountId, pool_id: T::PoolId, task_id: T::TaskId, input: Option<BoundedVec<u8, T::InputLimit>> },
+		TaskCreated { pool_id: T::PoolId, task_id: T::TaskId, owner: T::AccountId, input: Option<BoundedVec<u8, T::InputLimit>> },
 		TaskDestroyed { pool_id: T::PoolId, task_id: T::TaskId, destroyer: T::AccountId },
 		TaskAssigned { pool_id: T::PoolId, task_id: T::TaskId, assignee: T::AccountId },
 		TaskReleased { pool_id: T::PoolId, task_id: T::TaskId },
@@ -635,6 +635,7 @@ pub mod pallet {
 			Self::do_create_task(
 				&pool_info,
 				&task_id,
+				&who,
 				&who,
 				&input,
 				now,
