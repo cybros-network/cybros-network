@@ -56,6 +56,7 @@ impl<T: Config> Pallet<T> {
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.tasks_count += 1;
+		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
 		AssignableTasks::<T>::insert(&pool_info.id, task_id, ());
 		AccountOwningTasks::<T>::insert((owner, pool_info.id, task_id), ());
