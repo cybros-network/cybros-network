@@ -41,6 +41,8 @@ user can add more deposit to the task, and call `advance()` to continue.
 
 So we need add `add_deposit()` for tasks.
 
+TODO: DAG? not quiet difficult, just add a RC field for dependent tasks, when 0 can be enabled
+
 ### Subsquid indexer
 
 It is theGraph for Substrate-based chains which would help to build dashboards, We shall run self-hosted first.
