@@ -66,8 +66,6 @@ pub struct PoolInfo<PoolId, AccountId, Balance> {
 	/// The total balance deposited by the owner for all the storage data associated with this
 	/// pool. Used by `destroy`.
 	pub owner_deposit: Balance,
-	/// Pool's stash account.
-	pub stash_account: AccountId,
 	/// Allow creating task
 	pub creating_task_ability: bool,
 	/// The total number of outstanding create task policies of this pool.

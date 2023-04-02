@@ -19,7 +19,6 @@ impl<T: Config> Pallet<T> {
 			id: *pool_id,
 			owner: owner.clone(),
 			owner_deposit: *owner_deposit,
-			stash_account: owner.clone(),
 			creating_task_ability: true,
 			creating_task_policies_count: 0,
 			tasks_count: 0,
@@ -96,19 +95,6 @@ impl<T: Config> Pallet<T> {
 		T::Currency::unreserve(&pool_info.owner, metadata_entry.actual_deposit);
 
 		Self::deposit_event(Event::PoolMetadataRemoved { pool_id: pool_info.id });
-		Ok(())
-	}
-
-	pub fn do_update_pool_stash_account(
-		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
-		new_stash_account: &T::AccountId
-	) -> DispatchResult {
-		let mut new_pool_info = pool_info.clone();
-		new_pool_info.stash_account = new_stash_account.clone();
-
-		Pools::<T>::insert(&pool_info.id, new_pool_info);
-
-		Self::deposit_event(Event::PoolStashAccountUpdated { pool_id: pool_info.id, stash_account: new_stash_account.clone() });
 		Ok(())
 	}
 

@@ -168,7 +168,6 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		PoolCreated { owner: T::AccountId, pool_id: T::PoolId },
 		PoolDestroyed { pool_id: T::PoolId },
-		PoolStashAccountUpdated { pool_id: T::PoolId, stash_account: T::AccountId },
 		PoolMetadataUpdated { pool_id: T::PoolId, new_metadata: BoundedVec<u8, T::PoolMetadataLimit> },
 		PoolMetadataRemoved { pool_id: T::PoolId },
 		PoolCreatingTaskAbilityEnabled { pool_id: T::PoolId },
@@ -452,25 +451,6 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(3)]
 		#[pallet::weight(0)]
-		pub fn update_pool_stash_account(
-			origin: OriginFor<T>,
-			pool_id: T::PoolId,
-			new_stash_account: AccountIdLookupOf<T>
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
-			Self::ensure_pool_owner(&who, &pool_info)?;
-
-			let new_stash_account = T::Lookup::lookup(new_stash_account)?;
-			Self::do_update_pool_stash_account(&pool_info, &new_stash_account)?;
-
-			Ok(())
-		}
-
-		#[transactional]
-		#[pallet::call_index(4)]
-		#[pallet::weight(0)]
 		pub fn toggle_pool_global_creating_task_ability(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -487,7 +467,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(5)]
+		#[pallet::call_index(4)]
 		#[pallet::weight(0)]
 		pub fn create_creating_task_policy(
 			origin: OriginFor<T>,
@@ -518,7 +498,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(6)]
+		#[pallet::call_index(5)]
 		#[pallet::weight(0)]
 		pub fn destroy_creating_task_policy(
 			origin: OriginFor<T>,
@@ -539,7 +519,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(7)]
+		#[pallet::call_index(6)]
 		#[pallet::weight(0)]
 		pub fn add_worker(
 			origin: OriginFor<T>,
@@ -561,7 +541,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(8)]
+		#[pallet::call_index(7)]
 		#[pallet::weight(0)]
 		pub fn remove_worker(
 			origin: OriginFor<T>,
@@ -590,7 +570,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(9)]
+		#[pallet::call_index(8)]
 		#[pallet::weight(0)]
 		pub fn create_task(
 			origin: OriginFor<T>,
@@ -649,7 +629,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(10)]
+		#[pallet::call_index(9)]
 		#[pallet::weight(0)]
 		pub fn destroy_task(
 			origin: OriginFor<T>,
@@ -668,7 +648,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(11)]
+		#[pallet::call_index(10)]
 		#[pallet::weight(0)]
 		pub fn destroy_expired_task(
 			origin: OriginFor<T>,
@@ -689,7 +669,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(12)]
+		#[pallet::call_index(11)]
 		#[pallet::weight(0)]
 		pub fn take_task(
 			origin: OriginFor<T>,
@@ -708,7 +688,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(13)]
+		#[pallet::call_index(12)]
 		#[pallet::weight(0)]
 		pub fn release_task(
 			origin: OriginFor<T>,
@@ -723,7 +703,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(14)]
+		#[pallet::call_index(13)]
 		#[pallet::weight(0)]
 		pub fn submit_task_result(
 			origin: OriginFor<T>,
