@@ -44,8 +44,6 @@ pub struct CreatingTaskPolicy<BlockNumber> {
 	/// Whether anyone can mint or if minters are restricted to some subset.
 	pub permission: CreatingTaskPermission,
 	// TODO：rates strategy
-	// /// An optional price per create task.
-	// pub price: Option<Balance>,
 	// TODO: allow create scheduled task and rule
 	/// When the policy starts.
 	pub start_block: Option<BlockNumber>,
