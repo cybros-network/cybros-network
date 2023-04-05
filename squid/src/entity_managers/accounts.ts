@@ -1,5 +1,5 @@
-import { Account } from "../model"
 import { EntitiesManager } from "../entity_manager";
+import { Account } from "../model"
 
 export default class AccountsManager extends EntitiesManager<Account> {
     constructor(entityClass?: typeof Account) {

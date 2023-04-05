@@ -19,7 +19,6 @@ export const processor = new SubstrateBatchProcessor()
     // OffchainComputing
     .addEvent("OffchainComputing.PoolCreated")
     .addEvent("OffchainComputing.PoolDestroyed")
-    .addEvent("OffchainComputing.PoolStashAccountUpdated")
     .addEvent("OffchainComputing.PoolMetadataUpdated")
     .addEvent("OffchainComputing.PoolMetadataRemoved")
     .addEvent("OffchainComputing.PoolCreatingTaskAbilityEnabled")

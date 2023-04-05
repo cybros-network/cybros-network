@@ -1,3 +1,5 @@
+use scale_codec::MaxEncodedLen;
+use sp_runtime::Saturating;
 use frame_support::{
 	dispatch::DispatchResult,
 	traits::{
@@ -5,15 +7,24 @@ use frame_support::{
 		Imbalance,
 		ReservableCurrency
 	},
+	Parameter
 };
-use primitives::{OfflineReason, OnlinePayload, WorkerInfo};
+use primitives::{OfflineReason, OnlinePayload, WorkerInfo, VerifiedAttestation};
+
+use crate::macros::impl_auto_increment;
+
+pub trait AutoIncrement {
+	fn increment(&self) -> Self;
+	fn initial_value() -> Self;
+}
+impl_auto_increment!(u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
 
 /// Trait describing something that implements a hook for any operations to perform when a staker is
 /// slashed.
-pub trait OffchainWorkerLifecycleHooks<AccountId> {
+pub trait OffchainWorkerLifecycleHooks<AccountId, ImplId> {
 	/// A hook for checking the worker whether can online,
 	/// can use for add extra conditions check, if returns error, the worker will not be online
-	fn can_online(worker: &AccountId, payload: &OnlinePayload, verified_attestation: &Option<VerifiedAttestation>) -> DispatchResult;
+	fn can_online(worker: &AccountId, payload: &OnlinePayload<ImplId>, verified_attestation: &VerifiedAttestation) -> DispatchResult;
 
 	/// A hook after the worker transited to online status,
 	/// can use for add additional business logic, e.g. assign job, reserve more money
@@ -30,7 +41,7 @@ pub trait OffchainWorkerLifecycleHooks<AccountId> {
 
 	/// A hook after the worker update its attestation,
 	/// Can use for if interest in payload's custom field
-	fn after_refresh_attestation(worker: &AccountId, payload: &OnlinePayload, verified_attestation: &Option<VerifiedAttestation>);
+	fn after_refresh_attestation(worker: &AccountId, payload: &OnlinePayload<ImplId>, verified_attestation: &VerifiedAttestation);
 
 	/// A hook after the worker transited to requesting offline status,
 	/// can use for add additional business logic, e.g. stop assigning job
@@ -45,8 +56,8 @@ pub trait OffchainWorkerLifecycleHooks<AccountId> {
 	fn before_deregister(worker: &AccountId);
 }
 
-impl<AccountId> OffchainWorkerLifecycleHooks<AccountId> for () {
-	fn can_online(_: &AccountId, _: &OnlinePayload, _: &Option<VerifiedAttestation>) -> DispatchResult {
+impl<AccountId, ImplId> OffchainWorkerLifecycleHooks<AccountId, ImplId> for () {
+	fn can_online(_: &AccountId, _: &OnlinePayload<ImplId>, _: &VerifiedAttestation) -> DispatchResult {
 		Ok(())
 	}
 
@@ -62,7 +73,7 @@ impl<AccountId> OffchainWorkerLifecycleHooks<AccountId> for () {
 		// Do nothing
 	}
 
-	fn after_refresh_attestation(_: &AccountId, _: &OnlinePayload, _: &Option<VerifiedAttestation>) {
+	fn after_refresh_attestation(_: &AccountId, _: &OnlinePayload<ImplId>, _: &VerifiedAttestation) {
 		// Do nothing
 	}
 
@@ -79,13 +90,14 @@ impl<AccountId> OffchainWorkerLifecycleHooks<AccountId> for () {
 	}
 }
 
-pub trait OffchainWorkerManageable<AccountId, BlockNumber> {
+pub trait OffchainWorkerManageable<AccountId> {
+	type ImplId: Parameter + MaxEncodedLen;
 	type Currency: ReservableCurrency<AccountId>;
 	type Balance: Balance;
 	type PositiveImbalance: Imbalance<Self::Balance, Opposite = Self::NegativeImbalance>;
 	type NegativeImbalance: Imbalance<Self::Balance, Opposite = Self::PositiveImbalance>;
 
-	fn worker_info(worker: &AccountId) -> Option<WorkerInfo<AccountId, Self::Balance, BlockNumber>>;
+	fn worker_info(worker: &AccountId) -> Option<WorkerInfo<AccountId, Self::Balance, Self::ImplId>>;
 
 	fn worker_exists(worker: &AccountId) -> bool;
 
@@ -99,16 +111,15 @@ pub trait OffchainWorkerManageable<AccountId, BlockNumber> {
 #[cfg(feature = "std")]
 use sp_runtime::traits::Zero;
 
-use primitives::VerifiedAttestation;
-
 #[cfg(feature = "std")]
-impl<AccountId, BlockNumber> OffchainWorkerManageable<AccountId, BlockNumber> for () {
+impl<AccountId> OffchainWorkerManageable<AccountId> for () {
+	type ImplId = u32;
 	type Currency = ();
 	type Balance = u32;
 	type PositiveImbalance = ();
 	type NegativeImbalance = ();
 
-	fn worker_info(_: &AccountId) -> Option<WorkerInfo<AccountId, Self::Balance, BlockNumber>> {
+	fn worker_info(_: &AccountId) -> Option<WorkerInfo<AccountId, Self::Balance, Self::ImplId>> {
 		None
 	}
 

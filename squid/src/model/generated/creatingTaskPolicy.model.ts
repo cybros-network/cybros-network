@@ -1,5 +1,5 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_} from "typeorm"
-import * as marshal from "./marshal"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
+import {Pool} from "./pool.model"
 import {CreatingTaskPermission} from "./_creatingTaskPermission"
 
 @Entity_()
@@ -11,15 +11,25 @@ export class CreatingTaskPolicy {
     @PrimaryColumn_()
     id!: string
 
+    @Index_()
+    @ManyToOne_(() => Pool, {nullable: true})
+    pool!: Pool
+
     @Column_("varchar", {length: 6, nullable: false})
     permission!: CreatingTaskPermission
-
-    @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: true})
-    price!: bigint | undefined | null
 
     @Column_("int4", {nullable: true})
     startBlock!: number | undefined | null
 
     @Column_("int4", {nullable: true})
     endBlock!: number | undefined | null
+
+    @Column_("timestamp with time zone", {nullable: false})
+    createdAt!: Date
+
+    @Column_("timestamp with time zone", {nullable: false})
+    updatedAt!: Date
+
+    @Column_("timestamp with time zone", {nullable: true})
+    deletedAt!: Date | undefined | null
 }

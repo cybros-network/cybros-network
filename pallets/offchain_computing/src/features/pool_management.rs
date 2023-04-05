@@ -6,34 +6,35 @@ use sp_runtime::{
 };
 
 impl<T: Config> Pallet<T> {
-	pub fn do_create_pool(
-		owner: &T::AccountId,
-		owner_deposit: &BalanceOf<T>,
-		pool_id: &T::PoolId
+	pub(crate) fn do_create_pool(
+		owner: T::AccountId,
+		pool_id: T::PoolId,
+		impl_id: ImplIdOf<T>
 	) -> DispatchResult {
-		ensure!(!Pools::<T>::contains_key(pool_id), Error::<T>::PoolIdTaken);
+		ensure!(!Pools::<T>::contains_key(&pool_id), Error::<T>::PoolIdTaken);
 
-		T::Currency::reserve(owner, *owner_deposit)?;
+		T::Currency::reserve(&owner, T::CreatePoolDeposit::get())?;
 
-		let pool_info = PoolInfo::<T::PoolId, T::AccountId, BalanceOf<T>> {
-			id: *pool_id,
+		let pool_info = PoolInfo::<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>> {
+			id: pool_id.clone(),
 			owner: owner.clone(),
-			owner_deposit: *owner_deposit,
+			owner_deposit: T::CreatePoolDeposit::get(),
+			impl_id: impl_id.clone(),
 			creating_task_ability: true,
 			creating_task_policies_count: 0,
 			tasks_count: 0,
 			workers_count: 0,
 		};
 
-		Pools::<T>::insert(pool_id, pool_info);
-		AccountOwningPools::<T>::insert(owner, pool_id, ());
+		Pools::<T>::insert(&pool_id, pool_info);
+		AccountOwningPools::<T>::insert(&owner, &pool_id, ());
 
-		Self::deposit_event(Event::PoolCreated { owner: owner.clone(), pool_id: pool_id.clone() });
+		Self::deposit_event(Event::PoolCreated { owner, pool_id, impl_id });
 		Ok(())
 	}
 
-	pub fn do_destroy_pool(
-		who: &T::AccountId,
+	pub(crate) fn do_destroy_pool(
+		who: T::AccountId,
 		pool_id: T::PoolId,
 	) -> DispatchResult {
 		let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
@@ -56,11 +57,12 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub fn do_update_pool_metadata(
-		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
-		new_metadata: &BoundedVec<u8, T::PoolMetadataLimit>
+	pub(crate) fn do_update_pool_metadata(
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		new_metadata: BoundedVec<u8, T::PoolMetadataLimit>
 	) -> DispatchResult {
-		PoolMetadata::<T>::try_mutate_exists(pool_info.id, |metadata_entry| {
+		let pool_id = pool_info.id;
+		PoolMetadata::<T>::try_mutate_exists(&pool_id.clone(), |metadata_entry| {
 			let deposit = T::DepositPerByte::get()
 				.saturating_mul(((new_metadata.len()) as u32).into())
 				.saturating_add(T::MetadataDepositBase::get());
@@ -79,13 +81,13 @@ impl<T: Config> Pallet<T> {
 				data: new_metadata.clone()
 			});
 
-			Self::deposit_event(Event::PoolMetadataUpdated { pool_id: pool_info.id, new_metadata: new_metadata.clone() });
+			Self::deposit_event(Event::PoolMetadataUpdated { pool_id, metadata: new_metadata.clone() });
 			Ok(())
 		})
 	}
 
-	pub fn do_remove_pool_metadata(
-		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>
+	pub(crate) fn do_remove_pool_metadata(
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>
 	) -> DispatchResult {
 		let Some(metadata_entry) = PoolMetadata::<T>::get(&pool_info.id) else {
 			return Ok(())
@@ -98,8 +100,8 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub fn do_toggle_pool_creating_task_ability(
-		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
+	pub(crate) fn do_toggle_pool_creating_task_ability(
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		enabled: bool
 	) -> DispatchResult {
 		let mut new_pool_info = pool_info.clone();

@@ -1,9 +1,9 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
 import {Pool} from "./pool.model"
 import {Account} from "./account.model"
+import {Worker} from "./worker.model"
 import {TaskStatus} from "./_taskStatus"
 import {TaskResult} from "./_taskResult"
-import {Worker} from "./worker.model"
 
 @Entity_()
 export class Task {
@@ -20,15 +20,13 @@ export class Task {
 
     @Index_()
     @ManyToOne_(() => Account, {nullable: true})
-    creator!: Account
-
-    @Index_()
-    @ManyToOne_(() => Account, {nullable: true})
     owner!: Account
 
-    @Column_("int4", {nullable: false})
-    ownerDeposit!: number
+    @Index_()
+    @ManyToOne_(() => Worker, {nullable: true})
+    assignee!: Worker | undefined | null
 
+    @Index_()
     @Column_("varchar", {length: 10, nullable: false})
     status!: TaskStatus
 
@@ -38,16 +36,23 @@ export class Task {
     @Column_("timestamp with time zone", {nullable: false})
     expiresAt!: Date
 
-    @Index_()
-    @ManyToOne_(() => Account, {nullable: true})
-    createdBy!: Account
+    @Column_("bytea", {nullable: true})
+    input!: Uint8Array | undefined | null
+
+    @Column_("bytea", {nullable: true})
+    output!: Uint8Array | undefined | null
+
+    @Column_("bytea", {nullable: true})
+    proof!: Uint8Array | undefined | null
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date
 
-    @Index_()
-    @ManyToOne_(() => Worker, {nullable: true})
-    assignee!: Worker | undefined | null
+    @Column_("timestamp with time zone", {nullable: false})
+    updatedAt!: Date
+
+    @Column_("timestamp with time zone", {nullable: true})
+    deletedAt!: Date | undefined | null
 
     @Column_("timestamp with time zone", {nullable: true})
     assignedAt!: Date | undefined | null

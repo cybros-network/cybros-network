@@ -44,8 +44,14 @@ export class Worker {
     @Column_("varchar", {length: 25, nullable: true})
     offlineReason!: OfflineReason | undefined | null
 
-    @Column_("int4", {nullable: false})
-    lastUpdatedBlockNumber!: number
+    @Column_("timestamp with time zone", {nullable: false})
+    createdAt!: Date
+
+    @Column_("timestamp with time zone", {nullable: false})
+    updatedAt!: Date
+
+    @Column_("timestamp with time zone", {nullable: true})
+    deletedAt!: Date | undefined | null
 
     @OneToMany_(() => WorkersPools, e => e.worker)
     servingPools!: WorkersPools[]

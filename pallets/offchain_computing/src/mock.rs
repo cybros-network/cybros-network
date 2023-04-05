@@ -2,9 +2,9 @@ use crate as pallet_offchain_computing;
 
 use frame_support::{
 	assert_ok,
-	traits::{OnFinalize, OnInitialize, AsEnsureOriginWithArg},
+	traits::{OnFinalize, OnInitialize},
 };
-use frame_system::EnsureRoot;
+use frame_system::EnsureSigned;
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
 	testing::Header,
@@ -99,17 +99,20 @@ impl pallet_offchain_computing_workers::Config for Test {
 	type Currency = Balances;
 	type UnixTime = Timestamp;
 	type Randomness = RandomnessCollectiveFlip;
+	type ImplId = u32;
+	type RegisterImplOrigin = EnsureSigned<Self::AccountId>;
+	type RegisterWorkerDeposit = ConstU128<{ 100 * DOLLARS }>;
+	type RegisterImplDeposit = ConstU128<{ 1 * DOLLARS }>;
+	type ImplMetadataDepositBase = ConstU128<{ 1 * DOLLARS }>;
+	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
+	type ImplMetadataLimit = ConstU32<50>;
+	type MaxRegisteredImplBuildMagicBytes = ConstU32<4>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<3>;
-	type ReservedDeposit = ConstU128<{ 100 * DOLLARS }>;
-	type CollectingHeartbeatsDuration = ConstU32<6>;
-	type AttestationValidityDuration = ConstU32<12>;
+	type CollectingHeartbeatsDurationInBlocks = ConstU32<6>;
 	type DisallowOptOutAttestation = ConstBool<false>;
-	type DisallowNonTEEAttestation = ConstBool<false>;
-	type ValidateWorkerImpl = ConstBool<false>;
-	type ValidateWorkerImplHash = ConstBool<false>;
-	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
+	type ValidateWorkerImplBuild = ConstBool<false>;
 	type WeightInfo = ();
-	type OffchainWorkerLifecycleHooks = OffchainComputing;
+	type OffchainWorkerLifecycleHooks = ();
 }
 
 impl pallet_offchain_computing::Config for Test {
@@ -120,7 +123,7 @@ impl pallet_offchain_computing::Config for Test {
 	type PoolId = u32;
 	type TaskId = u32;
 	type PolicyId = u32;
-	type CreatePoolOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<Self::AccountId>>;
+	type CreatePoolOrigin = frame_system::EnsureSigned<Self::AccountId>;
 	type CreatePoolDeposit = ConstU128<{ 1 * DOLLARS }>;
 	type CreatingTaskDeposit = ConstU128<{ 1 * DOLLARS }>;
 	type MetadataDepositBase = ConstU128<{ 1 * CENTS }>;

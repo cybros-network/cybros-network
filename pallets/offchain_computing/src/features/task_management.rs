@@ -6,12 +6,13 @@ use sp_runtime::{
 };
 
 impl<T: Config> Pallet<T> {
-	pub fn do_create_task(
-		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
-		task_id: &T::TaskId,
-		owner: &T::AccountId,
-		depositor: &T::AccountId,
-		input_data: &Option<BoundedVec<u8, T::InputLimit>>,
+	pub(crate) fn do_create_task(
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		task_id: T::TaskId,
+		owner: T::AccountId,
+		depositor: T::AccountId,
+		spec_version: ImplSpecVersion,
+		input_data: Option<BoundedVec<u8, T::InputLimit>>,
 		now: u64,
 		expires_in: Option<u64>,
 	) -> DispatchResult {
@@ -19,21 +20,22 @@ impl<T: Config> Pallet<T> {
 		ensure!(expires_in >= T::MinTaskExpiresIn::get(), Error::<T>::ExpiresInTooSmall);
 		ensure!(expires_in <= T::MaxTaskExpiresIn::get(), Error::<T>::ExpiresInTooLarge);
 
-		ensure!(!Tasks::<T>::contains_key(&pool_info.id, task_id), Error::<T>::TaskIdTaken);
+		ensure!(!Tasks::<T>::contains_key(&pool_info.id, &task_id), Error::<T>::TaskIdTaken);
 
 		let input_deposit = T::DepositPerByte::get()
 			.saturating_mul(((input_data.as_ref().map(|x| x.len()).unwrap_or_default()) as u32).into());
 		let task_deposit = T::CreatingTaskDeposit::get();
 
 		let total_deposit = input_deposit.saturating_add(task_deposit);
-		T::Currency::reserve(depositor, total_deposit)?;
+		T::Currency::reserve(&depositor, total_deposit)?;
 
 		let expires_at = now + expires_in;
-		let task = TaskInfo::<T::TaskId, T::AccountId, BalanceOf<T>> {
+		let task = TaskInfo::<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion> {
 			id: task_id.clone(),
 			owner: owner.clone(),
 			depositor: depositor.clone(),
 			deposit: task_deposit,
+			impl_spec_version: spec_version,
 			status: TaskStatus::Pending,
 			result: None,
 			expires_at,
@@ -43,36 +45,36 @@ impl<T: Config> Pallet<T> {
 			processing_at: None,
 			processed_at: None,
 		};
-		Tasks::<T>::insert(&pool_info.id, task_id, task);
+		Tasks::<T>::insert(&pool_info.id, &task_id, task);
 
-		if let Some(input_data) = input_data {
+		if let Some(input_data) = input_data.clone() {
 			let input = ChainStoredData::<T::AccountId, BalanceOf<T>, T::InputLimit> {
 				depositor: depositor.clone(),
 				actual_deposit: input_deposit,
 				surplus_deposit: Zero::zero(),
 				data: input_data.clone(),
 			};
-			TaskInputs::<T>::insert(&pool_info.id, task_id, input);
+			TaskInputs::<T>::insert(&pool_info.id, &task_id, input);
 		}
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.tasks_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		AssignableTasks::<T>::insert(&pool_info.id, task_id, ());
-		AccountOwningTasks::<T>::insert((owner, pool_info.id, task_id), ());
+		AssignableTasks::<T>::insert(&pool_info.id, &task_id, ());
+		AccountOwningTasks::<T>::insert((owner.clone(), pool_info.id.clone(), task_id.clone()), ());
 
-		Self::deposit_event(Event::TaskCreated { owner: owner.clone(), pool_id: pool_info.id, task_id: *task_id, input: input_data.clone() });
+		Self::deposit_event(Event::TaskCreated { owner: owner.clone(), pool_id: pool_info.id, task_id, input: input_data });
 		Ok(())
 	}
 
-	pub fn do_destroy_task(
-		who: &T::AccountId,
-		pool_id: &T::PoolId,
-		task_id: &T::TaskId
+	pub(crate) fn do_destroy_task(
+		who: T::AccountId,
+		pool_id: T::PoolId,
+		task_id: T::TaskId
 	) -> DispatchResult {
-		let task = Tasks::<T>::get(&pool_id, task_id).ok_or(Error::<T>::TaskNotFound)?;
-		Self::ensure_task_owner(who, &task)?;
+		let task = Tasks::<T>::get(&pool_id, &task_id).ok_or(Error::<T>::TaskNotFound)?;
+		Self::ensure_task_owner(&who, &task)?;
 		ensure!(
 			match task.status {
 				TaskStatus::Pending | TaskStatus::Processed => true,
@@ -81,49 +83,47 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::TaskIsProcessing
 		);
 
-		Self::do_actual_destroy_task(pool_id, &task, who)?;
-
-		Ok(())
+		Self::do_actual_destroy_task(pool_id, task, who)
 	}
 
-	pub fn do_destroy_expired_task(
-		pool_id: &T::PoolId,
-		task_id: &T::TaskId,
-		destroyer: &T::AccountId,
+	pub(crate) fn do_destroy_expired_task(
+		pool_id: T::PoolId,
+		task_id: T::TaskId,
+		destroyer: T::AccountId,
 		now: u64
 	) -> DispatchResult {
-		let task = Tasks::<T>::get(&pool_id, task_id).ok_or(Error::<T>::TaskNotFound)?;
+		let task = Tasks::<T>::get(&pool_id, &task_id).ok_or(Error::<T>::TaskNotFound)?;
 		Self::ensure_task_expired(&task, now)?;
 
-		Self::do_actual_destroy_task(pool_id, &task, destroyer)?;
+		Self::do_actual_destroy_task(pool_id, task, destroyer)?;
 
 		Ok(())
 	}
 
 	fn do_actual_destroy_task(
-		pool_id: &T::PoolId,
-		task: &TaskInfo::<T::TaskId, T::AccountId, BalanceOf<T>>,
-		destroyer: &T::AccountId
+		pool_id: T::PoolId,
+		task: TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+		destroyer: T::AccountId
 	) -> DispatchResult {
 		let task_id = task.id;
 
 		T::Currency::unreserve(&task.depositor, task.deposit);
-		if let Some(input_entry) = TaskInputs::<T>::take(pool_id, task_id) {
+		if let Some(input_entry) = TaskInputs::<T>::take(&pool_id, &task_id) {
 			let deposit = input_entry.actual_deposit.saturating_add(input_entry.surplus_deposit);
 			T::Currency::unreserve(&input_entry.depositor, deposit);
 		}
-		if let Some(output_entry) = TaskOutputs::<T>::take(pool_id, task_id) {
+		if let Some(output_entry) = TaskOutputs::<T>::take(&pool_id, &task_id) {
 			let deposit = output_entry.actual_deposit.saturating_add(output_entry.surplus_deposit);
 			T::Currency::unreserve(&output_entry.depositor, deposit);
 		}
-		if let Some(proof_entry) = TaskProofs::<T>::take(pool_id, task_id) {
+		if let Some(proof_entry) = TaskProofs::<T>::take(&pool_id, &task_id) {
 			let deposit = proof_entry.actual_deposit.saturating_add(proof_entry.surplus_deposit);
 			T::Currency::unreserve(&proof_entry.depositor, deposit);
 		}
 
-		Tasks::<T>::remove(pool_id, task_id);
+		Tasks::<T>::remove(&pool_id, &task_id);
 
-		Pools::<T>::try_mutate_exists(pool_id, |pool_info| -> Result<(), DispatchError> {
+		Pools::<T>::try_mutate_exists(&pool_id, |pool_info| -> Result<(), DispatchError> {
 			let Some(pool_info) = pool_info else {
 				return Err(Error::<T>::PoolNotFound.into())
 			};
@@ -133,18 +133,19 @@ impl<T: Config> Pallet<T> {
 			Ok(())
 		})?;
 
-		if let Some(worker) = &task.assignee {
-			WorkerAssignedTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
-				*counter -= 1;
-				Ok(())
-			})?;
-		}
-		AccountOwningTasks::<T>::remove((&task.owner, pool_id, task_id));
 		if task.status == TaskStatus::Pending {
-			AssignableTasks::<T>::remove(pool_id, task_id);
+			AssignableTasks::<T>::remove(&pool_id, &task_id);
+		} else if task.status == TaskStatus::Processing {
+			if let Some(worker) = &task.assignee {
+				WorkerAssignedTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
+					*counter -= 1;
+					Ok(())
+				})?;
+			}
 		}
+		AccountOwningTasks::<T>::remove((task.owner.clone(), pool_id.clone(), task_id.clone()));
 
-		Self::deposit_event(Event::TaskDestroyed { pool_id: *pool_id, task_id, destroyer: destroyer.clone() });
+		Self::deposit_event(Event::TaskDestroyed { pool_id, task_id, destroyer });
 		Ok(())
 	}
 }

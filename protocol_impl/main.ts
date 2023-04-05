@@ -1,20 +1,22 @@
-import { parse } from "https://deno.land/std/flags/mod.ts";
+import {parse} from "https://deno.land/std/flags/mod.ts";
 import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
-import { copySync } from "https://deno.land/std/fs/mod.ts";
+import {copySync} from "https://deno.land/std/fs/mod.ts";
 
-import { BN, hexToU8a, isHex, u8aToHex } from "https://deno.land/x/polkadot/util/mod.ts";
-import { cryptoWaitReady, mnemonicGenerate } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
-import { KeyringPair } from "https://deno.land/x/polkadot/keyring/types.ts";
-import { ApiPromise, HttpProvider, Keyring, WsProvider } from "https://deno.land/x/polkadot/api/mod.ts";
-import { Application, Router } from "https://deno.land/x/oak/mod.ts";
+import {BN, hexToU8a, isHex, u8aToHex} from "https://deno.land/x/polkadot/util/mod.ts";
+import {cryptoWaitReady, mnemonicGenerate} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
+import {KeyringPair} from "https://deno.land/x/polkadot/keyring/types.ts";
+import {ApiPromise, HttpProvider, Keyring, WsProvider} from "https://deno.land/x/polkadot/api/mod.ts";
+import {Application, Router} from "https://deno.land/x/oak/mod.ts";
 
-import { AnyJson } from "https://deno.land/x/polkadot/types-codec/types/helpers.ts";
+import {AnyJson} from "https://deno.land/x/polkadot/types-codec/types/helpers.ts";
 
 const APP_NAME = "Cybros protocol reference implementation";
 const APP_VERSION = "v0.0.1-dev";
-const IMPL_NAME = "deno".split("").map(c => c.charCodeAt(0));
-const IMPL_VERSION = 1;
+const IMPL_ID = 1;
+const IMPL_SPEC_VERSION = 1;
+const IMPL_BUILD_VERSION = 1;
+const IMPL_BUILD_MAGIC_BYTES = new Uint8Array([0]);
 
 const parsedArgs = parse(Deno.args, {
   alias: {
@@ -25,7 +27,6 @@ const parsedArgs = parse(Deno.args, {
     "workPath": "work-path",
     "taskExecutorPath": "task-executor-path",
     "ownerPhrase": "owner-phrase",
-    "refreshAttestationInterval": "refresh-attestation-interval",
     "noHeartbeat": "no-heartbeat",
     "subscribePool": "subscribe-pool",
   },
@@ -52,7 +53,6 @@ const parsedArgs = parse(Deno.args, {
     help: false,
     version: false,
     ownerPhrase: "",
-    refreshAttestationInterval: 40000,
     noHeartbeat: false,
   },
 });
@@ -113,7 +113,7 @@ Options:
 }
 
 function version() {
-  console.log(`${APP_NAME} ${APP_VERSION} (${IMPL_VERSION})`);
+  console.log(`${APP_NAME} ${APP_VERSION} (${IMPL_BUILD_VERSION})`);
 }
 
 async function initializeLogger(logPath: string) {
@@ -144,24 +144,22 @@ async function initializeLogger(logPath: string) {
 
 function loadOrCreateWorkerKeyPair(dataPath: string): KeyringPair | null {
   const secretFile = path.join(dataPath, "worker.secret");
-  const keyPair = (() => {
+  return (() => {
     try {
       const mnemonic = Deno.readTextFileSync(secretFile).trim();
 
-      return new Keyring({ type: "sr25519" }).addFromUri(mnemonic, { name: "Worker" });
+      return new Keyring({type: "sr25519"}).addFromUri(mnemonic, {name: "Worker"});
     } catch (e) {
       if (e instanceof Deno.errors.NotFound) {
         const mnemonic = mnemonicGenerate(12);
         Deno.writeTextFileSync(secretFile, mnemonic);
 
-        return new Keyring({ type: "sr25519" }).addFromUri(mnemonic, { name: "Worker" });
+        return new Keyring({type: "sr25519"}).addFromUri(mnemonic, {name: "Worker"});
       }
 
       return null;
     }
   })();
-
-  return keyPair;
 }
 
 function createSubstrateApi(rpcUrl: string): ApiPromise | null {
@@ -183,26 +181,21 @@ function createSubstrateApi(rpcUrl: string): ApiPromise | null {
     types: {
       Address: "AccountId",
       LookupSource: "AccountId",
-      AttestationPayload: "BoundedVec<u8, 64000>",
-      ExtraOnlinePayload: "BoundedVec<u8, 64000>",
       OnlinePayload: {
-        impl_name: "[u8; 4]",
-        impl_version: "u32",
-        extra: "BoundedVec<u8, 64000>"
-      },
-      NonTEEAttestation: {
-        issued_at: "u64",
-        payload: "AttestationPayload"
+        impl_id: "u32",
+        impl_spec_version: "u32",
+        impl_build_version: "u32",
+        impl_build_magic_bytes: "BoundedVec<u8, 64>",
       },
       AttestationMethod: {
-        _enum: ["Root", "NonTEE"],
+        _enum: ["OptOut"],
       },
       AttestationError: {
         _enum: ["Invalid", "Expired"],
       },
       Attestation: {
         _enum: {
-          NonTEE: "NonTEEAttestation"
+          OptOut: null,
         },
       },
       WorkerStatus: {
@@ -216,12 +209,13 @@ function createSubstrateApi(rpcUrl: string): ApiPromise | null {
       WorkerInfo: {
         account: "AccountId",
         owner: "AccountId",
-        reserved: "Balance",
+        deposit: "Balance",
         status: "WorkerStatus",
-        impl_name: "[u8; 4]",
-        impl_version: "u32",
+        impl_id: "Option<u32>",
+        impl_spec_version: "Option<u32>",
+        impl_build_version: "Option<u32>",
         attestation_method: "Option<AttestationMethod>",
-        attested_at: "BlockNumber",
+        attested_at: "Option<u64>",
       },
       ChainStoredData: {
         depositor: "AccountId",
@@ -242,12 +236,8 @@ function createSubstrateApi(rpcUrl: string): ApiPromise | null {
   });
 }
 
-function createAttestation(api: ApiPromise, payload: any) {
-  const attestation = api.createType("NonTEEAttestation", {
-    issued_at: Math.floor(Date.now() / 1000),
-    payload: payload,
-  });
-  return api.createType("Option<Attestation>", { "NonTEE": attestation })
+function createAttestation(api: ApiPromise, _payload: any) {
+  return api.createType("Attestation", "OptOut")
 }
 
 enum WorkerStatus {
@@ -453,7 +443,6 @@ interface Locals {
   sentRegisterAt?: number;
   sentOnlineAt?: number;
   sentHeartbeatAt?: number;
-  sentRefreshAttestationAt?: number;
   sentTakeTaskAt?: number;
   sentProcessedTaskAt?: number;
 
@@ -467,7 +456,6 @@ declare global {
     ownerKeyPair: KeyringPair | null;
     substrateApi: ApiPromise;
 
-    refreshAttestationInterval: number;
     noHeartbeat: boolean;
     subscribePool: number;
 
@@ -488,10 +476,6 @@ window.workerKeyPair = workerKeyPair;
 window.ownerKeyPair = ownerKeyPair;
 window.substrateApi = api;
 
-window.refreshAttestationInterval = parseInt(parsedArgs.refreshAttestationInterval);
-if (isNaN(window.refreshAttestationInterval)) {
-  window.refreshAttestationInterval = 40000;
-}
 window.noHeartbeat = parsedArgs.noHeartbeat;
 window.subscribePool = subscribePool;
 
@@ -584,9 +568,10 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     }
 
     const payload = api.createType("OnlinePayload", {
-      "impl_name": IMPL_NAME,
-      "impl_version": IMPL_VERSION,
-      "payload": api.createType("AttestationPayload", [])
+      "impl_id": IMPL_ID,
+      "impl_spec_version": IMPL_SPEC_VERSION,
+      "impl_build_version": IMPL_BUILD_VERSION,
+      "impl_build_magic_bytes": IMPL_BUILD_MAGIC_BYTES,
     });
     const payloadSig = window.workerKeyPair.sign(payload.toU8a());
     const attestation = createAttestation(api, u8aToHex(payloadSig));
@@ -606,29 +591,6 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     window.locals.sentOnlineAt = undefined;
     window.workerStatus = workerInfo.status;
     return;
-  }
-
-  if (window.refreshAttestationInterval > 0) {
-    if (window.locals.sentRefreshAttestationAt === undefined && latestBlockNumber > window.attestedAt + window.refreshAttestationInterval) {
-      const payload = api.createType("OnlinePayload", {
-        "impl_name": IMPL_NAME,
-        "impl_version": IMPL_VERSION,
-      });
-      const payloadSig = window.workerKeyPair.sign(payload.toU8a());
-      const attestation = createAttestation(api, u8aToHex(payloadSig));
-
-      logger.info(`Sending "offchain_computing_workers.refreshAttestation(payload, attestation)`);
-      const txPromise = api.tx.offchainComputingWorkers.refreshAttestation(payload, attestation);
-      logger.debug(`Call hash: ${txPromise.toHex()}`);
-      const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
-      logger.info(`Transaction hash: ${txHash.toHex()}`);
-      // TODO: Catch whether failed
-
-      window.locals.sentRefreshAttestationAt = latestBlockNumber;
-    } else if (window.locals.sentRefreshAttestationAt && workerInfo.attestedAt >= window.locals.sentRefreshAttestationAt) {
-      logger.info("Refreshed attestation.");
-      window.locals.sentRefreshAttestationAt = undefined;
-    }
   }
 
   if (!window.noHeartbeat) {
@@ -769,7 +731,7 @@ router.get("/", (ctx) => {
     workerStatus: window.workerStatus,
     attestedAt: window.attestedAt,
     version: VERSION,
-    implVersion: IMPL_VERSION,
+    implVersion: IMPL_BUILD_VERSION,
   };
 });
 

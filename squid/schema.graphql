@@ -1,12 +1,3 @@
-type Account @entity {
-  "Account address"
-  id: ID!
-
-  owningWorkers: [Worker!] @derivedFrom(field: "owner")
-  owningPools: [Pool!] @derivedFrom(field: "owner")
-  owningTasks: [Task!] @derivedFrom(field: "owner")
-}
-
 enum AttestationMethod {
   NoneTEE
   Root
@@ -18,24 +9,6 @@ enum WorkerStatus {
   Online
   RequestingOffline
   Offline
-}
-
-type Worker @entity {
-  id: ID!
-
-  owner: Account! @index
-  status: WorkerStatus! @index
-  implName: String
-  implVersion: Int
-  attestationMethod: AttestationMethod
-  lastAttestedAt: DateTime
-  lastHeartbeatReceivedAt: DateTime
-  offlineAt: DateTime
-  offlineReason: OfflineReason
-  lastUpdatedBlockNumber: Int!
-
-  servingPools: [WorkersPools!] @derivedFrom(field: "worker")
-  assignedTasks: [Task!] @derivedFrom(field: "assignee")
 }
 
 enum OfflineReason {
@@ -53,37 +26,6 @@ enum CreatingTaskPermission {
   Public
 }
 
-type CreatingTaskPolicy @entity {
-  id: ID!
-
-  permission: CreatingTaskPermission!
-  price: BigInt
-  startBlock: Int
-  endBlock: Int
-}
-
-type Pool @entity {
-  id: ID!
-
-  owner: Account! @index
-  ownerDeposit: BigInt!
-  stashAccount: Account! @index
-  creatingTaskAbility: Boolean!
-  creatingTaskPoliciesCount: Int!
-  tasksCount: Int!
-  workersCount: Int!
-
-  workers: [WorkersPools!] @derivedFrom(field: "pool")
-  tasks: [Task!] @derivedFrom(field: "pool")
-}
-
-type WorkersPools @entity {
-  id: ID! # Useless, but required
-
-  worker: Worker!
-  pool: Pool!
-}
-
 enum TaskStatus {
   Pending
   Processing
@@ -96,19 +38,93 @@ enum TaskResult {
   Errored
 }
 
+type Account @entity {
+  "Account address"
+  id: ID!
+
+  owningWorkers: [Worker!] @derivedFrom(field: "owner")
+  owningPools: [Pool!] @derivedFrom(field: "owner")
+  owningTasks: [Task!] @derivedFrom(field: "owner")
+}
+
+type Worker @entity {
+  id: ID!
+
+  owner: Account! @index
+  status: WorkerStatus! @index
+  implName: String
+  implVersion: Int
+  attestationMethod: AttestationMethod
+  lastAttestedAt: DateTime
+  lastHeartbeatReceivedAt: DateTime
+  offlineAt: DateTime
+  offlineReason: OfflineReason
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+
+  servingPools: [WorkersPools!] @derivedFrom(field: "worker")
+  assignedTasks: [Task!] @derivedFrom(field: "assignee")
+}
+
+type CreatingTaskPolicy @entity {
+  id: ID!
+
+  pool: Pool! @index
+  permission: CreatingTaskPermission!
+  startBlock: Int
+  endBlock: Int
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+}
+
+type Pool @entity {
+  id: ID!
+
+  owner: Account! @index
+  creatingTaskAbility: Boolean!
+  workersCount: Int!
+  creatingTaskPoliciesCount: Int!
+  tasksCount: Int!
+
+  metadata: Bytes
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+
+  workers: [WorkersPools!] @derivedFrom(field: "pool")
+  creatingTaskPolicies: [CreatingTaskPolicy!] @derivedFrom(field: "pool")
+  tasks: [Task!] @derivedFrom(field: "pool")
+}
+
+type WorkersPools @entity {
+  id: ID! # Useless, but required
+
+  worker: Worker!
+  pool: Pool!
+}
+
 type Task @entity {
   id: ID!
 
   pool: Pool! @index
-  creator: Account! @index
   owner: Account! @index
-  ownerDeposit: Int!
-  status: TaskStatus!
+  assignee: Worker @index
+  status: TaskStatus! @index
   result: TaskResult
   expiresAt: DateTime!
-  createdBy: Account!
+
+  input: Bytes
+  output: Bytes
+  proof: Bytes
+
   createdAt: DateTime!
-  assignee: Worker
+  updatedAt: DateTime!
+  deletedAt: DateTime
   assignedAt: DateTime
   processingAt: DateTime
   processedAt: DateTime

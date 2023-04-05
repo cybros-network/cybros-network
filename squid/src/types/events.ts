@@ -215,29 +215,6 @@ export class OffchainComputingPoolMetadataUpdatedEvent {
     }
 }
 
-export class OffchainComputingPoolStashAccountUpdatedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.PoolStashAccountUpdated')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.PoolStashAccountUpdated') === '6ed80e27a946515d26bc28c71b2db260bb765e6041a077b13e023b7ed2c1c1e0'
-    }
-
-    get asV100(): {poolId: number, stashAccount: Uint8Array} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
 export class OffchainComputingTaskAssignedEvent {
     private readonly _chain: Chain
     private readonly event: Event
@@ -275,10 +252,10 @@ export class OffchainComputingTaskCreatedEvent {
     }
 
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskCreated') === '6677493c202dbf92c531ef12867a9422355deee6af5dbe773ab2dcd61853581d'
+        return this._chain.getEventHash('OffchainComputing.TaskCreated') === '092aebb658b53425c5cca9a592398faadddb774a0dca248e702c1a99103bda08'
     }
 
-    get asV100(): {owner: Uint8Array, poolId: number, taskId: number, input: (Uint8Array | undefined)} {
+    get asV100(): {poolId: number, taskId: number, owner: Uint8Array, input: (Uint8Array | undefined)} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }

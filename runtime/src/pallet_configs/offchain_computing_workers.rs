@@ -1,5 +1,5 @@
 use crate::*;
-use frame_system::EnsureRoot;
+use frame_system::EnsureSigned;
 use frame_support::traits::{ConstBool, ConstU128, ConstU32};
 
 impl pallet_offchain_computing_workers::Config for Runtime {
@@ -7,15 +7,18 @@ impl pallet_offchain_computing_workers::Config for Runtime {
 	type Currency = Balances;
 	type UnixTime = Timestamp;
 	type Randomness = RandomnessCollectiveFlip;
+	type ImplId = u32;
+	type RegisterImplOrigin = EnsureSigned<Self::AccountId>;
+	type RegisterWorkerDeposit = ConstU128<{ 100 * UNITS }>;
+	type RegisterImplDeposit = ConstU128<{ 100 * UNITS }>;
+	type ImplMetadataDepositBase = ConstU128<{ 1 * UNITS }>;
+	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
+	type ImplMetadataLimit = ConstU32<2048>; // 2KiB
+	type MaxRegisteredImplBuildMagicBytes = ConstU32<8>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<100>;
-	type ReservedDeposit = ConstU128<{ 100 * UNITS }>;
-	type CollectingHeartbeatsDuration = ConstU32<10>; // TODO: ConstU32<240>; // 240 block * 6 sec / 60 sec = 24 min
-	type AttestationValidityDuration = ConstU32<432000>; // 10 block/min * 60 min * 24 hour * 30 days = 432000 block
-	type DisallowOptOutAttestation = ConstBool<true>;
-	type DisallowNonTEEAttestation = ConstBool<false>;
-	type ValidateWorkerImpl = ConstBool<false>;
-	type ValidateWorkerImplHash = ConstBool<false>;
-	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
+	type CollectingHeartbeatsDurationInBlocks = ConstU32<240>; // 240 block * 6 sec / 60 sec = 24 min
+	type DisallowOptOutAttestation = ConstBool<false>;
+	type ValidateWorkerImplBuild = ConstBool<false>;
 	type WeightInfo = pallet_offchain_computing_workers::weights::SubstrateWeight<Runtime>;
 	type OffchainWorkerLifecycleHooks = OffchainComputing;
 }

@@ -1,5 +1,5 @@
-import { Worker } from "../model"
 import { EntitiesManager } from "../entity_manager";
+import { Worker } from "../model"
 
 export default class WorkersManager extends EntitiesManager<Worker> {
     constructor(entityClass?: typeof Worker) {

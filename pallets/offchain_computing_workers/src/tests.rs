@@ -16,7 +16,7 @@ const BOB: AccountId = 3;
 #[allow(unused)]
 const BOB_WORKER: AccountId = 4;
 
-type WorkerInfo = primitives::WorkerInfo<<Test as frame_system::Config>::AccountId, BalanceOf<Test>, <Test as frame_system::Config>::BlockNumber>;
+type WorkerInfo = primitives::WorkerInfo<<Test as frame_system::Config>::AccountId, BalanceOf<Test>, u32>;
 
 fn register_worker_for(owner: AccountId, worker: AccountId, initial_deposit: Balance) -> WorkerInfo {
 	let owner_balance = Balances::free_balance(owner);
@@ -33,8 +33,8 @@ fn register_worker_for(owner: AccountId, worker: AccountId, initial_deposit: Bal
 
 	assert_eq!(worker_info.status, WorkerStatus::Registered);
 	assert_eq!(Balances::free_balance(owner), owner_balance.saturating_sub(initial_deposit));
-	assert_eq!(Balances::reserved_balance(worker), worker_info.reserved);
-	assert_eq!(Balances::free_balance(worker), initial_deposit.saturating_sub(worker_info.reserved));
+	assert_eq!(Balances::reserved_balance(worker), worker_info.deposit);
+	assert_eq!(Balances::free_balance(worker), initial_deposit.saturating_sub(worker_info.deposit));
 
 	worker_info
 }
@@ -51,7 +51,7 @@ fn register_works() {
 
 		assert_noop!(
 			OffchainComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 11 * DOLLARS),
-			Error::<Test>::InitialDepositTooLow
+			Error::<Test>::InitialBalanceTooLow
 		);
 
 		assert_noop!(

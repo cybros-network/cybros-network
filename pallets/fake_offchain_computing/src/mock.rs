@@ -4,7 +4,7 @@ use frame_support::{
 	assert_ok, parameter_types,
 	traits::{OnFinalize, OnInitialize},
 };
-use frame_system::EnsureRoot;
+use frame_system::EnsureSigned;
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
 	testing::Header,
@@ -95,17 +95,20 @@ impl pallet_offchain_computing_workers::Config for Test {
 	type Currency = Balances;
 	type UnixTime = Timestamp;
 	type Randomness = RandomnessCollectiveFlip;
+	type ImplId = u32;
+	type RegisterImplOrigin = EnsureSigned<Self::AccountId>;
+	type RegisterWorkerDeposit = ConstU128<{ 100 * DOLLARS }>;
+	type RegisterImplDeposit = ConstU128<{ 1 * DOLLARS }>;
+	type ImplMetadataDepositBase = ConstU128<{ 1 * DOLLARS }>;
+	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
+	type ImplMetadataLimit = ConstU32<50>;
+	type MaxRegisteredImplBuildMagicBytes = ConstU32<4>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<3>;
-	type ReservedDeposit = ConstU128<{ 100 * DOLLARS }>;
-	type CollectingHeartbeatsDuration = ConstU32<6>;
-	type AttestationValidityDuration = ConstU32<12>;
+	type CollectingHeartbeatsDurationInBlocks = ConstU32<6>;
 	type DisallowOptOutAttestation = ConstBool<false>;
-	type DisallowNonTEEAttestation = ConstBool<false>;
-	type ValidateWorkerImpl = ConstBool<false>;
-	type ValidateWorkerImplHash = ConstBool<false>;
-	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
+	type ValidateWorkerImplBuild = ConstBool<false>;
 	type WeightInfo = ();
-	type OffchainWorkerLifecycleHooks = FakeOffchainComputing;
+	type OffchainWorkerLifecycleHooks = ();
 }
 
 parameter_types! {

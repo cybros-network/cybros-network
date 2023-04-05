@@ -2,8 +2,8 @@ use crate::*;
 use frame_support::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
-	pub fn do_create_creating_task_policy(
-		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
+	pub(crate) fn do_create_creating_task_policy(
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		policy_id: T::PolicyId,
 		policy: CreatingTaskPolicy<T::BlockNumber>,
 	) -> DispatchResult {
@@ -18,12 +18,12 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.creating_task_policies_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		Self::deposit_event(Event::CreatingTaskPolicyCreated { pool_id: pool_info.id, policy_id, policy: policy });
+		Self::deposit_event(Event::CreatingTaskPolicyCreated { pool_id: pool_info.id, policy_id, policy });
 		Ok(())
 	}
 
-	pub fn do_destroy_creating_task_policy(
-		pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
+	pub(crate) fn do_destroy_creating_task_policy(
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		policy_id: T::PolicyId,
 	) -> DispatchResult {
 		ensure!(

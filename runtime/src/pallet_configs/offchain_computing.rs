@@ -1,6 +1,7 @@
 use crate::*;
+use frame_system::EnsureSigned;
 use frame_support::traits::{
-	AsEnsureOriginWithArg, ConstU32, ConstU64, ConstU128,
+	ConstU32, ConstU64, ConstU128,
 };
 
 impl pallet_offchain_computing::Config for Runtime {
@@ -11,7 +12,7 @@ impl pallet_offchain_computing::Config for Runtime {
 	type PoolId = u32;
 	type TaskId = u32;
 	type PolicyId = u32;
-	type CreatePoolOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<Self::AccountId>>;
+	type CreatePoolOrigin = EnsureSigned<Self::AccountId>;
 	type CreatePoolDeposit = ConstU128<{ 1 * UNITS }>;
 	type CreatingTaskDeposit = ConstU128<{ 1 * UNITS }>;
 	type MetadataDepositBase = ConstU128<{ 1 * CENTS }>;

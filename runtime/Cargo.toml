@@ -119,6 +119,7 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-vesting/runtime-benchmarks",
 	"pallet-offchain_computing_workers/runtime-benchmarks",
+	"pallet-offchain_computing/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-try-runtime/try-runtime",

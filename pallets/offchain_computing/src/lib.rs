@@ -27,7 +27,7 @@ macro_rules! log {
 }
 
 use frame_support::{
-	traits::{Currency, ReservableCurrency, EnsureOriginWithArg, UnixTime},
+	traits::{Currency, ReservableCurrency, UnixTime},
 	transactional,
 };
 use sp_runtime::{
@@ -39,13 +39,16 @@ use sp_runtime::{
 };
 
 use pallet_offchain_computing_workers::{
-	traits::{OffchainWorkerLifecycleHooks, OffchainWorkerManageable},
-	primitives::{OfflineReason, OnlinePayload, VerifiedAttestation},
+	OfflineReason, OnlinePayload, VerifiedAttestation,
+	OffchainWorkerLifecycleHooks, OffchainWorkerManageable,
+	ImplSpecVersion
 };
 
 pub(crate) type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
 pub(crate) type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub(crate) type ImplIdOf<T> =
+	<<T as Config>::OffchainWorkerManageable as OffchainWorkerManageable<<T as frame_system::Config>::AccountId>>::ImplId;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -68,28 +71,24 @@ pub mod pallet {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-		type OffchainWorkerManageable: OffchainWorkerManageable<Self::AccountId, Self::BlockNumber>;
+		type OffchainWorkerManageable: OffchainWorkerManageable<Self::AccountId>;
 
 		type Currency: ReservableCurrency<Self::AccountId>;
 
 		type UnixTime: UnixTime;
 
 		/// Identifier for the tasks' pool.
-		type PoolId: Member + Parameter + MaxEncodedLen + Copy + Display + AtLeast32BitUnsigned + AutoIncrement;
+		type PoolId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + AutoIncrement;
 
 		/// The type used to identify a task within a pool.
-		type TaskId: Member + Parameter + MaxEncodedLen + Copy + Display + AtLeast32BitUnsigned + AutoIncrement;
+		type TaskId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + AutoIncrement;
 
 		/// The type used to identify a policy within a pool.
-		type PolicyId: Member + Parameter + MaxEncodedLen + Copy + Display + AtLeast32BitUnsigned + AutoIncrement;
+		type PolicyId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + AutoIncrement;
 
 		/// Standard collection creation is only allowed if the origin attempting it and the
 		/// collection are in this set.
-		type CreatePoolOrigin: EnsureOriginWithArg<
-			Self::RuntimeOrigin,
-			Self::PoolId,
-			Success = Self::AccountId,
-		>;
+		type CreatePoolOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 
 		/// The basic amount of funds that must be reserved for pool.
 		#[pallet::constant]
@@ -166,9 +165,9 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		PoolCreated { owner: T::AccountId, pool_id: T::PoolId },
+		PoolCreated { owner: T::AccountId, pool_id: T::PoolId, impl_id: ImplIdOf<T> },
 		PoolDestroyed { pool_id: T::PoolId },
-		PoolMetadataUpdated { pool_id: T::PoolId, new_metadata: BoundedVec<u8, T::PoolMetadataLimit> },
+		PoolMetadataUpdated { pool_id: T::PoolId, metadata: BoundedVec<u8, T::PoolMetadataLimit> },
 		PoolMetadataRemoved { pool_id: T::PoolId },
 		PoolCreatingTaskAbilityEnabled { pool_id: T::PoolId },
 		PoolCreatingTaskAbilityDisabled { pool_id: T::PoolId },
@@ -222,7 +221,7 @@ pub mod pallet {
 		_,
 		Blake2_128Concat,
 		T::PoolId,
-		PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>,
+		PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 	>;
 
 	/// Metadata of a pool.
@@ -267,7 +266,7 @@ pub mod pallet {
 		T::PoolId,
 		Blake2_128Concat,
 		T::TaskId,
-		TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
+		TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
 		OptionQuery,
 	>;
 
@@ -393,17 +392,18 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		#[transactional]
 		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn create_pool(
-			origin: OriginFor<T>
+			origin: OriginFor<T>,
+			impl_id: ImplIdOf<T>
 		) -> DispatchResult {
+			let owner = T::CreatePoolOrigin::ensure_origin(origin)?;
 			let pool_id = NextPoolId::<T>::get().unwrap_or(T::PoolId::initial_value());
-			let owner = T::CreatePoolOrigin::ensure_origin(origin, &pool_id)?;
 
 			Self::do_create_pool(
-				&owner,
-				&T::CreatePoolDeposit::get(),
-				&pool_id
+				owner,
+				pool_id.clone(),
+				impl_id
 			)?;
 
 			let next_id = pool_id.increment();
@@ -414,43 +414,39 @@ pub mod pallet {
 
 		#[transactional]
 		#[pallet::call_index(1)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn destroy_pool(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_destroy_pool(&who, pool_id)?;
-
-			Ok(())
+			Self::do_destroy_pool(who, pool_id)
 		}
 
 		#[transactional]
 		#[pallet::call_index(2)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn update_pool_metadata(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			new_metadata: Option<BoundedVec<u8, T::PoolMetadataLimit>>,
+			metadata: Option<BoundedVec<u8, T::PoolMetadataLimit>>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			if let Some(new_metadata) = new_metadata {
-				Self::do_update_pool_metadata(&pool_info, &new_metadata)?;
+			if let Some(metadata) = metadata {
+				Self::do_update_pool_metadata(pool_info, metadata)
 			} else {
-				Self::do_remove_pool_metadata(&pool_info)?;
+				Self::do_remove_pool_metadata(pool_info)
 			}
-
-			Ok(())
 		}
 
 		#[transactional]
 		#[pallet::call_index(3)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn toggle_pool_global_creating_task_ability(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -461,14 +457,12 @@ pub mod pallet {
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_toggle_pool_creating_task_ability(&pool_info, enabled)?;
-
-			Ok(())
+			Self::do_toggle_pool_creating_task_ability(pool_info, enabled)
 		}
 
 		#[transactional]
 		#[pallet::call_index(4)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn create_creating_task_policy(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -480,14 +474,14 @@ pub mod pallet {
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
 			ensure!(
-				pool_info.creating_task_policies_count <= T::MaxPoliciesPerPool::get(),
+				pool_info.creating_task_policies_count.clone() <= T::MaxPoliciesPerPool::get(),
 				Error::<T>::CreatingTaskPoliciesPerPoolLimitExceeded
 			);
 
 			let policy_id = NextCreatingTaskPolicyId::<T>::get(&pool_id).unwrap_or(T::PolicyId::initial_value());
 			Self::do_create_creating_task_policy(
-				&pool_info,
-				policy_id,
+				pool_info,
+				policy_id.clone(),
 				policy
 			)?;
 
@@ -499,7 +493,7 @@ pub mod pallet {
 
 		#[transactional]
 		#[pallet::call_index(5)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn destroy_creating_task_policy(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -511,16 +505,14 @@ pub mod pallet {
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
 			Self::do_destroy_creating_task_policy(
-				&pool_info,
+				pool_info,
 				policy_id
-			)?;
-
-			Ok(())
+			)
 		}
 
 		#[transactional]
 		#[pallet::call_index(6)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn add_worker(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -531,18 +523,16 @@ pub mod pallet {
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			let worker = T::Lookup::lookup(worker)?;
+			let worker = T::Lookup::lookup(worker.clone())?;
 			Self::do_add_worker(
-				&pool_info,
-				&worker
-			)?;
-
-			Ok(())
+				pool_info,
+				worker
+			)
 		}
 
 		#[transactional]
 		#[pallet::call_index(7)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn remove_worker(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -562,20 +552,19 @@ pub mod pallet {
 			);
 
 			Self::do_remove_worker(
-				&pool_info,
-				&worker
-			)?;
-
-			Ok(())
+				pool_info,
+				worker
+			)
 		}
 
 		#[transactional]
 		#[pallet::call_index(8)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn create_task(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
+			spec_version: ImplSpecVersion,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			soft_expires_in: Option<u64>,
 			// TODO: Tips?
@@ -613,11 +602,12 @@ pub mod pallet {
 			let task_id = NextTaskId::<T>::get(&pool_id).unwrap_or(T::TaskId::initial_value());
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			Self::do_create_task(
-				&pool_info,
-				&task_id,
-				&who,
-				&who,
-				&input,
+				pool_info,
+				task_id.clone(),
+				who.clone(),
+				who,
+				spec_version,
+				input,
 				now,
 				soft_expires_in
 			)?;
@@ -630,7 +620,7 @@ pub mod pallet {
 
 		#[transactional]
 		#[pallet::call_index(9)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn destroy_task(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -639,17 +629,15 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			Self::do_destroy_task(
-				&who,
-				&pool_id,
-				&task_id
-			)?;
-
-			Ok(())
+				who,
+				pool_id,
+				task_id
+			)
 		}
 
 		#[transactional]
 		#[pallet::call_index(10)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn destroy_expired_task(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -659,18 +647,16 @@ pub mod pallet {
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			Self::do_destroy_expired_task(
-				&pool_id,
-				&task_id,
-				&who,
+				pool_id,
+				task_id,
+				who,
 				now
-			)?;
-
-			Ok(())
+			)
 		}
 
 		#[transactional]
 		#[pallet::call_index(11)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn take_task(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -682,14 +668,12 @@ pub mod pallet {
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			let expires_in = soft_expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
-			Self::do_assign_task(&pool_id, &task_id, &who, now, processing, expires_in)?;
-
-			Ok(())
+			Self::do_assign_task(pool_id, task_id, who, now, processing, expires_in)
 		}
 
 		#[transactional]
 		#[pallet::call_index(12)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn release_task(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -697,14 +681,12 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_release_task(&pool_id, &task_id, &who)?;
-
-			Ok(())
+			Self::do_release_task(pool_id, task_id, who)
 		}
 
 		#[transactional]
 		#[pallet::call_index(13)]
-		#[pallet::weight(0)]
+		#[pallet::weight({0})]
 		pub fn submit_task_result(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -718,16 +700,14 @@ pub mod pallet {
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			let expires_in = soft_expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
-			Self::do_submit_task_result(&pool_id, &task_id, &who, result, &output, &proof, now, expires_in)?;
-
-			Ok(())
+			Self::do_submit_task_result(pool_id, task_id, who, result, output, proof, now, expires_in)
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
 		pub(crate) fn ensure_pool_owner(
 			who: &T::AccountId,
-			pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>>
+			pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>
 		) -> DispatchResult {
 			ensure!(
 				who == &pool_info.owner,
@@ -739,7 +719,7 @@ pub mod pallet {
 
 		pub(crate) fn ensure_task_owner(
 			who: &T::AccountId,
-			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>
+			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>
 		) -> DispatchResult {
 			ensure!(
 				who == &task.owner,
@@ -750,7 +730,7 @@ pub mod pallet {
 		}
 
 		pub(crate) fn ensure_task_expired(
-			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
+			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
 			now: u64
 		) -> DispatchResult {
 			// TODO: need deadline
@@ -765,7 +745,7 @@ pub mod pallet {
 		// Comment this because of difficulty reason,
 		// we decide to let the `expires_at` be soft expiring
 		// pub(crate) fn ensure_task_not_expired(
-		// 	task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
+		// 	task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
 		// 	now: u64
 		// ) -> DispatchResult {
 		// 	ensure!(
@@ -797,7 +777,7 @@ pub mod pallet {
 		}
 
 		pub(crate) fn ensure_task_assignee(
-			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>>,
+			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
 			worker: &T::AccountId,
 		) -> DispatchResult {
 			let assignee = task.assignee.clone().ok_or(Error::<T>::NoPermission)?;
@@ -811,8 +791,8 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> OffchainWorkerLifecycleHooks<T::AccountId> for Pallet<T> {
-		fn can_online(_worker: &T::AccountId, _payload: &OnlinePayload, _verified_attestation: &Option<VerifiedAttestation>) -> DispatchResult {
+	impl<T: Config> OffchainWorkerLifecycleHooks<T::AccountId, ImplIdOf<T>> for Pallet<T> {
+		fn can_online(_worker: &T::AccountId, _payload: &OnlinePayload<ImplIdOf<T>>, _verified_attestation: &VerifiedAttestation) -> DispatchResult {
 			Ok(())
 		}
 
@@ -828,7 +808,7 @@ pub mod pallet {
 			// Nothing to do
 		}
 
-		fn after_refresh_attestation(_worker: &T::AccountId, _payload: &OnlinePayload, _verified_attestation: &Option<VerifiedAttestation>) {
+		fn after_refresh_attestation(_worker: &T::AccountId, _payload: &OnlinePayload<ImplIdOf<T>>, _verified_attestation: &VerifiedAttestation) {
 			// Nothing to do
 		}
 

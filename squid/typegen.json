@@ -16,7 +16,6 @@
     "OffchainComputingWorkers.WorkerImplHashRemoved",
     "OffchainComputing.PoolCreated",
     "OffchainComputing.PoolDestroyed",
-    "OffchainComputing.PoolStashAccountUpdated",
     "OffchainComputing.PoolMetadataUpdated",
     "OffchainComputing.PoolMetadataRemoved",
     "OffchainComputing.PoolCreatingTaskAbilityEnabled",

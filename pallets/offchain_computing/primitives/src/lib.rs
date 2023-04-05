@@ -56,7 +56,7 @@ pub struct CreatingTaskPolicy<BlockNumber> {
 
 /// Information about a pool.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct PoolInfo<PoolId, AccountId, Balance> {
+pub struct PoolInfo<PoolId, AccountId, Balance, ImplId> {
 	/// Pool's id
 	pub id: PoolId,
 	/// Pool's owner.
@@ -64,6 +64,8 @@ pub struct PoolInfo<PoolId, AccountId, Balance> {
 	/// The total balance deposited by the owner for all the storage data associated with this
 	/// pool. Used by `destroy`.
 	pub owner_deposit: Balance,
+	/// The implementation id
+	pub impl_id: ImplId,
 	/// Allow creating task
 	pub creating_task_ability: bool,
 	/// The total number of outstanding create task policies of this pool.
@@ -97,11 +99,13 @@ pub enum TaskResult {
 // TODO: Idea: TaskType: info will copy to Task, advanceable, creatable, minimum_deposit (more than actual will save to surplus_deposit)
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct TaskInfo<TaskId, AccountId, Balance> {
+pub struct TaskInfo<TaskId, AccountId, Balance, ImplSpecVersion> {
 	pub id: TaskId,
 	pub owner: AccountId,
 	pub depositor: AccountId,
 	pub deposit: Balance,
+	/// The implementation spec version
+	pub impl_spec_version: ImplSpecVersion,
 	pub status: TaskStatus,
 	pub result: Option<TaskResult>,
 	/// This is soft expiring time, which means even the task has expired,

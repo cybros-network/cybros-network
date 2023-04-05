@@ -14,7 +14,7 @@ use frame_support::{
 	assert_ok, fail,
 };
 use primitives::{
-	AttestationMethod, AttestationPayload, ExtraOnlinePayload, FlipFlopStage, NonTEEAttestation, OnlinePayload,
+	AttestationMethod, AttestationPayload, ExtraOnlinePayload, FlipFlopStage, OnlinePayload,
 	WorkerStatus,
 };
 
@@ -26,23 +26,22 @@ const WORKER_KEY_TYPE: KeyTypeId = KeyTypeId(*b"work");
 
 fn mock_online_payload_and_attestation<T: Config>(
 	worker_public: &sr25519::Public,
-) -> (OnlinePayload, Option<Attestation>) {
-	let payload = OnlinePayload { impl_name: *b"mock", impl_version: 1, extra: ExtraOnlinePayload::default() };
+) -> (OnlinePayload<T::ImplId>, Attestation) {
+	let payload = OnlinePayload {
+		impl_id: 1,
+		impl_spec_version: 0,
+		impl_build_version: 1,
+		impl_build_magic_bytes: Default::default()
+	};
 
-	let encoded_payload = Encode::encode(&payload);
-	let signature = worker_public.sign(WORKER_KEY_TYPE, &encoded_payload).unwrap();
+	let attestation = Attestation::OptOut;
 
-	let attestation = Attestation::NonTEE(NonTEEAttestation {
-		issued_at: T::UnixTime::now().as_secs().saturated_into::<u64>() - 1000,
-		payload: AttestationPayload::truncate_from(signature.0.to_vec()),
-	});
-
-	(payload, Some(attestation))
+	(payload, attestation)
 }
 
 fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::AccountId) -> T::AccountId {
 	let worker = T::AccountId::decode(&mut worker_public.encode().as_slice()).unwrap();
-	let reserved_deposit = T::ReservedDeposit::get();
+	let reserved_deposit = T::RegisterWorkerDeposit::get();
 
 	let owner_balance = reserved_deposit.saturating_add((100 * DOLLARS).saturated_into::<BalanceOf<T>>());
 	let _ = T::Currency::make_free_balance_be(&owner, owner_balance);
@@ -67,11 +66,12 @@ fn add_mock_online_worker<T: Config>(worker_public: &sr25519::Public, owner: &T:
 		OffchainComputingWorkers::<T>::online(
 			RawOrigin::Signed(worker.clone()).into(),
 			payload,
-			attestation)
+			attestation
+		)
 	);
 
 	let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
-	assert_eq!(worker_info.attestation_method, Some(AttestationMethod::NonTEE));
+	assert_eq!(worker_info.attestation_method, Some(AttestationMethod::OptOut));
 
 	worker
 }
@@ -85,15 +85,15 @@ mod benchmarks {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker = account::<T::AccountId>("worker", 0, 0);
 
-		let initial_deposit = T::ReservedDeposit::get().saturating_add((1 * DOLLARS).saturated_into::<BalanceOf<T>>());
-		let balance = initial_deposit.saturating_add((100 * DOLLARS).saturated_into::<BalanceOf<T>>());
+		let initial_balance = T::ReservedDeposit::get().saturating_add((1 * DOLLARS).saturated_into::<BalanceOf<T>>());
+		let balance = initial_balance.saturating_add((100 * DOLLARS).saturated_into::<BalanceOf<T>>());
 		let _ = T::Currency::make_free_balance_be(&owner, balance);
 
 		#[extrinsic_call]
 		_(
 			RawOrigin::Signed(owner.clone()),
 			T::Lookup::unlookup(worker.clone()),
-			initial_deposit
+			initial_balance
 		);
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
@@ -185,7 +185,7 @@ mod benchmarks {
 		);
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
-		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::NonTEE));
+		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::OptOut));
 		assert_eq!(worker_info.status, WorkerStatus::Online);
 
 		Ok(())
@@ -207,7 +207,7 @@ mod benchmarks {
 		);
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
-		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::NonTEE));
+		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::OptOut));
 		assert!(worker_info.attested_at > current_block);
 
 		Ok(())

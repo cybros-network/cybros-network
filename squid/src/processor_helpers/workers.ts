@@ -1,4 +1,4 @@
-import {type Context} from "../processor"
+import { type Context } from "../processor"
 import {
     OffchainComputingWorkersAttestationRefreshedEvent as WorkerAttestationRefreshedEvent,
     OffchainComputingWorkersDeregisteredEvent as WorkerDeregisteredEvent,
@@ -8,9 +8,9 @@ import {
     OffchainComputingWorkersRegisteredEvent as WorkerRegisteredEvent,
     OffchainComputingWorkersRequestingOfflineEvent as WorkerRequestingOfflineEvent,
 } from "../types/events"
-import {AttestationMethod, OfflineReason, WorkerStatus} from "../model"
+import { AttestationMethod, OfflineReason, WorkerStatus } from "../model"
 import * as v100 from "../types/v100"
-import {decodeSS58Address, u8aToString} from "../utils"
+import { decodeSS58Address, u8aToString } from "../utils"
 
 // import { toHex } from "@subsquid/substrate-processor"
 
@@ -58,6 +58,7 @@ function decodeOfflineReason(offlineReason?: v100.OfflineReason): OfflineReason 
 
 interface WorkerChanges {
     readonly id: string
+
     owner?: string
     status?: WorkerStatus
     implName?: string
@@ -68,8 +69,9 @@ interface WorkerChanges {
     offlineAt?: Date
     offlineReason?: OfflineReason
 
-    deregistered: boolean
-    lastUpdatedBlockNumber: number
+    createdAt?: Date
+    updatedAt: Date
+    deletedAt?: Date
 }
 
 export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges> {
@@ -94,7 +96,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     owner: decodeSS58Address(rec.owner),
                     status: WorkerStatus.Registered,
                     deregistered: false,
-                    lastUpdatedBlockNumber: block.header.height
+                    updatedAtBlockNumber: block.header.height
                 }
 
                 workersChangeSet.set(id, workerChanges)
@@ -113,11 +115,11 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     workerChanges = {
                         id,
                         deregistered: true,
-                        lastUpdatedBlockNumber: block.header.height
+                        updatedAtBlockNumber: block.header.height
                     }
                 } else {
                     workerChanges.deregistered = true
-                    workerChanges.lastUpdatedBlockNumber = block.header.height
+                    workerChanges.updatedAtBlockNumber = block.header.height
                 }
 
                 workersChangeSet.set(id, workerChanges)
@@ -140,14 +142,14 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
                     id,
                     deregistered: false,
-                    lastUpdatedBlockNumber: block.header.height
+                    updatedAtBlockNumber: block.header.height
                 }
                 workerChanges.status = WorkerStatus.Online
                 workerChanges.implName = u8aToString(rec.implName)
                 workerChanges.implVersion = rec.implVersion
                 workerChanges.attestationMethod = decodeAttestationMethod(rec.attestationMethod)
                 workerChanges.lastAttestedAt = blockTime
-                workerChanges.lastUpdatedBlockNumber = block.header.height
+                workerChanges.updatedAtBlockNumber = block.header.height
 
                 workersChangeSet.set(id, workerChanges)
             } else if (item.name == "OffchainComputingWorkers.RequestingOffline") {
@@ -163,10 +165,10 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
                     id,
                     deregistered: false,
-                    lastUpdatedBlockNumber: block.header.height
+                    updatedAtBlockNumber: block.header.height
                 }
                 workerChanges.status = WorkerStatus.RequestingOffline
-                workerChanges.lastUpdatedBlockNumber = block.header.height
+                workerChanges.updatedAtBlockNumber = block.header.height
 
                 workersChangeSet.set(id, workerChanges)
             } else if (item.name == "OffchainComputingWorkers.Offline") {
@@ -182,12 +184,12 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
                     id,
                     deregistered: false,
-                    lastUpdatedBlockNumber: block.header.height
+                    updatedAtBlockNumber: block.header.height
                 }
                 workerChanges.status = WorkerStatus.Offline
                 workerChanges.offlineReason = decodeOfflineReason(rec.reason)
                 workerChanges.offlineAt = blockTime
-                workerChanges.lastUpdatedBlockNumber = block.header.height
+                workerChanges.updatedAtBlockNumber = block.header.height
 
                 workersChangeSet.set(id, workerChanges)
             } else if (item.name == "OffchainComputingWorkers.HeartbeatReceived") {
@@ -203,10 +205,10 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
                     id,
                     deregistered: false,
-                    lastUpdatedBlockNumber: block.header.height
+                    updatedAtBlockNumber: block.header.height
                 }
                 workerChanges.lastHeartbeatReceivedAt = blockTime
-                workerChanges.lastUpdatedBlockNumber = block.header.height
+                workerChanges.updatedAtBlockNumber = block.header.height
 
                 workersChangeSet.set(id, workerChanges)
             } else if (item.name == "OffchainComputingWorkers.AttestationRefreshed") {
@@ -222,11 +224,11 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
                     id,
                     deregistered: false,
-                    lastUpdatedBlockNumber: block.header.height
+                    updatedAtBlockNumber: block.header.height
                 }
                 workerChanges.attestationMethod = decodeAttestationMethod(rec.method)
                 workerChanges.lastAttestedAt = blockTime
-                workerChanges.lastUpdatedBlockNumber = block.header.height
+                workerChanges.updatedAtBlockNumber = block.header.height
 
                 workersChangeSet.set(id, workerChanges)
             }
