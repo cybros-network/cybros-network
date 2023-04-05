@@ -15,6 +15,8 @@ impl<T: Config> Pallet<T> {
 		expires_in: u64,
 	) -> DispatchResult {
 		Self::ensure_worker_in_pool(&pool_id, &worker)?;
+		let worker_info = T::OffchainWorkerManageable::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
+		let worker_impl_spec_version = worker_info.impl_spec_version.ok_or(Error::<T>::InternalError)?;
 
 		let current_assigned_tasks_count = WorkerAssignedTasksCounter::<T>::get(&worker);
 		ensure!(
@@ -25,15 +27,22 @@ impl<T: Config> Pallet<T> {
 		// TODO: the current design has thundering herd problem, but it's OK for now.
 		let mut task = 'block: {
 			if let Some(task_id) = task_id {
-				AssignableTasks::<T>::remove(&pool_id, &task_id);
 				break 'block Tasks::<T>::get(&pool_id, &task_id).ok_or(Error::<T>::TaskNotFound)
 			}
 
-			let task_id = AssignableTasks::<T>::iter_key_prefix(&pool_id).next().ok_or(Error::<T>::NoAssignableTask)?;
-			AssignableTasks::<T>::remove(&pool_id, &task_id);
-
+			let task_id = AssignableTasks::<T>::iter_key_prefix(
+			(
+					pool_id.clone(),
+					worker_impl_spec_version.clone()
+				)
+			).next().ok_or(Error::<T>::NoAssignableTask)?;
 			Tasks::<T>::get(&pool_id, &task_id).ok_or(Error::<T>::TaskNotFound)
 		}?;
+		ensure!(
+			worker_impl_spec_version == task.impl_spec_version.clone(),
+			Error::<T>::ImplMismatched
+		);
+		AssignableTasks::<T>::remove((pool_id.clone(), task.impl_spec_version.clone(), task.id.clone()));
 
 		// It is possible to get a expired job, but actually it is a soft expiring
 		// Comment this because current `expires_at` actually a soft expiring
@@ -43,9 +52,9 @@ impl<T: Config> Pallet<T> {
 			task.assignee.is_none(),
 			Error::<T>::TaskAlreadyAssigned
 		);
-
 		task.assignee = Some(worker.clone());
 		task.assigned_at = Some(now);
+
 		// task.expires_at = now + expires_in; // Not sure we need to expand expiring time
 		if processing {
 			task.status = TaskStatus::Processing;
@@ -54,8 +63,8 @@ impl<T: Config> Pallet<T> {
 		}
 
 		let task_id = task.id.clone();
-		Tasks::<T>::insert(&pool_id, &task_id, task);
 		WorkerAssignedTasksCounter::<T>::insert(&worker, current_assigned_tasks_count + 1);
+		Tasks::<T>::insert(&pool_id, &task_id, task);
 
 		Self::deposit_event(Event::TaskAssigned { pool_id: pool_id.clone(), task_id: task_id.clone(), assignee: worker });
 		if processing {
@@ -96,7 +105,7 @@ impl<T: Config> Pallet<T> {
 				*counter -= 1;
 				Ok(())
 			})?;
-			AssignableTasks::<T>::insert(&pool_id, &task_id, ());
+			AssignableTasks::<T>::insert((pool_id.clone(), task.impl_spec_version.clone(), task_id.clone()), ());
 
 			Ok(())
 		})?;

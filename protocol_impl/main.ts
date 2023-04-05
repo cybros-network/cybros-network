@@ -698,7 +698,9 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
       }
     }
 
-    if (tasks.filter((task: AnyJson) => task.status === TaskStatus.Pending && task.assignee === null).length > 0) {
+    let assignableTasksCount = tasks.filter((task: AnyJson) => task.status === TaskStatus.Pending && task.assignee === null && task.implSpecVersion == IMPL_SPEC_VERSION ).length
+    let myTasksCount = (await api.query.offchainComputing.workerAssignedTasksCounter(window.workerKeyPair.address)).toNumber()
+    if (assignableTasksCount > 0 && myTasksCount <= 8) {
       logger.info("taking a new task");
 
       logger.info(`Sending "offchain_computing.take_task(${window.subscribePool}, null, true, null)`);

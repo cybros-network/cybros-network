@@ -175,7 +175,7 @@ pub mod pallet {
 		CreatingTaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
 		WorkerAdded { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRemoved { pool_id: T::PoolId, worker: T::AccountId },
-		TaskCreated { pool_id: T::PoolId, task_id: T::TaskId, owner: T::AccountId, input: Option<BoundedVec<u8, T::InputLimit>> },
+		TaskCreated { pool_id: T::PoolId, task_id: T::TaskId, owner: T::AccountId, spec_version: ImplSpecVersion, input: Option<BoundedVec<u8, T::InputLimit>> },
 		TaskDestroyed { pool_id: T::PoolId, task_id: T::TaskId, destroyer: T::AccountId },
 		TaskAssigned { pool_id: T::PoolId, task_id: T::TaskId, assignee: T::AccountId },
 		TaskReleased { pool_id: T::PoolId, task_id: T::TaskId },
@@ -371,12 +371,13 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	pub type AssignableTasks<T: Config> = StorageDoubleMap<
+	pub type AssignableTasks<T: Config> = StorageNMap<
 		_,
-		Blake2_128Concat,
-		T::PoolId,
-		Blake2_128Concat,
-		T::TaskId,
+		(
+			NMapKey<Blake2_128Concat, T::PoolId>,
+			NMapKey<Blake2_128Concat, ImplSpecVersion>,
+			NMapKey<Blake2_128Concat, T::TaskId>,
+		),
 		(),
 		OptionQuery,
 	>;

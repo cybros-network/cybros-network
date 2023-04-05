@@ -61,10 +61,10 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.tasks_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		AssignableTasks::<T>::insert(&pool_info.id, &task_id, ());
+		AssignableTasks::<T>::insert((pool_info.id.clone(), spec_version.clone(), task_id.clone()), ());
 		AccountOwningTasks::<T>::insert((owner.clone(), pool_info.id.clone(), task_id.clone()), ());
 
-		Self::deposit_event(Event::TaskCreated { owner: owner.clone(), pool_id: pool_info.id, task_id, input: input_data });
+		Self::deposit_event(Event::TaskCreated { pool_id: pool_info.id, task_id, owner: owner.clone(), spec_version, input: input_data });
 		Ok(())
 	}
 
@@ -134,7 +134,7 @@ impl<T: Config> Pallet<T> {
 		})?;
 
 		if task.status == TaskStatus::Pending {
-			AssignableTasks::<T>::remove(&pool_id, &task_id);
+			AssignableTasks::<T>::remove((pool_id.clone(), task.impl_spec_version.clone(), task_id.clone()));
 		} else if task.status == TaskStatus::Processing {
 			if let Some(worker) = &task.assignee {
 				WorkerAssignedTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
