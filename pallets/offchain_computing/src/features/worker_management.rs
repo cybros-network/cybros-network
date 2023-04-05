@@ -4,13 +4,18 @@ use frame_support::pallet_prelude::*;
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_add_worker(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
-		worker: T::AccountId,
+		worker: T::AccountId
 	) -> DispatchResult {
 		ensure!(
 			!Workers::<T>::contains_key(&pool_info.id, &worker),
 			Error::<T>::WorkerAlreadyAdded
 		);
-		Self::ensure_worker(&worker)?;
+
+		let worker_info = T::OffchainWorkerManageable::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
+		ensure!(
+			worker_info.impl_id == Some(pool_info.impl_id.clone()),
+			Error::<T>::ImplMismatched
+		);
 
 		Workers::<T>::insert(&pool_info.id, &worker, ());
 		WorkerServingPools::<T>::insert(&worker, &pool_info.id, ());

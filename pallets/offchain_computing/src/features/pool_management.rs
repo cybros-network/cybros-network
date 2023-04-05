@@ -4,6 +4,7 @@ use sp_runtime::{
 	traits::Zero,
 	Saturating
 };
+use pallet_offchain_computing_workers::ImplDeploymentPermission;
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_pool(
@@ -12,6 +13,19 @@ impl<T: Config> Pallet<T> {
 		impl_id: ImplIdOf<T>
 	) -> DispatchResult {
 		ensure!(!Pools::<T>::contains_key(&pool_id), Error::<T>::PoolIdTaken);
+
+		let impl_info = T::OffchainWorkerManageable::impl_info(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
+		ensure!(
+			match impl_info.deployment_permission {
+				ImplDeploymentPermission::Owner => {
+					impl_info.owner == owner
+				},
+				ImplDeploymentPermission::Public => {
+					true
+				}
+			},
+			Error::<T>::NoPermission
+		);
 
 		T::Currency::reserve(&owner, T::CreatePoolDeposit::get())?;
 

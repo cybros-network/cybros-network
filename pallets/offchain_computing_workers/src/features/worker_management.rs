@@ -2,7 +2,7 @@ use crate::*;
 use frame_support::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn do_register(
+	pub(crate) fn do_register_worker(
 		owner: T::AccountId,
 		worker: T::AccountId,
 		initial_balance: BalanceOf<T>
@@ -42,7 +42,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_deregister(
+	pub(crate) fn do_deregister_worker(
 		owner: T::AccountId,
 		worker: T::AccountId
 	) -> DispatchResult {

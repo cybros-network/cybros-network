@@ -417,27 +417,27 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(0)]
 		#[pallet::weight(T::WeightInfo::register())]
-		pub fn register(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, initial_deposit: BalanceOf<T>) -> DispatchResult {
+		pub fn register_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, initial_deposit: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
-			Self::do_register(who, worker, initial_deposit)
+			Self::do_register_worker(who, worker, initial_deposit)
 		}
 
 		/// Deregister a computing workers.
 		#[transactional]
 		#[pallet::call_index(1)]
 		#[pallet::weight(T::WeightInfo::deregister())]
-		pub fn deregister(origin: OriginFor<T>, worker: AccountIdLookupOf<T>) -> DispatchResult {
+		pub fn deregister_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
-			Self::do_deregister(who, worker)
+			Self::do_deregister_worker(who, worker)
 		}
 
 		/// The same with balances.transfer_keep_alive(owner, worker, balance)
 		#[transactional]
 		#[pallet::call_index(2)]
 		#[pallet::weight(T::WeightInfo::deposit())]
-		pub fn deposit(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
+		pub fn transfer_to_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
 			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
@@ -451,7 +451,7 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(3)]
 		#[pallet::weight(T::WeightInfo::withdraw())]
-		pub fn withdraw(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
+		pub fn withdraw_from_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
 			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
@@ -796,6 +796,14 @@ impl<T: Config> OffchainWorkerManageable<T::AccountId> for Pallet<T> {
 	type PositiveImbalance = PositiveImbalanceOf<T>;
 	type NegativeImbalance = NegativeImbalanceOf<T>;
 
+	fn impl_info(impl_id: &Self::ImplId) -> Option<ImplInfo<Self::ImplId, T::AccountId, Self::Balance>> {
+		Impls::<T>::get(impl_id)
+	}
+
+	fn impl_exists(impl_id: &Self::ImplId) -> bool {
+		Impls::<T>::contains_key(impl_id)
+	}
+
 	fn worker_info(worker: &T::AccountId) -> Option<WorkerInfo<T::AccountId, Self::Balance, Self::ImplId>> {
 		Workers::<T>::get(worker)
 	}
@@ -804,15 +812,15 @@ impl<T: Config> OffchainWorkerManageable<T::AccountId> for Pallet<T> {
 		Workers::<T>::contains_key(worker)
 	}
 
-	fn reward(worker: &T::AccountId, source: &T::AccountId, value: Self::Balance) -> DispatchResult {
+	fn reward_worker(worker: &T::AccountId, source: &T::AccountId, value: Self::Balance) -> DispatchResult {
 		<T as Config>::Currency::transfer(source, worker, value, ExistenceRequirement::KeepAlive)
 	}
 
-	fn slash(worker: &T::AccountId, value: Self::Balance) -> (Self::NegativeImbalance, Self::Balance) {
+	fn slash_worker(worker: &T::AccountId, value: Self::Balance) -> (Self::NegativeImbalance, Self::Balance) {
 		<T as Config>::Currency::slash(worker, value)
 	}
 
-	fn offline(worker: &T::AccountId, reason: OfflineReason) -> DispatchResult {
+	fn offline_worker(worker: &T::AccountId, reason: OfflineReason) -> DispatchResult {
 		let mut worker_info = Workers::<T>::get(worker).ok_or(Error::<T>::NotExists)?;
 		ensure!(
 			matches!(worker_info.status, WorkerStatus::Online | WorkerStatus::RequestingOffline),

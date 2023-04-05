@@ -172,7 +172,7 @@ pub mod pallet {
 			}
 
 			if reason != OfflineReason::Graceful {
-				T::OffchainWorkerManageable::slash(
+				T::OffchainWorkerManageable::slash_worker(
 					worker,
 					T::SlashingCardinal::get().saturating_mul(10u32.into()),
 				);

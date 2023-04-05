@@ -203,6 +203,8 @@ pub mod pallet {
 		ExpiresInTooLarge,
 		WorkersPerPoolLimitExceeded,
 		WorkerAlreadyAdded,
+		ImplMismatched,
+		ImplNotFound,
 		TasksPerPoolLimitExceeded,
 		TaskNotFound,
 		WorkerAssignedTasksLimitExceeded,
@@ -524,6 +526,7 @@ pub mod pallet {
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
 			let worker = T::Lookup::lookup(worker.clone())?;
+
 			Self::do_add_worker(
 				pool_info,
 				worker
@@ -756,18 +759,10 @@ pub mod pallet {
 		// 	Ok(())
 		// }
 
-		pub(crate) fn ensure_worker(who: &T::AccountId) -> DispatchResult {
-			ensure!(T::OffchainWorkerManageable::worker_exists(who), Error::<T>::WorkerNotFound);
-
-			Ok(())
-		}
-
 		pub(crate) fn ensure_worker_in_pool(
 			pool_id: &T::PoolId,
 			worker: &T::AccountId,
 		) -> DispatchResult {
-			Self::ensure_worker(worker)?;
-
 			ensure!(
 				Workers::<T>::contains_key(pool_id, worker),
 				Error::<T>::WorkerNotInThePool

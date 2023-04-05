@@ -9,7 +9,7 @@ use frame_support::{
 	},
 	Parameter
 };
-use primitives::{OfflineReason, OnlinePayload, WorkerInfo, VerifiedAttestation};
+use primitives::{OfflineReason, OnlinePayload, WorkerInfo, VerifiedAttestation, ImplInfo};
 
 use crate::macros::impl_auto_increment;
 
@@ -97,15 +97,19 @@ pub trait OffchainWorkerManageable<AccountId> {
 	type PositiveImbalance: Imbalance<Self::Balance, Opposite = Self::NegativeImbalance>;
 	type NegativeImbalance: Imbalance<Self::Balance, Opposite = Self::PositiveImbalance>;
 
+	fn impl_info(impl_id: &Self::ImplId) -> Option<ImplInfo<Self::ImplId, AccountId, Self::Balance>>;
+
+	fn impl_exists(impl_id: &Self::ImplId) -> bool;
+
 	fn worker_info(worker: &AccountId) -> Option<WorkerInfo<AccountId, Self::Balance, Self::ImplId>>;
 
 	fn worker_exists(worker: &AccountId) -> bool;
 
-	fn reward(worker: &AccountId, source: &AccountId, value: Self::Balance) -> DispatchResult;
+	fn reward_worker(worker: &AccountId, source: &AccountId, value: Self::Balance) -> DispatchResult;
 
-	fn slash(worker: &AccountId, value: Self::Balance) -> (Self::NegativeImbalance, Self::Balance);
+	fn slash_worker(worker: &AccountId, value: Self::Balance) -> (Self::NegativeImbalance, Self::Balance);
 
-	fn offline(worker: &AccountId, reason: OfflineReason) -> DispatchResult;
+	fn offline_worker(worker: &AccountId, reason: OfflineReason) -> DispatchResult;
 }
 
 #[cfg(feature = "std")]
@@ -119,6 +123,14 @@ impl<AccountId> OffchainWorkerManageable<AccountId> for () {
 	type PositiveImbalance = ();
 	type NegativeImbalance = ();
 
+	fn impl_info(_impl_id: &Self::ImplId) -> Option<ImplInfo<Self::ImplId, AccountId, Self::Balance>> {
+		None
+	}
+
+	fn impl_exists(_impl_id: &Self::ImplId) -> bool {
+		false
+	}
+
 	fn worker_info(_: &AccountId) -> Option<WorkerInfo<AccountId, Self::Balance, Self::ImplId>> {
 		None
 	}
@@ -127,15 +139,15 @@ impl<AccountId> OffchainWorkerManageable<AccountId> for () {
 		false
 	}
 
-	fn reward(_: &AccountId, _: &AccountId, _: Self::Balance) -> DispatchResult {
+	fn reward_worker(_: &AccountId, _: &AccountId, _: Self::Balance) -> DispatchResult {
 		Ok(())
 	}
 
-	fn slash(_: &AccountId, _: Self::Balance) -> (Self::NegativeImbalance, Self::Balance) {
+	fn slash_worker(_: &AccountId, _: Self::Balance) -> (Self::NegativeImbalance, Self::Balance) {
 		((), Self::Balance::zero())
 	}
 
-	fn offline(_: &AccountId, _: OfflineReason) -> DispatchResult {
+	fn offline_worker(_: &AccountId, _: OfflineReason) -> DispatchResult {
 		Ok(())
 	}
 }
