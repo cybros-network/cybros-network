@@ -14,8 +14,7 @@ use frame_support::{
 	assert_ok, fail,
 };
 use primitives::{
-	AttestationMethod, AttestationPayload, ExtraOnlinePayload, FlipFlopStage, OnlinePayload,
-	WorkerStatus,
+	AttestationMethod, FlipFlopStage, OnlinePayload, WorkerStatus,
 };
 
 use crate::Pallet as OffchainComputingWorkers;
@@ -24,11 +23,27 @@ use super::*;
 const DOLLARS: u128 = 1_000_000_000_000;
 const WORKER_KEY_TYPE: KeyTypeId = KeyTypeId(*b"work");
 
+fn add_mock_impl<T: Config>(owner: &T::AccountId) -> T::ImplId {
+	let reserved_deposit = T::RegisterImplDeposit::get();
+	let owner_balance = reserved_deposit.saturating_add((11 * DOLLARS).saturated_into::<BalanceOf<T>>());
+	let _ = T::Currency::make_free_balance_be(&owner, owner_balance);
+
+	assert_ok!(OffchainComputingWorkers::<T>::register_impl(
+		RawOrigin::Signed(owner.clone()).into(),
+		AttestationMethod::OptOut,
+		ImplDeploymentPermission::Public
+	));
+
+	let impl_info = Impls::<T>::iter_values().last().expect("Should have an impl");
+	impl_info.id
+}
+
 fn mock_online_payload_and_attestation<T: Config>(
-	worker_public: &sr25519::Public,
+	_worker_public: &sr25519::Public,
+	impl_id: T::ImplId
 ) -> (OnlinePayload<T::ImplId>, Attestation) {
-	let payload = OnlinePayload {
-		impl_id: 1,
+	let payload = OnlinePayload::<T::ImplId> {
+		impl_id,
 		impl_spec_version: 0,
 		impl_build_version: 1,
 		impl_build_magic_bytes: Default::default()
@@ -48,7 +63,7 @@ fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::Accoun
 
 	let initial_deposit = reserved_deposit.saturating_add((11 * DOLLARS).saturated_into::<BalanceOf<T>>());
 
-	assert_ok!(OffchainComputingWorkers::<T>::register(
+	assert_ok!(OffchainComputingWorkers::<T>::register_worker(
 		RawOrigin::Signed(owner.clone()).into(),
 		T::Lookup::unlookup(worker.clone()),
 		initial_deposit
@@ -58,10 +73,11 @@ fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::Accoun
 	worker
 }
 
-fn add_mock_online_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::AccountId) -> T::AccountId {
+fn add_mock_online_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::AccountId, impl_id: Option<T::ImplId>) -> T::AccountId {
 	let worker = add_mock_worker::<T>(worker_public, owner);
+	let impl_id = impl_id.unwrap_or(add_mock_impl::<T>(owner));
 
-	let (payload, attestation) = mock_online_payload_and_attestation::<T>(worker_public);
+	let (payload, attestation) = mock_online_payload_and_attestation::<T>(worker_public, impl_id);
 	assert_ok!(
 		OffchainComputingWorkers::<T>::online(
 			RawOrigin::Signed(worker.clone()).into(),
@@ -81,11 +97,11 @@ mod benchmarks {
 	use super::*;
 
 	#[benchmark]
-	fn register() -> Result<(), BenchmarkError> {
+	fn register_worker() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker = account::<T::AccountId>("worker", 0, 0);
 
-		let initial_balance = T::ReservedDeposit::get().saturating_add((1 * DOLLARS).saturated_into::<BalanceOf<T>>());
+		let initial_balance = T::RegisterWorkerDeposit::get().saturating_add((1 * DOLLARS).saturated_into::<BalanceOf<T>>());
 		let balance = initial_balance.saturating_add((100 * DOLLARS).saturated_into::<BalanceOf<T>>());
 		let _ = T::Currency::make_free_balance_be(&owner, balance);
 
@@ -98,14 +114,14 @@ mod benchmarks {
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.owner, owner);
-		assert_eq!(T::Currency::reserved_balance(&worker), T::ReservedDeposit::get());
+		assert_eq!(T::Currency::reserved_balance(&worker), T::RegisterWorkerDeposit::get());
 		assert_eq!(worker_info.status, WorkerStatus::Registered);
 
 		Ok(())
 	}
 
 	#[benchmark]
-	fn deregister() -> Result<(), BenchmarkError> {
+	fn deregister_worker() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
@@ -123,7 +139,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn deposit() -> Result<(), BenchmarkError> {
+	fn transfer_to_worker() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
@@ -147,7 +163,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn withdraw() -> Result<(), BenchmarkError> {
+	fn withdraw_from_worker() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
@@ -173,9 +189,10 @@ mod benchmarks {
 	#[benchmark]
 	fn online() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
+		let impl_id = add_mock_impl::<T>(&owner);
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner);
-		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public);
+		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public, impl_id);
 
 		#[extrinsic_call]
 		_(
@@ -194,10 +211,23 @@ mod benchmarks {
 	#[benchmark]
 	fn refresh_attestation() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
+		let impl_id = add_mock_impl::<T>(&owner);
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
-		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public);
-		let current_block = frame_system::Pallet::<T>::block_number();
+		let worker = add_mock_online_worker::<T>(&worker_public, &owner, Some(impl_id));
+		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public, impl_id);
+		let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
+
+		// Hack here
+		Workers::<T>::try_mutate(&worker, |worker_info| {
+			let Some(worker_info) = worker_info else {
+				return Err("must not null")
+			};
+
+			worker_info.attestation_expires_at = Some(now + 100);
+			worker_info.attested_at = Some(now - 100);
+
+			Ok(())
+		})?;
 
 		#[extrinsic_call]
 		_(
@@ -208,7 +238,7 @@ mod benchmarks {
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::OptOut));
-		assert!(worker_info.attested_at > current_block);
+		assert!(worker_info.attested_at.expect("attest_at must have value") >= now);
 
 		Ok(())
 	}
@@ -219,7 +249,7 @@ mod benchmarks {
 	fn request_offline() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
+		let worker = add_mock_online_worker::<T>(&worker_public, &owner, None);
 
 		#[extrinsic_call]
 		_(
@@ -238,7 +268,7 @@ mod benchmarks {
 	fn request_offline_for() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
+		let worker = add_mock_online_worker::<T>(&worker_public, &owner, None);
 
 		#[extrinsic_call]
 		_(
@@ -256,7 +286,7 @@ mod benchmarks {
 	fn force_offline() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
+		let worker = add_mock_online_worker::<T>(&worker_public, &owner, None);
 
 		#[extrinsic_call]
 		_(
@@ -273,7 +303,7 @@ mod benchmarks {
 	fn force_offline_for() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
+		let worker = add_mock_online_worker::<T>(&worker_public, &owner, None);
 
 		#[extrinsic_call]
 		_(
@@ -292,7 +322,7 @@ mod benchmarks {
 	fn heartbeat() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_online_worker::<T>(&worker_public, &owner);
+		let worker = add_mock_online_worker::<T>(&worker_public, &owner, None);
 
 		let stage = FlipOrFlop::<T>::get();
 		// Simulate to the next stage

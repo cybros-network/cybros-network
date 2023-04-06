@@ -22,7 +22,7 @@ fn register_worker_for(owner: AccountId, worker: AccountId, initial_deposit: Bal
 	let owner_balance = Balances::free_balance(owner);
 
 	assert_ok!(
-		OffchainComputingWorkers::register(
+		OffchainComputingWorkers::register_worker(
 			RuntimeOrigin::signed(owner),
 			worker.into(),
 			initial_deposit
@@ -40,7 +40,7 @@ fn register_worker_for(owner: AccountId, worker: AccountId, initial_deposit: Bal
 }
 
 #[test]
-fn register_works() {
+fn register_worker_works() {
 	new_test_ext().execute_with(|| {
 		set_balance(ALICE, 201 * DOLLARS);
 
@@ -50,19 +50,19 @@ fn register_works() {
 		set_balance(ALICE, 201 * DOLLARS);
 
 		assert_noop!(
-			OffchainComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 11 * DOLLARS),
+			OffchainComputingWorkers::register_worker(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 11 * DOLLARS),
 			Error::<Test>::InitialBalanceTooLow
 		);
 
 		assert_noop!(
-			OffchainComputingWorkers::register(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 101 * DOLLARS),
+			OffchainComputingWorkers::register_worker(RuntimeOrigin::signed(ALICE), ALICE_WORKER, 101 * DOLLARS),
 			Error::<Test>::AlreadyRegistered
 		);
 	});
 }
 
 #[test]
-fn deregister_works() {
+fn deregister_worker_works() {
 	new_test_ext().execute_with(|| {
 		set_balance(ALICE, 201 * DOLLARS);
 
@@ -70,7 +70,7 @@ fn deregister_works() {
 
 		run_to_block(1);
 
-		assert_ok!(OffchainComputingWorkers::deregister(RuntimeOrigin::signed(ALICE), ALICE_WORKER));
+		assert_ok!(OffchainComputingWorkers::deregister_worker(RuntimeOrigin::signed(ALICE), ALICE_WORKER));
 
 		assert_eq!(Balances::free_balance(ALICE), 201 * DOLLARS);
 		assert_eq!(Account::<Test>::contains_key(ALICE_WORKER), false);

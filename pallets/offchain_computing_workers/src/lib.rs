@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod macros;
@@ -75,7 +76,7 @@ mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent> + TryInto<Event<Self>>;
 
 		/// The system's currency for payment.
 		type Currency: ReservableCurrency<Self::AccountId>;
@@ -416,7 +417,7 @@ mod pallet {
 		/// The `Registered` event is emitted in case of success.
 		#[transactional]
 		#[pallet::call_index(0)]
-		#[pallet::weight(T::WeightInfo::register())]
+		#[pallet::weight(T::WeightInfo::register_worker())]
 		pub fn register_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, initial_deposit: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
@@ -426,7 +427,7 @@ mod pallet {
 		/// Deregister a computing workers.
 		#[transactional]
 		#[pallet::call_index(1)]
-		#[pallet::weight(T::WeightInfo::deregister())]
+		#[pallet::weight(T::WeightInfo::deregister_worker())]
 		pub fn deregister_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
@@ -436,7 +437,7 @@ mod pallet {
 		/// The same with balances.transfer_keep_alive(owner, worker, balance)
 		#[transactional]
 		#[pallet::call_index(2)]
-		#[pallet::weight(T::WeightInfo::deposit())]
+		#[pallet::weight(T::WeightInfo::transfer_to_worker())]
 		pub fn transfer_to_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
@@ -450,7 +451,7 @@ mod pallet {
 		/// The same with balances.transfer_keep_alive(worker, owner, balance)
 		#[transactional]
 		#[pallet::call_index(3)]
-		#[pallet::weight(T::WeightInfo::withdraw())]
+		#[pallet::weight(T::WeightInfo::withdraw_from_worker())]
 		pub fn withdraw_from_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
