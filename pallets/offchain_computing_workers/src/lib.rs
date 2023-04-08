@@ -223,11 +223,11 @@ mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// The worker registered successfully
-		Registered { worker: T::AccountId, owner: T::AccountId },
+		WorkerRegistered { worker: T::AccountId, owner: T::AccountId },
 		/// The worker registered successfully
-		Deregistered { worker: T::AccountId, force: bool },
+		WorkerDeregistered { worker: T::AccountId, force: bool },
 		/// The worker is online
-		Online {
+		WorkerOnline {
 			worker: T::AccountId,
 			impl_id: T::ImplId,
 			impl_spec_version: ImplSpecVersion,
@@ -237,13 +237,13 @@ mod pallet {
 			next_heartbeat: T::BlockNumber,
 		},
 		/// The worker is requesting offline
-		RequestingOffline { worker: T::AccountId },
+		WorkerRequestingOffline { worker: T::AccountId },
 		/// The worker is offline
-		Offline { worker: T::AccountId, reason: OfflineReason },
+		WorkerOffline { worker: T::AccountId, reason: OfflineReason },
 		/// The worker send heartbeat successfully
-		HeartbeatReceived { worker: T::AccountId, next: T::BlockNumber },
+		WorkerHeartbeatReceived { worker: T::AccountId, next: T::BlockNumber },
 		/// The worker refresh its attestation successfully
-		AttestationRefreshed { worker: T::AccountId, expires_at: Option<u64> },
+		WorkerAttestationRefreshed { worker: T::AccountId, expires_at: Option<u64> },
 		ImplRegistered {
 			impl_id: T::ImplId,
 			owner: T::AccountId,
@@ -689,7 +689,7 @@ impl<T: Config> Pallet<T> {
 			}
 		});
 
-		Self::deposit_event(Event::<T>::Offline { worker: worker.clone(), reason: OfflineReason::Unresponsive });
+		Self::deposit_event(Event::<T>::WorkerOffline { worker: worker.clone(), reason: OfflineReason::Unresponsive });
 	}
 
 	pub(crate) fn verify_attestation(attestation: &Attestation) -> Result<VerifiedAttestation, DispatchError> {
@@ -834,7 +834,7 @@ impl<T: Config> OffchainWorkerManageable<T::AccountId> for Pallet<T> {
 		FlipSet::<T>::remove(worker);
 		FlopSet::<T>::remove(worker);
 
-		Self::deposit_event(Event::<T>::Offline { worker: worker.clone(), reason });
+		Self::deposit_event(Event::<T>::WorkerOffline { worker: worker.clone(), reason });
 
 		Ok(())
 	}

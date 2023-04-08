@@ -38,7 +38,7 @@ impl<T: Config> Pallet<T> {
 		Workers::<T>::insert(&worker, worker_info);
 		AccountOwningWorkers::<T>::insert(&owner, &worker, ());
 
-		Self::deposit_event(Event::<T>::Registered { worker, owner });
+		Self::deposit_event(Event::<T>::WorkerRegistered { worker, owner });
 		Ok(())
 	}
 
@@ -72,7 +72,7 @@ impl<T: Config> Pallet<T> {
 		Workers::<T>::remove(&worker);
 		AccountOwningWorkers::<T>::remove(&owner, &worker);
 
-		Self::deposit_event(Event::<T>::Deregistered { worker, force: false });
+		Self::deposit_event(Event::<T>::WorkerDeregistered { worker, force: false });
 		Ok(())
 	}
 }

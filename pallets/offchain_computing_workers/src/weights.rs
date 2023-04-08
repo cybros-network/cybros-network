@@ -30,7 +30,7 @@
 #![allow(unused_imports)]
 
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
-use sp_std::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// Weight functions needed for pallet_offchain_computing_workers.
 pub trait WeightInfo {
@@ -209,7 +209,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
         //   Measured:  `514`
         //   Estimated: `15736`
         // Minimum execution time: 23_000_000 picoseconds.
-        Weight::from_parts(23_000_000, 15736)
+        Weight::from_parts(24_000_000, 15736)
             .saturating_add(T::DbWeight::get().reads(5_u64))
             .saturating_add(T::DbWeight::get().writes(5_u64))
     }
@@ -256,7 +256,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
         // Proof Size summary in bytes:
         //   Measured:  `599`
         //   Estimated: `25781`
-        // Minimum execution time: 28_000_000 picoseconds.
+        // Minimum execution time: 29_000_000 picoseconds.
         Weight::from_parts(30_000_000, 25781)
             .saturating_add(T::DbWeight::get().reads(10_u64))
             .saturating_add(T::DbWeight::get().writes(4_u64))
@@ -424,7 +424,7 @@ impl WeightInfo for () {
         //   Measured:  `514`
         //   Estimated: `15736`
         // Minimum execution time: 23_000_000 picoseconds.
-        Weight::from_parts(23_000_000, 15736)
+        Weight::from_parts(24_000_000, 15736)
             .saturating_add(RocksDbWeight::get().reads(5_u64))
             .saturating_add(RocksDbWeight::get().writes(5_u64))
     }
@@ -471,7 +471,7 @@ impl WeightInfo for () {
         // Proof Size summary in bytes:
         //   Measured:  `599`
         //   Estimated: `25781`
-        // Minimum execution time: 28_000_000 picoseconds.
+        // Minimum execution time: 29_000_000 picoseconds.
         Weight::from_parts(30_000_000, 25781)
             .saturating_add(RocksDbWeight::get().reads(10_u64))
             .saturating_add(RocksDbWeight::get().writes(4_u64))

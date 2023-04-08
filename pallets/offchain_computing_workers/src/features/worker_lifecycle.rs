@@ -79,7 +79,7 @@ impl<T: Config> Pallet<T> {
 
 		let next_heartbeat = Self::flip_flop_for_online(&worker);
 
-		Self::deposit_event(Event::<T>::Online {
+		Self::deposit_event(Event::<T>::WorkerOnline {
 			worker: worker.clone(),
 			impl_id: payload_impl_id.clone(),
 			impl_spec_version: payload.impl_spec_version,
@@ -123,7 +123,7 @@ impl<T: Config> Pallet<T> {
 		worker_info.attested_at = Some(T::UnixTime::now().as_secs().saturated_into::<u64>());
 		Workers::<T>::insert(&worker, worker_info.clone());
 
-		Self::deposit_event(Event::<T>::AttestationRefreshed { worker: worker.clone(), expires_at: verified_attestation.expires_at() });
+		Self::deposit_event(Event::<T>::WorkerAttestationRefreshed { worker: worker.clone(), expires_at: verified_attestation.expires_at() });
 
 		T::OffchainWorkerLifecycleHooks::after_refresh_attestation(&worker, &payload, &verified_attestation);
 
@@ -151,7 +151,7 @@ impl<T: Config> Pallet<T> {
 			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
 			Self::offline_worker(&worker, &worker_info.impl_id);
 
-			Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::Graceful });
+			Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::Graceful });
 		} else {
 			ensure!(
 				worker_info.status == WorkerStatus::Online,
@@ -165,7 +165,7 @@ impl<T: Config> Pallet<T> {
 				}
 			});
 
-			Self::deposit_event(Event::<T>::RequestingOffline { worker: worker.clone() });
+			Self::deposit_event(Event::<T>::WorkerRequestingOffline { worker: worker.clone() });
 
 			T::OffchainWorkerLifecycleHooks::after_requesting_offline(&worker);
 		}
@@ -192,7 +192,7 @@ impl<T: Config> Pallet<T> {
 		T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Forced);
 		Self::offline_worker(&worker, &worker_info.impl_id);
 
-		Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::Forced });
+		Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::Forced });
 		Ok(())
 	}
 
@@ -214,7 +214,7 @@ impl<T: Config> Pallet<T> {
 				T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::AttestationExpired);
 				Self::offline_worker(&worker, &worker_info.impl_id);
 
-				Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::AttestationExpired });
+				Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::AttestationExpired });
 				return Ok(())
 			}
 		}
@@ -226,7 +226,7 @@ impl<T: Config> Pallet<T> {
 			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
 			Self::offline_worker(&worker, &worker_info.impl_id);
 
-			Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::Graceful });
+			Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::Graceful });
 			return Ok(())
 		}
 
@@ -235,7 +235,7 @@ impl<T: Config> Pallet<T> {
 			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::InsufficientDepositFunds);
 			Self::offline_worker(&worker, &worker_info.impl_id);
 
-			Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::InsufficientDepositFunds });
+			Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::InsufficientDepositFunds });
 			return Ok(())
 		}
 
@@ -257,7 +257,7 @@ impl<T: Config> Pallet<T> {
 				T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::ImplBlocked);
 				Self::offline_worker(&worker, &worker_info.impl_id);
 
-				Self::deposit_event(Event::<T>::Offline { worker, reason: OfflineReason::ImplBlocked });
+				Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::ImplBlocked });
 				return Ok(())
 			}
 		}
@@ -286,7 +286,7 @@ impl<T: Config> Pallet<T> {
 			_ => return Err(Error::<T>::TooEarly.into()),
 		}
 
-		Self::deposit_event(Event::<T>::HeartbeatReceived { worker, next: next_heartbeat });
+		Self::deposit_event(Event::<T>::WorkerHeartbeatReceived { worker, next: next_heartbeat });
 
 		Ok(())
 	}

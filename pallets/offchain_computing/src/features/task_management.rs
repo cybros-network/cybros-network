@@ -11,7 +11,7 @@ impl<T: Config> Pallet<T> {
 		task_id: T::TaskId,
 		owner: T::AccountId,
 		depositor: T::AccountId,
-		spec_version: ImplSpecVersion,
+		impl_spec_version: ImplSpecVersion,
 		input_data: Option<BoundedVec<u8, T::InputLimit>>,
 		now: u64,
 		expires_in: Option<u64>,
@@ -35,7 +35,7 @@ impl<T: Config> Pallet<T> {
 			owner: owner.clone(),
 			depositor: depositor.clone(),
 			deposit: task_deposit,
-			impl_spec_version: spec_version,
+			impl_spec_version,
 			status: TaskStatus::Pending,
 			result: None,
 			expires_at,
@@ -61,10 +61,10 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.tasks_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		AssignableTasks::<T>::insert((pool_info.id.clone(), spec_version.clone(), task_id.clone()), ());
+		AssignableTasks::<T>::insert((pool_info.id.clone(), impl_spec_version.clone(), task_id.clone()), ());
 		AccountOwningTasks::<T>::insert((owner.clone(), pool_info.id.clone(), task_id.clone()), ());
 
-		Self::deposit_event(Event::TaskCreated { pool_id: pool_info.id, task_id, owner: owner.clone(), spec_version, input: input_data });
+		Self::deposit_event(Event::TaskCreated { pool_id: pool_info.id, task_id, owner: owner.clone(), impl_spec_version, input: input_data });
 		Ok(())
 	}
 

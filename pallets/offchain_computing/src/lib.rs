@@ -175,7 +175,7 @@ pub mod pallet {
 		CreatingTaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
 		WorkerAdded { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRemoved { pool_id: T::PoolId, worker: T::AccountId },
-		TaskCreated { pool_id: T::PoolId, task_id: T::TaskId, owner: T::AccountId, spec_version: ImplSpecVersion, input: Option<BoundedVec<u8, T::InputLimit>> },
+		TaskCreated { pool_id: T::PoolId, task_id: T::TaskId, owner: T::AccountId, impl_spec_version: ImplSpecVersion, input: Option<BoundedVec<u8, T::InputLimit>> },
 		TaskDestroyed { pool_id: T::PoolId, task_id: T::TaskId, destroyer: T::AccountId },
 		TaskAssigned { pool_id: T::PoolId, task_id: T::TaskId, assignee: T::AccountId },
 		TaskReleased { pool_id: T::PoolId, task_id: T::TaskId },
@@ -568,7 +568,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
-			spec_version: ImplSpecVersion,
+			impl_spec_version: ImplSpecVersion,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			soft_expires_in: Option<u64>,
 			// TODO: Tips?
@@ -610,7 +610,7 @@ pub mod pallet {
 				task_id.clone(),
 				who.clone(),
 				who,
-				spec_version,
+				impl_spec_version,
 				input,
 				now,
 				soft_expires_in
