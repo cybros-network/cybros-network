@@ -1,5 +1,6 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToMany as OneToMany_} from "typeorm"
 import {Account} from "./account.model"
+import {Impl} from "./impl.model"
 import {WorkersPools} from "./workersPools.model"
 import {CreatingTaskPolicy} from "./creatingTaskPolicy.model"
 import {Task} from "./task.model"
@@ -17,20 +18,18 @@ export class Pool {
     @ManyToOne_(() => Account, {nullable: true})
     owner!: Account
 
+    @Index_()
+    @ManyToOne_(() => Impl, {nullable: true})
+    impl!: Impl
+
     @Column_("bool", {nullable: false})
     creatingTaskAbility!: boolean
 
     @Column_("int4", {nullable: false})
-    workersCount!: number
-
-    @Column_("int4", {nullable: false})
     creatingTaskPoliciesCount!: number
 
-    @Column_("int4", {nullable: false})
-    tasksCount!: number
-
-    @Column_("bytea", {nullable: true})
-    metadata!: Uint8Array | undefined | null
+    @Column_("text", {nullable: true})
+    metadata!: string | undefined | null
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date

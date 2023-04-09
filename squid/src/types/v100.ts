@@ -34,17 +34,29 @@ export interface TaskStatus_Processed {
     __kind: 'Processed'
 }
 
-export type AttestationMethod = AttestationMethod_NonTEE | AttestationMethod_Root
-
-export interface AttestationMethod_NonTEE {
-    __kind: 'NonTEE'
+export interface ImplBuildRestriction {
+    oldest: number
+    newest: number
+    blocked: number[]
 }
 
-export interface AttestationMethod_Root {
-    __kind: 'Root'
+export type ImplDeploymentPermission = ImplDeploymentPermission_Owner | ImplDeploymentPermission_Public
+
+export interface ImplDeploymentPermission_Owner {
+    __kind: 'Owner'
 }
 
-export type OfflineReason = OfflineReason_Graceful | OfflineReason_Forced | OfflineReason_Unresponsive | OfflineReason_AttestationExpired | OfflineReason_WorkerImplBlocked | OfflineReason_InsufficientReservedFunds | OfflineReason_Other
+export interface ImplDeploymentPermission_Public {
+    __kind: 'Public'
+}
+
+export type AttestationMethod = AttestationMethod_OptOut
+
+export interface AttestationMethod_OptOut {
+    __kind: 'OptOut'
+}
+
+export type OfflineReason = OfflineReason_Graceful | OfflineReason_Forced | OfflineReason_Unresponsive | OfflineReason_AttestationExpired | OfflineReason_ImplBlocked | OfflineReason_InsufficientDepositFunds | OfflineReason_Other
 
 export interface OfflineReason_Graceful {
     __kind: 'Graceful'
@@ -62,12 +74,12 @@ export interface OfflineReason_AttestationExpired {
     __kind: 'AttestationExpired'
 }
 
-export interface OfflineReason_WorkerImplBlocked {
-    __kind: 'WorkerImplBlocked'
+export interface OfflineReason_ImplBlocked {
+    __kind: 'ImplBlocked'
 }
 
-export interface OfflineReason_InsufficientReservedFunds {
-    __kind: 'InsufficientReservedFunds'
+export interface OfflineReason_InsufficientDepositFunds {
+    __kind: 'InsufficientDepositFunds'
 }
 
 export interface OfflineReason_Other {

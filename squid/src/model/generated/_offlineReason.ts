@@ -3,7 +3,7 @@ export enum OfflineReason {
     Forced = "Forced",
     Unresponsive = "Unresponsive",
     AttestationExpired = "AttestationExpired",
-    WorkerImplBlocked = "WorkerImplBlocked",
-    InsufficientReservedFunds = "InsufficientReservedFunds",
+    ImplBlocked = "ImplBlocked",
+    InsufficientDepositFunds = "InsufficientDepositFunds",
     Other = "Other",
 }

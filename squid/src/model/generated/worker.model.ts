@@ -1,5 +1,6 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToMany as OneToMany_} from "typeorm"
 import {Account} from "./account.model"
+import {Impl} from "./impl.model"
 import {WorkerStatus} from "./_workerStatus"
 import {AttestationMethod} from "./_attestationMethod"
 import {OfflineReason} from "./_offlineReason"
@@ -20,17 +21,24 @@ export class Worker {
     owner!: Account
 
     @Index_()
+    @ManyToOne_(() => Impl, {nullable: true})
+    impl!: Impl
+
+    @Index_()
     @Column_("varchar", {length: 17, nullable: false})
     status!: WorkerStatus
 
-    @Column_("text", {nullable: true})
-    implName!: string | undefined | null
+    @Column_("int4", {nullable: true})
+    implSpecVersion!: number | undefined | null
 
     @Column_("int4", {nullable: true})
-    implVersion!: number | undefined | null
+    implBuildVersion!: number | undefined | null
 
-    @Column_("varchar", {length: 7, nullable: true})
+    @Column_("varchar", {length: 6, nullable: true})
     attestationMethod!: AttestationMethod | undefined | null
+
+    @Column_("timestamp with time zone", {nullable: true})
+    attestationExpiresAt!: Date | undefined | null
 
     @Column_("timestamp with time zone", {nullable: true})
     lastAttestedAt!: Date | undefined | null
@@ -41,7 +49,7 @@ export class Worker {
     @Column_("timestamp with time zone", {nullable: true})
     offlineAt!: Date | undefined | null
 
-    @Column_("varchar", {length: 25, nullable: true})
+    @Column_("varchar", {length: 24, nullable: true})
     offlineReason!: OfflineReason | undefined | null
 
     @Column_("timestamp with time zone", {nullable: false})

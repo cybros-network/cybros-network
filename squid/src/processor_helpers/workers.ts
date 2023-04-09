@@ -1,16 +1,17 @@
 import { type Context } from "../processor"
 import {
-    OffchainComputingWorkersAttestationRefreshedEvent as WorkerAttestationRefreshedEvent,
-    OffchainComputingWorkersDeregisteredEvent as WorkerDeregisteredEvent,
-    OffchainComputingWorkersHeartbeatReceivedEvent as WorkerHeartbeatReceivedEvent,
-    OffchainComputingWorkersOfflineEvent as WorkerOfflineEvent,
-    OffchainComputingWorkersOnlineEvent as WorkerOnlineEvent,
-    OffchainComputingWorkersRegisteredEvent as WorkerRegisteredEvent,
-    OffchainComputingWorkersRequestingOfflineEvent as WorkerRequestingOfflineEvent,
+    OffchainComputingWorkersWorkerRegisteredEvent as WorkerRegisteredEvent,
+    OffchainComputingWorkersWorkerDeregisteredEvent as WorkerDeregisteredEvent,
+    OffchainComputingWorkersWorkerAttestationRefreshedEvent as WorkerAttestationRefreshedEvent,
+    OffchainComputingWorkersWorkerOnlineEvent as WorkerOnlineEvent,
+    OffchainComputingWorkersWorkerRequestingOfflineEvent as WorkerRequestingOfflineEvent,
+    OffchainComputingWorkersWorkerOfflineEvent as WorkerOfflineEvent,
+    OffchainComputingWorkersWorkerHeartbeatReceivedEvent as WorkerHeartbeatReceivedEvent,
 } from "../types/events"
-import { AttestationMethod, OfflineReason, WorkerStatus } from "../model"
 import * as v100 from "../types/v100"
-import { decodeSS58Address, u8aToString } from "../utils"
+import { AttestationMethod, OfflineReason, WorkerStatus } from "../model"
+import { decodeSS58Address } from "../utils"
+import assert from "assert";
 
 // import { toHex } from "@subsquid/substrate-processor"
 
@@ -21,10 +22,8 @@ function decodeAttestationMethod(attestationMethod?: v100.AttestationMethod): At
 
     const kind = attestationMethod.__kind
     switch (kind) {
-        case "NonTEE":
-            return AttestationMethod.NoneTEE
-        case "Root":
-            return AttestationMethod.Root
+        case "OptOut":
+            return AttestationMethod.OptOut
         default:
             throw new Error(`Unrecognized attestation method ${kind}`)
     }
@@ -45,10 +44,10 @@ function decodeOfflineReason(offlineReason?: v100.OfflineReason): OfflineReason 
             return OfflineReason.Unresponsive
         case "AttestationExpired":
             return OfflineReason.AttestationExpired
-        case "WorkerImplBlocked":
-            return OfflineReason.WorkerImplBlocked
-        case "InsufficientReservedFunds":
-            return OfflineReason.InsufficientReservedFunds
+        case "ImplBlocked":
+            return OfflineReason.ImplBlocked
+        case "InsufficientDepositFunds":
+            return OfflineReason.InsufficientDepositFunds
         case "Other":
             return OfflineReason.Other
         default:
@@ -60,10 +59,13 @@ interface WorkerChanges {
     readonly id: string
 
     owner?: string
+    implId?: string
+
     status?: WorkerStatus
-    implName?: string
-    implVersion?: number
+    implSpecVersion?: number
+    implBuildVersion?: number
     attestationMethod?: AttestationMethod
+    attestationExpiresAt?: Date
     lastAttestedAt?: Date
     lastHeartbeatReceivedAt?: Date
     offlineAt?: Date
@@ -81,7 +83,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         const blockTime = new Date(block.header.timestamp);
 
         for (let item of block.items) {
-            if (item.name == "OffchainComputingWorkers.Registered") {
+            if (item.name == "OffchainComputingWorkers.WorkerRegistered") {
                 let e = new WorkerRegisteredEvent(ctx, item.event)
                 let rec: { worker: Uint8Array, owner: Uint8Array }
                 if (e.isV100) {
@@ -95,12 +97,12 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     id,
                     owner: decodeSS58Address(rec.owner),
                     status: WorkerStatus.Registered,
-                    deregistered: false,
-                    updatedAtBlockNumber: block.header.height
+                    createdAt: blockTime,
+                    updatedAt: blockTime,
                 }
 
                 workersChangeSet.set(id, workerChanges)
-            } else if (item.name == "OffchainComputingWorkers.Deregistered") {
+            } else if (item.name == "OffchainComputingWorkers.WorkerDeregistered") {
                 let e = new WorkerDeregisteredEvent(ctx, item.event)
                 let rec: { worker: Uint8Array, force: boolean }
                 if (e.isV100) {
@@ -110,26 +112,23 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let workerChanges = workersChangeSet.get(id)
-                if (!workerChanges) {
-                    workerChanges = {
-                        id,
-                        deregistered: true,
-                        updatedAtBlockNumber: block.header.height
-                    }
-                } else {
-                    workerChanges.deregistered = true
-                    workerChanges.updatedAtBlockNumber = block.header.height
+                let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
+                    id,
+                    updatedAt: blockTime,
                 }
+                workerChanges.updatedAt = blockTime
+                workerChanges.deletedAt = blockTime
 
                 workersChangeSet.set(id, workerChanges)
-            } else if (item.name == "OffchainComputingWorkers.Online") {
+            } else if (item.name == "OffchainComputingWorkers.WorkerOnline") {
                 let e = new WorkerOnlineEvent(ctx, item.event)
                 let rec: {
                     worker: Uint8Array,
-                    implName: Uint8Array,
-                    implVersion: number,
-                    attestationMethod: v100.AttestationMethod | undefined,
+                    implId: number,
+                    implSpecVersion: number,
+                    implBuildVersion: number,
+                    attestationMethod: v100.AttestationMethod,
+                    attestationExpiresAt: (bigint | undefined),
                     nextHeartbeat: number
                 }
                 if (e.isV100) {
@@ -141,18 +140,21 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 const id = decodeSS58Address(rec.worker)
                 let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
                     id,
-                    deregistered: false,
-                    updatedAtBlockNumber: block.header.height
+                    updatedAt: blockTime,
                 }
+                assert(!workerChanges.deletedAt)
+
                 workerChanges.status = WorkerStatus.Online
-                workerChanges.implName = u8aToString(rec.implName)
-                workerChanges.implVersion = rec.implVersion
+                workerChanges.implId = rec.implId.toString()
+                workerChanges.implSpecVersion = rec.implSpecVersion
+                workerChanges.implBuildVersion = rec.implBuildVersion
                 workerChanges.attestationMethod = decodeAttestationMethod(rec.attestationMethod)
+                workerChanges.attestationExpiresAt = rec.attestationExpiresAt ? new Date(Number(rec.attestationExpiresAt)) : undefined
                 workerChanges.lastAttestedAt = blockTime
-                workerChanges.updatedAtBlockNumber = block.header.height
+                workerChanges.updatedAt = blockTime
 
                 workersChangeSet.set(id, workerChanges)
-            } else if (item.name == "OffchainComputingWorkers.RequestingOffline") {
+            } else if (item.name == "OffchainComputingWorkers.WorkerRequestingOffline") {
                 let e = new WorkerRequestingOfflineEvent(ctx, item.event)
                 let rec: { worker: Uint8Array }
                 if (e.isV100) {
@@ -164,14 +166,15 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 const id = decodeSS58Address(rec.worker)
                 let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
                     id,
-                    deregistered: false,
-                    updatedAtBlockNumber: block.header.height
+                    updatedAt: blockTime,
                 }
+                assert(!workerChanges.deletedAt)
+
                 workerChanges.status = WorkerStatus.RequestingOffline
-                workerChanges.updatedAtBlockNumber = block.header.height
+                workerChanges.updatedAt = blockTime
 
                 workersChangeSet.set(id, workerChanges)
-            } else if (item.name == "OffchainComputingWorkers.Offline") {
+            } else if (item.name == "OffchainComputingWorkers.WorkerOffline") {
                 let e = new WorkerOfflineEvent(ctx, item.event)
                 let rec: { worker: Uint8Array, reason: v100.OfflineReason }
                 if (e.isV100) {
@@ -183,18 +186,19 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 const id = decodeSS58Address(rec.worker)
                 let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
                     id,
-                    deregistered: false,
-                    updatedAtBlockNumber: block.header.height
+                    updatedAt: blockTime,
                 }
+                assert(!workerChanges.deletedAt)
+
                 workerChanges.status = WorkerStatus.Offline
                 workerChanges.offlineReason = decodeOfflineReason(rec.reason)
                 workerChanges.offlineAt = blockTime
-                workerChanges.updatedAtBlockNumber = block.header.height
+                workerChanges.updatedAt = blockTime
 
                 workersChangeSet.set(id, workerChanges)
-            } else if (item.name == "OffchainComputingWorkers.HeartbeatReceived") {
+            } else if (item.name == "OffchainComputingWorkers.WorkerHeartbeatReceived") {
                 let e = new WorkerHeartbeatReceivedEvent(ctx, item.event)
-                let rec: { worker: Uint8Array, nextHeartbeat: number }
+                let rec: { worker: Uint8Array, next: number }
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -204,16 +208,17 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 const id = decodeSS58Address(rec.worker)
                 let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
                     id,
-                    deregistered: false,
-                    updatedAtBlockNumber: block.header.height
+                    updatedAt: blockTime,
                 }
+                assert(!workerChanges.deletedAt)
+
                 workerChanges.lastHeartbeatReceivedAt = blockTime
-                workerChanges.updatedAtBlockNumber = block.header.height
+                workerChanges.updatedAt = blockTime
 
                 workersChangeSet.set(id, workerChanges)
-            } else if (item.name == "OffchainComputingWorkers.AttestationRefreshed") {
+            } else if (item.name == "OffchainComputingWorkers.WorkerAttestationRefreshed") {
                 let e = new WorkerAttestationRefreshedEvent(ctx, item.event)
-                let rec: { worker: Uint8Array, method: v100.AttestationMethod }
+                let rec: { worker: Uint8Array, expiresAt: (bigint | undefined) }
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -223,12 +228,13 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 const id = decodeSS58Address(rec.worker)
                 let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
                     id,
-                    deregistered: false,
-                    updatedAtBlockNumber: block.header.height
+                    updatedAt: blockTime,
                 }
-                workerChanges.attestationMethod = decodeAttestationMethod(rec.method)
+                assert(!workerChanges.deletedAt)
+
+                workerChanges.attestationExpiresAt = rec.expiresAt ? new Date(Number(rec.expiresAt)) : undefined
                 workerChanges.lastAttestedAt = blockTime
-                workerChanges.updatedAtBlockNumber = block.header.height
+                workerChanges.updatedAt = blockTime
 
                 workersChangeSet.set(id, workerChanges)
             }

@@ -26,15 +26,15 @@ export class Task {
     @ManyToOne_(() => Worker, {nullable: true})
     assignee!: Worker | undefined | null
 
+    @Column_("int4", {nullable: true})
+    specVersion!: number | undefined | null
+
     @Index_()
     @Column_("varchar", {length: 10, nullable: false})
     status!: TaskStatus
 
     @Column_("varchar", {length: 7, nullable: true})
     result!: TaskResult | undefined | null
-
-    @Column_("timestamp with time zone", {nullable: false})
-    expiresAt!: Date
 
     @Column_("bytea", {nullable: true})
     input!: Uint8Array | undefined | null
@@ -44,6 +44,9 @@ export class Task {
 
     @Column_("bytea", {nullable: true})
     proof!: Uint8Array | undefined | null
+
+    @Column_("timestamp with time zone", {nullable: false})
+    expiresAt!: Date
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date

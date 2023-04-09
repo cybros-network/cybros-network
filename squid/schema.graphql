@@ -1,6 +1,10 @@
 enum AttestationMethod {
-  NoneTEE
-  Root
+  OptOut
+}
+
+enum ImplDeploymentPermission {
+  Owner
+  Public
 }
 
 enum WorkerStatus {
@@ -16,8 +20,8 @@ enum OfflineReason {
   Forced
   Unresponsive
   AttestationExpired
-  WorkerImplBlocked
-  InsufficientReservedFunds
+  ImplBlocked
+  InsufficientDepositFunds
   Other
 }
 
@@ -47,14 +51,37 @@ type Account @entity {
   owningTasks: [Task!] @derivedFrom(field: "owner")
 }
 
+type Impl @entity {
+  id: ID!
+
+  owner: Account! @index
+
+  attestationMethod: AttestationMethod!
+  deploymentPermission: ImplDeploymentPermission!
+  oldestBuildVersion: Int!
+  newestBuildVersion: Int!
+  blockedBuildVersions: [Int!]!
+  metadata: String
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+
+  workers: [Worker!] @derivedFrom(field: "impl")
+  pools: [Pool!] @derivedFrom(field: "impl")
+}
+
 type Worker @entity {
   id: ID!
 
   owner: Account! @index
+  impl: Impl! @index
+
   status: WorkerStatus! @index
-  implName: String
-  implVersion: Int
+  implSpecVersion: Int
+  implBuildVersion: Int
   attestationMethod: AttestationMethod
+  attestationExpiresAt: DateTime
   lastAttestedAt: DateTime
   lastHeartbeatReceivedAt: DateTime
   offlineAt: DateTime
@@ -72,6 +99,7 @@ type CreatingTaskPolicy @entity {
   id: ID!
 
   pool: Pool! @index
+
   permission: CreatingTaskPermission!
   startBlock: Int
   endBlock: Int
@@ -85,12 +113,11 @@ type Pool @entity {
   id: ID!
 
   owner: Account! @index
-  creatingTaskAbility: Boolean!
-  workersCount: Int!
-  creatingTaskPoliciesCount: Int!
-  tasksCount: Int!
+  impl: Impl! @index
 
-  metadata: Bytes
+  creatingTaskAbility: Boolean!
+  creatingTaskPoliciesCount: Int!
+  metadata: String
 
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -114,14 +141,16 @@ type Task @entity {
   pool: Pool! @index
   owner: Account! @index
   assignee: Worker @index
+
+  specVersion: Int
   status: TaskStatus! @index
   result: TaskResult
-  expiresAt: DateTime!
 
   input: Bytes
   output: Bytes
   proof: Bytes
 
+  expiresAt: DateTime!
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime
