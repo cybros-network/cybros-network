@@ -103,7 +103,7 @@ impl pallet_offchain_computing_workers::Config for Test {
 	type ImplMetadataDepositBase = ConstU128<{ 1 * DOLLARS }>;
 	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
 	type ImplMetadataLimit = ConstU32<50>;
-	type MaxRegisteredImplBuildMagicBytes = ConstU32<4>;
+	type MaxImplBuilds = ConstU32<4>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<3>;
 	type CollectingHeartbeatsDurationInBlocks = ConstU32<6>;
 	type DisallowOptOutAttestation = ConstBool<false>;

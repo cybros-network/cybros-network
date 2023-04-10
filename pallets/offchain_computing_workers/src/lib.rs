@@ -115,7 +115,7 @@ mod pallet {
 
 		/// The maximum length of implementation's metadata stored on-chain.
 		#[pallet::constant]
-		type MaxRegisteredImplBuildMagicBytes: Get<u32>;
+		type MaxImplBuilds: Get<u32>;
 
 		/// Max number of moving unresponsive workers to pending offline workers queue
 		#[pallet::constant]
@@ -164,11 +164,11 @@ mod pallet {
 
 	/// Storage for worker's implementations' hashes.
 	#[pallet::storage]
-	pub(crate) type RegisteredImplBuildMagicBytes<T: Config> =
+	pub(crate) type ImplBuilds<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, T::ImplId, Blake2_128Concat, ImplBuildVersion, ImplBuildMagicBytes>;
 
 	#[pallet::storage]
-	pub type RegisteredImplBuildMagicBytesCounter<T: Config> = StorageMap<
+	pub type ImplBuildsCounter<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		T::ImplId,
@@ -323,9 +323,9 @@ mod pallet {
 		ImplNotFound,
 		NoPermission,
 		ImplStillInUse,
-		ImplBuildMagicBytesAlreadyRegistered,
-		ImplBuildMagicBytesNotFound,
-		ImplBuildMagicBytesLimitExceeded,
+		ImplBuildAlreadyRegistered,
+		ImplBuildNotFound,
+		ImplBuildsLimitExceeded,
 	}
 
 	#[pallet::hooks]
@@ -618,7 +618,7 @@ mod pallet {
 		pub fn register_impl_build(
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
-			build_version: ImplBuildVersion,
+			version: ImplBuildVersion,
 			magic_bytes: ImplBuildMagicBytes,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -626,7 +626,7 @@ mod pallet {
 			let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
 			Self::ensure_impl_owner(&who, &impl_info)?;
 
-			Self::do_register_impl_build(impl_info, build_version, magic_bytes)
+			Self::do_register_impl_build(impl_info, version, magic_bytes)
 		}
 
 		#[transactional]
@@ -635,14 +635,14 @@ mod pallet {
 		pub fn deregister_impl_build(
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
-			build_version: ImplBuildVersion
+			version: ImplBuildVersion
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
 			Self::ensure_impl_owner(&who, &impl_info)?;
 
-			Self::do_deregister_impl_build_magic_bytes(impl_info, build_version)
+			Self::do_deregister_impl_build_magic_bytes(impl_info, version)
 		}
 	}
 }

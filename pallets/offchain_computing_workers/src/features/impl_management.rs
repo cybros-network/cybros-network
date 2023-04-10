@@ -46,8 +46,8 @@ impl<T: Config> Pallet<T> {
 			T::Currency::unreserve(&metadata_entry.depositor, metadata_entry.actual_deposit);
 		}
 
-		let _ = RegisteredImplBuildMagicBytes::<T>::clear_prefix(&impl_id, T::MaxRegisteredImplBuildMagicBytes::get(), None);
-		RegisteredImplBuildMagicBytesCounter::<T>::remove(&&impl_info.id);
+		let _ = ImplBuilds::<T>::clear_prefix(&impl_id, T::MaxImplBuilds::get(), None);
+		ImplBuildsCounter::<T>::remove(&impl_info.id);
 
 		Impls::<T>::remove(&impl_id);
 		AccountOwningImpls::<T>::remove(&impl_info.owner, &impl_id);
@@ -118,48 +118,48 @@ impl<T: Config> Pallet<T> {
 
 	pub(crate) fn do_register_impl_build(
 		impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
-		build_version: ImplBuildVersion,
+		version: ImplBuildVersion,
 		magic_bytes: ImplBuildMagicBytes
 	) -> DispatchResult {
 		let impl_id = impl_info.id;
 		ensure!(
-			!RegisteredImplBuildMagicBytes::<T>::contains_key(&impl_id, &build_version),
-			Error::<T>::ImplBuildMagicBytesAlreadyRegistered
+			!ImplBuilds::<T>::contains_key(&impl_id, &version),
+			Error::<T>::ImplBuildAlreadyRegistered
 		);
 
-		RegisteredImplBuildMagicBytesCounter::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
+		ImplBuildsCounter::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
 			ensure!(
-				counter <= &mut T::MaxRegisteredImplBuildMagicBytes::get(),
-				Error::<T>::ImplBuildMagicBytesLimitExceeded
+				counter <= &mut T::MaxImplBuilds::get(),
+				Error::<T>::ImplBuildsLimitExceeded
 			);
 
 			*counter += 1;
 			Ok(())
 		})?;
-		RegisteredImplBuildMagicBytes::<T>::insert(&impl_id, &build_version, magic_bytes.clone());
+		ImplBuilds::<T>::insert(&impl_id, &version, magic_bytes.clone());
 
-		Self::deposit_event(Event::<T>::ImplBuildRegistered { impl_id, version: build_version, magic_bytes });
+		Self::deposit_event(Event::<T>::ImplBuildRegistered { impl_id, version, magic_bytes });
 
 		Ok(())
 	}
 
 	pub(crate) fn do_deregister_impl_build_magic_bytes(
 		impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
-		build_version: ImplBuildVersion,
+		version: ImplBuildVersion,
 	) -> DispatchResult {
 		let impl_id = impl_info.id;
 		ensure!(
-			!RegisteredImplBuildMagicBytes::<T>::contains_key(&impl_id, &build_version),
-			Error::<T>::ImplBuildMagicBytesAlreadyRegistered
+			!ImplBuilds::<T>::contains_key(&impl_id, &version),
+			Error::<T>::ImplBuildAlreadyRegistered
 		);
 
-		RegisteredImplBuildMagicBytes::<T>::remove(&impl_id, &build_version);
-		RegisteredImplBuildMagicBytesCounter::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
+		ImplBuilds::<T>::remove(&impl_id, &version);
+		ImplBuildsCounter::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
 			*counter -= 1;
 			Ok(())
 		})?;
 
-		Self::deposit_event(Event::<T>::ImplBuildDeregistered { impl_id, version: build_version });
+		Self::deposit_event(Event::<T>::ImplBuildDeregistered { impl_id, version });
 
 		Ok(())
 	}
