@@ -257,9 +257,9 @@ mod pallet {
 		/// Update worker's implementation permission successfully
 		ImplBuildRestrictionUpdated { impl_id: T::ImplId, restriction: ImplBuildRestriction },
 		/// Update worker's implementation permission successfully
-		ImplBuildMagicBytesRegistered { impl_id: T::ImplId, version: ImplBuildVersion, magic_bytes: ImplBuildMagicBytes },
+		ImplBuildRegistered { impl_id: T::ImplId, version: ImplBuildVersion, magic_bytes: ImplBuildMagicBytes },
 		/// Remove worker's implementation permission successfully
-		ImplBuildMagicBytesDeregistered { impl_id: T::ImplId, version: ImplBuildVersion },
+		ImplBuildDeregistered { impl_id: T::ImplId, version: ImplBuildVersion },
 	}
 
 	// Errors inform users that something went wrong.
@@ -615,24 +615,24 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
-		pub fn register_impl_build_magic_bytes(
+		pub fn register_impl_build(
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
 			build_version: ImplBuildVersion,
-			build_magic_bytes: ImplBuildMagicBytes,
+			magic_bytes: ImplBuildMagicBytes,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
 			Self::ensure_impl_owner(&who, &impl_info)?;
 
-			Self::do_register_impl_build_magic_bytes(impl_info, build_version, build_magic_bytes)
+			Self::do_register_impl_build(impl_info, build_version, magic_bytes)
 		}
 
 		#[transactional]
 		#[pallet::call_index(16)]
 		#[pallet::weight({0})]
-		pub fn deregister_impl_build_magic_bytes(
+		pub fn deregister_impl_build(
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
 			build_version: ImplBuildVersion

@@ -116,10 +116,10 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_register_impl_build_magic_bytes(
+	pub(crate) fn do_register_impl_build(
 		impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
 		build_version: ImplBuildVersion,
-		build_magic_bytes: ImplBuildMagicBytes
+		magic_bytes: ImplBuildMagicBytes
 	) -> DispatchResult {
 		let impl_id = impl_info.id;
 		ensure!(
@@ -136,9 +136,9 @@ impl<T: Config> Pallet<T> {
 			*counter += 1;
 			Ok(())
 		})?;
-		RegisteredImplBuildMagicBytes::<T>::insert(&impl_id, &build_version, build_magic_bytes.clone());
+		RegisteredImplBuildMagicBytes::<T>::insert(&impl_id, &build_version, magic_bytes.clone());
 
-		Self::deposit_event(Event::<T>::ImplBuildMagicBytesRegistered { impl_id, version: build_version, magic_bytes: build_magic_bytes });
+		Self::deposit_event(Event::<T>::ImplBuildRegistered { impl_id, version: build_version, magic_bytes });
 
 		Ok(())
 	}
@@ -159,7 +159,7 @@ impl<T: Config> Pallet<T> {
 			Ok(())
 		})?;
 
-		Self::deposit_event(Event::<T>::ImplBuildMagicBytesDeregistered { impl_id, version: build_version });
+		Self::deposit_event(Event::<T>::ImplBuildDeregistered { impl_id, version: build_version });
 
 		Ok(())
 	}
