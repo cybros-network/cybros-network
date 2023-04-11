@@ -67,8 +67,21 @@ type Impl @entity {
   updatedAt: DateTime!
   deletedAt: DateTime
 
+  builds: [ImplBuild!] @derivedFrom(field: "impl")
   workers: [Worker!] @derivedFrom(field: "impl")
   pools: [Pool!] @derivedFrom(field: "impl")
+}
+
+type ImplBuild @entity {
+  id: ID!
+
+  impl: Impl! @index
+
+  version: Int!
+  magicBytes: String
+
+  createdAt: DateTime!
+  deletedAt: DateTime
 }
 
 type Worker @entity {

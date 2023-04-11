@@ -2,6 +2,7 @@ import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, M
 import {Account} from "./account.model"
 import {AttestationMethod} from "./_attestationMethod"
 import {ImplDeploymentPermission} from "./_implDeploymentPermission"
+import {ImplBuild} from "./implBuild.model"
 import {Worker} from "./worker.model"
 import {Pool} from "./pool.model"
 
@@ -44,6 +45,9 @@ export class Impl {
 
     @Column_("timestamp with time zone", {nullable: true})
     deletedAt!: Date | undefined | null
+
+    @OneToMany_(() => ImplBuild, e => e.impl)
+    builds!: ImplBuild[]
 
     @OneToMany_(() => Worker, e => e.impl)
     workers!: Worker[]

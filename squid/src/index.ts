@@ -2,15 +2,26 @@ import assert from "assert"
 import { TypeormDatabase } from "@subsquid/typeorm-store"
 import { type Context, processor } from "./processor"
 
-import {AttestationMethod, ImplDeploymentPermission, WorkerStatus} from "./model"
-import { preprocessWorkersEvents, preprocessImplsEvents } from "./processor_helpers"
-import { AccountsManager, WorkersManager, ImplsManager } from "./entity_managers"
+import {
+    preprocessImplsEvents,
+    preprocessImplBuildsEvents,
+    preprocessWorkersEvents,
+} from "./processor_helpers"
+import {
+    AccountsManager,
+    ImplsManager,
+    ImplBuildsManager,
+    WorkersManager,
+} from "./entity_managers"
+
+import { WorkerStatus } from "./model"
 
 const database = new TypeormDatabase();
 
 processor.run(database, async (ctx: Context) => {
     // Preprocess events
     const implsChangeSet = preprocessImplsEvents(ctx)
+    const implBuildsChangeSet = preprocessImplBuildsEvents(ctx)
     const workersChangeSet = preprocessWorkersEvents(ctx)
 
     // Initialize entity managers
@@ -18,6 +29,8 @@ processor.run(database, async (ctx: Context) => {
     accountsManager.init(ctx)
     const implsManager = new ImplsManager()
     implsManager.init(ctx)
+    const implBuildsManager = new ImplBuildsManager()
+    implBuildsManager.init(ctx)
     const workersManager = new WorkersManager()
     workersManager.init(ctx)
 
@@ -37,21 +50,28 @@ processor.run(database, async (ctx: Context) => {
     await accountsManager.prefetchEntities()
 
     // Impls
+    for (let [id, _implChanges] of implsChangeSet) {
+        implsManager.addPrefetchItemId(id)
+    }
+    for (let [_id, implBuildChanges] of implBuildsChangeSet) {
+        implsManager.addPrefetchItemId(implBuildChanges.implId)
+    }
     for (let [_id, workerChanges] of workersChangeSet) {
         if (workerChanges.implId) {
             implsManager.addPrefetchItemId(workerChanges.implId)
         }
     }
-    for (let [_id, implChanges] of implsChangeSet) {
-        if (implChanges.id) {
-            accountsManager.addPrefetchItemId(implChanges.id)
-        }
-    }
     await implsManager.prefetchEntities()
 
+    // Impl builds
+    for (let [id, _implBuildChanges] of implBuildsChangeSet) {
+        implBuildsManager.addPrefetchItemId(id)
+    }
+    await implBuildsManager.prefetchEntities()
+
     // Workers
-    for (let [_id, workerChanges] of workersChangeSet) {
-        workersManager.addPrefetchItemId(workerChanges.id)
+    for (let [id, _workerChanges] of workersChangeSet) {
+        workersManager.addPrefetchItemId(id)
     }
     await workersManager.prefetchEntities()
 
@@ -86,6 +106,30 @@ processor.run(database, async (ctx: Context) => {
                 impl.deletedAt = implChanges.deletedAt
             }
             impl.updatedAt = implChanges.updatedAt
+        })
+    }
+
+    // Process impl builds' changeset
+    for (let [id, implBuildChanges] of implBuildsChangeSet) {
+        await implBuildsManager.upsert(id, async (implBuild) => {
+            if (!implBuild.impl) {
+                implBuild.impl = await implsManager.getOrCreate(implBuildChanges.implId)
+            }
+            if (!implBuild.version) {
+                assert(implBuildChanges.version)
+                implBuild.version = implBuildChanges.version
+            }
+            if (!implBuild.magicBytes) {
+                assert(implBuildChanges.magicBytes)
+                implBuild.magicBytes = implBuildChanges.magicBytes
+            }
+
+            if (implBuildChanges.createdAt) {
+                implBuild.createdAt = implBuildChanges.createdAt
+            }
+            if (implBuildChanges.deletedAt) {
+                implBuild.deletedAt = implBuildChanges.deletedAt
+            }
         })
     }
 
@@ -143,5 +187,6 @@ processor.run(database, async (ctx: Context) => {
     // Save
     await accountsManager.saveAll()
     await implsManager.saveAll()
+    await implBuildsManager.saveAll()
     await workersManager.saveAll()
 })

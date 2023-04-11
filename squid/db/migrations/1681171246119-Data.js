@@ -1,7 +1,9 @@
-module.exports = class Data1681077671196 {
-    name = 'Data1681077671196'
+module.exports = class Data1681171246119 {
+    name = 'Data1681171246119'
 
     async up(db) {
+        await db.query(`CREATE TABLE "impl_build" ("id" character varying NOT NULL, "version" integer NOT NULL, "magic_bytes" text, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, "impl_id" character varying, CONSTRAINT "PK_5a7367725014a952d56efb311d2" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE INDEX "IDX_f8ba98fcec0d14f0dbeaeeddf1" ON "impl_build" ("impl_id") `)
         await db.query(`CREATE TABLE "workers_pools" ("id" character varying NOT NULL, "worker_id" character varying, "pool_id" character varying, CONSTRAINT "PK_ba62ec5b762791e5657f5b09041" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_35556385afd6d26d42d5c1d931" ON "workers_pools" ("worker_id") `)
         await db.query(`CREATE INDEX "IDX_7daac032a60cf6dc55c44d24eb" ON "workers_pools" ("pool_id") `)
@@ -22,6 +24,7 @@ module.exports = class Data1681077671196 {
         await db.query(`CREATE INDEX "IDX_4c66d21ba11bba1769f21a8f25" ON "worker" ("impl_id") `)
         await db.query(`CREATE INDEX "IDX_fdca7f90c98f110b79c5842108" ON "worker" ("status") `)
         await db.query(`CREATE TABLE "account" ("id" character varying NOT NULL, CONSTRAINT "PK_54115ee388cdb6d86bb4bf5b2ea" PRIMARY KEY ("id"))`)
+        await db.query(`ALTER TABLE "impl_build" ADD CONSTRAINT "FK_f8ba98fcec0d14f0dbeaeeddf1f" FOREIGN KEY ("impl_id") REFERENCES "impl"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "workers_pools" ADD CONSTRAINT "FK_35556385afd6d26d42d5c1d9317" FOREIGN KEY ("worker_id") REFERENCES "worker"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "workers_pools" ADD CONSTRAINT "FK_7daac032a60cf6dc55c44d24eb0" FOREIGN KEY ("pool_id") REFERENCES "pool"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "creating_task_policy" ADD CONSTRAINT "FK_8615cd4d78316607c11b6a2f80a" FOREIGN KEY ("pool_id") REFERENCES "pool"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
@@ -36,6 +39,8 @@ module.exports = class Data1681077671196 {
     }
 
     async down(db) {
+        await db.query(`DROP TABLE "impl_build"`)
+        await db.query(`DROP INDEX "public"."IDX_f8ba98fcec0d14f0dbeaeeddf1"`)
         await db.query(`DROP TABLE "workers_pools"`)
         await db.query(`DROP INDEX "public"."IDX_35556385afd6d26d42d5c1d931"`)
         await db.query(`DROP INDEX "public"."IDX_7daac032a60cf6dc55c44d24eb"`)
@@ -56,6 +61,7 @@ module.exports = class Data1681077671196 {
         await db.query(`DROP INDEX "public"."IDX_4c66d21ba11bba1769f21a8f25"`)
         await db.query(`DROP INDEX "public"."IDX_fdca7f90c98f110b79c5842108"`)
         await db.query(`DROP TABLE "account"`)
+        await db.query(`ALTER TABLE "impl_build" DROP CONSTRAINT "FK_f8ba98fcec0d14f0dbeaeeddf1f"`)
         await db.query(`ALTER TABLE "workers_pools" DROP CONSTRAINT "FK_35556385afd6d26d42d5c1d9317"`)
         await db.query(`ALTER TABLE "workers_pools" DROP CONSTRAINT "FK_7daac032a60cf6dc55c44d24eb0"`)
         await db.query(`ALTER TABLE "creating_task_policy" DROP CONSTRAINT "FK_8615cd4d78316607c11b6a2f80a"`)

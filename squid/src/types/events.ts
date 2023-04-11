@@ -399,7 +399,7 @@ export class OffchainComputingWorkerRemovedEvent {
     }
 }
 
-export class OffchainComputingWorkersImplBuildMagicBytesDeregisteredEvent {
+export class OffchainComputingWorkersImplBuildDeregisteredEvent {
     private readonly _chain: Chain
     private readonly event: Event
 
@@ -407,7 +407,7 @@ export class OffchainComputingWorkersImplBuildMagicBytesDeregisteredEvent {
     constructor(ctx: ChainContext, event: Event)
     constructor(ctx: EventContext, event?: Event) {
         event = event || ctx.event
-        assert(event.name === 'OffchainComputingWorkers.ImplBuildMagicBytesDeregistered')
+        assert(event.name === 'OffchainComputingWorkers.ImplBuildDeregistered')
         this._chain = ctx._chain
         this.event = event
     }
@@ -416,7 +416,7 @@ export class OffchainComputingWorkersImplBuildMagicBytesDeregisteredEvent {
      * Remove worker's implementation permission successfully
      */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildMagicBytesDeregistered') === 'e62f88665216d9128c4b0263040c3a99e1740c0f644f00da67b2091ba9a518b4'
+        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildDeregistered') === 'e62f88665216d9128c4b0263040c3a99e1740c0f644f00da67b2091ba9a518b4'
     }
 
     /**
@@ -428,7 +428,7 @@ export class OffchainComputingWorkersImplBuildMagicBytesDeregisteredEvent {
     }
 }
 
-export class OffchainComputingWorkersImplBuildMagicBytesRegisteredEvent {
+export class OffchainComputingWorkersImplBuildRegisteredEvent {
     private readonly _chain: Chain
     private readonly event: Event
 
@@ -436,7 +436,7 @@ export class OffchainComputingWorkersImplBuildMagicBytesRegisteredEvent {
     constructor(ctx: ChainContext, event: Event)
     constructor(ctx: EventContext, event?: Event) {
         event = event || ctx.event
-        assert(event.name === 'OffchainComputingWorkers.ImplBuildMagicBytesRegistered')
+        assert(event.name === 'OffchainComputingWorkers.ImplBuildRegistered')
         this._chain = ctx._chain
         this.event = event
     }
@@ -445,7 +445,7 @@ export class OffchainComputingWorkersImplBuildMagicBytesRegisteredEvent {
      * Update worker's implementation permission successfully
      */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildMagicBytesRegistered') === 'aa21801f9e15ed0370b3dd75d5717f56aeae55aa98ec04ff7b21a89b18a6696e'
+        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildRegistered') === 'aa21801f9e15ed0370b3dd75d5717f56aeae55aa98ec04ff7b21a89b18a6696e'
     }
 
     /**
