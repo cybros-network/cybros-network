@@ -9,6 +9,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_task(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		task_id: T::TaskId,
+		policy_id: T::PolicyId,
 		owner: T::AccountId,
 		depositor: T::AccountId,
 		impl_spec_version: ImplSpecVersion,
@@ -64,7 +65,7 @@ impl<T: Config> Pallet<T> {
 		AssignableTasks::<T>::insert((pool_info.id.clone(), impl_spec_version.clone(), task_id.clone()), ());
 		AccountOwningTasks::<T>::insert((owner.clone(), pool_info.id.clone(), task_id.clone()), ());
 
-		Self::deposit_event(Event::TaskCreated { pool_id: pool_info.id, task_id, owner: owner.clone(), impl_spec_version, input: input_data });
+		Self::deposit_event(Event::TaskCreated { pool_id: pool_info.id, task_id, policy_id, owner: owner.clone(), impl_spec_version, input: input_data });
 		Ok(())
 	}
 

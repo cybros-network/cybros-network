@@ -111,12 +111,6 @@ Another way is we don't take care it, let the application itself push the messag
 
 Trustable is the first priority concern.
 
-### Enable protocol implementation verification
-
-We already have protocol implementations registry, but we haven't enabled the verification yet.
-
-We need to improve current design, ensure `impl_name` is unique, separate `spec_version` and `impl_version`, and etc.
-
 ### Improving handling for task expiring
 
 Currently, the `expires_at` is actually a soft expiring, worker can still process it even the task has expired.
@@ -247,6 +241,10 @@ It will not store on chain, just on event.
 
 However, it will increase Call data which would harmful for total TXs in a block,
 and I'm not sure how useful for monitoring workers, people should build their own monitoring for their workers.
+
+### Stake for Pools
+
+Maybe we should use staking model, but how the pool get benefit from staking more?
 
 ## Archived
 
