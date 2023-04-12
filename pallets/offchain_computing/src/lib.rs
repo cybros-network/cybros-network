@@ -175,7 +175,15 @@ pub mod pallet {
 		CreatingTaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
 		WorkerAdded { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRemoved { pool_id: T::PoolId, worker: T::AccountId },
-		TaskCreated { pool_id: T::PoolId, task_id: T::TaskId, policy_id: T::PolicyId, owner: T::AccountId, impl_spec_version: ImplSpecVersion, input: Option<BoundedVec<u8, T::InputLimit>> },
+		TaskCreated {
+			pool_id: T::PoolId,
+			task_id: T::TaskId,
+			policy_id: T::PolicyId,
+			owner: T::AccountId,
+			impl_spec_version: ImplSpecVersion,
+			input: Option<BoundedVec<u8, T::InputLimit>>,
+			expires_in: u64
+		},
 		TaskDestroyed { pool_id: T::PoolId, task_id: T::TaskId, destroyer: T::AccountId },
 		TaskAssigned { pool_id: T::PoolId, task_id: T::TaskId, assignee: T::AccountId },
 		TaskReleased { pool_id: T::PoolId, task_id: T::TaskId },
