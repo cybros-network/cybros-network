@@ -4,7 +4,7 @@ import {Impl} from "./impl.model"
 import {WorkerStatus} from "./_workerStatus"
 import {AttestationMethod} from "./_attestationMethod"
 import {OfflineReason} from "./_offlineReason"
-import {WorkersPools} from "./workersPools.model"
+import {PoolWorkers} from "./poolWorkers.model"
 import {Task} from "./task.model"
 
 @Entity_()
@@ -61,8 +61,8 @@ export class Worker {
     @Column_("timestamp with time zone", {nullable: true})
     deletedAt!: Date | undefined | null
 
-    @OneToMany_(() => WorkersPools, e => e.worker)
-    servingPools!: WorkersPools[]
+    @OneToMany_(() => PoolWorkers, e => e.worker)
+    servingPools!: PoolWorkers[]
 
     @OneToMany_(() => Task, e => e.assignee)
     assignedTasks!: Task[]

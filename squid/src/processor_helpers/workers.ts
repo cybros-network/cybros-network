@@ -13,8 +13,6 @@ import { AttestationMethod, OfflineReason, WorkerStatus } from "../model"
 import { decodeSS58Address } from "../utils"
 import assert from "assert";
 
-// import { toHex } from "@subsquid/substrate-processor"
-
 function decodeAttestationMethod(attestationMethod?: v100.AttestationMethod): AttestationMethod {
     if (!attestationMethod) {
         throw new Error("Unexpected undefined attestation method")
@@ -59,13 +57,13 @@ interface WorkerChanges {
     readonly id: string
 
     owner?: string
-    implId?: string
+    implId?: number
 
     status?: WorkerStatus
     implSpecVersion?: number
     implBuildVersion?: number
     attestationMethod?: AttestationMethod
-    attestationExpiresAt?: Date
+    attestationExpiresAt?: Date | null
     lastAttestedAt?: Date
     lastHeartbeatReceivedAt?: Date
     offlineAt?: Date
@@ -77,7 +75,7 @@ interface WorkerChanges {
 }
 
 export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges> {
-    const workersChangeSet= new Map<string, WorkerChanges>();
+    const changeSet= new Map<string, WorkerChanges>();
 
     for (let block of ctx.blocks) {
         const blockTime = new Date(block.header.timestamp);
@@ -93,7 +91,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                const workerChanges: WorkerChanges = {
+                const changes: WorkerChanges = {
                     id,
                     owner: decodeSS58Address(rec.owner),
                     status: WorkerStatus.Registered,
@@ -101,7 +99,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     updatedAt: blockTime,
                 }
 
-                workersChangeSet.set(id, workerChanges)
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerDeregistered") {
                 let e = new WorkerDeregisteredEvent(ctx, item.event)
                 let rec: { worker: Uint8Array, force: boolean }
@@ -112,14 +110,16 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
+                let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                workerChanges.updatedAt = blockTime
-                workerChanges.deletedAt = blockTime
+                assert(!changes.deletedAt)
 
-                workersChangeSet.set(id, workerChanges)
+                changes.updatedAt = blockTime
+                changes.deletedAt = blockTime
+
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerOnline") {
                 let e = new WorkerOnlineEvent(ctx, item.event)
                 let rec: {
@@ -138,22 +138,22 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
+                let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                assert(!workerChanges.deletedAt)
+                assert(!changes.deletedAt)
 
-                workerChanges.status = WorkerStatus.Online
-                workerChanges.implId = rec.implId.toString()
-                workerChanges.implSpecVersion = rec.implSpecVersion
-                workerChanges.implBuildVersion = rec.implBuildVersion
-                workerChanges.attestationMethod = decodeAttestationMethod(rec.attestationMethod)
-                workerChanges.attestationExpiresAt = rec.attestationExpiresAt ? new Date(Number(rec.attestationExpiresAt)) : undefined
-                workerChanges.lastAttestedAt = blockTime
-                workerChanges.updatedAt = blockTime
+                changes.status = WorkerStatus.Online
+                changes.implId = rec.implId
+                changes.implSpecVersion = rec.implSpecVersion
+                changes.implBuildVersion = rec.implBuildVersion
+                changes.attestationMethod = decodeAttestationMethod(rec.attestationMethod)
+                changes.attestationExpiresAt = rec.attestationExpiresAt ? new Date(Number(rec.attestationExpiresAt)) : undefined
+                changes.lastAttestedAt = blockTime
+                changes.updatedAt = blockTime
 
-                workersChangeSet.set(id, workerChanges)
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerRequestingOffline") {
                 let e = new WorkerRequestingOfflineEvent(ctx, item.event)
                 let rec: { worker: Uint8Array }
@@ -164,16 +164,16 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
+                let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                assert(!workerChanges.deletedAt)
+                assert(!changes.deletedAt)
 
-                workerChanges.status = WorkerStatus.RequestingOffline
-                workerChanges.updatedAt = blockTime
+                changes.status = WorkerStatus.RequestingOffline
+                changes.updatedAt = blockTime
 
-                workersChangeSet.set(id, workerChanges)
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerOffline") {
                 let e = new WorkerOfflineEvent(ctx, item.event)
                 let rec: { worker: Uint8Array, reason: v100.OfflineReason }
@@ -184,18 +184,18 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
+                let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                assert(!workerChanges.deletedAt)
+                assert(!changes.deletedAt)
 
-                workerChanges.status = WorkerStatus.Offline
-                workerChanges.offlineReason = decodeOfflineReason(rec.reason)
-                workerChanges.offlineAt = blockTime
-                workerChanges.updatedAt = blockTime
+                changes.status = WorkerStatus.Offline
+                changes.offlineReason = decodeOfflineReason(rec.reason)
+                changes.offlineAt = blockTime
+                changes.updatedAt = blockTime
 
-                workersChangeSet.set(id, workerChanges)
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerHeartbeatReceived") {
                 let e = new WorkerHeartbeatReceivedEvent(ctx, item.event)
                 let rec: { worker: Uint8Array, next: number }
@@ -206,16 +206,16 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
+                let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                assert(!workerChanges.deletedAt)
+                assert(!changes.deletedAt)
 
-                workerChanges.lastHeartbeatReceivedAt = blockTime
-                workerChanges.updatedAt = blockTime
+                changes.lastHeartbeatReceivedAt = blockTime
+                changes.updatedAt = blockTime
 
-                workersChangeSet.set(id, workerChanges)
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerAttestationRefreshed") {
                 let e = new WorkerAttestationRefreshedEvent(ctx, item.event)
                 let rec: { worker: Uint8Array, expiresAt: (bigint | undefined) }
@@ -226,20 +226,20 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let workerChanges: WorkerChanges = workersChangeSet.get(id) || {
+                let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                assert(!workerChanges.deletedAt)
+                assert(!changes.deletedAt)
 
-                workerChanges.attestationExpiresAt = rec.expiresAt ? new Date(Number(rec.expiresAt)) : undefined
-                workerChanges.lastAttestedAt = blockTime
-                workerChanges.updatedAt = blockTime
+                changes.attestationExpiresAt = rec.expiresAt ? new Date(Number(rec.expiresAt)) : null
+                changes.lastAttestedAt = blockTime
+                changes.updatedAt = blockTime
 
-                workersChangeSet.set(id, workerChanges)
+                changeSet.set(id, changes)
             }
         }
     }
 
-    return workersChangeSet
+    return changeSet
 }

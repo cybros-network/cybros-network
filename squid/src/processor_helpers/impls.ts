@@ -60,7 +60,7 @@ interface ImplChanges {
 }
 
 export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
-    const implsChangeSet= new Map<string, ImplChanges>();
+    const changeSet= new Map<string, ImplChanges>();
 
     for (let block of ctx.blocks) {
         const blockTime = new Date(block.header.timestamp);
@@ -81,7 +81,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 }
 
                 const id = rec.implId.toString()
-                const implChanges: ImplChanges = {
+                const changes: ImplChanges = {
                     id,
                     owner: decodeSS58Address(rec.owner),
                     attestationMethod: decodeAttestationMethod(rec.attestationMethod),
@@ -93,7 +93,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                     updatedAt: blockTime,
                 }
 
-                implsChangeSet.set(id, implChanges)
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.ImplDeregistered") {
                 let e = new ImplDeregisteredEvent(ctx, item.event)
                 let rec: { implId: number }
@@ -104,14 +104,14 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 }
 
                 const id = rec.implId.toString()
-                let implChanges: ImplChanges = implsChangeSet.get(id) || {
+                let changes: ImplChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                implChanges.updatedAt = blockTime
-                implChanges.deletedAt = blockTime
+                changes.updatedAt = blockTime
+                changes.deletedAt = blockTime
 
-                implsChangeSet.set(id, implChanges)
+                changeSet.set(id, changes)
             } if (item.name == "OffchainComputingWorkers.ImplDeploymentPermissionUpdated") {
                 let e = new ImplDeploymentPermissionUpdatedEvent(ctx, item.event)
                 let rec: {
@@ -124,16 +124,16 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 }
 
                 const id = rec.implId.toString()
-                let implChanges: ImplChanges = implsChangeSet.get(id) || {
+                let changes: ImplChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                assert(!implChanges.deletedAt)
+                assert(!changes.deletedAt)
 
-                implChanges.deploymentPermission = decodeImplDeploymentPermission(rec.permission)
-                implChanges.updatedAt = blockTime
+                changes.deploymentPermission = decodeImplDeploymentPermission(rec.permission)
+                changes.updatedAt = blockTime
 
-                implsChangeSet.set(id, implChanges)
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.ImplMetadataUpdated") {
                 let e = new ImplMetadataUpdatedEvent(ctx, item.event)
                 let rec: { implId: number, metadata: Uint8Array }
@@ -144,16 +144,16 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 }
 
                 const id = rec.implId.toString()
-                let implChanges: ImplChanges = implsChangeSet.get(id) || {
+                let changes: ImplChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                assert(!implChanges.deletedAt)
+                assert(!changes.deletedAt)
 
-                implChanges.metadata = u8aToString(rec.metadata)
-                implChanges.updatedAt = blockTime
+                changes.metadata = u8aToString(rec.metadata)
+                changes.updatedAt = blockTime
 
-                implsChangeSet.set(id, implChanges)
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.ImplMetadataRemoved") {
                 let e = new ImplMetadataRemovedEvent(ctx, item.event)
                 let rec: { implId: number }
@@ -164,16 +164,16 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 }
 
                 const id = rec.implId.toString()
-                let implChanges: ImplChanges = implsChangeSet.get(id) || {
+                let changes: ImplChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                assert(!implChanges.deletedAt)
+                assert(!changes.deletedAt)
 
-                implChanges.metadata = null
-                implChanges.updatedAt = blockTime
+                changes.metadata = null
+                changes.updatedAt = blockTime
 
-                implsChangeSet.set(id, implChanges)
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.ImplBuildRestrictionUpdated") {
                 let e = new ImplBuildRestrictionUpdatedEvent(ctx, item.event)
                 let rec: { implId: number, restriction: v100.ImplBuildRestriction }
@@ -184,21 +184,21 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 }
 
                 const id = rec.implId.toString()
-                let implChanges: ImplChanges = implsChangeSet.get(id) || {
+                let changes: ImplChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
                 }
-                assert(!implChanges.deletedAt)
+                assert(!changes.deletedAt)
 
-                implChanges.oldestBuildVersion = rec.restriction.oldest
-                implChanges.newestBuildVersion = rec.restriction.newest
-                implChanges.blockedBuildVersions = rec.restriction.blocked
-                implChanges.updatedAt = blockTime
+                changes.oldestBuildVersion = rec.restriction.oldest
+                changes.newestBuildVersion = rec.restriction.newest
+                changes.blockedBuildVersions = rec.restriction.blocked
+                changes.updatedAt = blockTime
 
-                implsChangeSet.set(id, implChanges)
+                changeSet.set(id, changes)
             }
         }
     }
 
-    return implsChangeSet
+    return changeSet
 }

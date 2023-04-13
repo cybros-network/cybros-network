@@ -252,10 +252,10 @@ export class OffchainComputingTaskCreatedEvent {
     }
 
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskCreated') === 'b3c3478ca5437b2afc09df5dbd4cfcee90b496e2d83b57d71ac6d58bffefbf9b'
+        return this._chain.getEventHash('OffchainComputing.TaskCreated') === '93d876ce0a7d0efd8e609ff81e6e41fe7803b746c42b793afa896fe7afa2f092'
     }
 
-    get asV100(): {poolId: number, taskId: number, owner: Uint8Array, implSpecVersion: number, input: (Uint8Array | undefined)} {
+    get asV100(): {poolId: number, taskId: number, policyId: number, owner: Uint8Array, implSpecVersion: number, input: (Uint8Array | undefined), expiresIn: bigint} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }

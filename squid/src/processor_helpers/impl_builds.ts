@@ -7,7 +7,7 @@ import { u8aToHex } from "../utils"
 
 interface ImplBuildChanges {
     readonly id: string
-    readonly implId: string
+    readonly implId: number
 
     version?: number
     magicBytes?: string
@@ -17,7 +17,7 @@ interface ImplBuildChanges {
 }
 
 export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildChanges> {
-    const implBuildsChangeSet= new Map<string, ImplBuildChanges>();
+    const changeSet= new Map<string, ImplBuildChanges>();
 
     for (let block of ctx.blocks) {
         const blockTime = new Date(block.header.timestamp);
@@ -37,15 +37,15 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
                 }
 
                 const id = `${rec.implId}-${rec.version}`
-                const implBuildChanges: ImplBuildChanges = {
+                const changes: ImplBuildChanges = {
                     id,
-                    implId: rec.implId.toString(),
+                    implId: rec.implId,
                     version: rec.version,
                     magicBytes: u8aToHex(rec.magicBytes),
                     createdAt: blockTime
                 }
 
-                implBuildsChangeSet.set(id, implBuildChanges)
+                changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.ImplBuildDeregistered") {
                 let e = new ImplBuildDeregisteredEvent(ctx, item.event)
                 let rec: { implId: number, version: number }
@@ -56,17 +56,17 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
                 }
 
                 const id = `${rec.implId}-${rec.version}`
-                const implBuildChanges: ImplBuildChanges = {
+                const changes: ImplBuildChanges = {
                     id,
-                    implId: rec.implId.toString(),
+                    implId: rec.implId,
                     version: rec.version,
                     deletedAt: blockTime
                 }
 
-                implBuildsChangeSet.set(id, implBuildChanges)
+                changeSet.set(id, changes)
             }
         }
     }
 
-    return implBuildsChangeSet
+    return changeSet
 }

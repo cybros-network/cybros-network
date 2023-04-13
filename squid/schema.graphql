@@ -104,22 +104,8 @@ type Worker @entity {
   updatedAt: DateTime!
   deletedAt: DateTime
 
-  servingPools: [WorkersPools!] @derivedFrom(field: "worker")
+  servingPools: [PoolWorkers!] @derivedFrom(field: "worker")
   assignedTasks: [Task!] @derivedFrom(field: "assignee")
-}
-
-type CreatingTaskPolicy @entity {
-  id: ID!
-
-  pool: Pool! @index
-
-  permission: CreatingTaskPermission!
-  startBlock: Int
-  endBlock: Int
-
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  deletedAt: DateTime
 }
 
 type Pool @entity {
@@ -129,45 +115,64 @@ type Pool @entity {
   impl: Impl! @index
 
   creatingTaskAbility: Boolean!
-  creatingTaskPoliciesCount: Int!
   metadata: String
 
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime
 
-  workers: [WorkersPools!] @derivedFrom(field: "pool")
+  workers: [PoolWorkers!] @derivedFrom(field: "pool")
   creatingTaskPolicies: [CreatingTaskPolicy!] @derivedFrom(field: "pool")
   tasks: [Task!] @derivedFrom(field: "pool")
 }
 
-type WorkersPools @entity {
+type PoolWorkers @entity {
   id: ID! # Useless, but required
 
-  worker: Worker!
   pool: Pool!
+  worker: Worker!
+
+  createdAt: DateTime!
+  deletedAt: DateTime
+}
+
+type CreatingTaskPolicy @entity {
+  id: ID!
+  policyId: Int!
+
+  pool: Pool! @index
+
+  permission: CreatingTaskPermission!
+  startBlock: Int
+  endBlock: Int
+
+  createdAt: DateTime!
+  deletedAt: DateTime
 }
 
 type Task @entity {
   id: ID!
+  taskId: Int!
 
   pool: Pool! @index
+  policy: CreatingTaskPolicy!
   owner: Account! @index
   assignee: Worker @index
+  destroyer: Account
 
-  specVersion: Int
   status: TaskStatus! @index
   result: TaskResult
 
-  input: Bytes
-  output: Bytes
-  proof: Bytes
+  implSpecVersion: Int!
+  input: String
+  output: String
+  proof: String
 
   expiresAt: DateTime!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  deletedAt: DateTime
   assignedAt: DateTime
   processingAt: DateTime
   processedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
 }

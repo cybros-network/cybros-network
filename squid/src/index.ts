@@ -6,12 +6,15 @@ import {
     preprocessImplsEvents,
     preprocessImplBuildsEvents,
     preprocessWorkersEvents,
+    preprocessPoolsEvents, preprocessCreatingTaskPoliciesEvents, preprocessPoolWorkersEvents, preprocessTasksEvents,
 } from "./processor_helpers"
 import {
     AccountsManager,
     ImplsManager,
     ImplBuildsManager,
     WorkersManager,
+    PoolsManager, CreatingTaskPoliciesManager, PoolWorkersManager,
+    TasksManager,
 } from "./entity_managers"
 
 import { WorkerStatus } from "./model"
@@ -23,170 +26,382 @@ processor.run(database, async (ctx: Context) => {
     const implsChangeSet = preprocessImplsEvents(ctx)
     const implBuildsChangeSet = preprocessImplBuildsEvents(ctx)
     const workersChangeSet = preprocessWorkersEvents(ctx)
+    const poolsChangeSet = preprocessPoolsEvents(ctx)
+    const creatingTaskPoliciesChangeSet = preprocessCreatingTaskPoliciesEvents(ctx)
+    const poolWorkersChangeSet = preprocessPoolWorkersEvents(ctx)
+    const tasksChangeSet = preprocessTasksEvents(ctx)
 
     // Initialize entity managers
-    const accountsManager = new AccountsManager()
-    accountsManager.init(ctx)
-    const implsManager = new ImplsManager()
-    implsManager.init(ctx)
-    const implBuildsManager = new ImplBuildsManager()
-    implBuildsManager.init(ctx)
-    const workersManager = new WorkersManager()
-    workersManager.init(ctx)
+    const accountsManager = new AccountsManager().init(ctx)
+    const implsManager = new ImplsManager().init(ctx)
+    const implBuildsManager = new ImplBuildsManager().init(ctx)
+    const workersManager = new WorkersManager().init(ctx)
+    const poolsManager = new PoolsManager().init(ctx)
+    const creatingTaskPoliciesManager = new CreatingTaskPoliciesManager().init(ctx)
+    const poolWorkersManager = new PoolWorkersManager().init(ctx)
+    const tasksManager = new TasksManager().init(ctx)
 
     // Prefetch entities
 
     // Accounts
-    for (let [_id, workerChanges] of workersChangeSet) {
-        if (workerChanges.owner) {
-            accountsManager.addPrefetchItemId(workerChanges.owner)
+    for (let [_id, changes] of workersChangeSet) {
+        if (changes.owner) {
+            accountsManager.addPrefetchItemId(changes.owner)
         }
     }
-    for (let [_id, implChanges] of implsChangeSet) {
-        if (implChanges.owner) {
-            accountsManager.addPrefetchItemId(implChanges.owner)
+    for (let [_id, changes] of implsChangeSet) {
+        if (changes.owner) {
+            accountsManager.addPrefetchItemId(changes.owner)
+        }
+    }
+    for (let [_id, changes] of poolsChangeSet) {
+        if (changes.owner) {
+            accountsManager.addPrefetchItemId(changes.owner)
+        }
+    }
+    for (let [_id, changes] of tasksChangeSet) {
+        if (changes.owner) {
+            accountsManager.addPrefetchItemId(changes.owner)
+        }
+        if (changes.destroyer) {
+            accountsManager.addPrefetchItemId(changes.destroyer)
         }
     }
     await accountsManager.prefetchEntities()
 
     // Impls
-    for (let [id, _implChanges] of implsChangeSet) {
+    for (let [id, _changes] of implsChangeSet) {
         implsManager.addPrefetchItemId(id)
     }
-    for (let [_id, implBuildChanges] of implBuildsChangeSet) {
-        implsManager.addPrefetchItemId(implBuildChanges.implId)
+    for (let [_id, changes] of implBuildsChangeSet) {
+        implsManager.addPrefetchItemId(changes.implId.toString())
     }
-    for (let [_id, workerChanges] of workersChangeSet) {
-        if (workerChanges.implId) {
-            implsManager.addPrefetchItemId(workerChanges.implId)
+    for (let [_id, changes] of workersChangeSet) {
+        if (changes.implId) {
+            implsManager.addPrefetchItemId(changes.implId.toString())
+        }
+    }
+    for (let [_id, changes] of poolsChangeSet) {
+        if (changes.implId) {
+            implsManager.addPrefetchItemId(changes.implId.toString())
         }
     }
     await implsManager.prefetchEntities()
 
     // Impl builds
-    for (let [id, _implBuildChanges] of implBuildsChangeSet) {
+    for (let [id, _changes] of implBuildsChangeSet) {
         implBuildsManager.addPrefetchItemId(id)
     }
     await implBuildsManager.prefetchEntities()
 
     // Workers
-    for (let [id, _workerChanges] of workersChangeSet) {
+    for (let [id, _changes] of workersChangeSet) {
         workersManager.addPrefetchItemId(id)
+    }
+    for (let [_id, changes] of poolWorkersChangeSet) {
+        workersManager.addPrefetchItemId(changes.worker)
+    }
+    for (let [_id, changes] of tasksChangeSet) {
+        if (changes.assignee) {
+            workersManager.addPrefetchItemId(changes.assignee)
+        }
     }
     await workersManager.prefetchEntities()
 
+    // Pools
+    for (let [id, _changes] of poolsChangeSet) {
+        poolsManager.addPrefetchItemId(id)
+    }
+    for (let [_id, changes] of creatingTaskPoliciesChangeSet) {
+        if (changes.poolId) {
+            poolsManager.addPrefetchItemId(changes.poolId.toString())
+        }
+    }
+    for (let [_id, changes] of poolWorkersChangeSet) {
+        poolsManager.addPrefetchItemId(changes.poolId.toString())
+    }
+    for (let [_id, changes] of tasksChangeSet) {
+        if (changes.poolId) {
+            poolsManager.addPrefetchItemId(changes.poolId.toString())
+        }
+    }
+    await poolsManager.prefetchEntities()
+
+    // Creating task policies
+    for (let [id, _changes] of creatingTaskPoliciesChangeSet) {
+        creatingTaskPoliciesManager.addPrefetchItemId(id)
+    }
+    for (let [_id, changes] of tasksChangeSet) {
+        if (changes.policyId) {
+            assert(changes.poolId)
+            creatingTaskPoliciesManager.addPrefetchItemId(`${changes.poolId}-${changes.policyId}`)
+        }
+    }
+    await creatingTaskPoliciesManager.prefetchEntities()
+
+    // Pool workers
+    for (let [id, _changes] of poolWorkersChangeSet) {
+        poolWorkersManager.addPrefetchItemId(id)
+    }
+    await poolWorkersManager.prefetchEntities()
+
+    // Tasks
+    for (let [id, _changes] of tasksChangeSet) {
+        tasksManager.addPrefetchItemId(id)
+    }
+    await tasksManager.prefetchEntities()
+
+    // Process
+
     // Process impls' changeset
-    for (let [id, implChanges] of implsChangeSet) {
+    for (let [id, changes] of implsChangeSet) {
         await implsManager.upsert(id, async (impl) => {
-            if (implChanges.owner) {
-                impl.owner = await accountsManager.getOrCreate(implChanges.owner)
+            if (changes.owner) {
+                impl.owner = await accountsManager.getOrCreate(changes.owner)
             }
-            if (implChanges.attestationMethod) {
-                impl.attestationMethod = implChanges.attestationMethod
+            if (changes.attestationMethod) {
+                impl.attestationMethod = changes.attestationMethod
             }
-            if (implChanges.deploymentPermission) {
-                impl.deploymentPermission = implChanges.deploymentPermission
+            if (changes.deploymentPermission) {
+                impl.deploymentPermission = changes.deploymentPermission
             }
-            if (implChanges.oldestBuildVersion) {
-                impl.oldestBuildVersion = implChanges.oldestBuildVersion
+            if (changes.oldestBuildVersion) {
+                impl.oldestBuildVersion = changes.oldestBuildVersion
             }
-            if (implChanges.newestBuildVersion) {
-                impl.newestBuildVersion = implChanges.newestBuildVersion
+            if (changes.newestBuildVersion) {
+                impl.newestBuildVersion = changes.newestBuildVersion
             }
-            if (implChanges.blockedBuildVersions) {
-                impl.blockedBuildVersions = implChanges.blockedBuildVersions
+            if (changes.blockedBuildVersions) {
+                impl.blockedBuildVersions = changes.blockedBuildVersions
             }
-            if (implChanges.metadata !== undefined) {
-                impl.metadata = implChanges.metadata
+            if (changes.metadata !== undefined) {
+                impl.metadata = changes.metadata
             }
-            if (implChanges.createdAt) {
-                impl.createdAt = implChanges.createdAt
+            if (changes.createdAt) {
+                impl.createdAt = changes.createdAt
             }
-            if (implChanges.deletedAt) {
-                impl.deletedAt = implChanges.deletedAt
+            if (changes.deletedAt) {
+                impl.deletedAt = changes.deletedAt
             }
-            impl.updatedAt = implChanges.updatedAt
+            impl.updatedAt = changes.updatedAt
         })
     }
 
     // Process impl builds' changeset
-    for (let [id, implBuildChanges] of implBuildsChangeSet) {
+    for (let [id, changes] of implBuildsChangeSet) {
         await implBuildsManager.upsert(id, async (implBuild) => {
             if (!implBuild.impl) {
-                implBuild.impl = await implsManager.getOrCreate(implBuildChanges.implId)
+                implBuild.impl = await implsManager.getOrCreate(changes.implId.toString())
             }
             if (!implBuild.version) {
-                assert(implBuildChanges.version)
-                implBuild.version = implBuildChanges.version
+                assert(changes.version)
+                implBuild.version = changes.version
             }
             if (!implBuild.magicBytes) {
-                assert(implBuildChanges.magicBytes)
-                implBuild.magicBytes = implBuildChanges.magicBytes
+                assert(changes.magicBytes)
+                implBuild.magicBytes = changes.magicBytes
             }
-
-            if (implBuildChanges.createdAt) {
-                implBuild.createdAt = implBuildChanges.createdAt
+            if (changes.createdAt) {
+                implBuild.createdAt = changes.createdAt
             }
-            if (implBuildChanges.deletedAt) {
-                implBuild.deletedAt = implBuildChanges.deletedAt
+            if (changes.deletedAt) {
+                implBuild.deletedAt = changes.deletedAt
             }
         })
     }
 
     // Process workers' changeset
-    for (let [id, workerChanges] of workersChangeSet) {
+    for (let [id, changes] of workersChangeSet) {
         await workersManager.upsert(id, async (worker) => {
-            if (workerChanges.owner) {
-                worker.owner = await accountsManager.getOrCreate(workerChanges.owner)
+            if (changes.owner) {
+                worker.owner = await accountsManager.getOrCreate(changes.owner)
             }
-            if (workerChanges.implId) {
-                worker.impl = await implsManager.getOrCreate(workerChanges.implId)
+            if (changes.implId) {
+                worker.impl = await implsManager.getOrCreate(changes.implId.toString())
             }
-            if (workerChanges.implSpecVersion) {
-                worker.implSpecVersion = workerChanges.implSpecVersion
+            if (changes.implSpecVersion) {
+                worker.implSpecVersion = changes.implSpecVersion
             }
-            if (workerChanges.implBuildVersion) {
-                worker.implBuildVersion = workerChanges.implBuildVersion
+            if (changes.implBuildVersion) {
+                worker.implBuildVersion = changes.implBuildVersion
             }
-            if (workerChanges.attestationMethod) {
-                worker.attestationMethod = workerChanges.attestationMethod
+            if (changes.attestationMethod) {
+                worker.attestationMethod = changes.attestationMethod
             }
-            if (workerChanges.attestationExpiresAt) {
-                worker.attestationExpiresAt = workerChanges.attestationExpiresAt
+            if (changes.attestationExpiresAt !== undefined) {
+                worker.attestationExpiresAt = changes.attestationExpiresAt
             }
-            if (workerChanges.lastAttestedAt) {
-                worker.lastAttestedAt = workerChanges.lastAttestedAt
+            if (changes.lastAttestedAt) {
+                worker.lastAttestedAt = changes.lastAttestedAt
             }
-            if (workerChanges.lastHeartbeatReceivedAt) {
-                worker.lastHeartbeatReceivedAt = workerChanges.lastHeartbeatReceivedAt
+            if (changes.lastHeartbeatReceivedAt) {
+                worker.lastHeartbeatReceivedAt = changes.lastHeartbeatReceivedAt
             }
-            if (workerChanges.status) {
-                worker.status = workerChanges.status
+            if (changes.status) {
+                worker.status = changes.status
 
-                if (workerChanges.status == WorkerStatus.Offline) {
-                    assert(workerChanges.offlineAt)
-                    assert(workerChanges.offlineReason)
-                    worker.offlineAt = workerChanges.offlineAt
-                    worker.offlineReason = workerChanges.offlineReason
+                if (changes.status == WorkerStatus.Offline) {
+                    assert(changes.offlineAt)
+                    assert(changes.offlineReason)
+                    worker.offlineAt = changes.offlineAt
+                    worker.offlineReason = changes.offlineReason
                 } else {
                     worker.offlineAt = null
                     worker.offlineReason = null
                 }
             }
-            if (workerChanges.createdAt) {
-                worker.createdAt = workerChanges.createdAt
+            if (changes.createdAt) {
+                worker.createdAt = changes.createdAt
             }
-            if (workerChanges.deletedAt) {
+            if (changes.deletedAt) {
                 worker.status = WorkerStatus.Deregistered
-                worker.deletedAt = workerChanges.deletedAt
+                worker.deletedAt = changes.deletedAt
             }
-            worker.updatedAt = workerChanges.updatedAt
+            worker.updatedAt = changes.updatedAt
         });
     }
+
+    // Process pools' changeset
+    for (let [id, changes] of poolsChangeSet) {
+        await poolsManager.upsert(id, async (pool) => {
+            if (changes.owner) {
+                pool.owner = await accountsManager.getOrCreate(changes.owner)
+            }
+            if (changes.creatingTaskAbility) {
+                pool.creatingTaskAbility = changes.creatingTaskAbility
+            }
+            if (changes.implId) {
+                pool.impl = await implsManager.getOrCreate(changes.implId.toString())
+            }
+            if (changes.metadata !== undefined) {
+                pool.metadata = changes.metadata
+            }
+            if (changes.createdAt) {
+                pool.createdAt = changes.createdAt
+            }
+            if (changes.deletedAt) {
+                pool.deletedAt = changes.deletedAt
+            }
+            pool.updatedAt = changes.updatedAt
+        })
+    }
+
+    // Process create task policies' changeset
+    for (let [id, changes] of creatingTaskPoliciesChangeSet) {
+        await creatingTaskPoliciesManager.upsert(id, async (createTaskPolicy) => {
+            if (changes.poolId) {
+                createTaskPolicy.pool = await poolsManager.getOrCreate(changes.poolId.toString())
+            }
+            if (changes.policyId) {
+                createTaskPolicy.policyId = changes.policyId
+            }
+            if (changes.permission) {
+                createTaskPolicy.permission = changes.permission
+            }
+            if (changes.startBlock) {
+                createTaskPolicy.startBlock = changes.startBlock
+            }
+            if (changes.endBlock) {
+                createTaskPolicy.endBlock = changes.endBlock
+            }
+            if (changes.createdAt) {
+                createTaskPolicy.createdAt = changes.createdAt
+            }
+            if (changes.deletedAt) {
+                createTaskPolicy.deletedAt = changes.deletedAt
+            }
+        })
+    }
+
+    // Process pool workers' changeset
+    for (let [id, changes] of poolWorkersChangeSet) {
+        await poolWorkersManager.upsert(id, async (poolWorker) => {
+            if (!poolWorker.pool) {
+                poolWorker.pool = await poolsManager.getOrCreate(changes.poolId.toString())
+            }
+            if (!poolWorker.worker) {
+                poolWorker.worker = await workersManager.getOrCreate(changes.worker)
+            }
+            if (changes.createdAt) {
+                poolWorker.createdAt = changes.createdAt
+            }
+            if (changes.deletedAt) {
+                poolWorker.deletedAt = changes.deletedAt
+            }
+        })
+    }
+
+    // Process tasks' changeset
+    for (let [id, changes] of tasksChangeSet) {
+        await tasksManager.upsert(id, async (task) => {
+            if (!task.taskId) {
+                task.taskId = changes.taskId
+            }
+            if (changes.poolId) {
+                task.pool = await poolsManager.getOrCreate(changes.poolId.toString())
+            }
+            if (changes.policyId) {
+                assert(changes.poolId)
+                task.policy = await creatingTaskPoliciesManager.getOrCreate(`${changes.poolId}-${changes.policyId}`)
+            }
+            if (changes.owner) {
+                task.owner = await accountsManager.getOrCreate(changes.owner)
+            }
+            if (changes.assignee) {
+                task.assignee = await workersManager.getOrCreate(changes.assignee)
+            }
+            if (changes.destroyer) {
+                task.destroyer = await accountsManager.getOrCreate(changes.destroyer)
+            }
+            if (changes.implSpecVersion) {
+                task.implSpecVersion = changes.implSpecVersion
+            }
+            if (changes.status) {
+                task.status = changes.status
+            }
+            if (changes.result) {
+                task.result = changes.result
+            }
+            if (changes.input !== undefined) {
+                task.input = changes.input
+            }
+            if (changes.output !== undefined) {
+                task.output = changes.output
+            }
+            if (changes.proof !== undefined) {
+                task.proof = changes.proof
+            }
+            if (changes.expiresAt) {
+                task.expiresAt = changes.expiresAt
+            }
+            if (changes.assignedAt !== undefined) {
+                task.assignedAt = changes.assignedAt
+            }
+            if (changes.processingAt) {
+                task.processingAt = changes.processingAt
+            }
+            if (changes.processedAt) {
+                task.processedAt = changes.processedAt
+            }
+            if (changes.createdAt) {
+                task.createdAt = changes.createdAt
+            }
+            if (changes.deletedAt) {
+                task.deletedAt = changes.deletedAt
+            }
+
+            task.updatedAt = changes.updatedAt
+        })
+    }
+
 
     // Save
     await accountsManager.saveAll()
     await implsManager.saveAll()
     await implBuildsManager.saveAll()
     await workersManager.saveAll()
+    await poolsManager.saveAll()
+    await creatingTaskPoliciesManager.saveAll()
+    await poolWorkersManager.saveAll()
+    await tasksManager.saveAll()
 })

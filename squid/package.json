@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@polkadot/util": "^11.1.2",
-    "@subsquid/archive-registry": "^2.1.11",
+    "@subsquid/archive-registry": "^2.1.12",
     "@subsquid/big-decimal": "^0.0.0",
     "@subsquid/graphql-server": "^3.3.2",
     "@subsquid/ss58": "^0.1.4",
