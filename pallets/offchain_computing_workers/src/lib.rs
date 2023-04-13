@@ -615,6 +615,22 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
+		pub fn update_impl_deployment_permission(
+			origin: OriginFor<T>,
+			impl_id: T::ImplId,
+			deployment_permission: ImplDeploymentPermission,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
+			Self::ensure_impl_owner(&who, &impl_info)?;
+
+			Self::do_update_impl_deployment_permission(impl_info, deployment_permission)
+		}
+
+		#[transactional]
+		#[pallet::call_index(16)]
+		#[pallet::weight({0})]
 		pub fn register_impl_build(
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
@@ -630,7 +646,7 @@ mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(16)]
+		#[pallet::call_index(17)]
 		#[pallet::weight({0})]
 		pub fn deregister_impl_build(
 			origin: OriginFor<T>,
@@ -642,7 +658,7 @@ mod pallet {
 			let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
 			Self::ensure_impl_owner(&who, &impl_info)?;
 
-			Self::do_deregister_impl_build_magic_bytes(impl_info, version)
+			Self::do_deregister_impl_build(impl_info, version)
 		}
 	}
 }

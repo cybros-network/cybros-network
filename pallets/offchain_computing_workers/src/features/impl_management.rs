@@ -116,6 +116,19 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	pub(crate) fn do_update_impl_deployment_permission(
+		mut impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
+		deployment_permission: ImplDeploymentPermission,
+	) -> DispatchResult {
+		let impl_id = impl_info.id;
+
+		impl_info.deployment_permission = deployment_permission.clone();
+		Impls::<T>::insert(&impl_id, impl_info);
+
+		Self::deposit_event(Event::<T>::ImplDeploymentPermissionUpdated { impl_id, permission: deployment_permission });
+		Ok(())
+	}
+
 	pub(crate) fn do_register_impl_build(
 		impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
 		version: ImplBuildVersion,
@@ -143,7 +156,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_deregister_impl_build_magic_bytes(
+	pub(crate) fn do_deregister_impl_build(
 		impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
 		version: ImplBuildVersion,
 	) -> DispatchResult {
