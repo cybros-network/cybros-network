@@ -66,7 +66,6 @@ export class WorkersManager extends EntitiesManager<Worker> {
                 successfulTasksCount: 0,
                 failedTasksCount: 0,
                 erroredTasksCount: 0,
-                uptime: 0,
             })
         });
     }

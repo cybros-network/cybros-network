@@ -193,6 +193,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.attestationMethod = decodeAttestationMethod(rec.attestationMethod)
                 changes.attestationExpiresAt = rec.attestationExpiresAt ? new Date(Number(rec.attestationExpiresAt)) : undefined
                 changes.lastAttestedAt = blockTime
+                changes.lastHeartbeatReceivedAt = blockTime
                 changes.updatedAt = blockTime
 
                 changes.onlineWorkerCounterChange += 1

@@ -82,9 +82,6 @@ export class Worker {
     @Column_("int4", {nullable: false})
     erroredTasksCount!: number
 
-    @Column_("int4", {nullable: false})
-    uptime!: number
-
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date
 

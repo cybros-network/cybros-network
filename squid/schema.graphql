@@ -139,7 +139,6 @@ type Worker @entity {
   successfulTasksCount: Int!
   failedTasksCount: Int!
   erroredTasksCount: Int!
-  uptime: Int!
 
   # timestamps
   createdAt: DateTime!

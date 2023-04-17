@@ -17,7 +17,7 @@ import {
     TasksManager,
 } from "./entity_managers"
 
-import { WorkerStatus, Pool, Worker, Impl, ImplBuild } from "./model"
+import { WorkerStatus, Pool, Worker, Impl, ImplBuild, Account } from "./model"
 import { Equal, IsNull, In } from "typeorm"
 
 const database = new TypeormDatabase();
@@ -235,9 +235,7 @@ processor.run(database, async (ctx: Context) => {
     // Process workers' changeset
     for (let [id, changes] of workersChangeSet) {
         await workersManager.upsert(id, async (worker) => {
-            if (!worker.ownerAddress) {
-                assert(changes.owner)
-
+            if (changes.owner) {
                 worker.ownerAddress = changes.owner
                 worker._owner = await accountsManager.getOrCreate(changes.owner)
             }
@@ -543,6 +541,14 @@ processor.run(database, async (ctx: Context) => {
             )
         }
     }).then(implBuilds => implBuilds.forEach(implBuild => implBuildsManager.add(implBuild)))
+    await ctx.store.find(Account, {
+        where: {
+            id: In(
+                Array.from(workersManager.entitiesMap.values())
+                    .map(worker => worker.ownerAddress)
+            )
+        }
+    }).then(accounts => accounts.forEach(account => accountsManager.add(account)))
     for (let [id, changes] of workersChangeSet) {
         const worker = await workersManager.get(id)
         assert(worker)
