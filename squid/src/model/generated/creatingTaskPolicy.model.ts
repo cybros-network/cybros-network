@@ -16,7 +16,7 @@ export class CreatingTaskPolicy {
 
     @Index_()
     @ManyToOne_(() => Pool, {nullable: true})
-    pool!: Pool
+    _pool!: Pool
 
     @Column_("varchar", {length: 6, nullable: false})
     permission!: CreatingTaskPermission

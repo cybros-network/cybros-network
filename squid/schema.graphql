@@ -1,3 +1,6 @@
+# Squid abstract TypeORM so it's impossible to get the foreign key field, so we have to have some duplicates
+# But actually it will generate _id field, but don't expose them
+
 enum AttestationMethod {
   OptOut
 }
@@ -8,8 +11,8 @@ enum ImplDeploymentPermission {
 }
 
 enum WorkerStatus {
-  Deregistered
   Registered
+  Deregistered
   Online
   RequestingOffline
   Offline
@@ -46,15 +49,20 @@ type Account @entity {
   "Account address"
   id: ID!
 
-  owningWorkers: [Worker!] @derivedFrom(field: "owner")
-  owningPools: [Pool!] @derivedFrom(field: "owner")
-  owningTasks: [Task!] @derivedFrom(field: "owner")
+  workersCount: Int!
+  poolsCount: Int!
+  createdTasksCount: Int!
+
+  owningWorkers: [Worker!] @derivedFrom(field: "_owner")
+  owningPools: [Pool!] @derivedFrom(field: "_owner")
+  owningTasks: [Task!] @derivedFrom(field: "_owner")
 }
 
 type Impl @entity {
   id: ID!
 
-  owner: Account! @index
+  _owner: Account! @index
+  ownerAddress: String!
 
   attestationMethod: AttestationMethod!
   deploymentPermission: ImplDeploymentPermission!
@@ -63,23 +71,41 @@ type Impl @entity {
   blockedBuildVersions: [Int!]!
   metadata: String
 
+  # stats
+  workersCount: Int!
+  poolsCount: Int!
+  tasksCount: Int!
+  successfulTasksCount: Int!
+  failedTasksCount: Int!
+  erroredTasksCount: Int!
+
+  # timestamps
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime
 
-  builds: [ImplBuild!] @derivedFrom(field: "impl")
-  workers: [Worker!] @derivedFrom(field: "impl")
-  pools: [Pool!] @derivedFrom(field: "impl")
+  builds: [ImplBuild!] @derivedFrom(field: "_impl")
+  workers: [Worker!] @derivedFrom(field: "_impl")
+  pools: [Pool!] @derivedFrom(field: "_impl")
 }
 
 type ImplBuild @entity {
   id: ID!
 
-  impl: Impl! @index
+  _impl: Impl! @index
+  implId: Int!
 
   version: Int!
   magicBytes: String
 
+  # stats
+  workersCount: Int!
+  tasksCount: Int!
+  successfulTasksCount: Int!
+  failedTasksCount: Int!
+  erroredTasksCount: Int!
+
+  # timestamps
   createdAt: DateTime!
   deletedAt: DateTime
 }
@@ -87,12 +113,17 @@ type ImplBuild @entity {
 type Worker @entity {
   id: ID!
 
-  owner: Account! @index
-  impl: Impl! @index
+  _owner: Account! @index
+  ownerAddress: String!
+
+  _impl: Impl @index
+  implId: Int
+
+  _implBuild: ImplBuild @index
+  implBuildVersion: Int
 
   status: WorkerStatus! @index
-  implSpecVersion: Int
-  implBuildVersion: Int
+  implSpecVersion: Int!
   attestationMethod: AttestationMethod
   attestationExpiresAt: DateTime
   lastAttestedAt: DateTime
@@ -100,37 +131,85 @@ type Worker @entity {
   offlineAt: DateTime
   offlineReason: OfflineReason
 
+  # stats
+  inProcessingTasksCount: Int!
+  assignedTasksCount: Int!
+  successfulTasksCount: Int!
+  failedTasksCount: Int!
+  erroredTasksCount: Int!
+  uptime: Int!
+
+  # timestamps
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime
 
-  servingPools: [PoolWorkers!] @derivedFrom(field: "worker")
-  assignedTasks: [Task!] @derivedFrom(field: "assignee")
+  events: [WorkerEvent!] @derivedFrom(field: "_worker")
+
+  servingPools: [PoolWorkers!] @derivedFrom(field: "_worker")
+  assignedTasks: [Task!] @derivedFrom(field: "_assignee")
+}
+
+enum WorkerEventKind {
+  Registered
+  Deregistered
+  Online
+  RequestingOffline
+  Offline
+  AttestationRefreshed
+}
+
+type WorkerEvent @entity {
+  id: ID!
+
+  _worker: Worker! @index
+  workerAddress: String!
+
+  kind: WorkerEventKind!
+  payload: String
+
+  blockNumber: Int!
+  blockTime: DateTime!
 }
 
 type Pool @entity {
   id: ID!
+  poolId: Int!
 
-  owner: Account! @index
-  impl: Impl! @index
+  _owner: Account! @index
+  ownerAddress: String!
+
+  _impl: Impl! @index
+  implId: Int!
 
   creatingTaskAbility: Boolean!
   metadata: String
 
+  # stats
+  pendingTasksCount: Int!
+  inProcessingTasksCount: Int!
+  createdTasksCount: Int!
+  successfulTasksCount: Int!
+  failedTasksCount: Int!
+  erroredTasksCount: Int!
+  workersCount: Int!
+  onlineWorkersCount: Int!
+
+  # timestamps
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime
 
-  workers: [PoolWorkers!] @derivedFrom(field: "pool")
-  creatingTaskPolicies: [CreatingTaskPolicy!] @derivedFrom(field: "pool")
-  tasks: [Task!] @derivedFrom(field: "pool")
+  workers: [PoolWorkers!] @derivedFrom(field: "_pool")
+  creatingTaskPolicies: [CreatingTaskPolicy!] @derivedFrom(field: "_pool")
+  tasks: [Task!] @derivedFrom(field: "_pool")
 }
 
 type PoolWorkers @entity {
   id: ID! # Useless, but required
 
-  pool: Pool!
-  worker: Worker!
+  _pool: Pool!
+  _worker: Worker!
 
   createdAt: DateTime!
   deletedAt: DateTime
@@ -140,7 +219,7 @@ type CreatingTaskPolicy @entity {
   id: ID!
   policyId: Int!
 
-  pool: Pool! @index
+  _pool: Pool! @index
 
   permission: CreatingTaskPermission!
   startBlock: Int
@@ -154,11 +233,20 @@ type Task @entity {
   id: ID!
   taskId: Int!
 
-  pool: Pool! @index
-  policy: CreatingTaskPolicy!
-  owner: Account! @index
-  assignee: Worker @index
-  destroyer: Account
+  _pool: Pool! @index
+  poolId: Int!
+
+  _policy: CreatingTaskPolicy!
+  policyId: Int!
+
+  _owner: Account! @index
+  ownerAddress: String!
+
+  _assignee: Worker @index
+  assigneeAddress: String
+
+  _destroyer: Account
+  destroyerAddress: String
 
   status: TaskStatus! @index
   result: TaskResult
@@ -168,6 +256,7 @@ type Task @entity {
   output: String
   proof: String
 
+  # timestamps
   expiresAt: DateTime!
   assignedAt: DateTime
   processingAt: DateTime
@@ -175,4 +264,28 @@ type Task @entity {
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime
+
+  events: [TaskEvent!] @derivedFrom(field: "_task")
+}
+
+enum TaskEventKind {
+  Created
+  Assigned
+  Processing
+  Success
+  Fail
+  Error
+  Destroyed
+}
+
+type TaskEvent @entity {
+  id: ID!
+
+  _task: Task! @index
+
+  kind: TaskEventKind!
+  payload: String
+
+  blockNumber: Int!
+  blockTime: DateTime!
 }

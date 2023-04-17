@@ -1,16 +1,16 @@
-import { type Context } from "../processor"
+import {type Context} from "../processor"
 import {
-    OffchainComputingWorkersWorkerRegisteredEvent as WorkerRegisteredEvent,
-    OffchainComputingWorkersWorkerDeregisteredEvent as WorkerDeregisteredEvent,
     OffchainComputingWorkersWorkerAttestationRefreshedEvent as WorkerAttestationRefreshedEvent,
-    OffchainComputingWorkersWorkerOnlineEvent as WorkerOnlineEvent,
-    OffchainComputingWorkersWorkerRequestingOfflineEvent as WorkerRequestingOfflineEvent,
-    OffchainComputingWorkersWorkerOfflineEvent as WorkerOfflineEvent,
+    OffchainComputingWorkersWorkerDeregisteredEvent as WorkerDeregisteredEvent,
     OffchainComputingWorkersWorkerHeartbeatReceivedEvent as WorkerHeartbeatReceivedEvent,
+    OffchainComputingWorkersWorkerOfflineEvent as WorkerOfflineEvent,
+    OffchainComputingWorkersWorkerOnlineEvent as WorkerOnlineEvent,
+    OffchainComputingWorkersWorkerRegisteredEvent as WorkerRegisteredEvent,
+    OffchainComputingWorkersWorkerRequestingOfflineEvent as WorkerRequestingOfflineEvent,
 } from "../types/events"
 import * as v100 from "../types/v100"
-import { AttestationMethod, OfflineReason, WorkerStatus } from "../model"
-import { decodeSS58Address } from "../utils"
+import {AttestationMethod, OfflineReason, WorkerEventKind, WorkerStatus} from "../model"
+import {decodeSS58Address} from "../utils"
 import assert from "assert";
 
 function decodeAttestationMethod(attestationMethod?: v100.AttestationMethod): AttestationMethod {
@@ -53,6 +53,16 @@ function decodeOfflineReason(offlineReason?: v100.OfflineReason): OfflineReason 
     }
 }
 
+interface WorkerEvent {
+    readonly id: string
+
+    readonly kind: WorkerEventKind
+    readonly payload?: string
+
+    readonly blockNumber: number
+    readonly blockTime: Date
+}
+
 interface WorkerChanges {
     readonly id: string
 
@@ -72,12 +82,18 @@ interface WorkerChanges {
     createdAt?: Date
     updatedAt: Date
     deletedAt?: Date
+
+    registerWorkerCounterChange: number
+    onlineWorkerCounterChange: number
+
+    events: WorkerEvent[]
 }
 
 export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges> {
     const changeSet= new Map<string, WorkerChanges>();
 
     for (let block of ctx.blocks) {
+        const blockNumber = block.header.height
         const blockTime = new Date(block.header.timestamp);
 
         for (let item of block.items) {
@@ -97,6 +113,16 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     status: WorkerStatus.Registered,
                     createdAt: blockTime,
                     updatedAt: blockTime,
+                    registerWorkerCounterChange: 1,
+                    onlineWorkerCounterChange: 0,
+                    events: [
+                        {
+                            id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                            kind: WorkerEventKind.Registered,
+                            blockNumber,
+                            blockTime,
+                        }
+                    ]
                 }
 
                 changeSet.set(id, changes)
@@ -113,11 +139,24 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
+                    registerWorkerCounterChange: 0,
+                    onlineWorkerCounterChange: 0,
+                    events: []
                 }
                 assert(!changes.deletedAt)
 
                 changes.updatedAt = blockTime
                 changes.deletedAt = blockTime
+
+                changes.registerWorkerCounterChange -= 1
+                changes.onlineWorkerCounterChange -= rec.force ? 1 : 0
+                changes.events.push({
+                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    kind: WorkerEventKind.Deregistered,
+                    payload: JSON.stringify({force: rec.force}),
+                    blockNumber,
+                    blockTime,
+                })
 
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerOnline") {
@@ -141,6 +180,9 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
+                    registerWorkerCounterChange: 0,
+                    onlineWorkerCounterChange: 0,
+                    events: []
                 }
                 assert(!changes.deletedAt)
 
@@ -152,6 +194,14 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.attestationExpiresAt = rec.attestationExpiresAt ? new Date(Number(rec.attestationExpiresAt)) : undefined
                 changes.lastAttestedAt = blockTime
                 changes.updatedAt = blockTime
+
+                changes.onlineWorkerCounterChange += 1
+                changes.events.push({
+                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    kind: WorkerEventKind.Online,
+                    blockNumber,
+                    blockTime,
+                })
 
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerRequestingOffline") {
@@ -167,11 +217,21 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
+                    registerWorkerCounterChange: 0,
+                    onlineWorkerCounterChange: 0,
+                    events: []
                 }
                 assert(!changes.deletedAt)
 
                 changes.status = WorkerStatus.RequestingOffline
                 changes.updatedAt = blockTime
+
+                changes.events.push({
+                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    kind: WorkerEventKind.RequestingOffline,
+                    blockNumber,
+                    blockTime,
+                })
 
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerOffline") {
@@ -187,6 +247,9 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
+                    registerWorkerCounterChange: 0,
+                    onlineWorkerCounterChange: 0,
+                    events: []
                 }
                 assert(!changes.deletedAt)
 
@@ -194,6 +257,14 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.offlineReason = decodeOfflineReason(rec.reason)
                 changes.offlineAt = blockTime
                 changes.updatedAt = blockTime
+
+                changes.onlineWorkerCounterChange -= 1
+                changes.events.push({
+                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    kind: WorkerEventKind.Offline,
+                    blockNumber,
+                    blockTime,
+                })
 
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerHeartbeatReceived") {
@@ -209,6 +280,9 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
+                    registerWorkerCounterChange: 0,
+                    onlineWorkerCounterChange: 0,
+                    events: []
                 }
                 assert(!changes.deletedAt)
 
@@ -229,12 +303,22 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let changes: WorkerChanges = changeSet.get(id) || {
                     id,
                     updatedAt: blockTime,
+                    registerWorkerCounterChange: 0,
+                    onlineWorkerCounterChange: 0,
+                    events: []
                 }
                 assert(!changes.deletedAt)
 
                 changes.attestationExpiresAt = rec.expiresAt ? new Date(Number(rec.expiresAt)) : null
                 changes.lastAttestedAt = blockTime
                 changes.updatedAt = blockTime
+
+                changes.events.push({
+                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    kind: WorkerEventKind.AttestationRefreshed,
+                    blockNumber,
+                    blockTime,
+                })
 
                 changeSet.set(id, changes)
             }

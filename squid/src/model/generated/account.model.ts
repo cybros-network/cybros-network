@@ -15,12 +15,21 @@ export class Account {
     @PrimaryColumn_()
     id!: string
 
-    @OneToMany_(() => Worker, e => e.owner)
+    @Column_("int4", {nullable: false})
+    workersCount!: number
+
+    @Column_("int4", {nullable: false})
+    poolsCount!: number
+
+    @Column_("int4", {nullable: false})
+    createdTasksCount!: number
+
+    @OneToMany_(() => Worker, e => e._owner)
     owningWorkers!: Worker[]
 
-    @OneToMany_(() => Pool, e => e.owner)
+    @OneToMany_(() => Pool, e => e._owner)
     owningPools!: Pool[]
 
-    @OneToMany_(() => Task, e => e.owner)
+    @OneToMany_(() => Task, e => e._owner)
     owningTasks!: Task[]
 }

@@ -9,7 +9,7 @@ interface ImplBuildChanges {
     readonly id: string
     readonly implId: number
 
-    version?: number
+    version: number
     magicBytes?: string
 
     createdAt?: Date

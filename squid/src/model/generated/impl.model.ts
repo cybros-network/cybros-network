@@ -17,7 +17,10 @@ export class Impl {
 
     @Index_()
     @ManyToOne_(() => Account, {nullable: true})
-    owner!: Account
+    _owner!: Account
+
+    @Column_("text", {nullable: false})
+    ownerAddress!: string
 
     @Column_("varchar", {length: 6, nullable: false})
     attestationMethod!: AttestationMethod
@@ -37,6 +40,24 @@ export class Impl {
     @Column_("text", {nullable: true})
     metadata!: string | undefined | null
 
+    @Column_("int4", {nullable: false})
+    workersCount!: number
+
+    @Column_("int4", {nullable: false})
+    poolsCount!: number
+
+    @Column_("int4", {nullable: false})
+    tasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    successfulTasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    failedTasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    erroredTasksCount!: number
+
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date
 
@@ -46,12 +67,12 @@ export class Impl {
     @Column_("timestamp with time zone", {nullable: true})
     deletedAt!: Date | undefined | null
 
-    @OneToMany_(() => ImplBuild, e => e.impl)
+    @OneToMany_(() => ImplBuild, e => e._impl)
     builds!: ImplBuild[]
 
-    @OneToMany_(() => Worker, e => e.impl)
+    @OneToMany_(() => Worker, e => e._impl)
     workers!: Worker[]
 
-    @OneToMany_(() => Pool, e => e.impl)
+    @OneToMany_(() => Pool, e => e._impl)
     pools!: Pool[]
 }

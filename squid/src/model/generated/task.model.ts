@@ -1,10 +1,11 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToMany as OneToMany_} from "typeorm"
 import {Pool} from "./pool.model"
 import {CreatingTaskPolicy} from "./creatingTaskPolicy.model"
 import {Account} from "./account.model"
 import {Worker} from "./worker.model"
 import {TaskStatus} from "./_taskStatus"
 import {TaskResult} from "./_taskResult"
+import {TaskEvent} from "./taskEvent.model"
 
 @Entity_()
 export class Task {
@@ -20,23 +21,38 @@ export class Task {
 
     @Index_()
     @ManyToOne_(() => Pool, {nullable: true})
-    pool!: Pool
+    _pool!: Pool
+
+    @Column_("int4", {nullable: false})
+    poolId!: number
 
     @Index_()
     @ManyToOne_(() => CreatingTaskPolicy, {nullable: true})
-    policy!: CreatingTaskPolicy
+    _policy!: CreatingTaskPolicy
+
+    @Column_("int4", {nullable: false})
+    policyId!: number
 
     @Index_()
     @ManyToOne_(() => Account, {nullable: true})
-    owner!: Account
+    _owner!: Account
+
+    @Column_("text", {nullable: false})
+    ownerAddress!: string
 
     @Index_()
     @ManyToOne_(() => Worker, {nullable: true})
-    assignee!: Worker | undefined | null
+    _assignee!: Worker | undefined | null
+
+    @Column_("text", {nullable: true})
+    assigneeAddress!: string | undefined | null
 
     @Index_()
     @ManyToOne_(() => Account, {nullable: true})
-    destroyer!: Account | undefined | null
+    _destroyer!: Account | undefined | null
+
+    @Column_("text", {nullable: true})
+    destroyerAddress!: string | undefined | null
 
     @Index_()
     @Column_("varchar", {length: 10, nullable: false})
@@ -77,4 +93,7 @@ export class Task {
 
     @Column_("timestamp with time zone", {nullable: true})
     deletedAt!: Date | undefined | null
+
+    @OneToMany_(() => TaskEvent, e => e._task)
+    events!: TaskEvent[]
 }

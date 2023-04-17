@@ -14,19 +14,52 @@ export class Pool {
     @PrimaryColumn_()
     id!: string
 
+    @Column_("int4", {nullable: false})
+    poolId!: number
+
     @Index_()
     @ManyToOne_(() => Account, {nullable: true})
-    owner!: Account
+    _owner!: Account
+
+    @Column_("text", {nullable: false})
+    ownerAddress!: string
 
     @Index_()
     @ManyToOne_(() => Impl, {nullable: true})
-    impl!: Impl
+    _impl!: Impl
+
+    @Column_("int4", {nullable: false})
+    implId!: number
 
     @Column_("bool", {nullable: false})
     creatingTaskAbility!: boolean
 
     @Column_("text", {nullable: true})
     metadata!: string | undefined | null
+
+    @Column_("int4", {nullable: false})
+    pendingTasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    inProcessingTasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    createdTasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    successfulTasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    failedTasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    erroredTasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    workersCount!: number
+
+    @Column_("int4", {nullable: false})
+    onlineWorkersCount!: number
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date
@@ -37,12 +70,12 @@ export class Pool {
     @Column_("timestamp with time zone", {nullable: true})
     deletedAt!: Date | undefined | null
 
-    @OneToMany_(() => PoolWorkers, e => e.pool)
+    @OneToMany_(() => PoolWorkers, e => e._pool)
     workers!: PoolWorkers[]
 
-    @OneToMany_(() => CreatingTaskPolicy, e => e.pool)
+    @OneToMany_(() => CreatingTaskPolicy, e => e._pool)
     creatingTaskPolicies!: CreatingTaskPolicy[]
 
-    @OneToMany_(() => Task, e => e.pool)
+    @OneToMany_(() => Task, e => e._pool)
     tasks!: Task[]
 }

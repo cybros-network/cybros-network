@@ -12,6 +12,7 @@ import assert from "assert";
 
 interface PoolChanges {
     readonly id: string
+    readonly poolId: number
 
     owner?: string
     implId?: number
@@ -43,6 +44,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 const id = rec.poolId.toString()
                 const changes: PoolChanges = {
                     id,
+                    poolId: rec.poolId,
                     owner: decodeSS58Address(rec.owner),
                     implId: rec.poolId,
                     creatingTaskAbility: true,
@@ -64,6 +66,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 const id = rec.poolId.toString()
                 let changes: PoolChanges = changeSet.get(id) || {
                     id,
+                    poolId: rec.poolId,
                     updatedAt: blockTime,
                 }
                 changes.updatedAt = blockTime
@@ -82,6 +85,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 const id = rec.poolId.toString()
                 let changes: PoolChanges = changeSet.get(id) || {
                     id,
+                    poolId: rec.poolId,
                     updatedAt: blockTime,
                 }
                 assert(!changes.deletedAt)
@@ -102,6 +106,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 const id = rec.poolId.toString()
                 let changes: PoolChanges = changeSet.get(id) || {
                     id,
+                    poolId: rec.poolId,
                     updatedAt: blockTime,
                 }
                 assert(!changes.deletedAt)
@@ -122,6 +127,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 const id = rec.poolId.toString()
                 let changes: PoolChanges = changeSet.get(id) || {
                     id,
+                    poolId: rec.poolId,
                     updatedAt: blockTime,
                 }
                 assert(!changes.deletedAt)
@@ -142,6 +148,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 const id = rec.poolId.toString()
                 let changes: PoolChanges = changeSet.get(id) || {
                     id,
+                    poolId: rec.poolId,
                     updatedAt: blockTime,
                 }
                 assert(!changes.deletedAt)

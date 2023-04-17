@@ -97,19 +97,22 @@ export class EntitiesManager<Entity extends EntityWithId> {
         relations?: FindOptionsRelations<Entity>
     ): Promise<Entity | null> {
         if (!this.context) throw new Error('context is not defined');
-        let item = this.entitiesMap.get(id) || null;
+        let entity = this.entitiesMap.get(id) || null;
 
-        if (!item) {
+        if (!entity) {
             const requestParams = {
                 where: { id }
             } as FindOneOptions<Entity>;
 
             if (relations) requestParams.relations = relations;
 
-            item = (await this.context.store.get(this.entityClass, requestParams)) || null;
+            entity = (await this.context.store.get(this.entityClass, requestParams)) || null;
+            if (entity) {
+                this.add(entity);
+            }
         }
 
-        return item;
+        return entity;
     }
 
     async getOrCreate(

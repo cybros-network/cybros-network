@@ -13,11 +13,11 @@ export class PoolWorkers {
 
     @Index_()
     @ManyToOne_(() => Pool, {nullable: true})
-    pool!: Pool
+    _pool!: Pool
 
     @Index_()
     @ManyToOne_(() => Worker, {nullable: true})
-    worker!: Worker
+    _worker!: Worker
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date

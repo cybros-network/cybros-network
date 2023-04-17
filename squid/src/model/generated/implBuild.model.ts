@@ -12,13 +12,31 @@ export class ImplBuild {
 
     @Index_()
     @ManyToOne_(() => Impl, {nullable: true})
-    impl!: Impl
+    _impl!: Impl
+
+    @Column_("int4", {nullable: false})
+    implId!: number
 
     @Column_("int4", {nullable: false})
     version!: number
 
     @Column_("text", {nullable: true})
     magicBytes!: string | undefined | null
+
+    @Column_("int4", {nullable: false})
+    workersCount!: number
+
+    @Column_("int4", {nullable: false})
+    tasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    successfulTasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    failedTasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    erroredTasksCount!: number
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date
