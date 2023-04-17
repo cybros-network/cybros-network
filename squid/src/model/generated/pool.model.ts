@@ -38,6 +38,12 @@ export class Pool {
     metadata!: string | undefined | null
 
     @Column_("int4", {nullable: false})
+    workersCount!: number
+
+    @Column_("int4", {nullable: false})
+    onlineWorkersCount!: number
+
+    @Column_("int4", {nullable: false})
     pendingTasksCount!: number
 
     @Column_("int4", {nullable: false})
@@ -54,12 +60,6 @@ export class Pool {
 
     @Column_("int4", {nullable: false})
     erroredTasksCount!: number
-
-    @Column_("int4", {nullable: false})
-    workersCount!: number
-
-    @Column_("int4", {nullable: false})
-    onlineWorkersCount!: number
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date

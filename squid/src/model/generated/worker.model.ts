@@ -65,6 +65,9 @@ export class Worker {
     offlineReason!: OfflineReason | undefined | null
 
     @Column_("int4", {nullable: false})
+    poolsCount!: number
+
+    @Column_("int4", {nullable: false})
     inProcessingTasksCount!: number
 
     @Column_("int4", {nullable: false})

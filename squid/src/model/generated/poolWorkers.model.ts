@@ -15,9 +15,15 @@ export class PoolWorkers {
     @ManyToOne_(() => Pool, {nullable: true})
     _pool!: Pool
 
+    @Column_("int4", {nullable: false})
+    poolId!: number
+
     @Index_()
     @ManyToOne_(() => Worker, {nullable: true})
     _worker!: Worker
+
+    @Column_("text", {nullable: false})
+    worker!: string
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date

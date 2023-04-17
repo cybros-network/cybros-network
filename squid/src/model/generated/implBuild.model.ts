@@ -24,7 +24,7 @@ export class ImplBuild {
     magicBytes!: string | undefined | null
 
     @Column_("int4", {nullable: false})
-    workersCount!: number
+    onlineWorkersCount!: number
 
     @Column_("int4", {nullable: false})
     tasksCount!: number

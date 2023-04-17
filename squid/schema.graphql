@@ -60,6 +60,7 @@ type Account @entity {
 
 type Impl @entity {
   id: ID!
+  implId: Int!
 
   _owner: Account! @index
   ownerAddress: String!
@@ -72,9 +73,9 @@ type Impl @entity {
   metadata: String
 
   # stats
-  workersCount: Int!
   poolsCount: Int!
   tasksCount: Int!
+  onlineWorkersCount: Int!
   successfulTasksCount: Int!
   failedTasksCount: Int!
   erroredTasksCount: Int!
@@ -99,7 +100,7 @@ type ImplBuild @entity {
   magicBytes: String
 
   # stats
-  workersCount: Int!
+  onlineWorkersCount: Int!
   tasksCount: Int!
   successfulTasksCount: Int!
   failedTasksCount: Int!
@@ -132,6 +133,7 @@ type Worker @entity {
   offlineReason: OfflineReason
 
   # stats
+  poolsCount: Int!
   inProcessingTasksCount: Int!
   assignedTasksCount: Int!
   successfulTasksCount: Int!
@@ -157,13 +159,14 @@ enum WorkerEventKind {
   RequestingOffline
   Offline
   AttestationRefreshed
+  JoinedPool
+  LeftPool
 }
 
 type WorkerEvent @entity {
   id: ID!
 
   _worker: Worker! @index
-  workerAddress: String!
 
   kind: WorkerEventKind!
   payload: String
@@ -186,14 +189,14 @@ type Pool @entity {
   metadata: String
 
   # stats
+  workersCount: Int!
+  onlineWorkersCount: Int!
   pendingTasksCount: Int!
   inProcessingTasksCount: Int!
   createdTasksCount: Int!
   successfulTasksCount: Int!
   failedTasksCount: Int!
   erroredTasksCount: Int!
-  workersCount: Int!
-  onlineWorkersCount: Int!
 
   # timestamps
   createdAt: DateTime!
@@ -209,7 +212,10 @@ type PoolWorkers @entity {
   id: ID! # Useless, but required
 
   _pool: Pool!
+  poolId: Int!
+
   _worker: Worker!
+  worker: String!
 
   createdAt: DateTime!
   deletedAt: DateTime

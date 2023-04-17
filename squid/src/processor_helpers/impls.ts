@@ -44,6 +44,7 @@ function decodeImplDeploymentPermission(implDeploymentPermission?: v100.ImplDepl
 
 interface ImplChanges {
     readonly id: string
+    readonly implId: number
 
     owner?: string
 
@@ -83,6 +84,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 const id = rec.implId.toString()
                 const changes: ImplChanges = {
                     id,
+                    implId: rec.implId,
                     owner: decodeSS58Address(rec.owner),
                     attestationMethod: decodeAttestationMethod(rec.attestationMethod),
                     deploymentPermission: decodeImplDeploymentPermission(rec.deploymentPermission),
@@ -106,6 +108,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 const id = rec.implId.toString()
                 let changes: ImplChanges = changeSet.get(id) || {
                     id,
+                    implId: rec.implId,
                     updatedAt: blockTime,
                 }
                 changes.updatedAt = blockTime
@@ -126,6 +129,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 const id = rec.implId.toString()
                 let changes: ImplChanges = changeSet.get(id) || {
                     id,
+                    implId: rec.implId,
                     updatedAt: blockTime,
                 }
                 assert(!changes.deletedAt)
@@ -146,6 +150,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 const id = rec.implId.toString()
                 let changes: ImplChanges = changeSet.get(id) || {
                     id,
+                    implId: rec.implId,
                     updatedAt: blockTime,
                 }
                 assert(!changes.deletedAt)
@@ -166,6 +171,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 const id = rec.implId.toString()
                 let changes: ImplChanges = changeSet.get(id) || {
                     id,
+                    implId: rec.implId,
                     updatedAt: blockTime,
                 }
                 assert(!changes.deletedAt)
@@ -186,6 +192,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 const id = rec.implId.toString()
                 let changes: ImplChanges = changeSet.get(id) || {
                     id,
+                    implId: rec.implId,
                     updatedAt: blockTime,
                 }
                 assert(!changes.deletedAt)

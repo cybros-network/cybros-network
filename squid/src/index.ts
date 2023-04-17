@@ -17,7 +17,8 @@ import {
     TasksManager,
 } from "./entity_managers"
 
-import { WorkerStatus } from "./model"
+import { WorkerStatus, Pool, Worker, Impl, ImplBuild } from "./model"
+import { Equal, IsNull, In } from "typeorm"
 
 const database = new TypeormDatabase();
 
@@ -162,6 +163,10 @@ processor.run(database, async (ctx: Context) => {
     // Process impls' changeset
     for (let [id, changes] of implsChangeSet) {
         await implsManager.upsert(id, async (impl) => {
+            if (!impl.implId) {
+                assert(changes.implId)
+                impl.implId = changes.implId
+            }
             if (!impl.ownerAddress) {
                 assert(changes.owner)
 
@@ -284,23 +289,21 @@ processor.run(database, async (ctx: Context) => {
             }
             worker.updatedAt = changes.updatedAt
 
-            if (changes.onlineWorkerCounterChange != 0) {
-                assert(worker.implId)
-                assert(worker.implBuildVersion)
+            for (let e of changes.events) {
+                await workerEventsManager.create(e.id, async (event) => {
+                    event._worker = worker
 
-                await implsManager.upsert(worker.implId.toString(), async (impl) => {
-                    impl.workersCount += changes.onlineWorkerCounterChange
-                })
-                await implBuildsManager.upsert(`${worker.implId}-${worker.implBuildVersion}`, async (implBuild) => {
-                    implBuild.workersCount += changes.onlineWorkerCounterChange
+                    event.kind = e.kind
+                    event.payload = e.payload
+                    event.blockNumber = e.blockNumber
+                    event.blockTime = e.blockTime
                 })
             }
         });
     }
     await accountsManager.saveAll()
     await workersManager.saveAll()
-    await implsManager.saveAll()
-    await implBuildsManager.saveAll()
+    await workerEventsManager.saveAll()
 
     // Process pools' changeset
     for (let [id, changes] of poolsChangeSet) {
@@ -372,9 +375,15 @@ processor.run(database, async (ctx: Context) => {
     for (let [id, changes] of poolWorkersChangeSet) {
         await poolWorkersManager.upsert(id, async (poolWorker) => {
             if (!poolWorker._pool) {
+                assert(changes.poolId)
+
+                poolWorker.poolId = changes.poolId
                 poolWorker._pool = (await poolsManager.get(changes.poolId.toString()))!
             }
             if (!poolWorker._worker) {
+                assert(changes.worker)
+
+                poolWorker.worker = changes.worker
                 poolWorker._worker = (await workersManager.get(changes.worker))!
             }
             if (changes.createdAt) {
@@ -459,7 +468,124 @@ processor.run(database, async (ctx: Context) => {
     await accountsManager.saveAll()
     await tasksManager.saveAll()
 
-    // Save
+    // Update stats
+
+    await ctx.store.find(Worker, {
+        relations: {
+            servingPools: true,
+        },
+        where: {
+            servingPools: {
+                deletedAt: IsNull(),
+                poolId: In(
+                    Array.from(poolWorkersChangeSet.values())
+                        .filter(changes => changes.poolWorkerCounterChange != 0)
+                        .map(changes => changes.poolId)
+                )
+            }
+        }
+    }).then(workers => workers.forEach(worker => workersManager.add(worker)))
+    await ctx.store.find(Pool, {
+        relations: {
+            workers: true,
+        },
+        where: {
+            workers: {
+                deletedAt: IsNull(),
+                worker: In(
+                    Array.from(poolWorkersChangeSet.values())
+                        .filter(changes => changes.poolWorkerCounterChange != 0)
+                        .map(changes => changes.worker)
+                )
+            }
+        }
+    }).then(pools => pools.forEach(pool => poolsManager.add(pool)))
+    for (let [_id, changes] of poolWorkersChangeSet) {
+        if (changes.poolWorkerCounterChange == 0) {
+            continue
+        }
+
+        const worker = await workersManager.get(changes.worker)
+        assert(worker)
+        worker.poolsCount += changes.poolWorkerCounterChange
+
+        const pool = await poolsManager.get(changes.poolId.toString())
+        assert(pool)
+        pool.workersCount += changes.poolWorkerCounterChange
+    }
+    await poolsManager.saveAll()
+    await workersManager.saveAll()
+
+    await ctx.store.find(Worker, {
+        where: {
+            id: In(
+                Array.from(workersChangeSet.values())
+                    .filter(changes => changes.onlineWorkerCounterChange != 0 || changes.registerWorkerCounterChange != 0)
+                    .map(changes => changes.id)
+            )
+        }
+    }).then(workers => workers.forEach(worker => workersManager.add(worker)))
+    await ctx.store.find(Impl, {
+        where: {
+            id: In(
+                Array.from(workersManager.entitiesMap.values())
+                    .filter(worker => worker.implId)
+                    .map(worker => worker.implId)
+            )
+        }
+    }).then(impls => impls.forEach(impl => implsManager.add(impl)))
+    await ctx.store.find(ImplBuild, {
+        where: {
+            id: In(
+                Array.from(workersManager.entitiesMap.values())
+                    .filter(worker => worker.implId && worker.implBuildVersion)
+                    .map(worker => `${worker.implId}-${worker.implBuildVersion}`)
+            )
+        }
+    }).then(implBuilds => implBuilds.forEach(implBuild => implBuildsManager.add(implBuild)))
+    for (let [id, changes] of workersChangeSet) {
+        const worker = await workersManager.get(id)
+        assert(worker)
+
+        if (changes.onlineWorkerCounterChange != 0) {
+            assert(worker.implId)
+            assert(worker.implBuildVersion)
+
+            await implsManager.upsert(worker.implId.toString(), async (impl) => {
+                impl.onlineWorkersCount += changes.onlineWorkerCounterChange
+            })
+            await implBuildsManager.upsert(`${worker.implId}-${worker.implBuildVersion}`, async (implBuild) => {
+                implBuild.onlineWorkersCount += changes.onlineWorkerCounterChange
+            })
+
+            if (worker.poolsCount > 0) {
+                const pools = await ctx.store.find(Pool, {
+                    relations: {
+                        workers: true,
+                    },
+                    where: {
+                        workers: {
+                            deletedAt: IsNull(),
+                            worker: Equal(worker.id)
+                        }
+                    }
+                })
+                for (let pool of pools) {
+                    pool.onlineWorkersCount += changes.onlineWorkerCounterChange
+                    poolsManager.add(pool)
+                }
+            }
+        }
+
+        if (changes.registerWorkerCounterChange != 0) {
+            assert(worker.ownerAddress)
+            await accountsManager.upsert(worker.ownerAddress, async (account) => {
+                account.workersCount += changes.registerWorkerCounterChange
+            })
+        }
+    }
+
+    // // Save
     await accountsManager.saveAll()
     await implsManager.saveAll()
     await implBuildsManager.saveAll()

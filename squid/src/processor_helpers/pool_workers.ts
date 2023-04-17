@@ -12,6 +12,8 @@ interface PoolWorkerChanges {
 
     createdAt?: Date
     deletedAt?: Date
+
+    poolWorkerCounterChange: number
 }
 
 export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorkerChanges> {
@@ -36,7 +38,8 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                     id,
                     poolId: rec.poolId,
                     worker,
-                    createdAt: blockTime
+                    createdAt: blockTime,
+                    poolWorkerCounterChange: 1
                 }
 
                 changeSet.set(id, changes)
@@ -55,7 +58,8 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                     id,
                     poolId: rec.poolId,
                     worker,
-                    deletedAt: blockTime
+                    deletedAt: blockTime,
+                    poolWorkerCounterChange: -1
                 }
 
                 changeSet.set(id, changes)

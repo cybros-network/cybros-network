@@ -27,7 +27,7 @@ export class ImplsManager extends EntitiesManager<Impl> {
             entityClass: entityClass ? entityClass : Impl,
             newEntityFunc: id => new Impl({
                 id,
-                workersCount: 0,
+                onlineWorkersCount: 0,
                 poolsCount: 0,
                 tasksCount: 0,
                 successfulTasksCount: 0,
@@ -44,7 +44,7 @@ export class ImplBuildsManager extends EntitiesManager<ImplBuild> {
             entityClass: entityClass ? entityClass : ImplBuild,
             newEntityFunc: id => new ImplBuild({
                 id,
-                workersCount: 0,
+                onlineWorkersCount: 0,
                 tasksCount: 0,
                 successfulTasksCount: 0,
                 failedTasksCount: 0,
@@ -60,6 +60,7 @@ export class WorkersManager extends EntitiesManager<Worker> {
             entityClass: entityClass ? entityClass : Worker,
             newEntityFunc: id => new Worker({
                 id,
+                poolsCount: 0,
                 inProcessingTasksCount: 0,
                 assignedTasksCount: 0,
                 successfulTasksCount: 0,

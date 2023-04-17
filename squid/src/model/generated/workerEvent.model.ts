@@ -15,9 +15,6 @@ export class WorkerEvent {
     @ManyToOne_(() => Worker, {nullable: true})
     _worker!: Worker
 
-    @Column_("text", {nullable: false})
-    workerAddress!: string
-
     @Column_("varchar", {length: 20, nullable: false})
     kind!: WorkerEventKind
 

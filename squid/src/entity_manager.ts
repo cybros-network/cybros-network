@@ -133,6 +133,20 @@ export class EntitiesManager<Entity extends EntityWithId> {
         return entity;
     }
 
+    async create(
+        id: string,
+        setAttributesFunc?: (entity: Entity) => Promise<void>
+    ): Promise<Entity> {
+        const entity = this.newEntityFunc(id);
+        if (setAttributesFunc) {
+            await setAttributesFunc(entity);
+        }
+
+        this.add(entity);
+
+        return entity
+    }
+
     async upsert(
         id: string,
         setAttributesFunc: (entity: Entity) => Promise<void>

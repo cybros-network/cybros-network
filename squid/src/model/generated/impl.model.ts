@@ -15,6 +15,9 @@ export class Impl {
     @PrimaryColumn_()
     id!: string
 
+    @Column_("int4", {nullable: false})
+    implId!: number
+
     @Index_()
     @ManyToOne_(() => Account, {nullable: true})
     _owner!: Account
@@ -41,13 +44,13 @@ export class Impl {
     metadata!: string | undefined | null
 
     @Column_("int4", {nullable: false})
-    workersCount!: number
-
-    @Column_("int4", {nullable: false})
     poolsCount!: number
 
     @Column_("int4", {nullable: false})
     tasksCount!: number
+
+    @Column_("int4", {nullable: false})
+    onlineWorkersCount!: number
 
     @Column_("int4", {nullable: false})
     successfulTasksCount!: number
