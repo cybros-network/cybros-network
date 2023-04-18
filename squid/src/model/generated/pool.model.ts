@@ -47,7 +47,7 @@ export class Pool {
     pendingTasksCount!: number
 
     @Column_("int4", {nullable: false})
-    inProcessingTasksCount!: number
+    processingTasksCount!: number
 
     @Column_("int4", {nullable: false})
     createdTasksCount!: number

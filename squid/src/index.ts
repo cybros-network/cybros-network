@@ -278,7 +278,7 @@ processor.run(database, async (ctx: Context) => {
                     worker.offlineReason = null
                 }
             }
-            if (changes.createdAt) {
+            if (!worker.createdAt) {
                 worker.createdAt = changes.createdAt
             }
             if (changes.deletedAt) {
@@ -384,15 +384,27 @@ processor.run(database, async (ctx: Context) => {
                 poolWorker.worker = changes.worker
                 poolWorker._worker = (await workersManager.get(changes.worker))!
             }
-            if (changes.createdAt) {
+            if (!poolWorker.createdAt) {
                 poolWorker.createdAt = changes.createdAt
             }
             if (changes.deletedAt) {
                 poolWorker.deletedAt = changes.deletedAt
             }
+
+            for (let e of changes.workerEvents) {
+                await workerEventsManager.create(e.id, async (event) => {
+                    event._worker = poolWorker._worker
+
+                    event.kind = e.kind
+                    event.payload = e.payload
+                    event.blockNumber = e.blockNumber
+                    event.blockTime = e.blockTime
+                })
+            }
         })
     }
     await poolWorkersManager.saveAll()
+    await workerEventsManager.saveAll()
 
     // Process tasks' changeset
     for (let [id, changes] of tasksChangeSet) {

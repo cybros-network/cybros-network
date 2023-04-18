@@ -61,7 +61,7 @@ export class WorkersManager extends EntitiesManager<Worker> {
             newEntityFunc: id => new Worker({
                 id,
                 poolsCount: 0,
-                inProcessingTasksCount: 0,
+                processingTasksCount: 0,
                 assignedTasksCount: 0,
                 successfulTasksCount: 0,
                 failedTasksCount: 0,
@@ -87,7 +87,7 @@ export class PoolsManager extends EntitiesManager<Pool> {
             newEntityFunc: id => new Pool({
                 id,
                 pendingTasksCount: 0,
-                inProcessingTasksCount: 0,
+                processingTasksCount: 0,
                 createdTasksCount: 0,
                 successfulTasksCount: 0,
                 failedTasksCount: 0,

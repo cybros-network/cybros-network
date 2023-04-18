@@ -57,7 +57,7 @@ interface WorkerEvent {
     readonly id: string
 
     readonly kind: WorkerEventKind
-    readonly payload?: string
+    readonly payload?: any
 
     readonly blockNumber: number
     readonly blockTime: Date
@@ -79,7 +79,7 @@ interface WorkerChanges {
     offlineAt?: Date
     offlineReason?: OfflineReason
 
-    createdAt?: Date
+    createdAt: Date
     updatedAt: Date
     deletedAt?: Date
 
@@ -107,23 +107,28 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                const changes: WorkerChanges = {
+                const changes: WorkerChanges = changeSet.get(id) || {
                     id,
-                    owner: decodeSS58Address(rec.owner),
-                    status: WorkerStatus.Registered,
                     createdAt: blockTime,
                     updatedAt: blockTime,
-                    registerWorkerCounterChange: 1,
+                    registerWorkerCounterChange: 0,
                     onlineWorkerCounterChange: 0,
-                    events: [
-                        {
-                            id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
-                            kind: WorkerEventKind.Registered,
-                            blockNumber,
-                            blockTime,
-                        }
-                    ]
+                    events: []
                 }
+
+                changes.updatedAt = blockTime
+                changes.deletedAt = undefined
+
+                changes.owner = decodeSS58Address(rec.owner)
+                changes.status = WorkerStatus.Registered
+                changes.registerWorkerCounterChange = 1
+                changes.onlineWorkerCounterChange = 0
+                changes.events.push({
+                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    kind: WorkerEventKind.Registered,
+                    blockNumber,
+                    blockTime,
+                })
 
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerDeregistered") {
@@ -138,6 +143,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 const id = decodeSS58Address(rec.worker)
                 let changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
                     onlineWorkerCounterChange: 0,
@@ -153,7 +159,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.events.push({
                     id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
                     kind: WorkerEventKind.Deregistered,
-                    payload: JSON.stringify({force: rec.force}),
+                    payload: {force: rec.force},
                     blockNumber,
                     blockTime,
                 })
@@ -177,8 +183,9 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let changes: WorkerChanges = changeSet.get(id) || {
+                const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
                     onlineWorkerCounterChange: 0,
@@ -215,8 +222,9 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let changes: WorkerChanges = changeSet.get(id) || {
+                const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
                     onlineWorkerCounterChange: 0,
@@ -245,8 +253,9 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let changes: WorkerChanges = changeSet.get(id) || {
+                const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
                     onlineWorkerCounterChange: 0,
@@ -278,8 +287,9 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let changes: WorkerChanges = changeSet.get(id) || {
+                const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
                     onlineWorkerCounterChange: 0,
@@ -301,8 +311,9 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 const id = decodeSS58Address(rec.worker)
-                let changes: WorkerChanges = changeSet.get(id) || {
+                const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
                     onlineWorkerCounterChange: 0,

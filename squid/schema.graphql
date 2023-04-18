@@ -134,7 +134,7 @@ type Worker @entity {
 
   # stats
   poolsCount: Int!
-  inProcessingTasksCount: Int!
+  processingTasksCount: Int!
   assignedTasksCount: Int!
   successfulTasksCount: Int!
   failedTasksCount: Int!
@@ -168,7 +168,7 @@ type WorkerEvent @entity {
   _worker: Worker! @index
 
   kind: WorkerEventKind!
-  payload: String
+  payload: JSON
 
   blockNumber: Int!
   blockTime: DateTime!
@@ -191,7 +191,7 @@ type Pool @entity {
   workersCount: Int!
   onlineWorkersCount: Int!
   pendingTasksCount: Int!
-  inProcessingTasksCount: Int!
+  processingTasksCount: Int!
   createdTasksCount: Int!
   successfulTasksCount: Int!
   failedTasksCount: Int!

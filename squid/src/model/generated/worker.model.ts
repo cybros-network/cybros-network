@@ -68,7 +68,7 @@ export class Worker {
     poolsCount!: number
 
     @Column_("int4", {nullable: false})
-    inProcessingTasksCount!: number
+    processingTasksCount!: number
 
     @Column_("int4", {nullable: false})
     assignedTasksCount!: number
