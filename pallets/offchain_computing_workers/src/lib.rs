@@ -126,16 +126,8 @@ mod pallet {
 		type CollectingHeartbeatsDurationInBlocks: Get<u32>;
 
 		/// Allow Opt out attestation
-		///
-		/// SHOULD NOT SET TO FALSE ON PRODUCTION!!!
 		#[pallet::constant]
 		type DisallowOptOutAttestation: Get<bool>;
-
-		/// Validate worker's implementation
-		///
-		/// SHOULD NOT SET TO FALSE ON PRODUCTION!!!
-		#[pallet::constant]
-		type ValidateWorkerImplBuild: Get<bool>;
 
 		/// Weight information for extrinsic calls in this pallet.
 		type WeightInfo: WeightInfo;
@@ -165,7 +157,7 @@ mod pallet {
 	/// Storage for worker's implementations' hashes.
 	#[pallet::storage]
 	pub(crate) type ImplBuilds<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, T::ImplId, Blake2_128Concat, ImplBuildVersion, ImplBuildMagicBytes>;
+		StorageDoubleMap<_, Blake2_128Concat, T::ImplId, Blake2_128Concat, ImplBuildVersion, ImplBuildInfo>;
 
 	#[pallet::storage]
 	pub type ImplBuildsCounter<T: Config> = StorageMap<
@@ -223,13 +215,12 @@ mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// The worker registered successfully
-		WorkerRegistered { worker: T::AccountId, owner: T::AccountId },
+		WorkerRegistered { worker: T::AccountId, owner: T::AccountId, impl_id: T::ImplId },
 		/// The worker registered successfully
 		WorkerDeregistered { worker: T::AccountId, force: bool },
 		/// The worker is online
 		WorkerOnline {
 			worker: T::AccountId,
-			impl_id: T::ImplId,
 			impl_spec_version: ImplSpecVersion,
 			impl_build_version: ImplBuildVersion,
 			attestation_method: AttestationMethod,
@@ -255,11 +246,10 @@ mod pallet {
 		ImplMetadataUpdated { impl_id: T::ImplId, metadata: BoundedVec<u8, T::ImplMetadataLimit> },
 		ImplMetadataRemoved { impl_id: T::ImplId },
 		/// Update worker's implementation permission successfully
-		ImplBuildRestrictionUpdated { impl_id: T::ImplId, restriction: ImplBuildRestriction },
-		/// Update worker's implementation permission successfully
-		ImplBuildRegistered { impl_id: T::ImplId, version: ImplBuildVersion, magic_bytes: ImplBuildMagicBytes },
+		ImplBuildRegistered { impl_id: T::ImplId, impl_build_version: ImplBuildVersion, magic_bytes: Option<ImplBuildMagicBytes> },
 		/// Remove worker's implementation permission successfully
-		ImplBuildDeregistered { impl_id: T::ImplId, version: ImplBuildVersion },
+		ImplBuildDeregistered { impl_id: T::ImplId, impl_build_version: ImplBuildVersion },
+		ImplBuildStatusUpdated { impl_id: T::ImplId, impl_build_version: ImplBuildVersion, status: ImplBuildStatus },
 	}
 
 	// Errors inform users that something went wrong.
@@ -282,11 +272,11 @@ mod pallet {
 		/// The extrinsic origin isn't the worker
 		NotTheWorker,
 		/// The worker not exists
-		NotExists,
+		WorkerNotFound,
 		/// The worker is not online
-		NotOnline,
+		WorkerNotOnline,
 		/// The worker must offline before do deregister
-		NotOffline,
+		WorkerNotOffline,
 		/// The worker's status doesn't allow the operation
 		WrongStatus,
 		/// Attestation required
@@ -300,18 +290,12 @@ mod pallet {
 		CanNotVerifyPayload,
 		/// Can't verify payload
 		PayloadSignatureMismatched,
-		/// Can not downgrade
-		WorkerImplCanNotDowngrade,
-		/// Worker's software changed, it must offline first
-		WorkerImplChanged,
-		/// Worker's software unsupported.
+		ImplMismatched,
+		ImplBuildChanged,
+		/// Worker's software is blocked or deprecated.
 		ImplBuildRestricted,
-		/// Unknown worker implementation's hash
-		WorkerImplHashInvalid,
 		/// worker implementation's hash mismatch
-		WorkerImplHashMismatched,
-		/// Unsupported attestation
-		AttestationInvalid,
+		ImplBuildMagicBytesMismatched,
 		/// The attestation method must not change
 		AttestationMethodChanged,
 		/// AlreadySentHeartbeat
@@ -326,6 +310,7 @@ mod pallet {
 		ImplBuildAlreadyRegistered,
 		ImplBuildNotFound,
 		ImplBuildsLimitExceeded,
+		ImplBuildStillInUse,
 	}
 
 	#[pallet::hooks]
@@ -418,10 +403,15 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(0)]
 		#[pallet::weight(T::WeightInfo::register_worker())]
-		pub fn register_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, initial_deposit: BalanceOf<T>) -> DispatchResult {
+		pub fn register_worker(
+			origin: OriginFor<T>,
+			worker: AccountIdLookupOf<T>,
+			impl_id: T::ImplId,
+			initial_deposit: BalanceOf<T>
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
-			Self::do_register_worker(who, worker, initial_deposit)
+			Self::do_register_worker(who, worker, impl_id, initial_deposit)
 		}
 
 		/// Deregister a computing workers.
@@ -441,7 +431,7 @@ mod pallet {
 		pub fn transfer_to_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
-			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
+			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 			Self::ensure_owner(&who, &worker_info)?;
 
 			<T as Config>::Currency::transfer(&who, &worker, value, ExistenceRequirement::KeepAlive)?;
@@ -455,7 +445,7 @@ mod pallet {
 		pub fn withdraw_from_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
-			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
+			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 			Self::ensure_owner(&who, &worker_info)?;
 
 			<T as Config>::Currency::transfer(&worker, &who, value, ExistenceRequirement::KeepAlive)?;
@@ -595,25 +585,8 @@ mod pallet {
 			Ok(())
 		}
 
-		/// Set worker's implementations' permissions
 		#[transactional]
 		#[pallet::call_index(14)]
-		#[pallet::weight({0})]
-		pub fn update_impl_build_restriction(
-			origin: OriginFor<T>,
-			impl_id: T::ImplId,
-			restriction: ImplBuildRestriction,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
-			Self::ensure_impl_owner(&who, &impl_info)?;
-
-			Self::do_update_impl_version_restriction(impl_info, restriction)
-		}
-
-		#[transactional]
-		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
 		pub fn update_impl_deployment_permission(
 			origin: OriginFor<T>,
@@ -629,13 +602,13 @@ mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(16)]
+		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
 		pub fn register_impl_build(
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
 			version: ImplBuildVersion,
-			magic_bytes: ImplBuildMagicBytes,
+			magic_bytes: Option<ImplBuildMagicBytes>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -646,7 +619,7 @@ mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(17)]
+		#[pallet::call_index(16)]
 		#[pallet::weight({0})]
 		pub fn deregister_impl_build(
 			origin: OriginFor<T>,
@@ -660,25 +633,52 @@ mod pallet {
 
 			Self::do_deregister_impl_build(impl_info, version)
 		}
+
+		#[transactional]
+		#[pallet::call_index(17)]
+		#[pallet::weight({0})]
+		pub fn update_impl_build_status(
+			origin: OriginFor<T>,
+			impl_id: T::ImplId,
+			version: ImplBuildVersion,
+			status: ImplBuildStatus
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
+			Self::ensure_impl_owner(&who, &impl_info)?;
+
+			Self::do_update_impl_build_status(impl_id, version, status)
+		}
 	}
 }
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn offline_worker(worker: &T::AccountId, impl_id: &Option<T::ImplId>) {
+	pub(crate) fn offline_worker(worker: &T::AccountId, impl_id: &T::ImplId, impl_build_version: &ImplBuildVersion, reason: OfflineReason) {
 		FlipSet::<T>::remove(worker);
 		FlopSet::<T>::remove(worker);
 		Workers::<T>::mutate(worker, |worker_info| {
 			if let Some(mut info) = worker_info.as_mut() {
 				info.status = WorkerStatus::Offline;
+				info.impl_spec_version = None;
+				info.impl_build_version = None;
+				info.attestation_method = None;
+				info.attestation_expires_at = None;
+				info.attested_at = None;
 			}
 		});
-		if let Some(impl_id) = impl_id {
-			Impls::<T>::mutate(impl_id, |impl_info| {
-				if let Some(mut info) = impl_info.as_mut() {
-					info.workers_count -= 1;
-				}
-			});
-		}
+		ImplBuilds::<T>::mutate(impl_id, impl_build_version, |impl_build_info| {
+			if let Some(mut info) = impl_build_info.as_mut() {
+				info.workers_count -= 1;
+			}
+		});
+		Impls::<T>::mutate(impl_id, |impl_info| {
+			if let Some(mut info) = impl_info.as_mut() {
+				info.workers_count -= 1;
+			}
+		});
+
+		Self::deposit_event(Event::<T>::WorkerOffline { worker: worker.clone(), reason });
 	}
 
 	pub(crate) fn flip_flop_for_online(worker: &T::AccountId) -> T::BlockNumber {
@@ -838,10 +838,10 @@ impl<T: Config> OffchainWorkerManageable<T::AccountId> for Pallet<T> {
 	}
 
 	fn offline_worker(worker: &T::AccountId, reason: OfflineReason) -> DispatchResult {
-		let mut worker_info = Workers::<T>::get(worker).ok_or(Error::<T>::NotExists)?;
+		let mut worker_info = Workers::<T>::get(worker).ok_or(Error::<T>::WorkerNotFound)?;
 		ensure!(
 			matches!(worker_info.status, WorkerStatus::Online | WorkerStatus::RequestingOffline),
-			Error::<T>::NotOnline
+			Error::<T>::WorkerNotOnline
 		);
 
 		worker_info.status = WorkerStatus::Offline;

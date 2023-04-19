@@ -110,7 +110,6 @@ impl pallet_offchain_computing_workers::Config for Test {
 	type HandleUnresponsivePerBlockLimit = ConstU32<3>;
 	type CollectingHeartbeatsDurationInBlocks = ConstU32<6>;
 	type DisallowOptOutAttestation = ConstBool<false>;
-	type ValidateWorkerImplBuild = ConstBool<false>;
 	type WeightInfo = ();
 	type OffchainWorkerLifecycleHooks = ();
 }

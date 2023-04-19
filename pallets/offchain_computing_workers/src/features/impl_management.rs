@@ -19,7 +19,6 @@ impl<T: Config> Pallet<T> {
 			owner_deposit: deposit,
 			attestation_method: attestation_method.clone(),
 			deployment_permission: deployment_permission.clone(),
-			build_restriction: Default::default(),
 			workers_count: 0,
 		};
 
@@ -103,19 +102,6 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_update_impl_version_restriction(
-		mut impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
-		restriction: ImplBuildRestriction,
-	) -> DispatchResult {
-		let impl_id = impl_info.id;
-
-		impl_info.build_restriction = restriction.clone();
-		Impls::<T>::insert(&impl_id, impl_info);
-
-		Self::deposit_event(Event::<T>::ImplBuildRestrictionUpdated { impl_id, restriction });
-		Ok(())
-	}
-
 	pub(crate) fn do_update_impl_deployment_permission(
 		mut impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
 		deployment_permission: ImplDeploymentPermission,
@@ -131,12 +117,12 @@ impl<T: Config> Pallet<T> {
 
 	pub(crate) fn do_register_impl_build(
 		impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
-		version: ImplBuildVersion,
-		magic_bytes: ImplBuildMagicBytes
+		impl_build_version: ImplBuildVersion,
+		magic_bytes: Option<ImplBuildMagicBytes>
 	) -> DispatchResult {
 		let impl_id = impl_info.id;
 		ensure!(
-			!ImplBuilds::<T>::contains_key(&impl_id, &version),
+			!ImplBuilds::<T>::contains_key(&impl_id, &impl_build_version),
 			Error::<T>::ImplBuildAlreadyRegistered
 		);
 
@@ -149,30 +135,59 @@ impl<T: Config> Pallet<T> {
 			*counter += 1;
 			Ok(())
 		})?;
-		ImplBuilds::<T>::insert(&impl_id, &version, magic_bytes.clone());
 
-		Self::deposit_event(Event::<T>::ImplBuildRegistered { impl_id, version, magic_bytes });
+		let impl_build_info = ImplBuildInfo {
+			version: impl_build_version.clone(),
+			magic_bytes: magic_bytes.clone(),
+			status: ImplBuildStatus::Released,
+			workers_count: 0,
+		};
+
+		ImplBuilds::<T>::insert(&impl_id, &impl_build_version, impl_build_info);
+
+		Self::deposit_event(Event::<T>::ImplBuildRegistered { impl_id, impl_build_version, magic_bytes });
 
 		Ok(())
 	}
 
 	pub(crate) fn do_deregister_impl_build(
 		impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
-		version: ImplBuildVersion,
+		impl_build_version: ImplBuildVersion,
 	) -> DispatchResult {
 		let impl_id = impl_info.id;
+		let impl_build_info = ImplBuilds::<T>::get(&impl_id, &impl_build_version).ok_or(Error::<T>::ImplBuildNotFound)?;
 		ensure!(
-			!ImplBuilds::<T>::contains_key(&impl_id, &version),
-			Error::<T>::ImplBuildAlreadyRegistered
+			impl_build_info.workers_count == 0,
+			Error::<T>::ImplBuildStillInUse
 		);
 
-		ImplBuilds::<T>::remove(&impl_id, &version);
+		ImplBuilds::<T>::remove(&impl_id, &impl_build_version);
 		ImplBuildsCounter::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
 			*counter -= 1;
 			Ok(())
 		})?;
 
-		Self::deposit_event(Event::<T>::ImplBuildDeregistered { impl_id, version });
+		Self::deposit_event(Event::<T>::ImplBuildDeregistered { impl_id, impl_build_version });
+
+		Ok(())
+	}
+
+	pub(crate) fn do_update_impl_build_status(
+		impl_id: T::ImplId,
+		impl_build_version: ImplBuildVersion,
+		status: ImplBuildStatus
+	) -> DispatchResult {
+		ImplBuilds::<T>::try_mutate(&impl_id, &impl_build_version, |impl_build_info| -> Result<(), DispatchError> {
+			let Some(mut info) = impl_build_info.as_mut() else {
+				return Err(Error::<T>::ImplBuildNotFound.into())
+			};
+
+			info.status = status.clone();
+
+			Ok(())
+		})?;
+
+		Self::deposit_event(Event::<T>::ImplBuildStatusUpdated { impl_id, impl_build_version, status });
 
 		Ok(())
 	}

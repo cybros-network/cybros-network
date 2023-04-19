@@ -17,7 +17,7 @@ impl<T: Config> Pallet<T> {
 		worker: T::AccountId, payload: OnlinePayload<T::ImplId>,
 		attestation: Attestation
 	) -> DispatchResult {
-		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
+		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
 		match worker_info.status {
 			WorkerStatus::Registered | WorkerStatus::Offline => {},
@@ -31,25 +31,22 @@ impl<T: Config> Pallet<T> {
 			);
 		}
 
-		let payload_impl_id = payload.impl_id.clone();
-		if worker_info.impl_id == Some(payload_impl_id) {
-			let Some(impl_build_version) = worker_info.impl_build_version else {
-				return Err(Error::<T>::InternalError.into())
-			};
-			ensure!(impl_build_version <= payload.impl_build_version, Error::<T>::WorkerImplCanNotDowngrade);
-		}
+		ensure!(
+			worker_info.impl_id == payload.impl_id.clone(),
+			Error::<T>::ImplMismatched
+		);
 
-		let mut impl_info = Impls::<T>::get(&payload_impl_id).ok_or(Error::<T>::ImplNotFound)?;
-		if T::ValidateWorkerImplBuild::get() {
+		let mut impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, payload.impl_build_version).ok_or(Error::<T>::ImplBuildNotFound)?;
+		ensure!(
+			impl_build_info.status == ImplBuildStatus::Released,
+			Error::<T>::ImplBuildRestricted
+		);
+		if let Some(magic_bytes) = impl_build_info.magic_bytes.clone() {
 			ensure!(
-				payload.impl_build_version >= impl_info.build_restriction.oldest &&
-					payload.impl_build_version <= impl_info.build_restriction.newest &&
-					!impl_info.build_restriction.blocked.contains(&payload.impl_build_version),
-				Error::<T>::ImplBuildRestricted
-			)
+				magic_bytes == payload.impl_build_magic_bytes,
+				Error::<T>::ImplBuildMagicBytesMismatched
+			);
 		}
-		impl_info.workers_count += 1;
-		Impls::<T>::insert(&payload_impl_id, impl_info);
 
 		// Check reserved money
 		let deposit = <T as Config>::Currency::reserved_balance(&worker);
@@ -65,26 +62,24 @@ impl<T: Config> Pallet<T> {
 		Self::verify_online_payload(&worker, &payload, &verified_attestation)?;
 		T::OffchainWorkerLifecycleHooks::can_online(&worker, &payload, &verified_attestation)?;
 
-		let attestation_method = attestation.method();
-
-		worker_info.impl_id = Some(payload_impl_id.clone());
 		worker_info.impl_spec_version = Some(payload.impl_spec_version);
 		worker_info.impl_build_version = Some(payload.impl_build_version);
-		worker_info.attestation_method = Some(attestation_method.clone());
+		worker_info.attestation_method = Some(attestation.method());
 		worker_info.attestation_expires_at = verified_attestation.expires_at();
 		worker_info.attested_at = Some(T::UnixTime::now().as_secs().saturated_into::<u64>());
 		worker_info.status = WorkerStatus::Online;
-
 		Workers::<T>::insert(&worker, worker_info);
+
+		impl_build_info.workers_count += 1;
+		ImplBuilds::<T>::insert(&payload.impl_id, &payload.impl_build_version, impl_build_info);
 
 		let next_heartbeat = Self::flip_flop_for_online(&worker);
 
 		Self::deposit_event(Event::<T>::WorkerOnline {
 			worker: worker.clone(),
-			impl_id: payload_impl_id.clone(),
 			impl_spec_version: payload.impl_spec_version,
 			impl_build_version: payload.impl_build_version,
-			attestation_method: attestation_method.clone(),
+			attestation_method: attestation.method(),
 			attestation_expires_at: verified_attestation.expires_at(),
 			next_heartbeat,
 		});
@@ -99,7 +94,7 @@ impl<T: Config> Pallet<T> {
 		payload: OnlinePayload<T::ImplId>,
 		attestation: Attestation,
 	) -> DispatchResult {
-		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
+		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
 
 		ensure!(
@@ -108,10 +103,10 @@ impl<T: Config> Pallet<T> {
 		);
 
 		ensure!(
-			worker_info.impl_id == Some(payload.impl_id) &&
+			worker_info.impl_id == payload.impl_id &&
 			worker_info.impl_spec_version == Some(payload.impl_spec_version) &&
 			worker_info.impl_build_version == Some(payload.impl_build_version),
-			Error::<T>::WorkerImplChanged
+			Error::<T>::ImplBuildChanged
 		);
 		// Should we validate the impl here?
 
@@ -135,7 +130,7 @@ impl<T: Config> Pallet<T> {
 		worker: T::AccountId,
 		owner: Option<T::AccountId>
 	) -> DispatchResult {
-		let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
+		let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
 
 		if let Some(owner) = owner {
@@ -144,14 +139,16 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(
 			matches!(worker_info.status, WorkerStatus::Online | WorkerStatus::RequestingOffline),
-			Error::<T>::NotOnline
+			Error::<T>::WorkerNotOnline
 		);
 
 		if T::OffchainWorkerLifecycleHooks::can_offline(&worker) {
-			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
-			Self::offline_worker(&worker, &worker_info.impl_id);
+			let Some(impl_build_version) = worker_info.impl_build_version else {
+				return Err(Error::<T>::InternalError.into())
+			};
 
-			Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::Graceful });
+			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
+			Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::Graceful);
 		} else {
 			ensure!(
 				worker_info.status == WorkerStatus::Online,
@@ -177,7 +174,7 @@ impl<T: Config> Pallet<T> {
 		worker: T::AccountId,
 		owner: Option<T::AccountId>
 	) -> DispatchResult {
-		let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
+		let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
 
 		if let Some(owner) = owner {
@@ -186,35 +183,41 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(
 			matches!(worker_info.status, WorkerStatus::Online | WorkerStatus::RequestingOffline),
-			Error::<T>::NotOnline
+			Error::<T>::WorkerNotOnline
 		);
 
-		T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Forced);
-		Self::offline_worker(&worker, &worker_info.impl_id);
+		let Some(impl_build_version) = worker_info.impl_build_version else {
+			return Err(Error::<T>::InternalError.into())
+		};
 
-		Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::Forced });
+		T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Forced);
+		Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::Forced);
+
 		Ok(())
 	}
 
 	pub(crate) fn do_heartbeat(
 		worker: T::AccountId
 	) -> DispatchResult {
-		let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::NotExists)?;
+		let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
 		ensure!(
 			matches!(worker_info.status, WorkerStatus::Online | WorkerStatus::RequestingOffline),
-			Error::<T>::NotOnline
+			Error::<T>::WorkerNotOnline
 		);
 
 		let current_block = frame_system::Pallet::<T>::block_number();
 		let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 
+		let Some(impl_build_version) = worker_info.impl_build_version else {
+			return Err(Error::<T>::InternalError.into())
+		};
+
 		if let Some(attestation_expires_at) = worker_info.attestation_expires_at {
 			if now >= attestation_expires_at {
 				T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::AttestationExpired);
-				Self::offline_worker(&worker, &worker_info.impl_id);
+				Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::AttestationExpired);
 
-				Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::AttestationExpired });
 				return Ok(())
 			}
 		}
@@ -224,42 +227,30 @@ impl<T: Config> Pallet<T> {
 			T::OffchainWorkerLifecycleHooks::can_offline(&worker)
 		{
 			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
-			Self::offline_worker(&worker, &worker_info.impl_id);
+			Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::Graceful);
 
-			Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::Graceful });
 			return Ok(())
 		}
 
 		// Check the worker's reserved money
 		if <T as Config>::Currency::reserved_balance(&worker) < T::RegisterWorkerDeposit::get() {
 			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::InsufficientDepositFunds);
-			Self::offline_worker(&worker, &worker_info.impl_id);
+			Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::InsufficientDepositFunds);
 
-			Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::InsufficientDepositFunds });
 			return Ok(())
 		}
 
-		if T::ValidateWorkerImplBuild::get() {
-			let Some(impl_id) = worker_info.impl_id else {
-				return Err(Error::<T>::InternalError.into())
-			};
-			let Some(impl_build_version) = worker_info.impl_build_version else {
-				return Err(Error::<T>::InternalError.into())
-			};
-			let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::InternalError)?;
+		let impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, &impl_build_version).ok_or(Error::<T>::InternalError)?;
+		let valid_impl_build = match impl_build_info.status {
+			ImplBuildStatus::Released | ImplBuildStatus::Deprecated => true,
+			_ => false
+		};
 
-			let valid_impl =
-				impl_build_version >= impl_info.build_restriction.oldest &&
-					impl_build_version <= impl_info.build_restriction.newest &&
-					!impl_info.build_restriction.blocked.contains(&impl_build_version);
+		if !valid_impl_build {
+			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::ImplBlocked);
+			Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::ImplBlocked);
 
-			if !valid_impl {
-				T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::ImplBlocked);
-				Self::offline_worker(&worker, &worker_info.impl_id);
-
-				Self::deposit_event(Event::<T>::WorkerOffline { worker, reason: OfflineReason::ImplBlocked });
-				return Ok(())
-			}
+			return Ok(())
 		}
 
 		let next_heartbeat = Self::generate_next_heartbeat_block();

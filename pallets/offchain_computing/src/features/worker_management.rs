@@ -13,7 +13,7 @@ impl<T: Config> Pallet<T> {
 
 		let worker_info = T::OffchainWorkerManageable::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		ensure!(
-			worker_info.impl_id == Some(pool_info.impl_id.clone()),
+			worker_info.impl_id == pool_info.impl_id.clone(),
 			Error::<T>::ImplMismatched
 		);
 

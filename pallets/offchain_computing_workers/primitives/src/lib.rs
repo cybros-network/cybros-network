@@ -16,6 +16,17 @@ pub type ImplBuildVersion = u32;
 pub type ImplBuildMagicBytes = BoundedVec<u8, ConstU32<64>>;
 pub type ImplSpecVersion = u32;
 
+#[derive(Clone, PartialEq, Eq, Encode, Decode, TypeInfo, RuntimeDebug)]
+pub enum OfflineReason {
+	Graceful,
+	Forced,
+	Unresponsive,
+	AttestationExpired,
+	ImplBlocked,
+	InsufficientDepositFunds,
+	Other,
+}
+
 /// The type of how the worker do attestation
 #[derive(Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen, RuntimeDebug)]
 pub enum AttestationMethod {
@@ -141,7 +152,7 @@ pub struct WorkerInfo<AccountId, Balance, ImplId> {
 	pub status: WorkerStatus,
 	/// The registered implementation's id
 	/// This field is readonly once set
-	pub impl_id: Option<ImplId>,
+	pub impl_id: ImplId,
 	/// Bump when the implementation has major change
 	pub impl_spec_version: Option<ImplSpecVersion>,
 	/// Version of the implementation, this is help to distinguish different implementations,
@@ -169,31 +180,16 @@ impl Default for FlipFlopStage {
 	}
 }
 
-#[derive(Clone, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug)]
-pub struct ImplBuildRestriction {
-	pub oldest: ImplBuildVersion,
-	pub newest: ImplBuildVersion,
-	pub blocked: BoundedVec<ImplBuildVersion, ConstU32<8>>,
-}
-impl Default for ImplBuildRestriction {
-	fn default() -> Self {
-		Self {
-			oldest: 1,
-			newest: 1,
-			blocked: BoundedVec::<ImplBuildVersion, ConstU32<8>>::default(),
-		}
-	}
-}
-
-#[derive(Clone, PartialEq, Eq, Encode, Decode, TypeInfo, RuntimeDebug)]
-pub enum OfflineReason {
-	Graceful,
-	Forced,
-	Unresponsive,
-	AttestationExpired,
-	ImplBlocked,
-	InsufficientDepositFunds,
-	Other,
+#[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
+pub enum ImplDeploymentPermission {
+	/// Only the owner could use the implementations.
+	#[default]
+	Owner,
+	/// Anyone could use the implementations.
+	Public,
+	// TODO:
+	// /// Only a user in allow list could create tasks.
+	// AllowList,
 }
 
 /// Information about an implementation.
@@ -210,21 +206,26 @@ pub struct ImplInfo<ImplId, AccountId, Balance> {
 	pub attestation_method: AttestationMethod,
 	/// Who can use the implementation
 	pub deployment_permission: ImplDeploymentPermission,
-	pub build_restriction: ImplBuildRestriction,
 	/// The total number of outstanding workers running this implementation.
 	pub workers_count: u32,
 }
 
-#[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
-pub enum ImplDeploymentPermission {
-	/// Only the owner could use the implementations.
-	#[default]
-	Owner,
-	/// Anyone could use the implementations.
-	Public,
-	// TODO:
-	// /// Only a user in allow list could create tasks.
-	// AllowList,
+#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen, RuntimeDebug)]
+pub enum ImplBuildStatus {
+	Released,
+	/// Deprecated will forbid new workers online with this build
+	Deprecated,
+	/// Blocked will forbid workers online, and heartbeat, so they have to upgrade
+	Blocked,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub struct ImplBuildInfo {
+	pub version: ImplBuildVersion,
+	pub magic_bytes: Option<ImplBuildMagicBytes>,
+	pub status: ImplBuildStatus,
+	/// The total number of outstanding workers running this build.
+	pub workers_count: u32,
 }
 
 /// Generic data that stored on-chain

@@ -35,6 +35,14 @@ fn add_mock_impl<T: Config>(owner: &T::AccountId) -> T::ImplId {
 	));
 
 	let impl_info = Impls::<T>::iter_values().last().expect("Should have an impl");
+
+	assert_ok!(OffchainComputingWorkers::<T>::register_impl_build(
+		RawOrigin::Signed(owner.clone()).into(),
+		impl_info.id,
+		1u32,
+		None
+	));
+
 	impl_info.id
 }
 
@@ -44,7 +52,7 @@ fn mock_online_payload_and_attestation<T: Config>(
 ) -> (OnlinePayload<T::ImplId>, Attestation) {
 	let payload = OnlinePayload::<T::ImplId> {
 		impl_id,
-		impl_spec_version: 0,
+		impl_spec_version: 1,
 		impl_build_version: 1,
 		impl_build_magic_bytes: Default::default()
 	};
@@ -54,7 +62,7 @@ fn mock_online_payload_and_attestation<T: Config>(
 	(payload, attestation)
 }
 
-fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::AccountId) -> T::AccountId {
+fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::AccountId, impl_id: T::ImplId) -> T::AccountId {
 	let worker = T::AccountId::decode(&mut worker_public.encode().as_slice()).unwrap();
 	let reserved_deposit = T::RegisterWorkerDeposit::get();
 
@@ -66,6 +74,7 @@ fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::Accoun
 	assert_ok!(OffchainComputingWorkers::<T>::register_worker(
 		RawOrigin::Signed(owner.clone()).into(),
 		T::Lookup::unlookup(worker.clone()),
+		impl_id,
 		initial_deposit
 	));
 	assert_eq!(Workers::<T>::contains_key(&worker), true);
@@ -74,8 +83,8 @@ fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::Accoun
 }
 
 fn add_mock_online_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::AccountId, impl_id: Option<T::ImplId>) -> T::AccountId {
-	let worker = add_mock_worker::<T>(worker_public, owner);
-	let impl_id = impl_id.unwrap_or(add_mock_impl::<T>(owner));
+	let impl_id = impl_id.unwrap_or_else(|| add_mock_impl::<T>(owner));
+	let worker = add_mock_worker::<T>(worker_public, owner, impl_id);
 
 	let (payload, attestation) = mock_online_payload_and_attestation::<T>(worker_public, impl_id);
 	assert_ok!(
@@ -99,6 +108,7 @@ mod benchmarks {
 	#[benchmark]
 	fn register_worker() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
+		let impl_id = add_mock_impl::<T>(&owner);
 		let worker = account::<T::AccountId>("worker", 0, 0);
 
 		let initial_balance = T::RegisterWorkerDeposit::get().saturating_add((1 * DOLLARS).saturated_into::<BalanceOf<T>>());
@@ -109,6 +119,7 @@ mod benchmarks {
 		_(
 			RawOrigin::Signed(owner.clone()),
 			T::Lookup::unlookup(worker.clone()),
+			impl_id,
 			initial_balance
 		);
 
@@ -123,8 +134,9 @@ mod benchmarks {
 	#[benchmark]
 	fn deregister_worker() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
+		let impl_id = add_mock_impl::<T>(&owner);
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_worker::<T>(&worker_public, &owner);
+		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id);
 
 		#[extrinsic_call]
 		_(
@@ -141,8 +153,9 @@ mod benchmarks {
 	#[benchmark]
 	fn transfer_to_worker() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
+		let impl_id = add_mock_impl::<T>(&owner);
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_worker::<T>(&worker_public, &owner);
+		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id);
 
 		let worker_balance = T::Currency::free_balance(&worker);
 		let amount = (10 * DOLLARS).saturated_into::<BalanceOf<T>>();
@@ -165,8 +178,9 @@ mod benchmarks {
 	#[benchmark]
 	fn withdraw_from_worker() -> Result<(), BenchmarkError> {
 		let owner: T::AccountId = whitelisted_caller();
+		let impl_id = add_mock_impl::<T>(&owner);
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_worker::<T>(&worker_public, &owner);
+		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id);
 
 		let worker_balance = T::Currency::free_balance(&worker);
 		let amount = (10 * DOLLARS).saturated_into::<BalanceOf<T>>();
@@ -191,7 +205,7 @@ mod benchmarks {
 		let owner: T::AccountId = whitelisted_caller();
 		let impl_id = add_mock_impl::<T>(&owner);
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_worker::<T>(&worker_public, &owner);
+		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id);
 		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public, impl_id);
 
 		#[extrinsic_call]

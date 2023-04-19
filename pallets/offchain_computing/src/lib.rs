@@ -209,7 +209,6 @@ pub mod pallet {
 		PolicyNotFound,
 		ExpiresInTooSmall,
 		ExpiresInTooLarge,
-		WorkersPerPoolLimitExceeded,
 		WorkerAlreadyAdded,
 		ImplMismatched,
 		ImplNotFound,
