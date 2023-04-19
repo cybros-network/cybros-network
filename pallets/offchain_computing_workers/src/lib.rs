@@ -672,11 +672,6 @@ impl<T: Config> Pallet<T> {
 				info.workers_count -= 1;
 			}
 		});
-		Impls::<T>::mutate(impl_id, |impl_info| {
-			if let Some(mut info) = impl_info.as_mut() {
-				info.workers_count -= 1;
-			}
-		});
 
 		Self::deposit_event(Event::<T>::WorkerOffline { worker: worker.clone(), reason });
 	}

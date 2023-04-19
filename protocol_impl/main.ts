@@ -539,8 +539,8 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     logger.warning("Worker hasn't registered");
     if (window.ownerKeyPair !== null) {
       const initialDeposit = numberToBalance(10000);
-      logger.info(`Sending "offchain_computing_workers.registerWorker(worker, initialDeposit)`);
-      const txPromise = api.tx.offchainComputingWorkers.registerWorker(window.workerKeyPair.address, initialDeposit);
+      logger.info(`Sending "offchain_computing_workers.registerWorker(worker, implId, initialDeposit)`);
+      const txPromise = api.tx.offchainComputingWorkers.registerWorker(window.workerKeyPair.address, IMPL_ID, initialDeposit);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.ownerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
