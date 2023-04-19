@@ -143,12 +143,8 @@ impl<T: Config> Pallet<T> {
 		);
 
 		if T::OffchainWorkerLifecycleHooks::can_offline(&worker) {
-			let Some(impl_build_version) = worker_info.impl_build_version else {
-				return Err(Error::<T>::InternalError.into())
-			};
-
 			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
-			Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::Graceful);
+			Self::offline_worker(&worker, OfflineReason::Graceful);
 		} else {
 			ensure!(
 				worker_info.status == WorkerStatus::Online,
@@ -186,12 +182,8 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::WorkerNotOnline
 		);
 
-		let Some(impl_build_version) = worker_info.impl_build_version else {
-			return Err(Error::<T>::InternalError.into())
-		};
-
 		T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Forced);
-		Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::Forced);
+		Self::offline_worker(&worker, OfflineReason::Forced);
 
 		Ok(())
 	}
@@ -209,14 +201,10 @@ impl<T: Config> Pallet<T> {
 		let current_block = frame_system::Pallet::<T>::block_number();
 		let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 
-		let Some(impl_build_version) = worker_info.impl_build_version else {
-			return Err(Error::<T>::InternalError.into())
-		};
-
 		if let Some(attestation_expires_at) = worker_info.attestation_expires_at {
 			if now >= attestation_expires_at {
 				T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::AttestationExpired);
-				Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::AttestationExpired);
+				Self::offline_worker(&worker, OfflineReason::AttestationExpired);
 
 				return Ok(())
 			}
@@ -227,7 +215,7 @@ impl<T: Config> Pallet<T> {
 			T::OffchainWorkerLifecycleHooks::can_offline(&worker)
 		{
 			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
-			Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::Graceful);
+			Self::offline_worker(&worker, OfflineReason::Graceful);
 
 			return Ok(())
 		}
@@ -235,11 +223,14 @@ impl<T: Config> Pallet<T> {
 		// Check the worker's reserved money
 		if <T as Config>::Currency::reserved_balance(&worker) < T::RegisterWorkerDeposit::get() {
 			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::InsufficientDepositFunds);
-			Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::InsufficientDepositFunds);
+			Self::offline_worker(&worker, OfflineReason::InsufficientDepositFunds);
 
 			return Ok(())
 		}
 
+		let Some(impl_build_version) = worker_info.impl_build_version.clone() else {
+			return Err(Error::<T>::InternalError.into())
+		};
 		let impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, &impl_build_version).ok_or(Error::<T>::InternalError)?;
 		let valid_impl_build = match impl_build_info.status {
 			ImplBuildStatus::Released | ImplBuildStatus::Deprecated => true,
@@ -248,7 +239,7 @@ impl<T: Config> Pallet<T> {
 
 		if !valid_impl_build {
 			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::ImplBlocked);
-			Self::offline_worker(&worker, &worker_info.impl_id, &impl_build_version, OfflineReason::ImplBlocked);
+			Self::offline_worker(&worker, OfflineReason::ImplBlocked);
 
 			return Ok(())
 		}

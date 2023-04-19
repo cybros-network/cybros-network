@@ -654,11 +654,19 @@ mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn offline_worker(worker: &T::AccountId, impl_id: &T::ImplId, impl_build_version: &ImplBuildVersion, reason: OfflineReason) {
+	pub(crate) fn offline_worker(worker: &T::AccountId, reason: OfflineReason) {
 		FlipSet::<T>::remove(worker);
 		FlopSet::<T>::remove(worker);
 		Workers::<T>::mutate(worker, |worker_info| {
 			if let Some(mut info) = worker_info.as_mut() {
+				if let Some(impl_build_version) = info.impl_build_version.clone() {
+					ImplBuilds::<T>::mutate(&info.impl_id, &impl_build_version, |impl_build_info| {
+						if let Some(mut info) = impl_build_info.as_mut() {
+							info.workers_count -= 1;
+						}
+					});
+				}
+
 				info.status = WorkerStatus::Offline;
 				info.impl_spec_version = None;
 				info.impl_build_version = None;
@@ -667,11 +675,7 @@ impl<T: Config> Pallet<T> {
 				info.attested_at = None;
 			}
 		});
-		ImplBuilds::<T>::mutate(impl_id, impl_build_version, |impl_build_info| {
-			if let Some(mut info) = impl_build_info.as_mut() {
-				info.workers_count -= 1;
-			}
-		});
+
 
 		Self::deposit_event(Event::<T>::WorkerOffline { worker: worker.clone(), reason });
 	}
@@ -693,14 +697,7 @@ impl<T: Config> Pallet<T> {
 
 	pub(crate) fn handle_worker_unresponsive(worker: &T::AccountId) {
 		T::OffchainWorkerLifecycleHooks::before_offline(worker, OfflineReason::Unresponsive);
-
-		Workers::<T>::mutate(worker, |worker_info| {
-			if let Some(mut info) = worker_info.as_mut() {
-				info.status = WorkerStatus::Offline;
-			}
-		});
-
-		Self::deposit_event(Event::<T>::WorkerOffline { worker: worker.clone(), reason: OfflineReason::Unresponsive });
+		Self::offline_worker(worker, OfflineReason::Unresponsive);
 	}
 
 	pub(crate) fn verify_attestation(attestation: &Attestation) -> Result<VerifiedAttestation, DispatchError> {
