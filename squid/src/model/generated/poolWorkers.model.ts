@@ -23,7 +23,7 @@ export class PoolWorkers {
     _worker!: Worker
 
     @Column_("text", {nullable: false})
-    worker!: string
+    workerAddress!: string
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date

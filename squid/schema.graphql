@@ -220,7 +220,7 @@ type PoolWorkers @entity {
   poolId: Int!
 
   _worker: Worker!
-  worker: String!
+  workerAddress: String!
 
   createdAt: DateTime!
   updatedAt: DateTime!

@@ -373,7 +373,7 @@ processor.run(database, async (ctx: Context) => {
             if (!poolWorker._worker) {
                 assert(changes.worker)
 
-                poolWorker.worker = changes.worker
+                poolWorker.workerAddress = changes.worker
                 poolWorker._worker = (await workersManager.get(changes.worker))!
             }
             if (!poolWorker.createdAt) {
@@ -494,7 +494,7 @@ processor.run(database, async (ctx: Context) => {
         where: {
             workers: {
                 deletedAt: IsNull(),
-                worker: In(
+                workerAddress: In(
                     Array.from(poolWorkersChangeSet.values())
                         .filter(changes => changes.poolWorkerCounterChange != 0)
                         .map(changes => changes.worker)
@@ -576,7 +576,7 @@ processor.run(database, async (ctx: Context) => {
                     where: {
                         workers: {
                             deletedAt: IsNull(),
-                            worker: Equal(worker.id)
+                            workerAddress: Equal(worker.id)
                         }
                     }
                 })

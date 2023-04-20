@@ -1,10 +1,10 @@
-module.exports = class Data1681953259465 {
-    name = 'Data1681953259465'
+module.exports = class Data1681979340403 {
+    name = 'Data1681979340403'
 
     async up(db) {
         await db.query(`CREATE TABLE "impl_build" ("id" character varying NOT NULL, "impl_id" integer NOT NULL, "version" integer NOT NULL, "status" character varying(12) NOT NULL, "magic_bytes" text, "online_workers_count" integer NOT NULL, "tasks_count" integer NOT NULL, "successful_tasks_count" integer NOT NULL, "failed_tasks_count" integer NOT NULL, "errored_tasks_count" integer NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, "_impl_id" character varying, CONSTRAINT "PK_5a7367725014a952d56efb311d2" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_fc6f6b9ac54614cd699fc5dd74" ON "impl_build" ("_impl_id") `)
-        await db.query(`CREATE TABLE "pool_workers" ("id" character varying NOT NULL, "pool_id" integer NOT NULL, "worker" text NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, "_pool_id" character varying, "_worker_id" character varying, CONSTRAINT "PK_1e1e55d91deabf4a8d10e73b7e0" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE TABLE "pool_workers" ("id" character varying NOT NULL, "pool_id" integer NOT NULL, "worker_address" text NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, "_pool_id" character varying, "_worker_id" character varying, CONSTRAINT "PK_1e1e55d91deabf4a8d10e73b7e0" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_a1959943ab30eb084ebdee7525" ON "pool_workers" ("_pool_id") `)
         await db.query(`CREATE INDEX "IDX_d5e39bcd7ed93dbc3cf61aaf70" ON "pool_workers" ("_worker_id") `)
         await db.query(`CREATE TABLE "creating_task_policy" ("id" character varying NOT NULL, "policy_id" integer NOT NULL, "permission" character varying(6) NOT NULL, "start_block" integer, "end_block" integer, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, "_pool_id" character varying, CONSTRAINT "PK_f7ec0f93d732904de02842b723c" PRIMARY KEY ("id"))`)
