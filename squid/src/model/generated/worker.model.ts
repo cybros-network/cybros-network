@@ -27,10 +27,10 @@ export class Worker {
 
     @Index_()
     @ManyToOne_(() => Impl, {nullable: true})
-    _impl!: Impl | undefined | null
+    _impl!: Impl
 
-    @Column_("int4", {nullable: true})
-    implId!: number | undefined | null
+    @Column_("int4", {nullable: false})
+    implId!: number
 
     @Index_()
     @ManyToOne_(() => ImplBuild, {nullable: true})
@@ -43,8 +43,8 @@ export class Worker {
     @Column_("varchar", {length: 17, nullable: false})
     status!: WorkerStatus
 
-    @Column_("int4", {nullable: false})
-    implSpecVersion!: number
+    @Column_("int4", {nullable: true})
+    implSpecVersion!: number | undefined | null
 
     @Column_("varchar", {length: 6, nullable: true})
     attestationMethod!: AttestationMethod | undefined | null

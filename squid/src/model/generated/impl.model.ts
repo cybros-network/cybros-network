@@ -31,15 +31,6 @@ export class Impl {
     @Column_("varchar", {length: 6, nullable: false})
     deploymentPermission!: ImplDeploymentPermission
 
-    @Column_("int4", {nullable: false})
-    oldestBuildVersion!: number
-
-    @Column_("int4", {nullable: false})
-    newestBuildVersion!: number
-
-    @Column_("int4", {array: true, nullable: false})
-    blockedBuildVersions!: (number)[]
-
     @Column_("text", {nullable: true})
     metadata!: string | undefined | null
 

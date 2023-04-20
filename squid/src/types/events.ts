@@ -2,35 +2,6 @@ import assert from 'assert'
 import {Chain, ChainContext, EventContext, Event, Result, Option} from './support'
 import * as v100 from './v100'
 
-export class BalancesTransferEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'Balances.Transfer')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    /**
-     * Transfer succeeded.
-     */
-    get isV100(): boolean {
-        return this._chain.getEventHash('Balances.Transfer') === '0ffdf35c495114c2d42a8bf6c241483fd5334ca0198662e14480ad040f1e3a66'
-    }
-
-    /**
-     * Transfer succeeded.
-     */
-    get asV100(): {from: Uint8Array, to: Uint8Array, amount: bigint} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
 export class OffchainComputingCreatingTaskPolicyCreatedEvent {
     private readonly _chain: Chain
     private readonly event: Event
@@ -416,13 +387,13 @@ export class OffchainComputingWorkersImplBuildDeregisteredEvent {
      * Remove worker's implementation permission successfully
      */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildDeregistered') === 'e62f88665216d9128c4b0263040c3a99e1740c0f644f00da67b2091ba9a518b4'
+        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildDeregistered') === 'ee1f58f7a32dedbbf0581d70188f18897f3ef35cb81eb50560663c7e0006d515'
     }
 
     /**
      * Remove worker's implementation permission successfully
      */
-    get asV100(): {implId: number, version: number} {
+    get asV100(): {implId: number, implBuildVersion: number} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
@@ -445,19 +416,19 @@ export class OffchainComputingWorkersImplBuildRegisteredEvent {
      * Update worker's implementation permission successfully
      */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildRegistered') === 'aa21801f9e15ed0370b3dd75d5717f56aeae55aa98ec04ff7b21a89b18a6696e'
+        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildRegistered') === 'e702a7c67fd43ee1a9344f6f419dbb8f5211c58a4fc37aa70488d08acdf695e5'
     }
 
     /**
      * Update worker's implementation permission successfully
      */
-    get asV100(): {implId: number, version: number, magicBytes: Uint8Array} {
+    get asV100(): {implId: number, implBuildVersion: number, magicBytes: (Uint8Array | undefined)} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
 }
 
-export class OffchainComputingWorkersImplBuildRestrictionUpdatedEvent {
+export class OffchainComputingWorkersImplBuildStatusUpdatedEvent {
     private readonly _chain: Chain
     private readonly event: Event
 
@@ -465,22 +436,16 @@ export class OffchainComputingWorkersImplBuildRestrictionUpdatedEvent {
     constructor(ctx: ChainContext, event: Event)
     constructor(ctx: EventContext, event?: Event) {
         event = event || ctx.event
-        assert(event.name === 'OffchainComputingWorkers.ImplBuildRestrictionUpdated')
+        assert(event.name === 'OffchainComputingWorkers.ImplBuildStatusUpdated')
         this._chain = ctx._chain
         this.event = event
     }
 
-    /**
-     * Update worker's implementation permission successfully
-     */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildRestrictionUpdated') === '9e16eb1c7e4daee3c0478eb3c34e1be9c4c267072a56cb3380bc118166750a42'
+        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildStatusUpdated') === '356bb2aa1d8495aceb0ba1ac8ccd487546011b5b3333b479399cc71d3a98f7d8'
     }
 
-    /**
-     * Update worker's implementation permission successfully
-     */
-    get asV100(): {implId: number, restriction: v100.ImplBuildRestriction} {
+    get asV100(): {implId: number, implBuildVersion: number, status: v100.ImplBuildStatus} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
@@ -734,13 +699,13 @@ export class OffchainComputingWorkersWorkerOnlineEvent {
      * The worker is online
      */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.WorkerOnline') === '632d286ce41219bc0f48bfe4d80d993b03cfce1f26e49e617a19c9fecb433100'
+        return this._chain.getEventHash('OffchainComputingWorkers.WorkerOnline') === 'aaf3d9ba5d2b758f255a0585bcf74f1a8760c5debb4946ed2bf74fdc7a0262f3'
     }
 
     /**
      * The worker is online
      */
-    get asV100(): {worker: Uint8Array, implId: number, implSpecVersion: number, implBuildVersion: number, attestationMethod: v100.AttestationMethod, attestationExpiresAt: (bigint | undefined), nextHeartbeat: number} {
+    get asV100(): {worker: Uint8Array, implSpecVersion: number, implBuildVersion: number, attestationMethod: v100.AttestationMethod, attestationExpiresAt: (bigint | undefined), nextHeartbeat: number} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
@@ -763,13 +728,13 @@ export class OffchainComputingWorkersWorkerRegisteredEvent {
      * The worker registered successfully
      */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.WorkerRegistered') === 'dbc381acde3e58a1dc63279d84f3fde21af33601d2a5e26e6755db85003b8aff'
+        return this._chain.getEventHash('OffchainComputingWorkers.WorkerRegistered') === '827feabbaece11c6815c2990c6cee79b02f149ad9405967a3410ef1fe8258576'
     }
 
     /**
      * The worker registered successfully
      */
-    get asV100(): {worker: Uint8Array, owner: Uint8Array} {
+    get asV100(): {worker: Uint8Array, owner: Uint8Array, implId: number} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }

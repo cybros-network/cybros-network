@@ -10,6 +10,13 @@ enum ImplDeploymentPermission {
   Public
 }
 
+enum ImplBuildStatus {
+  Released
+  Deprecated
+  Blocked
+  Deregistered
+}
+
 enum WorkerStatus {
   Registered
   Deregistered
@@ -67,9 +74,6 @@ type Impl @entity {
 
   attestationMethod: AttestationMethod!
   deploymentPermission: ImplDeploymentPermission!
-  oldestBuildVersion: Int!
-  newestBuildVersion: Int!
-  blockedBuildVersions: [Int!]!
   metadata: String
 
   # stats
@@ -97,6 +101,7 @@ type ImplBuild @entity {
   implId: Int!
 
   version: Int!
+  status: ImplBuildStatus!
   magicBytes: String
 
   # stats
@@ -108,6 +113,7 @@ type ImplBuild @entity {
 
   # timestamps
   createdAt: DateTime!
+  updatedAt: DateTime!
   deletedAt: DateTime
 }
 
@@ -117,14 +123,14 @@ type Worker @entity {
   _owner: Account! @index
   ownerAddress: String!
 
-  _impl: Impl @index
-  implId: Int
+  _impl: Impl! @index
+  implId: Int!
 
   _implBuild: ImplBuild @index
   implBuildVersion: Int
 
   status: WorkerStatus! @index
-  implSpecVersion: Int!
+  implSpecVersion: Int
   attestationMethod: AttestationMethod
   attestationExpiresAt: DateTime
   lastAttestedAt: DateTime
@@ -217,6 +223,7 @@ type PoolWorkers @entity {
   worker: String!
 
   createdAt: DateTime!
+  updatedAt: DateTime!
   deletedAt: DateTime
 }
 
@@ -231,6 +238,7 @@ type CreatingTaskPolicy @entity {
   endBlock: Int
 
   createdAt: DateTime!
+  updatedAt: DateTime!
   deletedAt: DateTime
 }
 

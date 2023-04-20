@@ -2,7 +2,6 @@
   "outDir": "src/types",
   "specVersions": "http://localhost:8888/graphql",
   "events": [
-    "Balances.Transfer",
     "OffchainComputingWorkers.WorkerRegistered",
     "OffchainComputingWorkers.WorkerDeregistered",
     "OffchainComputingWorkers.WorkerOnline",
@@ -15,9 +14,9 @@
     "OffchainComputingWorkers.ImplDeploymentPermissionUpdated",
     "OffchainComputingWorkers.ImplMetadataUpdated",
     "OffchainComputingWorkers.ImplMetadataRemoved",
-    "OffchainComputingWorkers.ImplBuildRestrictionUpdated",
     "OffchainComputingWorkers.ImplBuildRegistered",
     "OffchainComputingWorkers.ImplBuildDeregistered",
+    "OffchainComputingWorkers.ImplBuildStatusUpdated",
     "OffchainComputing.PoolCreated",
     "OffchainComputing.PoolDestroyed",
     "OffchainComputing.PoolMetadataUpdated",

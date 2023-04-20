@@ -179,22 +179,13 @@ processor.run(database, async (ctx: Context) => {
             if (changes.deploymentPermission) {
                 impl.deploymentPermission = changes.deploymentPermission
             }
-            if (changes.oldestBuildVersion) {
-                impl.oldestBuildVersion = changes.oldestBuildVersion
-            }
-            if (changes.newestBuildVersion) {
-                impl.newestBuildVersion = changes.newestBuildVersion
-            }
-            if (changes.blockedBuildVersions) {
-                impl.blockedBuildVersions = changes.blockedBuildVersions
-            }
             if (changes.metadata !== undefined) {
                 impl.metadata = changes.metadata
             }
             if (changes.createdAt) {
                 impl.createdAt = changes.createdAt
             }
-            if (changes.deletedAt) {
+            if (changes.deletedAt !== undefined) {
                 impl.deletedAt = changes.deletedAt
             }
             impl.updatedAt = changes.updatedAt
@@ -217,17 +208,17 @@ processor.run(database, async (ctx: Context) => {
 
                 implBuild.version = changes.version
             }
-            if (!implBuild.magicBytes) {
-                assert(changes.magicBytes)
-
+            implBuild.status = changes.status
+            if (changes.magicBytes !== undefined) {
                 implBuild.magicBytes = changes.magicBytes
             }
             if (changes.createdAt) {
                 implBuild.createdAt = changes.createdAt!
             }
-            if (changes.deletedAt) {
+            if (changes.deletedAt !== undefined) {
                 implBuild.deletedAt = changes.deletedAt
             }
+            implBuild.updatedAt = changes.updatedAt
         })
     }
     await implBuildsManager.saveAll()
@@ -241,27 +232,27 @@ processor.run(database, async (ctx: Context) => {
             }
             if (changes.implId) {
                 worker.implId = changes.implId
-                worker._impl = await implsManager.get(changes.implId.toString())
+                worker._impl = (await implsManager.get(changes.implId.toString()))!
             }
-            if (changes.implBuildVersion) {
+            if (changes.implBuildVersion !== undefined) {
                 assert(worker.implId)
 
                 worker.implBuildVersion = changes.implBuildVersion
                 worker._implBuild = (await implBuildsManager.get(`${worker.implId}-${changes.implBuildVersion}`))!
             }
-            if (changes.implSpecVersion) {
+            if (changes.implSpecVersion !== undefined) {
                 worker.implSpecVersion = changes.implSpecVersion
             }
-            if (changes.attestationMethod) {
+            if (changes.attestationMethod !== undefined) {
                 worker.attestationMethod = changes.attestationMethod
             }
             if (changes.attestationExpiresAt !== undefined) {
                 worker.attestationExpiresAt = changes.attestationExpiresAt
             }
-            if (changes.lastAttestedAt) {
+            if (changes.lastAttestedAt !== undefined) {
                 worker.lastAttestedAt = changes.lastAttestedAt
             }
-            if (changes.lastHeartbeatReceivedAt) {
+            if (changes.lastHeartbeatReceivedAt !== undefined) {
                 worker.lastHeartbeatReceivedAt = changes.lastHeartbeatReceivedAt
             }
             if (changes.status) {
@@ -281,7 +272,7 @@ processor.run(database, async (ctx: Context) => {
             if (!worker.createdAt) {
                 worker.createdAt = changes.createdAt
             }
-            if (changes.deletedAt) {
+            if (changes.deletedAt !== undefined) {
                 worker.status = WorkerStatus.Deregistered
                 worker.deletedAt = changes.deletedAt
             }
@@ -332,7 +323,7 @@ processor.run(database, async (ctx: Context) => {
             if (changes.createdAt) {
                 pool.createdAt = changes.createdAt
             }
-            if (changes.deletedAt) {
+            if (changes.deletedAt !== undefined) {
                 pool.deletedAt = changes.deletedAt
             }
             pool.updatedAt = changes.updatedAt
@@ -362,9 +353,10 @@ processor.run(database, async (ctx: Context) => {
             if (changes.createdAt) {
                 createTaskPolicy.createdAt = changes.createdAt
             }
-            if (changes.deletedAt) {
+            if (changes.deletedAt !== undefined) {
                 createTaskPolicy.deletedAt = changes.deletedAt
             }
+            createTaskPolicy.updatedAt = changes.updatedAt
         })
     }
     await creatingTaskPoliciesManager.saveAll()
@@ -387,9 +379,10 @@ processor.run(database, async (ctx: Context) => {
             if (!poolWorker.createdAt) {
                 poolWorker.createdAt = changes.createdAt
             }
-            if (changes.deletedAt) {
+            if (changes.deletedAt !== undefined) {
                 poolWorker.deletedAt = changes.deletedAt
             }
+            poolWorker.updatedAt = changes.updatedAt
 
             for (let e of changes.workerEvents) {
                 await workerEventsManager.create(e.id, async (event) => {
@@ -468,10 +461,9 @@ processor.run(database, async (ctx: Context) => {
             if (changes.createdAt) {
                 task.createdAt = changes.createdAt
             }
-            if (changes.deletedAt) {
+            if (changes.deletedAt !== undefined) {
                 task.deletedAt = changes.deletedAt
             }
-
             task.updatedAt = changes.updatedAt
         })
     }

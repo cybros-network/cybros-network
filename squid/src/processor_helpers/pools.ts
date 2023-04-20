@@ -20,9 +20,9 @@ interface PoolChanges {
     creatingTaskAbility?: boolean
     metadata?: string | null
 
-    createdAt?: Date
+    createdAt: Date
     updatedAt: Date
-    deletedAt?: Date
+    deletedAt?: Date | null
 }
 
 export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
@@ -42,16 +42,20 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 }
 
                 const id = rec.poolId.toString()
-                const changes: PoolChanges = {
+                const changes: PoolChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
-                    owner: decodeSS58Address(rec.owner),
-                    implId: rec.poolId,
-                    creatingTaskAbility: true,
-                    metadata: null,
                     createdAt: blockTime,
-                    updatedAt: blockTime,
+                    updatedAt: blockTime
                 }
+
+                changes.owner = decodeSS58Address(rec.owner)
+                changes.implId = rec.poolId
+                changes.creatingTaskAbility = true
+                changes.metadata = null
+
+                changes.deletedAt = null
+                changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputing.PoolDestroyed") {
@@ -64,13 +68,15 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 }
 
                 const id = rec.poolId.toString()
-                let changes: PoolChanges = changeSet.get(id) || {
+                const changes: PoolChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
-                    updatedAt: blockTime,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
-                changes.updatedAt = blockTime
+
                 changes.deletedAt = blockTime
+                changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputing.PoolMetadataUpdated") {
@@ -83,10 +89,11 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 }
 
                 const id = rec.poolId.toString()
-                let changes: PoolChanges = changeSet.get(id) || {
+                const changes: PoolChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
-                    updatedAt: blockTime,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 
@@ -104,10 +111,11 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 }
 
                 const id = rec.poolId.toString()
-                let changes: PoolChanges = changeSet.get(id) || {
+                const changes: PoolChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
-                    updatedAt: blockTime,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 
@@ -125,10 +133,11 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 }
 
                 const id = rec.poolId.toString()
-                let changes: PoolChanges = changeSet.get(id) || {
+                const changes: PoolChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
-                    updatedAt: blockTime,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 
@@ -146,10 +155,11 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 }
 
                 const id = rec.poolId.toString()
-                let changes: PoolChanges = changeSet.get(id) || {
+                const changes: PoolChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
-                    updatedAt: blockTime,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 

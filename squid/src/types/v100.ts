@@ -34,10 +34,18 @@ export interface TaskStatus_Processed {
     __kind: 'Processed'
 }
 
-export interface ImplBuildRestriction {
-    oldest: number
-    newest: number
-    blocked: number[]
+export type ImplBuildStatus = ImplBuildStatus_Released | ImplBuildStatus_Deprecated | ImplBuildStatus_Blocked
+
+export interface ImplBuildStatus_Released {
+    __kind: 'Released'
+}
+
+export interface ImplBuildStatus_Deprecated {
+    __kind: 'Deprecated'
+}
+
+export interface ImplBuildStatus_Blocked {
+    __kind: 'Blocked'
 }
 
 export type ImplDeploymentPermission = ImplDeploymentPermission_Owner | ImplDeploymentPermission_Public

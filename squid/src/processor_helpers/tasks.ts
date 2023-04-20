@@ -70,9 +70,9 @@ interface TaskChanges {
     assignedAt?: Date | null
     processingAt?: Date
     processedAt?: Date
-    createdAt?: Date
+    createdAt: Date
     updatedAt: Date
-    deletedAt?: Date
+    deletedAt?: Date | null
 }
 
 export function preprocessTasksEvents(ctx: Context): Map<string, TaskChanges> {
@@ -100,19 +100,23 @@ export function preprocessTasksEvents(ctx: Context): Map<string, TaskChanges> {
                 }
 
                 const id = `${rec.poolId}-${rec.taskId}`
-                const changes: TaskChanges = {
+                const changes: TaskChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
                     taskId: rec.taskId,
-                    policyId: rec.policyId,
-                    owner: decodeSS58Address(rec.owner),
-                    status: TaskStatus.Pending,
-                    implSpecVersion: rec.implSpecVersion,
-                    input: rec.input ? u8aToString(rec.input) : null,
-                    expiresAt: new Date(block.header.timestamp + Number(rec.expiresIn) * 1000),
                     createdAt: blockTime,
                     updatedAt: blockTime
                 }
+
+                changes.policyId = rec.policyId
+                changes.owner = decodeSS58Address(rec.owner)
+                changes.status = TaskStatus.Pending
+                changes.implSpecVersion = rec.implSpecVersion
+                changes.input = rec.input ? u8aToString(rec.input) : null
+                changes.expiresAt = new Date(block.header.timestamp + Number(rec.expiresIn) * 1000)
+
+                changes.deletedAt = null
+                changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputing.TaskDestroyed") {
@@ -125,11 +129,12 @@ export function preprocessTasksEvents(ctx: Context): Map<string, TaskChanges> {
                 }
 
                 const id = `${rec.poolId}-${rec.taskId}`
-                let changes: TaskChanges = changeSet.get(id) || {
+                const changes: TaskChanges = changeSet.get(id) || {
                     id,
-                    taskId: rec.taskId,
                     poolId: rec.poolId,
-                    updatedAt: blockTime,
+                    taskId: rec.taskId,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 
@@ -148,11 +153,12 @@ export function preprocessTasksEvents(ctx: Context): Map<string, TaskChanges> {
                 }
 
                 const id = `${rec.poolId}-${rec.taskId}`
-                let changes: TaskChanges = changeSet.get(id) || {
+                const changes: TaskChanges = changeSet.get(id) || {
                     id,
-                    taskId: rec.taskId,
                     poolId: rec.poolId,
-                    updatedAt: blockTime,
+                    taskId: rec.taskId,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 
@@ -171,11 +177,12 @@ export function preprocessTasksEvents(ctx: Context): Map<string, TaskChanges> {
                 }
 
                 const id = `${rec.poolId}-${rec.taskId}`
-                let changes: TaskChanges = changeSet.get(id) || {
+                const changes: TaskChanges = changeSet.get(id) || {
                     id,
-                    taskId: rec.taskId,
                     poolId: rec.poolId,
-                    updatedAt: blockTime,
+                    taskId: rec.taskId,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 
@@ -194,11 +201,12 @@ export function preprocessTasksEvents(ctx: Context): Map<string, TaskChanges> {
                 }
 
                 const id = `${rec.poolId}-${rec.taskId}`
-                let changes: TaskChanges = changeSet.get(id) || {
+                const changes: TaskChanges = changeSet.get(id) || {
                     id,
-                    taskId: rec.taskId,
                     poolId: rec.poolId,
-                    updatedAt: blockTime,
+                    taskId: rec.taskId,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 
@@ -227,11 +235,12 @@ export function preprocessTasksEvents(ctx: Context): Map<string, TaskChanges> {
                 }
 
                 const id = `${rec.poolId}-${rec.taskId}`
-                let changes: TaskChanges = changeSet.get(id) || {
+                const changes: TaskChanges = changeSet.get(id) || {
                     id,
-                    taskId: rec.taskId,
                     poolId: rec.poolId,
-                    updatedAt: blockTime,
+                    taskId: rec.taskId,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 

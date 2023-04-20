@@ -20,6 +20,7 @@ export const processor = new SubstrateBatchProcessor()
     .addEvent("OffchainComputingWorkers.ImplBuildRestrictionUpdated")
     .addEvent("OffchainComputingWorkers.ImplBuildRegistered")
     .addEvent("OffchainComputingWorkers.ImplBuildDeregistered")
+    .addEvent("OffchainComputingWorkers.ImplBuildStatusUpdated")
     // OffchainComputing
     .addEvent("OffchainComputing.PoolCreated")
     .addEvent("OffchainComputing.PoolDestroyed")

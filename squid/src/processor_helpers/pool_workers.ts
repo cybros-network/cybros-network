@@ -22,7 +22,8 @@ interface PoolWorkerChanges {
     readonly worker: string
 
     createdAt: Date
-    deletedAt?: Date
+    updatedAt: Date
+    deletedAt?: Date | null
 
     poolWorkerCounterChange: number
 
@@ -52,12 +53,14 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                     id,
                     poolId: rec.poolId,
                     worker,
-                    poolWorkerCounterChange: 0,
                     createdAt: blockTime,
+                    updatedAt: blockTime,
+                    poolWorkerCounterChange: 0,
                     workerEvents: []
                 }
 
-                changes.deletedAt = undefined
+                changes.deletedAt = null
+                changes.updatedAt = blockTime
                 changes.poolWorkerCounterChange = 1
                 changes.workerEvents.push({
                     id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
@@ -83,12 +86,14 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                     id,
                     poolId: rec.poolId,
                     worker,
-                    poolWorkerCounterChange: 0,
                     createdAt: blockTime,
+                    updatedAt: blockTime,
+                    poolWorkerCounterChange: 0,
                     workerEvents: []
                 }
 
                 changes.deletedAt = blockTime
+                changes.updatedAt = blockTime
                 changes.poolWorkerCounterChange = -1
                 changes.workerEvents.push({
                     id: `${id}-${blockNumber}-${item.event.indexInBlock}`,

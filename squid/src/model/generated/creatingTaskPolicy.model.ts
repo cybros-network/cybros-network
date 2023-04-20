@@ -30,6 +30,9 @@ export class CreatingTaskPolicy {
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date
 
+    @Column_("timestamp with time zone", {nullable: false})
+    updatedAt!: Date
+
     @Column_("timestamp with time zone", {nullable: true})
     deletedAt!: Date | undefined | null
 }

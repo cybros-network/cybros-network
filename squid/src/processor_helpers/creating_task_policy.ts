@@ -31,8 +31,9 @@ interface CreatingTaskPolicyChanges {
     startBlock?: number
     endBlock?: number
 
-    createdAt?: Date
-    deletedAt?: Date
+    createdAt: Date
+    updatedAt: Date
+    deletedAt?: Date | null
 }
 
 export function preprocessCreatingTaskPoliciesEvents(ctx: Context): Map<string, CreatingTaskPolicyChanges> {
@@ -52,15 +53,20 @@ export function preprocessCreatingTaskPoliciesEvents(ctx: Context): Map<string, 
                 }
 
                 const id = `${rec.poolId}-${rec.policyId}`
-                const changes: CreatingTaskPolicyChanges = {
+                const changes: CreatingTaskPolicyChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
                     policyId: rec.policyId,
-                    permission: decodeCreatingTaskPermission(rec.policy.permission),
-                    startBlock: rec.policy.startBlock,
-                    endBlock: rec.policy.endBlock,
-                    createdAt: blockTime
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
+
+                changes.permission = decodeCreatingTaskPermission(rec.policy.permission)
+                changes.startBlock = rec.policy.startBlock
+                changes.endBlock = rec.policy.endBlock
+
+                changes.deletedAt = null
+                changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputing.CreatingTaskPolicyDestroyed") {
@@ -73,12 +79,16 @@ export function preprocessCreatingTaskPoliciesEvents(ctx: Context): Map<string, 
                 }
 
                 const id = `${rec.poolId}-${rec.policyId}`
-                const changes: CreatingTaskPolicyChanges = {
+                const changes: CreatingTaskPolicyChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
                     policyId: rec.policyId,
-                    deletedAt: blockTime
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
+
+                changes.deletedAt = blockTime
+                changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
             }

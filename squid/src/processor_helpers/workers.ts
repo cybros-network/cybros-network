@@ -70,18 +70,18 @@ interface WorkerChanges {
     implId?: number
 
     status?: WorkerStatus
-    implSpecVersion?: number
-    implBuildVersion?: number
-    attestationMethod?: AttestationMethod
+    implSpecVersion?: number | null
+    implBuildVersion?: number | null
+    attestationMethod?: AttestationMethod | null
     attestationExpiresAt?: Date | null
-    lastAttestedAt?: Date
-    lastHeartbeatReceivedAt?: Date
+    lastAttestedAt?: Date | null
+    lastHeartbeatReceivedAt?: Date | null
     offlineAt?: Date
     offlineReason?: OfflineReason
 
     createdAt: Date
     updatedAt: Date
-    deletedAt?: Date
+    deletedAt?: Date | null
 
     registerWorkerCounterChange: number
     onlineWorkerCounterChange: number
@@ -99,7 +99,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         for (let item of block.items) {
             if (item.name == "OffchainComputingWorkers.WorkerRegistered") {
                 let e = new WorkerRegisteredEvent(ctx, item.event)
-                let rec: { worker: Uint8Array, owner: Uint8Array }
+                let rec: { worker: Uint8Array, owner: Uint8Array, implId: number }
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -117,15 +117,18 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 }
 
                 changes.updatedAt = blockTime
-                changes.deletedAt = undefined
+                changes.deletedAt = null
 
                 changes.owner = decodeSS58Address(rec.owner)
                 changes.status = WorkerStatus.Registered
+                changes.implId = rec.implId
+
                 changes.registerWorkerCounterChange = 1
                 changes.onlineWorkerCounterChange = 0
                 changes.events.push({
                     id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
                     kind: WorkerEventKind.Registered,
+                    payload: { implId: rec.implId },
                     blockNumber,
                     blockTime,
                 })
@@ -169,7 +172,6 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 let e = new WorkerOnlineEvent(ctx, item.event)
                 let rec: {
                     worker: Uint8Array,
-                    implId: number,
                     implSpecVersion: number,
                     implBuildVersion: number,
                     attestationMethod: v100.AttestationMethod,
@@ -194,7 +196,6 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 assert(!changes.deletedAt)
 
                 changes.status = WorkerStatus.Online
-                changes.implId = rec.implId
                 changes.implSpecVersion = rec.implSpecVersion
                 changes.implBuildVersion = rec.implBuildVersion
                 changes.attestationMethod = decodeAttestationMethod(rec.attestationMethod)
@@ -267,6 +268,13 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.offlineReason = decodeOfflineReason(rec.reason)
                 changes.offlineAt = blockTime
                 changes.updatedAt = blockTime
+
+                changes.implSpecVersion = null
+                changes.implBuildVersion = null
+                changes.attestationMethod = null
+                changes.attestationExpiresAt = null
+                changes.lastAttestedAt = null
+                changes.lastHeartbeatReceivedAt = null
 
                 changes.onlineWorkerCounterChange -= 1
                 changes.events.push({

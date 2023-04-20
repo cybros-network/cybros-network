@@ -5,7 +5,6 @@ import {
     OffchainComputingWorkersImplDeploymentPermissionUpdatedEvent as ImplDeploymentPermissionUpdatedEvent,
     OffchainComputingWorkersImplMetadataUpdatedEvent as ImplMetadataUpdatedEvent,
     OffchainComputingWorkersImplMetadataRemovedEvent as ImplMetadataRemovedEvent,
-    OffchainComputingWorkersImplBuildRestrictionUpdatedEvent as ImplBuildRestrictionUpdatedEvent,
 } from "../types/events"
 import * as v100 from "../types/v100"
 import { AttestationMethod, ImplDeploymentPermission } from "../model"
@@ -50,14 +49,11 @@ interface ImplChanges {
 
     attestationMethod?: AttestationMethod
     deploymentPermission?: ImplDeploymentPermission
-    oldestBuildVersion?: number
-    newestBuildVersion?: number
-    blockedBuildVersions?: number[]
     metadata?: string | null
 
-    createdAt?: Date
+    createdAt: Date
     updatedAt: Date
-    deletedAt?: Date
+    deletedAt?: Date | null
 }
 
 export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
@@ -82,18 +78,19 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 }
 
                 const id = rec.implId.toString()
-                const changes: ImplChanges = {
+                const changes: ImplChanges = changeSet.get(id) || {
                     id,
                     implId: rec.implId,
-                    owner: decodeSS58Address(rec.owner),
-                    attestationMethod: decodeAttestationMethod(rec.attestationMethod),
-                    deploymentPermission: decodeImplDeploymentPermission(rec.deploymentPermission),
-                    oldestBuildVersion: 1,
-                    newestBuildVersion: 1,
-                    blockedBuildVersions: [],
                     createdAt: blockTime,
-                    updatedAt: blockTime,
+                    updatedAt: blockTime
                 }
+
+                changes.owner = decodeSS58Address(rec.owner)
+                changes.attestationMethod = decodeAttestationMethod(rec.attestationMethod)
+                changes.deploymentPermission = decodeImplDeploymentPermission(rec.deploymentPermission)
+
+                changes.deletedAt = null
+                changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.ImplDeregistered") {
@@ -109,7 +106,8 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 let changes: ImplChanges = changeSet.get(id) || {
                     id,
                     implId: rec.implId,
-                    updatedAt: blockTime,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 changes.updatedAt = blockTime
                 changes.deletedAt = blockTime
@@ -130,7 +128,8 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 let changes: ImplChanges = changeSet.get(id) || {
                     id,
                     implId: rec.implId,
-                    updatedAt: blockTime,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 
@@ -151,7 +150,8 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 let changes: ImplChanges = changeSet.get(id) || {
                     id,
                     implId: rec.implId,
-                    updatedAt: blockTime,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 
@@ -172,34 +172,12 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 let changes: ImplChanges = changeSet.get(id) || {
                     id,
                     implId: rec.implId,
-                    updatedAt: blockTime,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
                 }
                 assert(!changes.deletedAt)
 
                 changes.metadata = null
-                changes.updatedAt = blockTime
-
-                changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.ImplBuildRestrictionUpdated") {
-                let e = new ImplBuildRestrictionUpdatedEvent(ctx, item.event)
-                let rec: { implId: number, restriction: v100.ImplBuildRestriction }
-                if (e.isV100) {
-                    rec = e.asV100
-                } else {
-                    throw new Error('Unsupported spec')
-                }
-
-                const id = rec.implId.toString()
-                let changes: ImplChanges = changeSet.get(id) || {
-                    id,
-                    implId: rec.implId,
-                    updatedAt: blockTime,
-                }
-                assert(!changes.deletedAt)
-
-                changes.oldestBuildVersion = rec.restriction.oldest
-                changes.newestBuildVersion = rec.restriction.newest
-                changes.blockedBuildVersions = rec.restriction.blocked
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
