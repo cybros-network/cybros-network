@@ -35,6 +35,10 @@ pub trait OffchainWorkerLifecycleHooks<AccountId, ImplId> {
 	/// if returns error (e.g. still have job running), the worker will not be offline
 	fn can_offline(worker: &AccountId) -> bool;
 
+	/// A hook after the worker transited to unresponsive status,
+	/// can use for add additional business logic, e.g. un-reserve money
+	fn after_unresponsive(worker: &AccountId);
+
 	/// A hook before the worker transited to offline status,
 	/// can use for add additional business logic, e.g. un-reserve money
 	fn before_offline(worker: &AccountId, reason: OfflineReason);
@@ -67,6 +71,10 @@ impl<AccountId, ImplId> OffchainWorkerLifecycleHooks<AccountId, ImplId> for () {
 
 	fn can_offline(_: &AccountId) -> bool {
 		true
+	}
+
+	fn after_unresponsive(_: &AccountId) {
+		// Do nothing
 	}
 
 	fn before_offline(_: &AccountId, _: OfflineReason) {

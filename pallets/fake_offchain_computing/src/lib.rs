@@ -164,6 +164,10 @@ pub mod pallet {
 			!<RunningWorkers<T>>::contains_key(worker)
 		}
 
+		fn after_unresponsive(worker: &T::AccountId) {
+			log!(info, "after_unresponsive: {:?}", worker);
+		}
+
 		fn before_offline(worker: &T::AccountId, reason: OfflineReason) {
 			log!(info, "before_offline: {:?}", worker);
 

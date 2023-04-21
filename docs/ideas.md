@@ -43,12 +43,6 @@ So we need add `add_deposit()` for tasks.
 
 TODO: DAG? not quiet difficult, just add a RC field for dependent tasks, when 0 can be enabled
 
-### Subsquid indexer
-
-It is theGraph for Substrate-based chains which would help to build dashboards, We shall run self-hosted first.
-
-See https://www.subsquid.io
-
 ### Basic rates for create tasks (in `CreateTaskPolicy`)
 
 I think we could support fixed rate first, user will pay a fixed amount of money to creating a task.
@@ -57,16 +51,6 @@ I think we could support fixed rate first, user will pay a fixed amount of money
 
 I think we could support commission (percentage 0 - 100) first,
 the pool will take some cut from user fee - Pool set a commission, the task runner and the pool share the fee
-
-### "Paragon" of a pool's workers
-
-To keep security of the pool, we must restrict the pool's worker's implementations,
-so the pool owner can set requirements of worker,
-when adding new worker, it will do the check, only matched worker can be added.
-
-Pool's owner can edit the requirements, but he needs to ensure current workers are suit for new requirements first.
-
-We may provide a `remove_all_workers(pool_id)` call.
 
 ### Finalize off-chain computing protocol v0
 
@@ -206,6 +190,8 @@ We need to provide a way to let the workers in a pool can broadcast messages in 
 Consider it looks like E2E group chatting, Olm and Megolm cryptographic ratchets algorithm will help us.
 
 See https://github.com/matrix-org/vodozemac
+
+For the channel, not sure Substrate's pallet-message-queue can help
 
 ### Performance-wise refining
 

@@ -22,7 +22,7 @@ pub enum OfflineReason {
 	Forced,
 	Unresponsive,
 	AttestationExpired,
-	ImplBlocked,
+	ImplBuildBlocked,
 	InsufficientDepositFunds,
 	Other,
 }
@@ -104,9 +104,12 @@ pub enum WorkerStatus {
 	/// Initial status for a new registered worker.
 	Registered,
 	/// The worker is online so it can accept job
-	/// Transit from `Registered` and `Offline`,
+	/// Transit from `Registered` and `Offline`, and `Unresponsive`
 	/// not sure for `RequestingOffline` (may have side effect)
 	Online,
+	/// The worker isn't send heartbeat on time
+	/// Transit from `Online`
+	Unresponsive,
 	/// The worker is requesting offline,
 	/// the worker won't accept new job, accepted jobs will still processing,
 	/// when accepted jobs processed it can be transited to `Offline` safely without slashing.
@@ -114,7 +117,7 @@ pub enum WorkerStatus {
 	RequestingOffline,
 	/// The worker is offline so it can't accept job.
 	/// Transit from `RequestingOffline` when job queue cleared,
-	/// and `Online` (when force by user or be slashed)
+	/// and `Online` (when force by user or be slashed) and `Unresponsive`
 	Offline,
 }
 
@@ -130,6 +133,7 @@ impl fmt::Display for WorkerStatus {
 		match self {
 			WorkerStatus::Registered => write!(f, "Registered"),
 			WorkerStatus::Online => write!(f, "Online"),
+			WorkerStatus::Unresponsive => write!(f, "Unresponsive"),
 			WorkerStatus::RequestingOffline => write!(f, "RequestingOffline"),
 			WorkerStatus::Offline => write!(f, "Offline"),
 		}
@@ -164,6 +168,9 @@ pub struct WorkerInfo<AccountId, Balance, ImplId> {
 	pub attestation_expires_at: Option<u64>,
 	/// A block number of when the worker refresh its attestation.
 	pub attested_at: Option<u64>,
+	pub last_sent_heartbeat_at: Option<u64>,
+	pub uptime_started_at: Option<u64>,
+	pub uptime: Option<u64>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug)]

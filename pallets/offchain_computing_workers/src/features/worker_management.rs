@@ -33,6 +33,9 @@ impl<T: Config> Pallet<T> {
 			attestation_method: None,
 			attestation_expires_at: None,
 			attested_at: None,
+			last_sent_heartbeat_at: None,
+			uptime_started_at: None,
+			uptime: None,
 		};
 
 		<T as Config>::Currency::transfer(&owner, &worker, initial_balance, ExistenceRequirement::KeepAlive)?;

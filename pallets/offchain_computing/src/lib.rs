@@ -808,8 +808,12 @@ pub mod pallet {
 			WorkerAssignedTasksCounter::<T>::get(worker) == 0
 		}
 
-		fn before_offline(_worker: &T::AccountId, _reason: OfflineReason) {
+		fn after_unresponsive(_worker: &T::AccountId) {
 			// Nothing to do
+		}
+
+		fn before_offline(_worker: &T::AccountId, _reason: OfflineReason) {
+			// TODO: Fail or reschedule tasks, especially for offline unresponsive workers
 		}
 
 		fn after_refresh_attestation(_worker: &T::AccountId, _payload: &OnlinePayload<ImplIdOf<T>>, _verified_attestation: &VerifiedAttestation) {

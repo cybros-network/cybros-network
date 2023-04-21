@@ -125,6 +125,10 @@ mod pallet {
 		#[pallet::constant]
 		type CollectingHeartbeatsDurationInBlocks: Get<u32>;
 
+		/// The duration (blocks) of collecting workers' heartbeats
+		#[pallet::constant]
+		type MaxWorkerUnresponsiveProtectionInBlocks: Get<u32>;
+
 		/// Allow Opt out attestation
 		#[pallet::constant]
 		type DisallowOptOutAttestation: Get<bool>;
@@ -227,12 +231,13 @@ mod pallet {
 			attestation_expires_at: Option<u64>,
 			next_heartbeat: T::BlockNumber,
 		},
+		WorkerUnresponsive { worker: T::AccountId },
 		/// The worker is requesting offline
 		WorkerRequestingOffline { worker: T::AccountId },
 		/// The worker is offline
 		WorkerOffline { worker: T::AccountId, reason: OfflineReason },
 		/// The worker send heartbeat successfully
-		WorkerHeartbeatReceived { worker: T::AccountId, next: T::BlockNumber },
+		WorkerHeartbeatReceived { worker: T::AccountId, next: T::BlockNumber, uptime: u64 },
 		/// The worker refresh its attestation successfully
 		WorkerAttestationRefreshed { worker: T::AccountId, expires_at: Option<u64> },
 		ImplRegistered {
@@ -654,7 +659,21 @@ mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn offline_worker(worker: &T::AccountId, reason: OfflineReason) {
+	pub(crate) fn set_worker_unresponsive(worker: &T::AccountId) {
+		FlipSet::<T>::remove(worker);
+		FlopSet::<T>::remove(worker);
+		Workers::<T>::mutate(worker, |worker_info| {
+			if let Some(mut info) = worker_info.as_mut() {
+				info.status = WorkerStatus::Unresponsive;
+			}
+		});
+
+		Self::deposit_event(Event::<T>::WorkerUnresponsive { worker: worker.clone() });
+	}
+
+	pub(crate) fn set_worker_offline(worker: &T::AccountId, reason: OfflineReason) {
+		T::OffchainWorkerLifecycleHooks::before_offline(worker, reason.clone());
+
 		FlipSet::<T>::remove(worker);
 		FlopSet::<T>::remove(worker);
 		Workers::<T>::mutate(worker, |worker_info| {
@@ -673,9 +692,11 @@ impl<T: Config> Pallet<T> {
 				info.attestation_method = None;
 				info.attestation_expires_at = None;
 				info.attested_at = None;
+				info.last_sent_heartbeat_at = None;
+				info.uptime_started_at = None;
+				info.uptime = None;
 			}
 		});
-
 
 		Self::deposit_event(Event::<T>::WorkerOffline { worker: worker.clone(), reason });
 	}
@@ -696,8 +717,8 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn handle_worker_unresponsive(worker: &T::AccountId) {
-		T::OffchainWorkerLifecycleHooks::before_offline(worker, OfflineReason::Unresponsive);
-		Self::offline_worker(worker, OfflineReason::Unresponsive);
+		T::OffchainWorkerLifecycleHooks::after_unresponsive(worker);
+		Self::set_worker_unresponsive(worker);
 	}
 
 	pub(crate) fn verify_attestation(attestation: &Attestation) -> Result<VerifiedAttestation, DispatchError> {

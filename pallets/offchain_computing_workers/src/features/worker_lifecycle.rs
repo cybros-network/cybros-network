@@ -19,8 +19,11 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
-		match worker_info.status {
-			WorkerStatus::Registered | WorkerStatus::Offline => {},
+
+		let current_status = worker_info.status.clone();
+
+		match current_status {
+			WorkerStatus::Registered | WorkerStatus::Unresponsive | WorkerStatus::Offline => {},
 			_ => return Err(Error::<T>::WrongStatus.into()),
 		}
 
@@ -35,6 +38,15 @@ impl<T: Config> Pallet<T> {
 			worker_info.impl_id == payload.impl_id.clone(),
 			Error::<T>::ImplMismatched
 		);
+
+		if current_status == WorkerStatus::Unresponsive {
+			ensure!(
+				worker_info.impl_id == payload.impl_id &&
+				worker_info.impl_spec_version == Some(payload.impl_spec_version) &&
+				worker_info.impl_build_version == Some(payload.impl_build_version),
+				Error::<T>::ImplBuildChanged
+			);
+		}
 
 		let mut impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, payload.impl_build_version).ok_or(Error::<T>::ImplBuildNotFound)?;
 		ensure!(
@@ -62,16 +74,25 @@ impl<T: Config> Pallet<T> {
 		Self::verify_online_payload(&worker, &payload, &verified_attestation)?;
 		T::OffchainWorkerLifecycleHooks::can_online(&worker, &payload, &verified_attestation)?;
 
+		let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
+
 		worker_info.impl_spec_version = Some(payload.impl_spec_version);
 		worker_info.impl_build_version = Some(payload.impl_build_version);
 		worker_info.attestation_method = Some(attestation.method());
 		worker_info.attestation_expires_at = verified_attestation.expires_at();
-		worker_info.attested_at = Some(T::UnixTime::now().as_secs().saturated_into::<u64>());
+		worker_info.attested_at = Some(now);
+		worker_info.last_sent_heartbeat_at = Some(now);
+		if current_status != WorkerStatus::Unresponsive {
+			worker_info.uptime_started_at = Some(now);
+			worker_info.uptime = Some(0);
+		}
 		worker_info.status = WorkerStatus::Online;
 		Workers::<T>::insert(&worker, worker_info);
 
-		impl_build_info.workers_count += 1;
-		ImplBuilds::<T>::insert(&payload.impl_id, &payload.impl_build_version, impl_build_info);
+		if current_status != WorkerStatus::Unresponsive {
+			impl_build_info.workers_count += 1;
+			ImplBuilds::<T>::insert(&payload.impl_id, &payload.impl_build_version, impl_build_info);
+		}
 
 		let next_heartbeat = Self::flip_flop_for_online(&worker);
 
@@ -137,14 +158,22 @@ impl<T: Config> Pallet<T> {
 			Self::ensure_owner(&owner, &worker_info)?;
 		}
 
+		if worker_info.status == WorkerStatus::Unresponsive {
+			Self::set_worker_offline(&worker, OfflineReason::Unresponsive);
+
+			return Ok(())
+		}
+
 		ensure!(
-			matches!(worker_info.status, WorkerStatus::Online | WorkerStatus::RequestingOffline),
+			match worker_info.status {
+				WorkerStatus::Online | WorkerStatus::RequestingOffline => true,
+				_ => false,
+			},
 			Error::<T>::WorkerNotOnline
 		);
 
 		if T::OffchainWorkerLifecycleHooks::can_offline(&worker) {
-			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
-			Self::offline_worker(&worker, OfflineReason::Graceful);
+			Self::set_worker_offline(&worker, OfflineReason::Graceful);
 		} else {
 			ensure!(
 				worker_info.status == WorkerStatus::Online,
@@ -182,8 +211,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::WorkerNotOnline
 		);
 
-		T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Forced);
-		Self::offline_worker(&worker, OfflineReason::Forced);
+		Self::set_worker_offline(&worker, OfflineReason::Forced);
 
 		Ok(())
 	}
@@ -191,7 +219,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_heartbeat(
 		worker: T::AccountId
 	) -> DispatchResult {
-		let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
+		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
 		ensure!(
 			matches!(worker_info.status, WorkerStatus::Online | WorkerStatus::RequestingOffline),
@@ -203,8 +231,7 @@ impl<T: Config> Pallet<T> {
 
 		if let Some(attestation_expires_at) = worker_info.attestation_expires_at {
 			if now >= attestation_expires_at {
-				T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::AttestationExpired);
-				Self::offline_worker(&worker, OfflineReason::AttestationExpired);
+				Self::set_worker_offline(&worker, OfflineReason::AttestationExpired);
 
 				return Ok(())
 			}
@@ -214,16 +241,14 @@ impl<T: Config> Pallet<T> {
 		if worker_info.status == WorkerStatus::RequestingOffline &&
 			T::OffchainWorkerLifecycleHooks::can_offline(&worker)
 		{
-			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::Graceful);
-			Self::offline_worker(&worker, OfflineReason::Graceful);
+			Self::set_worker_offline(&worker, OfflineReason::Graceful);
 
 			return Ok(())
 		}
 
 		// Check the worker's reserved money
 		if <T as Config>::Currency::reserved_balance(&worker) < T::RegisterWorkerDeposit::get() {
-			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::InsufficientDepositFunds);
-			Self::offline_worker(&worker, OfflineReason::InsufficientDepositFunds);
+			Self::set_worker_offline(&worker, OfflineReason::InsufficientDepositFunds);
 
 			return Ok(())
 		}
@@ -238,8 +263,7 @@ impl<T: Config> Pallet<T> {
 		};
 
 		if !valid_impl_build {
-			T::OffchainWorkerLifecycleHooks::before_offline(&worker, OfflineReason::ImplBlocked);
-			Self::offline_worker(&worker, OfflineReason::ImplBlocked);
+			Self::set_worker_offline(&worker, OfflineReason::ImplBuildBlocked);
 
 			return Ok(())
 		}
@@ -268,7 +292,18 @@ impl<T: Config> Pallet<T> {
 			_ => return Err(Error::<T>::TooEarly.into()),
 		}
 
-		Self::deposit_event(Event::<T>::WorkerHeartbeatReceived { worker, next: next_heartbeat });
+		let Some(last_sent_heartbeat_at) = worker_info.last_sent_heartbeat_at else {
+			return Err(Error::<T>::InternalError.into())
+		};
+		let Some(mut uptime) = worker_info.uptime else {
+			return Err(Error::<T>::InternalError.into())
+		};
+		uptime += now - last_sent_heartbeat_at;
+		worker_info.uptime = Some(uptime);
+		worker_info.last_sent_heartbeat_at = Some(now);
+		Workers::<T>::insert(&worker, worker_info.clone());
+
+		Self::deposit_event(Event::<T>::WorkerHeartbeatReceived { worker, next: next_heartbeat, uptime });
 
 		Ok(())
 	}

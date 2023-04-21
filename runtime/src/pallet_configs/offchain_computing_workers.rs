@@ -16,7 +16,8 @@ impl pallet_offchain_computing_workers::Config for Runtime {
 	type ImplMetadataLimit = ConstU32<2048>; // 2KiB
 	type MaxImplBuilds = ConstU32<8>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<100>;
-	type CollectingHeartbeatsDurationInBlocks = ConstU32<240>; // 240 block * 6 sec / 60 sec = 24 min
+	type CollectingHeartbeatsDurationInBlocks = ConstU32<300>; // 30min * 60 / 6
+	type MaxWorkerUnresponsiveProtectionInBlocks = ConstU32<300>; // 30min * 60 / 6
 	type DisallowOptOutAttestation = ConstBool<false>;
 	type WeightInfo = pallet_offchain_computing_workers::weights::SubstrateWeight<Runtime>;
 	type OffchainWorkerLifecycleHooks = OffchainComputing;
