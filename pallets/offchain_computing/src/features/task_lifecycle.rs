@@ -14,11 +14,11 @@ impl<T: Config> Pallet<T> {
 		processing: bool,
 		expires_in: u64,
 	) -> DispatchResult {
-		Self::ensure_worker_in_pool(&pool_id, &worker)?;
+		Self::ensure_subscribed_worker(&pool_id, &worker)?;
 		let worker_info = T::OffchainWorkerManageable::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		let worker_impl_spec_version = worker_info.impl_spec_version.ok_or(Error::<T>::InternalError)?;
 
-		let current_assigned_tasks_count = WorkerAssignedTasksCounter::<T>::get(&worker);
+		let current_assigned_tasks_count = CounterForWorkerAssignedTasks::<T>::get(&worker);
 		ensure!(
 			current_assigned_tasks_count < T::MaxAssignedTasksPerWorker::get(),
 			Error::<T>::WorkerAssignedTasksLimitExceeded
@@ -63,7 +63,7 @@ impl<T: Config> Pallet<T> {
 		}
 
 		let task_id = task.id.clone();
-		WorkerAssignedTasksCounter::<T>::insert(&worker, current_assigned_tasks_count + 1);
+		CounterForWorkerAssignedTasks::<T>::insert(&worker, current_assigned_tasks_count + 1);
 		Tasks::<T>::insert(&pool_id, &task_id, task);
 
 		Self::deposit_event(Event::TaskAssigned { pool_id: pool_id.clone(), task_id: task_id.clone(), assignee: worker });
@@ -101,7 +101,7 @@ impl<T: Config> Pallet<T> {
 			task.assignee = None;
 			task.assigned_at = None;
 
-			WorkerAssignedTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
+			CounterForWorkerAssignedTasks::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
 				*counter -= 1;
 				Ok(())
 			})?;
@@ -176,7 +176,7 @@ impl<T: Config> Pallet<T> {
 			Ok(())
 		})?;
 
-		WorkerAssignedTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
+		CounterForWorkerAssignedTasks::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
 			*counter -= 1;
 			Ok(())
 		})?;

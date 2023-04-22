@@ -18,6 +18,7 @@ impl pallet_offchain_computing::Config for Runtime {
 	type MetadataDepositBase = ConstU128<{ 1 * CENTS }>;
 	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
 	type MaxAssignedTasksPerWorker = ConstU32<8>;
+	type MaxSubscribedPoolsPerWorker = ConstU32<8>;
 	type MaxPoliciesPerPool = ConstU32<8>;
 	type MaxTasksPerPool = ConstU32<1000>;
 	type MaxWorkersPerPool = ConstU32<100>;

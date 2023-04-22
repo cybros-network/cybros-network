@@ -164,7 +164,7 @@ mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, T::ImplId, Blake2_128Concat, ImplBuildVersion, ImplBuildInfo>;
 
 	#[pallet::storage]
-	pub type ImplBuildsCounter<T: Config> = StorageMap<
+	pub type CounterForImplBuilds<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		T::ImplId,

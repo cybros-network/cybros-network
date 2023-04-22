@@ -184,9 +184,9 @@ For decentralized pools, we need design some rules for how to share profit, curr
 
 We need to punish abnormal offline workers, we already have the hook, but we haven't design the rule of slashing.
 
-### Workers confidential communication channel
+### (Confidential) communication channel for pool
 
-We need to provide a way to let the workers in a pool can broadcast messages in a confidential way.
+We need to provide a way to let the workers in a pool can broadcast messages, it should allow in a confidential way.
 Consider it looks like E2E group chatting, Olm and Megolm cryptographic ratchets algorithm will help us.
 
 See https://github.com/matrix-org/vodozemac

@@ -145,7 +145,7 @@ impl<T: Config> Pallet<T> {
 			AssignableTasks::<T>::remove((pool_id.clone(), task.impl_spec_version.clone(), task_id.clone()));
 		} else if task.status == TaskStatus::Processing || task.status == TaskStatus::Discarded {
 			if let Some(worker) = &task.assignee {
-				WorkerAssignedTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
+				CounterForWorkerAssignedTasks::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
 					*counter -= 1;
 					Ok(())
 				})?;

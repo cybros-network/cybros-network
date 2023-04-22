@@ -46,7 +46,7 @@ impl<T: Config> Pallet<T> {
 		}
 
 		let _ = ImplBuilds::<T>::clear_prefix(&impl_id, T::MaxImplBuilds::get(), None);
-		ImplBuildsCounter::<T>::remove(&impl_info.id);
+		CounterForImplBuilds::<T>::remove(&impl_info.id);
 
 		Impls::<T>::remove(&impl_id);
 		AccountOwningImpls::<T>::remove(&impl_info.owner, &impl_id);
@@ -126,7 +126,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::ImplBuildAlreadyRegistered
 		);
 
-		ImplBuildsCounter::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
+		CounterForImplBuilds::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
 			ensure!(
 				counter <= &mut T::MaxImplBuilds::get(),
 				Error::<T>::ImplBuildsLimitExceeded
@@ -162,7 +162,7 @@ impl<T: Config> Pallet<T> {
 		);
 
 		ImplBuilds::<T>::remove(&impl_id, &impl_build_version);
-		ImplBuildsCounter::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
+		CounterForImplBuilds::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
 			*counter -= 1;
 			Ok(())
 		})?;

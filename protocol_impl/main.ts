@@ -198,31 +198,6 @@ function createSubstrateApi(rpcUrl: string): ApiPromise | null {
           OptOut: null,
         },
       },
-      WorkerStatus: {
-        _enum: [
-          "Registered",
-          "RequestingOffline",
-          "Online",
-          "Offline",
-        ],
-      },
-      WorkerInfo: {
-        account: "AccountId",
-        owner: "AccountId",
-        deposit: "Balance",
-        status: "WorkerStatus",
-        impl_id: "Option<u32>",
-        impl_spec_version: "Option<u32>",
-        impl_build_version: "Option<u32>",
-        attestation_method: "Option<AttestationMethod>",
-        attested_at: "Option<u64>",
-      },
-      ChainStoredData: {
-        depositor: "AccountId",
-        actual_deposit: "Balance",
-        surplus_deposit: "Balance",
-        data: "BoundedVec<u8, 2048>",
-      },
       TaskResult: {
         _enum: [
           "Success",
@@ -243,6 +218,7 @@ function createAttestation(api: ApiPromise, _payload: any) {
 enum WorkerStatus {
   Unregistered = "Unregistered",
   Registered = "Registered",
+  Unresponsive = "Unresponsive",
   RequestingOffline = "RequestingOffline",
   Online = "Online",
   Offline = "Offline",
@@ -443,6 +419,7 @@ interface Locals {
   sentRegisterAt?: number;
   sentOnlineAt?: number;
   sentHeartbeatAt?: number;
+  sentSubscribePoolAt?: number;
   sentTakeTaskAt?: number;
   sentProcessedTaskAt?: number;
 
@@ -559,6 +536,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
 
   if (
     workerInfo.status === WorkerStatus.Registered ||
+    workerInfo.status === WorkerStatus.Unresponsive ||
     workerInfo.status === WorkerStatus.Offline
   ) {
     if (window.locals.sentOnlineAt && window.locals.sentOnlineAt >= finalizedBlockNumber) {
@@ -649,6 +627,33 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     return;
   }
 
+  const [invited, subscribed] = await Promise.all([
+    api.query.offchainComputing.workers(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
+    api.query.offchainComputing.workerSubscribedPools(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
+  ]);
+
+  if (!invited) {
+    console.log(`Worker not added to ${window.subscribePool} yet`)
+    return;
+  } else if (!subscribed) {
+    if (window.locals.sentSubscribePoolAt && window.locals.sentSubscribePoolAt >= finalizedBlockNumber) {
+      logger.debug("Waiting subscribe pool extrinsic finalize");
+
+      return;
+    }
+
+    logger.info(`Sending "offchainComputing.subscribePool(poolId)`);
+    const txPromise = api.tx.offchainComputing.subscribePool(window.subscribePool);
+    logger.debug(`Call hash: ${txPromise.toHex()}`);
+    const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
+    logger.info(`Transaction hash: ${txHash.toHex()}`);
+    // TODO: Catch whether failed
+
+    window.locals.sentSubscribePoolAt = latestBlockNumber;
+
+    return;
+  }
+
   // if (window.locals.sentTakeTaskAt && window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
   //   logger.debug("Waiting take task extrinsic finalize");
   //
@@ -699,7 +704,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     }
 
     let assignableTasksCount = tasks.filter((task: AnyJson) => task.status === TaskStatus.Pending && task.assignee === null && task.implSpecVersion == IMPL_SPEC_VERSION ).length
-    let myTasksCount = (await api.query.offchainComputing.workerAssignedTasksCounter(window.workerKeyPair.address)).toNumber()
+    let myTasksCount = (await api.query.offchainComputing.counterForWorkerAssignedTasks(window.workerKeyPair.address)).toNumber()
     if (assignableTasksCount > 0 && myTasksCount <= 8) {
       logger.info("taking a new task");
 

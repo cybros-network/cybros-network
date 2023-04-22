@@ -129,6 +129,7 @@ impl pallet_offchain_computing::Config for Test {
 	type MetadataDepositBase = ConstU128<{ 1 * CENTS }>;
 	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
 	type MaxAssignedTasksPerWorker = ConstU32<8>;
+	type MaxSubscribedPoolsPerWorker = ConstU32<8>;
 	type MaxPoliciesPerPool = ConstU32<3>;
 	type MaxTasksPerPool = ConstU32<100>;
 	type MaxWorkersPerPool = ConstU32<100>;

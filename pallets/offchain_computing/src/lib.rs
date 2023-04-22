@@ -110,6 +110,10 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxAssignedTasksPerWorker: Get<u32>;
 
+		/// The limit of pools a worker could be subscribed
+		#[pallet::constant]
+		type MaxSubscribedPoolsPerWorker: Get<u32>;
+
 		/// The limit of policies of a pool
 		#[pallet::constant]
 		type MaxPoliciesPerPool: Get<u32>;
@@ -175,6 +179,8 @@ pub mod pallet {
 		CreatingTaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
 		WorkerAdded { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRemoved { pool_id: T::PoolId, worker: T::AccountId },
+		WorkerSubscribed { worker: T::AccountId, pool_id: T::PoolId },
+		WorkerUnsubscribed { worker: T::AccountId, pool_id: T::PoolId },
 		TaskCreated {
 			pool_id: T::PoolId,
 			task_id: T::TaskId,
@@ -202,6 +208,7 @@ pub mod pallet {
 		NoPermission,
 		WorkerNotFound,
 		WorkerNotInThePool,
+		WorkerNotSubscribeThePool,
 		PoolNotFound,
 		PoolCreatingTaskAbilityDisabled,
 		CreatingTaskPoliciesPerPoolLimitExceeded,
@@ -210,6 +217,8 @@ pub mod pallet {
 		ExpiresInTooSmall,
 		ExpiresInTooLarge,
 		WorkerAlreadyAdded,
+		WorkerAlreadySubscribed,
+		WorkerSubscribedPoolsLimitExceeded,
 		ImplMismatched,
 		ImplNotFound,
 		TasksPerPoolLimitExceeded,
@@ -260,9 +269,20 @@ pub mod pallet {
 	pub type Workers<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
 		T::PoolId,
+		(),
+		OptionQuery,
+	>;
+
+	#[pallet::storage]
+	pub type WorkerSubscribedPools<T: Config> = StorageDoubleMap<
+		_,
 		Blake2_128Concat,
 		T::AccountId,
+		Blake2_128Concat,
+		T::PoolId,
 		(),
 		OptionQuery,
 	>;
@@ -352,17 +372,6 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	#[pallet::storage]
-	pub type WorkerServingPools<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		T::AccountId,
-		Blake2_128Concat,
-		T::PoolId,
-		(),
-		OptionQuery,
-	>;
-
 	/// The tasks held by any given account; set out this way so that tasks owned by a single
 	/// account can be enumerated.
 	#[pallet::storage]
@@ -402,7 +411,25 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	pub type WorkerAssignedTasksCounter<T: Config> = StorageMap<
+	pub type CounterForWorkerAddedPools<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		u32,
+		ValueQuery
+	>;
+
+	#[pallet::storage]
+	pub type CounterForWorkerSubscribedPools<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		u32,
+		ValueQuery
+	>;
+
+	#[pallet::storage]
+	pub type CounterForWorkerAssignedTasks<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		T::AccountId,
@@ -583,6 +610,36 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(8)]
 		#[pallet::weight({0})]
+		pub fn subscribe_pool(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			Self::do_subscribe_pool(
+				who,
+				pool_id
+			)
+		}
+
+		#[transactional]
+		#[pallet::call_index(9)]
+		#[pallet::weight({0})]
+		pub fn unsubscribe_pool(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			Self::do_unsubscribe_pool(
+				who,
+				pool_id
+			)
+		}
+
+		#[transactional]
+		#[pallet::call_index(10)]
+		#[pallet::weight({0})]
 		pub fn create_task(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -643,7 +700,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(9)]
+		#[pallet::call_index(11)]
 		#[pallet::weight({0})]
 		pub fn destroy_task(
 			origin: OriginFor<T>,
@@ -660,7 +717,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(10)]
+		#[pallet::call_index(12)]
 		#[pallet::weight({0})]
 		pub fn destroy_expired_task(
 			origin: OriginFor<T>,
@@ -679,7 +736,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(11)]
+		#[pallet::call_index(13)]
 		#[pallet::weight({0})]
 		pub fn take_task(
 			origin: OriginFor<T>,
@@ -696,7 +753,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(12)]
+		#[pallet::call_index(14)]
 		#[pallet::weight({0})]
 		pub fn release_task(
 			origin: OriginFor<T>,
@@ -709,7 +766,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(13)]
+		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
 		pub fn submit_task_result(
 			origin: OriginFor<T>,
@@ -785,8 +842,20 @@ pub mod pallet {
 			worker: &T::AccountId,
 		) -> DispatchResult {
 			ensure!(
-				Workers::<T>::contains_key(pool_id, worker),
+				Workers::<T>::contains_key(worker, pool_id),
 				Error::<T>::WorkerNotInThePool
+			);
+
+			Ok(())
+		}
+
+		pub(crate) fn ensure_subscribed_worker(
+			pool_id: &T::PoolId,
+			worker: &T::AccountId,
+		) -> DispatchResult {
+			ensure!(
+				WorkerSubscribedPools::<T>::contains_key(worker, pool_id),
+				Error::<T>::WorkerNotSubscribeThePool
 			);
 
 			Ok(())
@@ -817,7 +886,7 @@ pub mod pallet {
 		}
 
 		fn can_offline(worker: &T::AccountId) -> bool {
-			WorkerAssignedTasksCounter::<T>::get(worker) == 0
+			CounterForWorkerAssignedTasks::<T>::get(worker) == 0
 		}
 
 		fn after_unresponsive(_worker: &T::AccountId) {
@@ -825,8 +894,11 @@ pub mod pallet {
 		}
 
 		fn before_offline(worker: &T::AccountId, _reason: OfflineReason) {
-			// TODO: Efficient and security (avoid a worker in too much pools)
-			for pool_id in WorkerServingPools::<T>::iter_key_prefix(worker) {
+			if CounterForWorkerAssignedTasks::<T>::get(worker) == 0 {
+				return
+			}
+
+			for pool_id in WorkerSubscribedPools::<T>::iter_key_prefix(worker) {
 				for task_id in WorkerAssignedTasks::<T>::iter_key_prefix((worker.clone(), pool_id.clone())) {
 					let _: Result<(), DispatchError> = Tasks::<T>::try_mutate_exists(&pool_id, &task_id, |task| -> Result<(), DispatchError> {
 						if let Some(mut task) = task.as_mut() {
@@ -841,10 +913,7 @@ pub mod pallet {
 				}
 			}
 
-			let _: Result<(), DispatchError> = WorkerAssignedTasksCounter::<T>::try_mutate(worker, |counter| -> Result<(), DispatchError> {
-				*counter = 0;
-				Ok(())
-			});
+			CounterForWorkerAssignedTasks::<T>::insert(worker, 0);
 		}
 
 		fn after_refresh_attestation(_worker: &T::AccountId, _payload: &OnlinePayload<ImplIdOf<T>>, _verified_attestation: &VerifiedAttestation) {
@@ -855,12 +924,20 @@ pub mod pallet {
 			// Nothing to do
 		}
 
-		fn can_deregister(worker: &T::AccountId) -> bool {
-			WorkerServingPools::<T>::iter_key_prefix(worker).next().is_none()
+		fn can_deregister(_worker: &T::AccountId) -> bool {
+			true
 		}
 
-		fn before_deregister(_worker: &T::AccountId) {
-			// Nothing to do
+		fn before_deregister(worker: &T::AccountId) {
+			let worker_added_pools_count = CounterForWorkerAddedPools::<T>::get(worker);
+			if worker_added_pools_count == 0 {
+				return
+			}
+
+			let _ = WorkerSubscribedPools::<T>::clear_prefix(worker, T::MaxSubscribedPoolsPerWorker::get(), None);
+			let _ = Workers::<T>::clear_prefix(worker, worker_added_pools_count, None);
+			CounterForWorkerSubscribedPools::<T>::remove(worker);
+			CounterForWorkerAddedPools::<T>::remove(worker);
 		}
 	}
 }
