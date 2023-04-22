@@ -34,8 +34,8 @@ impl<T: Config> Pallet<T> {
 			owner: owner.clone(),
 			owner_deposit: T::CreatePoolDeposit::get(),
 			impl_id: impl_id.clone(),
-			creating_task_ability: true,
-			creating_task_policies_count: 0,
+			creating_task_availability: true,
+			task_policies_count: 0,
 			tasks_count: 0,
 			workers_count: 0,
 		};
@@ -60,7 +60,7 @@ impl<T: Config> Pallet<T> {
 			T::Currency::unreserve(&pool_info.owner, metadata_entry.actual_deposit);
 		}
 
-		let _ = CreatingTaskPolicies::<T>::clear_prefix(&pool_id, pool_info.creating_task_policies_count, None);
+		let _ = TaskPolicies::<T>::clear_prefix(&pool_id, pool_info.task_policies_count, None);
 
 		Pools::<T>::remove(&pool_id);
 		AccountOwningPools::<T>::remove(&pool_info.owner, &pool_id);
@@ -114,20 +114,16 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_toggle_pool_creating_task_ability(
+	pub(crate) fn do_toggle_pool_task_creatable(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
-		enabled: bool
+		creatable: bool
 	) -> DispatchResult {
 		let mut new_pool_info = pool_info.clone();
-		new_pool_info.creating_task_ability = enabled;
+		new_pool_info.creating_task_availability = creatable;
 
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		if enabled {
-			Self::deposit_event(Event::PoolCreatingTaskAbilityEnabled { pool_id: pool_info.id });
-		} else {
-			Self::deposit_event(Event::PoolCreatingTaskAbilityDisabled { pool_id: pool_info.id });
-		}
+		Self::deposit_event(Event::PoolCreatingTaskAvailabilityUpdated { pool_id: pool_info.id, availability: creatable });
 		Ok(())
 	}
 }

@@ -173,10 +173,16 @@ pub mod pallet {
 		PoolDestroyed { pool_id: T::PoolId },
 		PoolMetadataUpdated { pool_id: T::PoolId, metadata: BoundedVec<u8, T::PoolMetadataLimit> },
 		PoolMetadataRemoved { pool_id: T::PoolId },
-		PoolCreatingTaskAbilityEnabled { pool_id: T::PoolId },
-		PoolCreatingTaskAbilityDisabled { pool_id: T::PoolId },
-		CreatingTaskPolicyCreated { pool_id: T::PoolId, policy_id: T::PolicyId, policy: CreatingTaskPolicy<T::BlockNumber> },
-		CreatingTaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
+		PoolCreatingTaskAvailabilityUpdated { pool_id: T::PoolId, availability: bool },
+		TaskPolicyCreated {
+			pool_id: T::PoolId,
+			policy_id: T::PolicyId,
+			creating_task_scope: ApplicableScope,
+			start_block: Option<T::BlockNumber>,
+			end_block: Option<T::BlockNumber>
+		},
+		TaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
+		TaskPolicyAvailabilityUpdated { pool_id: T::PoolId, policy_id: T::PolicyId, availability: bool },
 		WorkerAdded { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRemoved { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerSubscribed { worker: T::AccountId, pool_id: T::PoolId },
@@ -210,10 +216,12 @@ pub mod pallet {
 		WorkerNotInThePool,
 		WorkerNotSubscribeThePool,
 		PoolNotFound,
-		PoolCreatingTaskAbilityDisabled,
-		CreatingTaskPoliciesPerPoolLimitExceeded,
+		PoolCreatingTaskUnavailable,
+		TaskPoliciesPerPoolLimitExceeded,
 		PolicyNotApplicable,
+		PolicyUnavailable,
 		PolicyNotFound,
+		PolicyStillInUse,
 		ExpiresInTooSmall,
 		ExpiresInTooLarge,
 		WorkerAlreadyAdded,
@@ -254,13 +262,13 @@ pub mod pallet {
 
 	/// Tasks info.
 	#[pallet::storage]
-	pub type CreatingTaskPolicies<T: Config> = StorageDoubleMap<
+	pub type TaskPolicies<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
 		Blake2_128Concat,
 		T::PolicyId,
-		CreatingTaskPolicy<T::BlockNumber>,
+		TaskPolicy<T::PolicyId, T::BlockNumber>,
 		OptionQuery,
 	>;
 
@@ -295,7 +303,7 @@ pub mod pallet {
 		T::PoolId,
 		Blake2_128Concat,
 		T::TaskId,
-		TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+		TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
 		OptionQuery,
 	>;
 
@@ -340,7 +348,7 @@ pub mod pallet {
 	/// Stores the `TaskId` that is going to be used for the next task.
 	/// This gets incremented whenever a new task is created.
 	#[pallet::storage]
-	pub type NextCreatingTaskPolicyId<T: Config> = StorageMap<
+	pub type NextTaskPolicyId<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
@@ -496,26 +504,28 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(3)]
 		#[pallet::weight({0})]
-		pub fn toggle_pool_global_creating_task_ability(
+		pub fn toggle_pool_task_creatable(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			enabled: bool
+			creatable: bool
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_toggle_pool_creating_task_ability(pool_info, enabled)
+			Self::do_toggle_pool_task_creatable(pool_info, creatable)
 		}
 
 		#[transactional]
 		#[pallet::call_index(4)]
 		#[pallet::weight({0})]
-		pub fn create_creating_task_policy(
+		pub fn create_task_policy(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			policy: CreatingTaskPolicy<T::BlockNumber>,
+			creating_task_scope: ApplicableScope,
+			start_block: Option<T::BlockNumber>,
+			end_block: Option<T::BlockNumber>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -523,19 +533,21 @@ pub mod pallet {
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
 			ensure!(
-				pool_info.creating_task_policies_count.clone() <= T::MaxPoliciesPerPool::get(),
-				Error::<T>::CreatingTaskPoliciesPerPoolLimitExceeded
+				pool_info.task_policies_count.clone() <= T::MaxPoliciesPerPool::get(),
+				Error::<T>::TaskPoliciesPerPoolLimitExceeded
 			);
 
-			let policy_id = NextCreatingTaskPolicyId::<T>::get(&pool_id).unwrap_or(T::PolicyId::initial_value());
-			Self::do_create_creating_task_policy(
+			let policy_id = NextTaskPolicyId::<T>::get(&pool_id).unwrap_or(T::PolicyId::initial_value());
+			Self::do_create_task_policy(
 				pool_info,
 				policy_id.clone(),
-				policy
+				creating_task_scope,
+				start_block,
+				end_block
 			)?;
 
 			let next_id = policy_id.increment();
-			NextCreatingTaskPolicyId::<T>::set(&pool_id, Some(next_id));
+			NextTaskPolicyId::<T>::set(&pool_id, Some(next_id));
 
 			Ok(())
 		}
@@ -543,7 +555,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(5)]
 		#[pallet::weight({0})]
-		pub fn destroy_creating_task_policy(
+		pub fn destroy_task_policy(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
@@ -553,7 +565,7 @@ pub mod pallet {
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_destroy_creating_task_policy(
+			Self::do_destroy_task_policy(
 				pool_info,
 				policy_id
 			)
@@ -561,6 +573,27 @@ pub mod pallet {
 
 		#[transactional]
 		#[pallet::call_index(6)]
+		#[pallet::weight({0})]
+		pub fn update_task_policy_availability(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			policy_id: T::PolicyId,
+			availability: bool
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
+			Self::ensure_pool_owner(&who, &pool_info)?;
+
+			Self::do_update_task_policy_availability(
+				pool_id,
+				policy_id,
+				availability
+			)
+		}
+
+		#[transactional]
+		#[pallet::call_index(7)]
 		#[pallet::weight({0})]
 		pub fn add_worker(
 			origin: OriginFor<T>,
@@ -581,7 +614,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(7)]
+		#[pallet::call_index(8)]
 		#[pallet::weight({0})]
 		pub fn remove_worker(
 			origin: OriginFor<T>,
@@ -608,7 +641,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(8)]
+		#[pallet::call_index(9)]
 		#[pallet::weight({0})]
 		pub fn subscribe_pool(
 			origin: OriginFor<T>,
@@ -623,7 +656,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(9)]
+		#[pallet::call_index(10)]
 		#[pallet::weight({0})]
 		pub fn unsubscribe_pool(
 			origin: OriginFor<T>,
@@ -638,7 +671,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(10)]
+		#[pallet::call_index(11)]
 		#[pallet::weight({0})]
 		pub fn create_task(
 			origin: OriginFor<T>,
@@ -653,15 +686,19 @@ pub mod pallet {
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(
-				pool_info.creating_task_ability,
-				Error::<T>::PoolCreatingTaskAbilityDisabled
+				pool_info.creating_task_availability,
+				Error::<T>::PoolCreatingTaskUnavailable
 			);
 			ensure!(
 				pool_info.tasks_count <= T::MaxTasksPerPool::get(),
 				Error::<T>::TasksPerPoolLimitExceeded
 			);
 
-			let policy = CreatingTaskPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::PolicyNotFound)?;
+			let policy = TaskPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::PolicyNotFound)?;
+			ensure!(
+				policy.availability,
+				Error::<T>::PolicyUnavailable
+			);
 			let current_block = frame_system::Pallet::<T>::block_number();
 			if let Some(start_block) = policy.start_block {
 				ensure!(current_block >= start_block , Error::<T>::PolicyNotApplicable);
@@ -669,22 +706,22 @@ pub mod pallet {
 			if let Some(end_block) = policy.end_block {
 				ensure!(current_block <= end_block, Error::<T>::PolicyNotApplicable);
 			}
-			match policy.permission {
-				CreatingTaskPermission::Owner => {
+			match policy.creating_task_scope {
+				ApplicableScope::Owner => {
 					ensure!(
 						&pool_info.owner == &who,
 						Error::<T>::PolicyNotApplicable
 					)
 				},
-				CreatingTaskPermission::Public => {}
+				ApplicableScope::Public => {}
 			};
 
 			let task_id = NextTaskId::<T>::get(&pool_id).unwrap_or(T::TaskId::initial_value());
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			Self::do_create_task(
 				pool_info,
+				policy,
 				task_id.clone(),
-				policy_id.clone(),
 				who.clone(),
 				who,
 				impl_spec_version,
@@ -700,7 +737,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(11)]
+		#[pallet::call_index(12)]
 		#[pallet::weight({0})]
 		pub fn destroy_task(
 			origin: OriginFor<T>,
@@ -717,7 +754,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(12)]
+		#[pallet::call_index(13)]
 		#[pallet::weight({0})]
 		pub fn destroy_expired_task(
 			origin: OriginFor<T>,
@@ -736,7 +773,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(13)]
+		#[pallet::call_index(14)]
 		#[pallet::weight({0})]
 		pub fn take_task(
 			origin: OriginFor<T>,
@@ -753,7 +790,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(14)]
+		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
 		pub fn release_task(
 			origin: OriginFor<T>,
@@ -766,7 +803,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(15)]
+		#[pallet::call_index(16)]
 		#[pallet::weight({0})]
 		pub fn submit_task_result(
 			origin: OriginFor<T>,
@@ -800,7 +837,7 @@ pub mod pallet {
 
 		pub(crate) fn ensure_task_owner(
 			who: &T::AccountId,
-			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>
+			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>
 		) -> DispatchResult {
 			ensure!(
 				who == &task.owner,
@@ -811,7 +848,7 @@ pub mod pallet {
 		}
 
 		pub(crate) fn ensure_task_expired(
-			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
 			now: u64
 		) -> DispatchResult {
 			// TODO: need deadline
@@ -826,7 +863,7 @@ pub mod pallet {
 		// Comment this because of difficulty reason,
 		// we decide to let the `expires_at` be soft expiring
 		// pub(crate) fn ensure_task_not_expired(
-		// 	task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+		// 	task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
 		// 	now: u64
 		// ) -> DispatchResult {
 		// 	ensure!(
@@ -862,7 +899,7 @@ pub mod pallet {
 		}
 
 		pub(crate) fn ensure_task_assignee(
-			task: &TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
 			worker: &T::AccountId,
 		) -> DispatchResult {
 			let assignee = task.assignee.clone().ok_or(Error::<T>::NoPermission)?;

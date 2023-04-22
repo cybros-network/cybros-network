@@ -8,8 +8,8 @@ use sp_runtime::{
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_task(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		policy_info: TaskPolicy<T::PolicyId, T::BlockNumber>,
 		task_id: T::TaskId,
-		policy_id: T::PolicyId,
 		owner: T::AccountId,
 		depositor: T::AccountId,
 		impl_spec_version: ImplSpecVersion,
@@ -31,8 +31,9 @@ impl<T: Config> Pallet<T> {
 		T::Currency::reserve(&depositor, total_deposit)?;
 
 		let expires_at = now + expires_in;
-		let task = TaskInfo::<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion> {
+		let task = TaskInfo::<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion> {
 			id: task_id.clone(),
+			policy_id: policy_info.id.clone(),
 			owner: owner.clone(),
 			depositor: depositor.clone(),
 			deposit: task_deposit,
@@ -62,12 +63,17 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.tasks_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
+		let mut new_policy_info = policy_info.clone();
+		new_policy_info.tasks_count += 1;
+		TaskPolicies::<T>::insert(&pool_info.id, &policy_info.id, new_policy_info);
+
 		AssignableTasks::<T>::insert((pool_info.id.clone(), impl_spec_version.clone(), task_id.clone()), ());
 		AccountOwningTasks::<T>::insert((owner.clone(), pool_info.id.clone(), task_id.clone()), ());
 
 		Self::deposit_event(Event::TaskCreated {
 			pool_id: pool_info.id,
-			task_id, policy_id,
+			task_id,
+			policy_id: policy_info.id,
 			owner: owner.clone(),
 			impl_spec_version,
 			input: input_data,
@@ -110,7 +116,7 @@ impl<T: Config> Pallet<T> {
 
 	fn do_actual_destroy_task(
 		pool_id: T::PoolId,
-		task: TaskInfo<T::TaskId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+		task: TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
 		destroyer: T::AccountId
 	) -> DispatchResult {
 		let task_id = task.id;
@@ -137,6 +143,16 @@ impl<T: Config> Pallet<T> {
 			};
 
 			pool_info.tasks_count -= 1;
+
+			Ok(())
+		})?;
+
+		TaskPolicies::<T>::try_mutate_exists(&pool_id, &task.policy_id, |policy_info| -> Result<(), DispatchError> {
+			let Some(policy_info) = policy_info else {
+				return Err(Error::<T>::PoolNotFound.into())
+			};
+
+			policy_info.tasks_count -= 1;
 
 			Ok(())
 		})?;

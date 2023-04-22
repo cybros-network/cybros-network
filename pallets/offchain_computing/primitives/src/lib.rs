@@ -28,7 +28,7 @@ pub struct ChainStoredData<AccountId, Balance, DataLimit: Get<u32>> {
 }
 
 #[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
-pub enum CreatingTaskPermission {
+pub enum ApplicableScope {
 	/// Only the owner could create tasks.
 	#[default]
 	Owner,
@@ -40,15 +40,20 @@ pub enum CreatingTaskPermission {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct CreatingTaskPolicy<BlockNumber> {
-	/// Whether anyone can mint or if minters are restricted to some subset.
-	pub permission: CreatingTaskPermission,
+pub struct TaskPolicy<PoolId, BlockNumber> {
+	/// Policy's id
+	pub id: PoolId,
+	/// This policy is available to use
+	pub availability: bool,
+	/// Who can create new task
+	pub creating_task_scope: ApplicableScope,
 	// TODO：rates strategy
 	// TODO: allow create scheduled task and rule
 	/// When the policy starts.
 	pub start_block: Option<BlockNumber>,
 	/// When the policy ends.
 	pub end_block: Option<BlockNumber>,
+	pub tasks_count: u32,
 }
 
 // TODO: Rates strategy (bound to CreatingTaskPolicy), e.g. Pay a constant or by duration of processing fee for each task, pay to worker or the owner
@@ -66,10 +71,10 @@ pub struct PoolInfo<PoolId, AccountId, Balance, ImplId> {
 	pub owner_deposit: Balance,
 	/// The implementation id
 	pub impl_id: ImplId,
-	/// Allow creating task
-	pub creating_task_ability: bool,
-	/// The total number of outstanding create task policies of this pool.
-	pub creating_task_policies_count: u32,
+	/// Allow create new task
+	pub creating_task_availability: bool,
+	/// The total number of outstanding task policies of this pool.
+	pub task_policies_count: u32,
 	/// The total number of outstanding tasks of this pool.
 	pub tasks_count: u32,
 	/// The total number of outstanding workers of this pool.
@@ -101,8 +106,9 @@ pub enum TaskResult {
 // TODO: Idea: TaskType: info will copy to Task, advanceable, creatable, minimum_deposit (more than actual will save to surplus_deposit)
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct TaskInfo<TaskId, AccountId, Balance, ImplSpecVersion> {
+pub struct TaskInfo<TaskId, PolicyId, AccountId, Balance, ImplSpecVersion> {
 	pub id: TaskId,
+	pub policy_id: PolicyId,
 	pub owner: AccountId,
 	pub depositor: AccountId,
 	pub deposit: Balance,
