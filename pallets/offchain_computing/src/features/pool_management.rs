@@ -4,7 +4,7 @@ use sp_runtime::{
 	traits::Zero,
 	Saturating
 };
-use pallet_offchain_computing_workers::ImplDeploymentPermission;
+use pallet_offchain_computing_workers::ApplicableScope;
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_pool(
@@ -16,11 +16,11 @@ impl<T: Config> Pallet<T> {
 
 		let impl_info = T::OffchainWorkerManageable::impl_info(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
 		ensure!(
-			match impl_info.deployment_permission {
-				ImplDeploymentPermission::Owner => {
+			match impl_info.deployment_scope {
+				ApplicableScope::Owner => {
 					impl_info.owner == owner
 				},
-				ImplDeploymentPermission::Public => {
+				ApplicableScope::Public => {
 					true
 				}
 			},

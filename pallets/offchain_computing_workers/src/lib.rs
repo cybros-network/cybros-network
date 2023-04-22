@@ -244,10 +244,10 @@ mod pallet {
 			impl_id: T::ImplId,
 			owner: T::AccountId,
 			attestation_method: AttestationMethod,
-			deployment_permission: ImplDeploymentPermission
+			deployment_scope: ApplicableScope
 		},
 		ImplDeregistered { impl_id: T::ImplId },
-		ImplDeploymentPermissionUpdated { impl_id: T::ImplId, permission: ImplDeploymentPermission },
+		ImplDeploymentScopeUpdated { impl_id: T::ImplId, scope: ApplicableScope },
 		ImplMetadataUpdated { impl_id: T::ImplId, metadata: BoundedVec<u8, T::ImplMetadataLimit> },
 		ImplMetadataRemoved { impl_id: T::ImplId },
 		/// Update worker's implementation permission successfully
@@ -535,7 +535,7 @@ mod pallet {
 		pub fn register_impl(
 			origin: OriginFor<T>,
 			attestation_method: AttestationMethod,
-			deployment_permission: ImplDeploymentPermission,
+			deployment_permission: ApplicableScope,
 		) -> DispatchResult {
 			let owner = T::RegisterImplOrigin::ensure_origin(origin)?;
 			let impl_id = NextImplId::<T>::get().unwrap_or(T::ImplId::initial_value());
@@ -596,7 +596,7 @@ mod pallet {
 		pub fn update_impl_deployment_permission(
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
-			deployment_permission: ImplDeploymentPermission,
+			deployment_permission: ApplicableScope,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 

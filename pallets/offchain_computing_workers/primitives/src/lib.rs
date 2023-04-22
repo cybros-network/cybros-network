@@ -188,7 +188,7 @@ impl Default for FlipFlopStage {
 }
 
 #[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
-pub enum ImplDeploymentPermission {
+pub enum ApplicableScope {
 	/// Only the owner could use the implementations.
 	#[default]
 	Owner,
@@ -212,7 +212,7 @@ pub struct ImplInfo<ImplId, AccountId, Balance> {
 	/// The implementation must specify use which attestation method,
 	pub attestation_method: AttestationMethod,
 	/// Who can use the implementation
-	pub deployment_permission: ImplDeploymentPermission,
+	pub deployment_scope: ApplicableScope,
 	/// The total number of outstanding workers running this implementation.
 	pub workers_count: u32,
 }
