@@ -44,7 +44,7 @@ impl<T: Config> Pallet<T> {
 			assignee: None,
 			assigned_at: None,
 			processing_at: None,
-			processed_at: None,
+			ended_at: None,
 		};
 		Tasks::<T>::insert(&pool_info.id, &task_id, task);
 
@@ -85,7 +85,7 @@ impl<T: Config> Pallet<T> {
 		Self::ensure_task_owner(&who, &task)?;
 		ensure!(
 			match task.status {
-				TaskStatus::Pending | TaskStatus::Processed => true,
+				TaskStatus::Pending | TaskStatus::Processed | TaskStatus::Discarded => true,
 				_ => false
 			},
 			Error::<T>::TaskIsProcessing
@@ -143,7 +143,7 @@ impl<T: Config> Pallet<T> {
 
 		if task.status == TaskStatus::Pending {
 			AssignableTasks::<T>::remove((pool_id.clone(), task.impl_spec_version.clone(), task_id.clone()));
-		} else if task.status == TaskStatus::Processing {
+		} else if task.status == TaskStatus::Processing || task.status == TaskStatus::Discarded {
 			if let Some(worker) = &task.assignee {
 				WorkerAssignedTasksCounter::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
 					*counter -= 1;

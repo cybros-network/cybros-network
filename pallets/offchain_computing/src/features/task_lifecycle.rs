@@ -142,7 +142,7 @@ impl<T: Config> Pallet<T> {
 			task.expires_at = now + expires_in;
 			task.status = TaskStatus::Processed;
 			task.result = Some(result.clone());
-			task.processed_at = Some(now);
+			task.ended_at = Some(now);
 
 			if let Some(output_data) = output_data.clone() {
 				let deposit = T::DepositPerByte::get()

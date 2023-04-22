@@ -84,6 +84,8 @@ pub enum TaskStatus {
 	Processing,
 	/// Ending status, the worker processed the item
 	Processed,
+	/// Ending status, the worker can't process the task (e.g. force offline)
+	Discarded,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -116,5 +118,5 @@ pub struct TaskInfo<TaskId, AccountId, Balance, ImplSpecVersion> {
 	pub assignee: Option<AccountId>,
 	pub assigned_at: Option<u64>,
 	pub processing_at: Option<u64>,
-	pub processed_at: Option<u64>,
+	pub ended_at: Option<u64>,
 }

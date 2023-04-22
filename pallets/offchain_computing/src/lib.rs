@@ -378,6 +378,18 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	pub type WorkerAssignedTasks<T: Config> = StorageNMap<
+		_,
+		(
+			NMapKey<Blake2_128Concat, T::AccountId>, // owner
+			NMapKey<Blake2_128Concat, T::PoolId>,
+			NMapKey<Blake2_128Concat, T::TaskId>,
+		),
+		(),
+		OptionQuery,
+	>;
+
+	#[pallet::storage]
 	pub type AssignableTasks<T: Config> = StorageNMap<
 		_,
 		(
@@ -812,8 +824,27 @@ pub mod pallet {
 			// Nothing to do
 		}
 
-		fn before_offline(_worker: &T::AccountId, _reason: OfflineReason) {
-			// TODO: Fail or reschedule tasks, especially for offline unresponsive workers
+		fn before_offline(worker: &T::AccountId, _reason: OfflineReason) {
+			// TODO: Efficient and security (avoid a worker in too much pools)
+			for pool_id in WorkerServingPools::<T>::iter_key_prefix(worker) {
+				for task_id in WorkerAssignedTasks::<T>::iter_key_prefix((worker.clone(), pool_id.clone())) {
+					let _: Result<(), DispatchError> = Tasks::<T>::try_mutate_exists(&pool_id, &task_id, |task| -> Result<(), DispatchError> {
+						if let Some(mut task) = task.as_mut() {
+							task.status = TaskStatus::Discarded;
+							task.ended_at = Some(T::UnixTime::now().as_secs().saturated_into::<u64>());
+
+							Self::deposit_event(Event::TaskStatusUpdated { pool_id: pool_id.clone(), task_id: task_id.clone(), status: TaskStatus::Discarded });
+						}
+
+						Ok(())
+					});
+				}
+			}
+
+			let _: Result<(), DispatchError> = WorkerAssignedTasksCounter::<T>::try_mutate(worker, |counter| -> Result<(), DispatchError> {
+				*counter = 0;
+				Ok(())
+			});
 		}
 
 		fn after_refresh_attestation(_worker: &T::AccountId, _payload: &OnlinePayload<ImplIdOf<T>>, _verified_attestation: &VerifiedAttestation) {
