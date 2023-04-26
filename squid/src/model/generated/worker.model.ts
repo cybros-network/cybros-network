@@ -64,6 +64,12 @@ export class Worker {
     @Column_("varchar", {length: 24, nullable: true})
     offlineReason!: OfflineReason | undefined | null
 
+    @Column_("timestamp with time zone", {nullable: true})
+    uptimeStartedAt!: Date | undefined | null
+
+    @Column_("int4", {nullable: true})
+    uptime!: number | undefined | null
+
     @Column_("int4", {nullable: false})
     poolsCount!: number
 

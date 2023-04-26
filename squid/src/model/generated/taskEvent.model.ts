@@ -18,8 +18,8 @@ export class TaskEvent {
     @Column_("varchar", {length: 10, nullable: false})
     kind!: TaskEventKind
 
-    @Column_("text", {nullable: true})
-    payload!: string | undefined | null
+    @Column_("jsonb", {nullable: true})
+    payload!: unknown | undefined | null
 
     @Column_("int4", {nullable: false})
     blockNumber!: number

@@ -1,7 +1,7 @@
 import { type Context } from "../processor"
 import {
-    OffchainComputingWorkerAddedEvent as WorkerAddedEvent,
-    OffchainComputingWorkerRemovedEvent as WorkerRemovedEvent,
+    OffchainComputingWorkerSubscribedEvent as WorkerSubscribedEvent,
+    OffchainComputingWorkerUnsubscribedEvent as WorkerUnsubscribedEvent,
 } from "../types/events"
 import { decodeSS58Address } from "../utils"
 import { WorkerEventKind } from "../model";
@@ -38,9 +38,9 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
         const blockTime = new Date(block.header.timestamp);
 
         for (let item of block.items) {
-            if (item.name == "OffchainComputing.WorkerAdded") {
-                let e = new WorkerAddedEvent(ctx, item.event)
-                let rec: { poolId: number, worker: Uint8Array }
+            if (item.name == "OffchainComputing.WorkerSubscribed") {
+                let e = new WorkerSubscribedEvent(ctx, item.event)
+                let rec: {worker: Uint8Array, poolId: number}
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -64,16 +64,16 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                 changes.poolWorkerCounterChange = 1
                 changes.workerEvents.push({
                     id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
-                    kind: WorkerEventKind.JoinedPool,
+                    kind: WorkerEventKind.SubscribedPool,
                     payload: {poolId: rec.poolId},
                     blockNumber,
                     blockTime,
                 })
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.WorkerRemoved") {
-                let e = new WorkerRemovedEvent(ctx, item.event)
-                let rec: { poolId: number, worker: Uint8Array }
+            } else if (item.name == "OffchainComputing.WorkerUnsubscribed") {
+                let e = new WorkerUnsubscribedEvent(ctx, item.event)
+                let rec: {worker: Uint8Array, poolId: number}
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -97,7 +97,7 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                 changes.poolWorkerCounterChange = -1
                 changes.workerEvents.push({
                     id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
-                    kind: WorkerEventKind.LeftPool,
+                    kind: WorkerEventKind.UnsubscribedPool,
                     payload: {poolId: rec.poolId},
                     blockNumber,
                     blockTime,

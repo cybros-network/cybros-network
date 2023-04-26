@@ -5,6 +5,6 @@ export enum WorkerEventKind {
     RequestingOffline = "RequestingOffline",
     Offline = "Offline",
     AttestationRefreshed = "AttestationRefreshed",
-    JoinedPool = "JoinedPool",
-    LeftPool = "LeftPool",
+    SubscribedPool = "SubscribedPool",
+    UnsubscribedPool = "UnsubscribedPool",
 }

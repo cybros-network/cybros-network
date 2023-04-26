@@ -3,7 +3,7 @@ import {
     Account,
     Impl, ImplBuild,
     Worker, WorkerEvent,
-    Pool, CreatingTaskPolicy, PoolWorkers,
+    Pool, TaskPolicy, PoolWorkers,
     Task,
 } from "./model"
 
@@ -99,11 +99,11 @@ export class PoolsManager extends EntitiesManager<Pool> {
     }
 }
 
-export class CreatingTaskPoliciesManager extends EntitiesManager<CreatingTaskPolicy> {
-    constructor(entityClass?: typeof CreatingTaskPolicy) {
+export class TaskPoliciesManager extends EntitiesManager<TaskPolicy> {
+    constructor(entityClass?: typeof TaskPolicy) {
         super({
-            entityClass: entityClass ? entityClass : CreatingTaskPolicy,
-            newEntityFunc: id => new CreatingTaskPolicy({id})
+            entityClass: entityClass ? entityClass : TaskPolicy,
+            newEntityFunc: id => new TaskPolicy({id})
         });
     }
 }

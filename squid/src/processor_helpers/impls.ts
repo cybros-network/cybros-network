@@ -2,13 +2,13 @@ import { type Context } from "../processor"
 import {
     OffchainComputingWorkersImplRegisteredEvent as ImplRegisteredEvent,
     OffchainComputingWorkersImplDeregisteredEvent as ImplDeregisteredEvent,
-    OffchainComputingWorkersImplDeploymentPermissionUpdatedEvent as ImplDeploymentPermissionUpdatedEvent,
+    OffchainComputingWorkersImplDeploymentScopeUpdatedEvent as ImplDeploymentScopeUpdatedEvent,
     OffchainComputingWorkersImplMetadataUpdatedEvent as ImplMetadataUpdatedEvent,
     OffchainComputingWorkersImplMetadataRemovedEvent as ImplMetadataRemovedEvent,
 } from "../types/events"
 import * as v100 from "../types/v100"
-import { AttestationMethod, ImplDeploymentPermission } from "../model"
-import { decodeSS58Address, u8aToString } from "../utils"
+import { AttestationMethod, ApplicableScope } from "../model"
+import { decodeSS58Address } from "../utils"
 import assert from "assert";
 
 function decodeAttestationMethod(attestationMethod?: v100.AttestationMethod): AttestationMethod {
@@ -25,19 +25,19 @@ function decodeAttestationMethod(attestationMethod?: v100.AttestationMethod): At
     }
 }
 
-function decodeImplDeploymentPermission(implDeploymentPermission?: v100.ImplDeploymentPermission): ImplDeploymentPermission {
-    if (!implDeploymentPermission) {
-        throw new Error("Unexpected undefined impl deployment permission")
+function decodeScope(scope?: v100.ApplicableScope): ApplicableScope {
+    if (!scope) {
+        throw new Error("Unexpected undefined scope")
     }
 
-    const kind = implDeploymentPermission.__kind
+    const kind = scope.__kind
     switch (kind) {
         case "Owner":
-            return ImplDeploymentPermission.Owner
+            return ApplicableScope.Owner
         case "Public":
-            return ImplDeploymentPermission.Public
+            return ApplicableScope.Public
         default:
-            throw new Error(`Unrecognized impl deployment permission ${kind}`)
+            throw new Error(`Unrecognized scope ${kind}`)
     }
 }
 
@@ -48,8 +48,8 @@ interface ImplChanges {
     owner?: string
 
     attestationMethod?: AttestationMethod
-    deploymentPermission?: ImplDeploymentPermission
-    metadata?: string | null
+    deploymentScope?: ApplicableScope
+    metadata?: Uint8Array | null
 
     createdAt: Date
     updatedAt: Date
@@ -69,7 +69,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                     implId: number,
                     owner: Uint8Array,
                     attestationMethod: v100.AttestationMethod,
-                    deploymentPermission: v100.ImplDeploymentPermission
+                    deploymentScope: v100.ApplicableScope
                 }
                 if (e.isV100) {
                     rec = e.asV100
@@ -87,7 +87,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
 
                 changes.owner = decodeSS58Address(rec.owner)
                 changes.attestationMethod = decodeAttestationMethod(rec.attestationMethod)
-                changes.deploymentPermission = decodeImplDeploymentPermission(rec.deploymentPermission)
+                changes.deploymentScope = decodeScope(rec.deploymentScope)
 
                 changes.deletedAt = null
                 changes.updatedAt = blockTime
@@ -113,10 +113,10 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 changes.deletedAt = blockTime
 
                 changeSet.set(id, changes)
-            } if (item.name == "OffchainComputingWorkers.ImplDeploymentPermissionUpdated") {
-                let e = new ImplDeploymentPermissionUpdatedEvent(ctx, item.event)
+            } if (item.name == "OffchainComputingWorkers.ImplDeploymentScopeUpdated") {
+                let e = new ImplDeploymentScopeUpdatedEvent(ctx, item.event)
                 let rec: {
-                    implId: number, permission: v100.ImplDeploymentPermission
+                    implId: number, scope: v100.ApplicableScope
                 }
                 if (e.isV100) {
                     rec = e.asV100
@@ -133,7 +133,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 }
                 assert(!changes.deletedAt)
 
-                changes.deploymentPermission = decodeImplDeploymentPermission(rec.permission)
+                changes.deploymentScope = decodeScope(rec.scope)
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
@@ -155,7 +155,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 }
                 assert(!changes.deletedAt)
 
-                changes.metadata = u8aToString(rec.metadata)
+                changes.metadata = rec.metadata
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)

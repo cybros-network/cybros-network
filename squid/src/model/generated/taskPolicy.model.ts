@@ -1,10 +1,10 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
 import {Pool} from "./pool.model"
-import {CreatingTaskPermission} from "./_creatingTaskPermission"
+import {ApplicableScope} from "./_applicableScope"
 
 @Entity_()
-export class CreatingTaskPolicy {
-    constructor(props?: Partial<CreatingTaskPolicy>) {
+export class TaskPolicy {
+    constructor(props?: Partial<TaskPolicy>) {
         Object.assign(this, props)
     }
 
@@ -18,8 +18,11 @@ export class CreatingTaskPolicy {
     @ManyToOne_(() => Pool, {nullable: true})
     _pool!: Pool
 
+    @Column_("bool", {nullable: false})
+    availability!: boolean
+
     @Column_("varchar", {length: 6, nullable: false})
-    permission!: CreatingTaskPermission
+    creatingTaskScope!: ApplicableScope
 
     @Column_("int4", {nullable: true})
     startBlock!: number | undefined | null

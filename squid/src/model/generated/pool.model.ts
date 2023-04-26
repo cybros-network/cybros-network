@@ -2,7 +2,7 @@ import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, M
 import {Account} from "./account.model"
 import {Impl} from "./impl.model"
 import {PoolWorkers} from "./poolWorkers.model"
-import {CreatingTaskPolicy} from "./creatingTaskPolicy.model"
+import {TaskPolicy} from "./taskPolicy.model"
 import {Task} from "./task.model"
 
 @Entity_()
@@ -32,10 +32,10 @@ export class Pool {
     implId!: number
 
     @Column_("bool", {nullable: false})
-    creatingTaskAbility!: boolean
+    creatingTaskAvailability!: boolean
 
-    @Column_("text", {nullable: true})
-    metadata!: string | undefined | null
+    @Column_("bytea", {nullable: true})
+    metadata!: Uint8Array | undefined | null
 
     @Column_("int4", {nullable: false})
     workersCount!: number
@@ -73,8 +73,8 @@ export class Pool {
     @OneToMany_(() => PoolWorkers, e => e._pool)
     workers!: PoolWorkers[]
 
-    @OneToMany_(() => CreatingTaskPolicy, e => e._pool)
-    creatingTaskPolicies!: CreatingTaskPolicy[]
+    @OneToMany_(() => TaskPolicy, e => e._pool)
+    taskPolicies!: TaskPolicy[]
 
     @OneToMany_(() => Task, e => e._pool)
     tasks!: Task[]

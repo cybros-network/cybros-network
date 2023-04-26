@@ -1,13 +1,13 @@
 # Squid abstract TypeORM so it's impossible to get the foreign key field, so we have to have some duplicates
 # But actually it will generate _id field, but don't expose them
 
-enum AttestationMethod {
-  OptOut
-}
-
-enum ImplDeploymentPermission {
+enum ApplicableScope {
   Owner
   Public
+}
+
+enum AttestationMethod {
+  OptOut
 }
 
 enum ImplBuildStatus {
@@ -21,6 +21,7 @@ enum WorkerStatus {
   Registered
   Deregistered
   Online
+  Unresponsive
   RequestingOffline
   Offline
 }
@@ -30,20 +31,16 @@ enum OfflineReason {
   Forced
   Unresponsive
   AttestationExpired
-  ImplBlocked
+  ImplBuildBlocked
   InsufficientDepositFunds
   Other
-}
-
-enum CreatingTaskPermission {
-  Owner
-  Public
 }
 
 enum TaskStatus {
   Pending
   Processing
   Processed
+  Discarded
 }
 
 enum TaskResult {
@@ -73,8 +70,8 @@ type Impl @entity {
   ownerAddress: String!
 
   attestationMethod: AttestationMethod!
-  deploymentPermission: ImplDeploymentPermission!
-  metadata: String
+  deploymentScope: ApplicableScope!
+  metadata: Bytes
 
   # stats
   poolsCount: Int!
@@ -137,6 +134,8 @@ type Worker @entity {
   lastHeartbeatReceivedAt: DateTime
   offlineAt: DateTime
   offlineReason: OfflineReason
+  uptimeStartedAt: DateTime
+  uptime: Int
 
   # stats
   poolsCount: Int!
@@ -164,8 +163,8 @@ enum WorkerEventKind {
   RequestingOffline
   Offline
   AttestationRefreshed
-  JoinedPool
-  LeftPool
+  SubscribedPool
+  UnsubscribedPool
 }
 
 type WorkerEvent @entity {
@@ -190,8 +189,8 @@ type Pool @entity {
   _impl: Impl! @index
   implId: Int!
 
-  creatingTaskAbility: Boolean!
-  metadata: String
+  creatingTaskAvailability: Boolean!
+  metadata: Bytes
 
   # stats
   workersCount: Int!
@@ -209,7 +208,7 @@ type Pool @entity {
   deletedAt: DateTime
 
   workers: [PoolWorkers!] @derivedFrom(field: "_pool")
-  creatingTaskPolicies: [CreatingTaskPolicy!] @derivedFrom(field: "_pool")
+  taskPolicies: [TaskPolicy!] @derivedFrom(field: "_pool")
   tasks: [Task!] @derivedFrom(field: "_pool")
 }
 
@@ -227,13 +226,14 @@ type PoolWorkers @entity {
   deletedAt: DateTime
 }
 
-type CreatingTaskPolicy @entity {
+type TaskPolicy @entity {
   id: ID!
   policyId: Int!
 
   _pool: Pool! @index
 
-  permission: CreatingTaskPermission!
+  availability: Boolean!
+  creatingTaskScope: ApplicableScope!
   startBlock: Int
   endBlock: Int
 
@@ -249,7 +249,7 @@ type Task @entity {
   _pool: Pool! @index
   poolId: Int!
 
-  _policy: CreatingTaskPolicy!
+  _policy: TaskPolicy!
   policyId: Int!
 
   _owner: Account! @index
@@ -265,15 +265,15 @@ type Task @entity {
   result: TaskResult
 
   implSpecVersion: Int!
-  input: String
-  output: String
-  proof: String
+  input: Bytes
+  output: Bytes
+  proof: Bytes
 
   # timestamps
   expiresAt: DateTime!
   assignedAt: DateTime
   processingAt: DateTime
-  processedAt: DateTime
+  endedAt: DateTime
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime
@@ -285,6 +285,7 @@ enum TaskEventKind {
   Created
   Assigned
   Processing
+  Discarded
   Success
   Fail
   Error
@@ -297,7 +298,7 @@ type TaskEvent @entity {
   _task: Task! @index
 
   kind: TaskEventKind!
-  payload: String
+  payload: JSON
 
   blockNumber: Int!
   blockTime: DateTime!

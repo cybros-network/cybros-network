@@ -4,10 +4,9 @@ import {
     OffchainComputingPoolDestroyedEvent as PoolDestroyedEvent,
     OffchainComputingPoolMetadataUpdatedEvent as PoolMetadataUpdatedEvent,
     OffchainComputingPoolMetadataRemovedEvent as PoolMetadataRemovedEvent,
-    OffchainComputingPoolCreatingTaskAbilityEnabledEvent as PoolCreatingTaskAbilityEnabledEvent,
-    OffchainComputingPoolCreatingTaskAbilityDisabledEvent as PoolCreatingTaskAbilityDisabledEvent,
+    OffchainComputingPoolCreatingTaskAvailabilityUpdatedEvent as PoolCreatingTaskAvailabilityUpdatedEvent,
 } from "../types/events"
-import { decodeSS58Address, u8aToString } from "../utils";
+import { decodeSS58Address } from "../utils";
 import assert from "assert";
 
 interface PoolChanges {
@@ -17,8 +16,8 @@ interface PoolChanges {
     owner?: string
     implId?: number
 
-    creatingTaskAbility?: boolean
-    metadata?: string | null
+    creatingTaskAvailability?: boolean
+    metadata?: Uint8Array | null
 
     createdAt: Date
     updatedAt: Date
@@ -51,7 +50,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
 
                 changes.owner = decodeSS58Address(rec.owner)
                 changes.implId = rec.poolId
-                changes.creatingTaskAbility = true
+                changes.creatingTaskAvailability = true
                 changes.metadata = null
 
                 changes.deletedAt = null
@@ -97,7 +96,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 }
                 assert(!changes.deletedAt)
 
-                changes.metadata = u8aToString(rec.metadata)
+                changes.metadata = rec.metadata
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
@@ -123,9 +122,9 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.PoolCreatingTaskAbilityEnabled") {
-                let e = new PoolCreatingTaskAbilityEnabledEvent(ctx, item.event)
-                let rec: { poolId: number }
+            } else if (item.name == "OffchainComputing.PoolCreatingTaskAvailabilityUpdated") {
+                let e = new PoolCreatingTaskAvailabilityUpdatedEvent(ctx, item.event)
+                let rec: {poolId: number, availability: boolean}
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -141,29 +140,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 }
                 assert(!changes.deletedAt)
 
-                changes.creatingTaskAbility = true
-                changes.updatedAt = blockTime
-
-                changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.PoolCreatingTaskAbilityDisabled") {
-                let e = new PoolCreatingTaskAbilityDisabledEvent(ctx, item.event)
-                let rec: { poolId: number }
-                if (e.isV100) {
-                    rec = e.asV100
-                } else {
-                    throw new Error('Unsupported spec')
-                }
-
-                const id = rec.poolId.toString()
-                const changes: PoolChanges = changeSet.get(id) || {
-                    id,
-                    poolId: rec.poolId,
-                    createdAt: blockTime,
-                    updatedAt: blockTime
-                }
-                assert(!changes.deletedAt)
-
-                changes.creatingTaskAbility = false
+                changes.creatingTaskAvailability = rec.availability
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)

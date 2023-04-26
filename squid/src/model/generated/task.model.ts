@@ -1,6 +1,6 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToMany as OneToMany_} from "typeorm"
 import {Pool} from "./pool.model"
-import {CreatingTaskPolicy} from "./creatingTaskPolicy.model"
+import {TaskPolicy} from "./taskPolicy.model"
 import {Account} from "./account.model"
 import {Worker} from "./worker.model"
 import {TaskStatus} from "./_taskStatus"
@@ -27,8 +27,8 @@ export class Task {
     poolId!: number
 
     @Index_()
-    @ManyToOne_(() => CreatingTaskPolicy, {nullable: true})
-    _policy!: CreatingTaskPolicy
+    @ManyToOne_(() => TaskPolicy, {nullable: true})
+    _policy!: TaskPolicy
 
     @Column_("int4", {nullable: false})
     policyId!: number
@@ -64,14 +64,14 @@ export class Task {
     @Column_("int4", {nullable: false})
     implSpecVersion!: number
 
-    @Column_("text", {nullable: true})
-    input!: string | undefined | null
+    @Column_("bytea", {nullable: true})
+    input!: Uint8Array | undefined | null
 
-    @Column_("text", {nullable: true})
-    output!: string | undefined | null
+    @Column_("bytea", {nullable: true})
+    output!: Uint8Array | undefined | null
 
-    @Column_("text", {nullable: true})
-    proof!: string | undefined | null
+    @Column_("bytea", {nullable: true})
+    proof!: Uint8Array | undefined | null
 
     @Column_("timestamp with time zone", {nullable: false})
     expiresAt!: Date
@@ -83,7 +83,7 @@ export class Task {
     processingAt!: Date | undefined | null
 
     @Column_("timestamp with time zone", {nullable: true})
-    processedAt!: Date | undefined | null
+    endedAt!: Date | undefined | null
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date

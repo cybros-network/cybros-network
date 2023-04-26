@@ -1,33 +1,36 @@
 import { type Context } from "../processor"
 import {
-    OffchainComputingCreatingTaskPolicyCreatedEvent as CreatingTaskPolicyCreatedEvent,
-    OffchainComputingCreatingTaskPolicyDestroyedEvent as CreatingTaskPolicyDestroyedEvent,
+    OffchainComputingTaskPolicyCreatedEvent as TaskPolicyCreatedEvent,
+    OffchainComputingTaskPolicyDestroyedEvent as TaskPolicyDestroyedEvent,
+    OffchainComputingTaskPolicyAvailabilityUpdatedEvent as TaskPolicyAvailabilityUpdatedEvent,
 } from "../types/events"
 import * as v100 from "../types/v100"
-import { CreatingTaskPermission } from "../model";
+import {ApplicableScope} from "../model";
+import assert from "assert";
 
-function decodeCreatingTaskPermission(creatingTaskPermission?: v100.CreatingTaskPermission): CreatingTaskPermission {
-    if (!creatingTaskPermission) {
-        throw new Error("Unexpected undefined creating task permission")
+function decodeScope(scope?: v100.ApplicableScope): ApplicableScope {
+    if (!scope) {
+        throw new Error("Unexpected undefined scope")
     }
 
-    const kind = creatingTaskPermission.__kind
+    const kind = scope.__kind
     switch (kind) {
         case "Owner":
-            return CreatingTaskPermission.Owner
+            return ApplicableScope.Owner
         case "Public":
-            return CreatingTaskPermission.Public
+            return ApplicableScope.Public
         default:
-            throw new Error(`Unrecognized creating task permission ${kind}`)
+            throw new Error(`Unrecognized scope ${kind}`)
     }
 }
 
-interface CreatingTaskPolicyChanges {
+interface TaskPolicyChanges {
     readonly id: string
     readonly poolId: number
     readonly policyId: number
 
-    permission?: CreatingTaskPermission
+    availability?: boolean
+    creatingTaskScope?: ApplicableScope
     startBlock?: number
     endBlock?: number
 
@@ -36,16 +39,22 @@ interface CreatingTaskPolicyChanges {
     deletedAt?: Date | null
 }
 
-export function preprocessCreatingTaskPoliciesEvents(ctx: Context): Map<string, CreatingTaskPolicyChanges> {
-    const changeSet= new Map<string, CreatingTaskPolicyChanges>();
+export function preprocessTaskPoliciesEvents(ctx: Context): Map<string, TaskPolicyChanges> {
+    const changeSet= new Map<string, TaskPolicyChanges>();
 
     for (let block of ctx.blocks) {
         const blockTime = new Date(block.header.timestamp);
 
         for (let item of block.items) {
-            if (item.name == "OffchainComputing.CreatingTaskPolicyCreated") {
-                let e = new CreatingTaskPolicyCreatedEvent(ctx, item.event)
-                let rec: { poolId: number, policyId: number, policy: v100.CreatingTaskPolicy }
+            if (item.name == "OffchainComputing.TaskPolicyCreated") {
+                let e = new TaskPolicyCreatedEvent(ctx, item.event)
+                let rec: {
+                    poolId: number,
+                    policyId: number,
+                    creatingTaskScope: v100.ApplicableScope,
+                    startBlock: (number | undefined),
+                    endBlock: (number | undefined)
+                }
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -53,7 +62,7 @@ export function preprocessCreatingTaskPoliciesEvents(ctx: Context): Map<string, 
                 }
 
                 const id = `${rec.poolId}-${rec.policyId}`
-                const changes: CreatingTaskPolicyChanges = changeSet.get(id) || {
+                const changes: TaskPolicyChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
                     policyId: rec.policyId,
@@ -61,17 +70,18 @@ export function preprocessCreatingTaskPoliciesEvents(ctx: Context): Map<string, 
                     updatedAt: blockTime
                 }
 
-                changes.permission = decodeCreatingTaskPermission(rec.policy.permission)
-                changes.startBlock = rec.policy.startBlock
-                changes.endBlock = rec.policy.endBlock
+                changes.availability = true
+                changes.creatingTaskScope = decodeScope(rec.creatingTaskScope)
+                changes.startBlock = rec.startBlock
+                changes.endBlock = rec.endBlock
 
                 changes.deletedAt = null
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.CreatingTaskPolicyDestroyed") {
-                let e = new CreatingTaskPolicyDestroyedEvent(ctx, item.event)
-                let rec: { poolId: number, policyId: number }
+            } else if (item.name == "OffchainComputing.TaskPolicyDestroyed") {
+                let e = new TaskPolicyDestroyedEvent(ctx, item.event)
+                let rec: {poolId: number, policyId: number}
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -79,7 +89,7 @@ export function preprocessCreatingTaskPoliciesEvents(ctx: Context): Map<string, 
                 }
 
                 const id = `${rec.poolId}-${rec.policyId}`
-                const changes: CreatingTaskPolicyChanges = changeSet.get(id) || {
+                const changes: TaskPolicyChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
                     policyId: rec.policyId,
@@ -87,7 +97,31 @@ export function preprocessCreatingTaskPoliciesEvents(ctx: Context): Map<string, 
                     updatedAt: blockTime
                 }
 
+                changes.availability = false
                 changes.deletedAt = blockTime
+                changes.updatedAt = blockTime
+
+                changeSet.set(id, changes)
+            } else if (item.name == "OffchainComputing.TaskPolicyAvailabilityUpdated") {
+                let e = new TaskPolicyAvailabilityUpdatedEvent(ctx, item.event)
+                let rec: {poolId: number, policyId: number, availability: boolean}
+                if (e.isV100) {
+                    rec = e.asV100
+                } else {
+                    throw new Error('Unsupported spec')
+                }
+
+                const id = `${rec.poolId}-${rec.policyId}`
+                const changes: TaskPolicyChanges = changeSet.get(id) || {
+                    id,
+                    poolId: rec.poolId,
+                    policyId: rec.policyId,
+                    createdAt: blockTime,
+                    updatedAt: blockTime
+                }
+                assert(!changes.deletedAt)
+
+                changes.availability = rec.availability
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)

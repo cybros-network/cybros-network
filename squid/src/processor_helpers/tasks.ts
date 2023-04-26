@@ -9,7 +9,7 @@ import {
 } from "../types/events"
 import * as v100 from "../types/v100";
 import {TaskResult, TaskStatus} from "../model/index";
-import {decodeSS58Address, u8aToString} from "../utils"
+import {decodeSS58Address} from "../utils"
 import assert from "assert";
 
 function decodeTaskStatus(taskStatus?: v100.TaskStatus): TaskStatus {
@@ -62,14 +62,14 @@ interface TaskChanges {
     status?: TaskStatus
     result?: TaskResult
 
-    input?: string | null
-    output?: string | null
-    proof?: string | null
+    input?: Uint8Array | null
+    output?: Uint8Array | null
+    proof?: Uint8Array | null
 
     expiresAt?: Date
     assignedAt?: Date | null
     processingAt?: Date
-    processedAt?: Date
+    endedAt?: Date
     createdAt: Date
     updatedAt: Date
     deletedAt?: Date | null
@@ -112,7 +112,7 @@ export function preprocessTasksEvents(ctx: Context): Map<string, TaskChanges> {
                 changes.owner = decodeSS58Address(rec.owner)
                 changes.status = TaskStatus.Pending
                 changes.implSpecVersion = rec.implSpecVersion
-                changes.input = rec.input ? u8aToString(rec.input) : null
+                changes.input = rec.input ? rec.input : null
                 changes.expiresAt = new Date(block.header.timestamp + Number(rec.expiresIn) * 1000)
 
                 changes.deletedAt = null
@@ -214,7 +214,7 @@ export function preprocessTasksEvents(ctx: Context): Map<string, TaskChanges> {
                 if (changes.status == TaskStatus.Processing) {
                     changes.processingAt = blockTime
                 } else if (changes.status == TaskStatus.Processed) {
-                    changes.processedAt = blockTime
+                    changes.endedAt = blockTime
                 }
                 changes.updatedAt = blockTime
 
@@ -245,8 +245,8 @@ export function preprocessTasksEvents(ctx: Context): Map<string, TaskChanges> {
                 assert(!changes.deletedAt)
 
                 changes.result = decodeTaskResult(rec.result)
-                changes.output = rec.output ? u8aToString(rec.output) : null
-                changes.proof = rec.proof ? u8aToString(rec.proof) : null
+                changes.output = rec.output ? rec.output : null
+                changes.proof = rec.proof ? rec.proof : null
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)

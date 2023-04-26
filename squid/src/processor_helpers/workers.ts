@@ -12,6 +12,7 @@ import * as v100 from "../types/v100"
 import {AttestationMethod, OfflineReason, WorkerEventKind, WorkerStatus} from "../model"
 import {decodeSS58Address} from "../utils"
 import assert from "assert";
+import {BigDecimal} from "@subsquid/big-decimal";
 
 function decodeAttestationMethod(attestationMethod?: v100.AttestationMethod): AttestationMethod {
     if (!attestationMethod) {
@@ -42,8 +43,8 @@ function decodeOfflineReason(offlineReason?: v100.OfflineReason): OfflineReason 
             return OfflineReason.Unresponsive
         case "AttestationExpired":
             return OfflineReason.AttestationExpired
-        case "ImplBlocked":
-            return OfflineReason.ImplBlocked
+        case "ImplBuildBlocked":
+            return OfflineReason.ImplBuildBlocked
         case "InsufficientDepositFunds":
             return OfflineReason.InsufficientDepositFunds
         case "Other":
@@ -78,6 +79,8 @@ interface WorkerChanges {
     lastHeartbeatReceivedAt?: Date | null
     offlineAt?: Date
     offlineReason?: OfflineReason
+    uptimeStartedAt?: Date | null
+    uptime?: number | null
 
     createdAt: Date
     updatedAt: Date
@@ -157,6 +160,15 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.updatedAt = blockTime
                 changes.deletedAt = blockTime
 
+                changes.implSpecVersion = null
+                changes.implBuildVersion = null
+                changes.attestationMethod = null
+                changes.attestationExpiresAt = null
+                changes.lastAttestedAt = null
+                changes.lastHeartbeatReceivedAt = null
+                changes.uptime = null
+                changes.uptimeStartedAt = null
+
                 changes.registerWorkerCounterChange -= 1
                 changes.onlineWorkerCounterChange -= rec.force ? 1 : 0
                 changes.events.push({
@@ -202,6 +214,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.attestationExpiresAt = rec.attestationExpiresAt ? new Date(Number(rec.attestationExpiresAt)) : undefined
                 changes.lastAttestedAt = blockTime
                 changes.lastHeartbeatReceivedAt = blockTime
+                changes.uptime = 0
+                changes.uptimeStartedAt = blockTime
                 changes.updatedAt = blockTime
 
                 changes.onlineWorkerCounterChange += 1
@@ -275,6 +289,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.attestationExpiresAt = null
                 changes.lastAttestedAt = null
                 changes.lastHeartbeatReceivedAt = null
+                changes.uptime = null
+                changes.uptimeStartedAt = null
 
                 changes.onlineWorkerCounterChange -= 1
                 changes.events.push({
@@ -287,7 +303,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changeSet.set(id, changes)
             } else if (item.name == "OffchainComputingWorkers.WorkerHeartbeatReceived") {
                 let e = new WorkerHeartbeatReceivedEvent(ctx, item.event)
-                let rec: { worker: Uint8Array, next: number }
+                let rec: { worker: Uint8Array, next: number, uptime: bigint }
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -306,6 +322,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 assert(!changes.deletedAt)
 
                 changes.lastHeartbeatReceivedAt = blockTime
+                changes.uptime = Number(rec.uptime)
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)

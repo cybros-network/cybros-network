@@ -1,4 +1,4 @@
-export enum ImplDeploymentPermission {
+export enum ApplicableScope {
     Owner = "Owner",
     Public = "Public",
 }

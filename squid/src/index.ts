@@ -6,14 +6,14 @@ import {
     preprocessImplsEvents,
     preprocessImplBuildsEvents,
     preprocessWorkersEvents,
-    preprocessPoolsEvents, preprocessCreatingTaskPoliciesEvents, preprocessPoolWorkersEvents, preprocessTasksEvents,
+    preprocessPoolsEvents, preprocessTaskPoliciesEvents, preprocessPoolWorkersEvents, preprocessTasksEvents,
 } from "./processor_helpers"
 import {
     AccountsManager,
     ImplsManager,
     ImplBuildsManager,
     WorkersManager, WorkerEventsManager,
-    PoolsManager, CreatingTaskPoliciesManager, PoolWorkersManager,
+    PoolsManager, TaskPoliciesManager, PoolWorkersManager,
     TasksManager,
 } from "./entity_managers"
 
@@ -28,7 +28,7 @@ processor.run(database, async (ctx: Context) => {
     const implBuildsChangeSet = preprocessImplBuildsEvents(ctx)
     const workersChangeSet = preprocessWorkersEvents(ctx)
     const poolsChangeSet = preprocessPoolsEvents(ctx)
-    const creatingTaskPoliciesChangeSet = preprocessCreatingTaskPoliciesEvents(ctx)
+    const taskPoliciesChangeSet = preprocessTaskPoliciesEvents(ctx)
     const poolWorkersChangeSet = preprocessPoolWorkersEvents(ctx)
     const tasksChangeSet = preprocessTasksEvents(ctx)
 
@@ -39,7 +39,7 @@ processor.run(database, async (ctx: Context) => {
     const workersManager = new WorkersManager().init(ctx)
     const workerEventsManager = new WorkerEventsManager().init(ctx)
     const poolsManager = new PoolsManager().init(ctx)
-    const creatingTaskPoliciesManager = new CreatingTaskPoliciesManager().init(ctx)
+    const taskPoliciesManager = new TaskPoliciesManager().init(ctx)
     const poolWorkersManager = new PoolWorkersManager().init(ctx)
     const tasksManager = new TasksManager().init(ctx)
 
@@ -119,7 +119,7 @@ processor.run(database, async (ctx: Context) => {
     for (let [id, _changes] of poolsChangeSet) {
         poolsManager.addPrefetchItemId(id)
     }
-    for (let [_id, changes] of creatingTaskPoliciesChangeSet) {
+    for (let [_id, changes] of taskPoliciesChangeSet) {
         if (changes.poolId) {
             poolsManager.addPrefetchItemId(changes.poolId.toString())
         }
@@ -135,16 +135,16 @@ processor.run(database, async (ctx: Context) => {
     await poolsManager.prefetchEntities()
 
     // Creating task policies
-    for (let [id, _changes] of creatingTaskPoliciesChangeSet) {
-        creatingTaskPoliciesManager.addPrefetchItemId(id)
+    for (let [id, _changes] of taskPoliciesChangeSet) {
+        taskPoliciesManager.addPrefetchItemId(id)
     }
     for (let [_id, changes] of tasksChangeSet) {
         if (changes.policyId) {
             assert(changes.poolId)
-            creatingTaskPoliciesManager.addPrefetchItemId(`${changes.poolId}-${changes.policyId}`)
+            taskPoliciesManager.addPrefetchItemId(`${changes.poolId}-${changes.policyId}`)
         }
     }
-    await creatingTaskPoliciesManager.prefetchEntities()
+    await taskPoliciesManager.prefetchEntities()
 
     // Pool workers
     for (let [id, _changes] of poolWorkersChangeSet) {
@@ -176,8 +176,8 @@ processor.run(database, async (ctx: Context) => {
             if (changes.attestationMethod) {
                 impl.attestationMethod = changes.attestationMethod
             }
-            if (changes.deploymentPermission) {
-                impl.deploymentPermission = changes.deploymentPermission
+            if (changes.deploymentScope) {
+                impl.deploymentScope = changes.deploymentScope
             }
             if (changes.metadata !== undefined) {
                 impl.metadata = changes.metadata
@@ -314,8 +314,8 @@ processor.run(database, async (ctx: Context) => {
                 pool.implId = changes.implId
                 pool._impl = (await implsManager.get(changes.implId.toString()))!
             }
-            if (changes.creatingTaskAbility) {
-                pool.creatingTaskAbility = changes.creatingTaskAbility
+            if (changes.creatingTaskAvailability) {
+                pool.creatingTaskAvailability = changes.creatingTaskAvailability
             }
             if (changes.metadata !== undefined) {
                 pool.metadata = changes.metadata
@@ -333,33 +333,36 @@ processor.run(database, async (ctx: Context) => {
     await poolsManager.saveAll()
 
     // Process create task policies' changeset
-    for (let [id, changes] of creatingTaskPoliciesChangeSet) {
-        await creatingTaskPoliciesManager.upsert(id, async (createTaskPolicy) => {
+    for (let [id, changes] of taskPoliciesChangeSet) {
+        await taskPoliciesManager.upsert(id, async (taskPolicy) => {
             if (changes.poolId) {
-                createTaskPolicy._pool = (await poolsManager.get(changes.poolId.toString()))!
+                taskPolicy._pool = (await poolsManager.get(changes.poolId.toString()))!
             }
             if (changes.policyId) {
-                createTaskPolicy.policyId = changes.policyId
+                taskPolicy.policyId = changes.policyId
             }
-            if (changes.permission) {
-                createTaskPolicy.permission = changes.permission
+            if (changes.availability) {
+                taskPolicy.availability = changes.availability
+            }
+            if (changes.creatingTaskScope) {
+                taskPolicy.creatingTaskScope = changes.creatingTaskScope
             }
             if (changes.startBlock) {
-                createTaskPolicy.startBlock = changes.startBlock
+                taskPolicy.startBlock = changes.startBlock
             }
             if (changes.endBlock) {
-                createTaskPolicy.endBlock = changes.endBlock
+                taskPolicy.endBlock = changes.endBlock
             }
             if (changes.createdAt) {
-                createTaskPolicy.createdAt = changes.createdAt
+                taskPolicy.createdAt = changes.createdAt
             }
             if (changes.deletedAt !== undefined) {
-                createTaskPolicy.deletedAt = changes.deletedAt
+                taskPolicy.deletedAt = changes.deletedAt
             }
-            createTaskPolicy.updatedAt = changes.updatedAt
+            taskPolicy.updatedAt = changes.updatedAt
         })
     }
-    await creatingTaskPoliciesManager.saveAll()
+    await taskPoliciesManager.saveAll()
 
     // Process pool workers' changeset
     for (let [id, changes] of poolWorkersChangeSet) {
@@ -414,7 +417,7 @@ processor.run(database, async (ctx: Context) => {
             if (!task.policyId) {
                 assert(changes.policyId)
                 task.policyId = changes.policyId
-                task._policy = (await creatingTaskPoliciesManager.get(`${changes.poolId}-${changes.policyId}`))!
+                task._policy = (await taskPoliciesManager.get(`${changes.poolId}-${changes.policyId}`))!
             }
             if (changes.owner) {
                 task.ownerAddress = changes.owner
@@ -455,8 +458,8 @@ processor.run(database, async (ctx: Context) => {
             if (changes.processingAt) {
                 task.processingAt = changes.processingAt
             }
-            if (changes.processedAt) {
-                task.processedAt = changes.processedAt
+            if (changes.endedAt) {
+                task.endedAt = changes.endedAt
             }
             if (changes.createdAt) {
                 task.createdAt = changes.createdAt
@@ -602,7 +605,7 @@ processor.run(database, async (ctx: Context) => {
     await workersManager.saveAll()
     await workerEventsManager.saveAll()
     await poolsManager.saveAll()
-    await creatingTaskPoliciesManager.saveAll()
+    await taskPoliciesManager.saveAll()
     await poolWorkersManager.saveAll()
     await tasksManager.saveAll()
 })
