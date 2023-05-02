@@ -27,9 +27,10 @@
 // var u64 = function(h, l) { this.hi = h|0 >>> 0; this.lo = l|0 >>> 0; };
 
 function gf(init: Float64Array): Float64Array {
-  let i, r = new Float64Array(16);
-  if (init) for (i = 0; i < init.length; i++) r[i] = init[i];
-  return r;
+  let i,
+      r = new Float64Array(16)
+  if (init) for (i = 0; i < init.length; i++) r[i] = init[i]
+  return r
 }
 
 // //  Pluggable, initialized in high-level API below.
@@ -47,16 +48,18 @@ function gf(init: Float64Array): Float64Array {
 //     Y = gf([0x6658, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666]),
 //     I = gf([0xa0b0, 0x4a0e, 0x1b27, 0xc4ee, 0xe478, 0xad2f, 0x1806, 0x2f43, 0xd7a7, 0x3dfb, 0x0099, 0x2b4d, 0xdf0b, 0x4fc1, 0x2480, 0x2b83]);
 
-const _0 = new Uint8Array(16);
-const _121665 = gf([0xdb41, 1]);
+const _0 = new Uint8Array(16)
+const _121665 = gf([0xdb41, 1])
 
-function L32 (x: number, c: number): number { return (x << c) | (x >>> (32 - c)); }
+function L32(x: number, c: number): number {
+  return (x << c) | (x >>> (32 - c))
+}
 
-function ld32 (x: Uint8Array, i: number): number {
-  let u = x[i+3] & 0xff;
-  u = (u<<8)|(x[i+2] & 0xff);
-  u = (u<<8)|(x[i+1] & 0xff);
-  return (u<<8)|(x[i+0] & 0xff);
+function ld32(x: Uint8Array, i: number): number {
+  let u = x[i + 3] & 0xff
+  u = (u << 8) | (x[i + 2] & 0xff)
+  u = (u << 8) | (x[i + 1] & 0xff)
+  return (u << 8) | (x[i + 0] & 0xff)
 }
 
 // function dl64(x, i) {
@@ -65,8 +68,11 @@ function ld32 (x: Uint8Array, i: number): number {
 //   return new u64(h, l);
 // }
 
-function st32 (x: Uint8Array, j: number, u: number): void {
-  for (let i = 0; i < 4; i++) { x[j+i] = u & 255; u >>>= 8; }
+function st32(x: Uint8Array, j: number, u: number): void {
+  for (let i = 0; i < 4; i++) {
+    x[j + i] = u & 255
+    u >>>= 8
+  }
 }
 
 // function ts64(x, i, u) {
@@ -80,10 +86,10 @@ function st32 (x: Uint8Array, j: number, u: number): void {
 //   x[i+7] = u.lo & 0xff;
 // }
 
-function vn (x: Uint8Array, xi: number, y: Uint8Array, yi: number, n: number): number {
-  let d = 0;
-  for (let i = 0; i < n; i++) d |= x[xi+i]^y[yi+i];
-  return (1 & ((d - 1) >>> 8)) - 1;
+function vn(x: Uint8Array, xi: number, y: Uint8Array, yi: number, n: number): number {
+  let d = 0
+  for (let i = 0; i < n; i++) d |= x[xi + i] ^ y[yi + i]
+  return (1 & ((d - 1) >>> 8)) - 1
 }
 
 // function crypto_verify_16 (x: Uint8Array, xi: number, y: Uint8Array, yi: number): number {
@@ -94,43 +100,46 @@ function vn (x: Uint8Array, xi: number, y: Uint8Array, yi: number, n: number): n
 //   return vn(x,xi,y,yi,32);
 // }
 
-function core (out: Uint8Array, inp: Uint8Array, k: Uint8Array, c: Uint8Array, h: boolean): void {
-  const w = new Uint32Array(16), x = new Uint32Array(16), y = new Uint32Array(16), t = new Uint32Array(4);
-  let i, j, m;
+function core(out: Uint8Array, inp: Uint8Array, k: Uint8Array, c: Uint8Array, h: boolean): void {
+  const w = new Uint32Array(16),
+      x = new Uint32Array(16),
+      y = new Uint32Array(16),
+      t = new Uint32Array(4)
+  let i, j, m
 
   for (i = 0; i < 4; i++) {
-    x[5*i] = ld32(c, 4*i);
-    x[1+i] = ld32(k, 4*i);
-    x[6+i] = ld32(inp, 4*i);
-    x[11+i] = ld32(k, 16+4*i);
+    x[5 * i] = ld32(c, 4 * i)
+    x[1 + i] = ld32(k, 4 * i)
+    x[6 + i] = ld32(inp, 4 * i)
+    x[11 + i] = ld32(k, 16 + 4 * i)
   }
 
-  for (i = 0; i < 16; i++) y[i] = x[i];
+  for (i = 0; i < 16; i++) y[i] = x[i]
 
   for (i = 0; i < 20; i++) {
     for (j = 0; j < 4; j++) {
-      for (m = 0; m < 4; m++) t[m] = x[(5*j+4*m)%16];
-      t[1] ^= L32((t[0]+t[3])|0, 7);
-      t[2] ^= L32((t[1]+t[0])|0, 9);
-      t[3] ^= L32((t[2]+t[1])|0,13);
-      t[0] ^= L32((t[3]+t[2])|0,18);
-      for (m = 0; m < 4; m++) w[4*j+(j+m)%4] = t[m];
+      for (m = 0; m < 4; m++) t[m] = x[(5 * j + 4 * m) % 16]
+      t[1] ^= L32((t[0] + t[3]) | 0, 7)
+      t[2] ^= L32((t[1] + t[0]) | 0, 9)
+      t[3] ^= L32((t[2] + t[1]) | 0, 13)
+      t[0] ^= L32((t[3] + t[2]) | 0, 18)
+      for (m = 0; m < 4; m++) w[4 * j + ((j + m) % 4)] = t[m]
     }
-    for (m = 0; m < 16; m++) x[m] = w[m];
+    for (m = 0; m < 16; m++) x[m] = w[m]
   }
 
   if (h) {
-    for (i = 0; i < 16; i++) x[i] = (x[i] + y[i]) | 0;
+    for (i = 0; i < 16; i++) x[i] = (x[i] + y[i]) | 0
     for (i = 0; i < 4; i++) {
-      x[5*i] = (x[5*i] - ld32(c, 4*i)) | 0;
-      x[6+i] = (x[6+i] - ld32(inp, 4*i)) | 0;
+      x[5 * i] = (x[5 * i] - ld32(c, 4 * i)) | 0
+      x[6 + i] = (x[6 + i] - ld32(inp, 4 * i)) | 0
     }
     for (i = 0; i < 4; i++) {
-      st32(out,4*i,x[5*i]);
-      st32(out,16+4*i,x[6+i]);
+      st32(out, 4 * i, x[5 * i])
+      st32(out, 16 + 4 * i, x[6 + i])
     }
   } else {
-    for (i = 0; i < 16; i++) st32(out, 4 * i, (x[i] + y[i]) | 0);
+    for (i = 0; i < 16; i++) st32(out, 4 * i, (x[i] + y[i]) | 0)
   }
 }
 
@@ -139,38 +148,47 @@ function core (out: Uint8Array, inp: Uint8Array, k: Uint8Array, c: Uint8Array, h
 //   return 0;
 // }
 
-function crypto_core_hsalsa20 (out: Uint8Array, inp: Uint8Array, k: Uint8Array, c: Uint8Array): number {
-  core(out,inp,k,c,true);
-  return 0;
+function crypto_core_hsalsa20(out: Uint8Array, inp: Uint8Array, k: Uint8Array, c: Uint8Array): number {
+  core(out, inp, k, c, true)
+  return 0
 }
 
-const sigma = new Uint8Array([101, 120, 112, 97, 110, 100, 32, 51, 50, 45, 98, 121, 116, 101, 32, 107]);
+const sigma = new Uint8Array([101, 120, 112, 97, 110, 100, 32, 51, 50, 45, 98, 121, 116, 101, 32, 107])
 // "expand 32-byte k"
 
-function crypto_stream_salsa20_xor (c: Uint8Array, cpos: number, m: Uint8Array | null, mpos: number, b: number, n: Uint8Array, k: Uint8Array): number {
-  const z = new Uint8Array(16), x = new Uint8Array(64);
-  let u, i;
-  if (!b) return 0;
-  for (i = 0; i < 16; i++) z[i] = 0;
-  for (i = 0; i < 8; i++) z[i] = n[i];
+function crypto_stream_salsa20_xor(
+    c: Uint8Array,
+    cpos: number,
+    m: Uint8Array | null,
+    mpos: number,
+    b: number,
+    n: Uint8Array,
+    k: Uint8Array
+): number {
+  const z = new Uint8Array(16),
+      x = new Uint8Array(64)
+  let u, i
+  if (!b) return 0
+  for (i = 0; i < 16; i++) z[i] = 0
+  for (i = 0; i < 8; i++) z[i] = n[i]
   while (b >= 64) {
-    core(x, z, k, sigma, false);
-    for (i = 0; i < 64; i++) c[cpos+i] = (m?m[mpos+i]:0) ^ x[i];
-    u = 1;
+    core(x, z, k, sigma, false)
+    for (i = 0; i < 64; i++) c[cpos + i] = (m ? m[mpos + i] : 0) ^ x[i]
+    u = 1
     for (i = 8; i < 16; i++) {
-      u = u + (z[i] & 0xff) | 0;
-      z[i] = u & 0xff;
-      u >>>= 8;
+      u = (u + (z[i] & 0xff)) | 0
+      z[i] = u & 0xff
+      u >>>= 8
     }
-    b -= 64;
-    cpos += 64;
-    if (m) mpos += 64;
+    b -= 64
+    cpos += 64
+    if (m) mpos += 64
   }
   if (b > 0) {
-    core(x, z, k, sigma, false);
-    for (i = 0; i < b; i++) c[cpos+i] = (m?m[mpos+i]:0) ^ x[i];
+    core(x, z, k, sigma, false)
+    for (i = 0; i < b; i++) c[cpos + i] = (m ? m[mpos + i] : 0) ^ x[i]
   }
-  return 0;
+  return 0
 }
 
 // function crypto_stream_salsa20 (c: Uint8Array, cpos: number, d: number, n: Uint8Array, k: Uint8Array): number {
@@ -183,97 +201,119 @@ function crypto_stream_salsa20_xor (c: Uint8Array, cpos: number, m: Uint8Array |
 //   return crypto_stream_salsa20(c,cpos,d,n.subarray(16),s);
 // }
 
-function crypto_stream_xor (c: Uint8Array, cpos: number, m: Uint8Array | null, mpos: number, d: number, n: Uint8Array, k: Uint8Array): number {
-  const s = new Uint8Array(32);
-  core(s, n, k, sigma, true);
-  return crypto_stream_salsa20_xor(c, cpos, m, mpos, d, n.subarray(16), s);
+function crypto_stream_xor(
+    c: Uint8Array,
+    cpos: number,
+    m: Uint8Array | null,
+    mpos: number,
+    d: number,
+    n: Uint8Array,
+    k: Uint8Array
+): number {
+  const s = new Uint8Array(32)
+  core(s, n, k, sigma, true)
+  return crypto_stream_salsa20_xor(c, cpos, m, mpos, d, n.subarray(16), s)
 }
 
-function add1305 (h: Uint32Array, c: Uint32Array): void {
-  let u = 0;
+function add1305(h: Uint32Array, c: Uint32Array): void {
+  let u = 0
   for (let j = 0; j < 17; j++) {
-    u = (u + ((h[j] + c[j]) | 0)) | 0;
-    h[j] = u & 255;
-    u >>>= 8;
+    u = (u + ((h[j] + c[j]) | 0)) | 0
+    h[j] = u & 255
+    u >>>= 8
   }
 }
 
-const minusp = new Uint32Array([5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 252]);
+const minusp = new Uint32Array([5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 252])
 
-function crypto_onetimeauth (out: Uint8Array, outpos: number, m: Uint8Array, mpos: number, n: number, k: Uint8Array): number {
-  let i, j, u;
-  const x = new Uint32Array(17), r = new Uint32Array(17), h = new Uint32Array(17), c = new Uint32Array(17), g = new Uint32Array(17);
-  for (j = 0; j < 17; j++) r[j]=h[j]=0;
-  for (j = 0; j < 16; j++) r[j]=k[j];
-  r[3]&=15;
-  r[4]&=252;
-  r[7]&=15;
-  r[8]&=252;
-  r[11]&=15;
-  r[12]&=252;
-  r[15]&=15;
+function crypto_onetimeauth(
+    out: Uint8Array,
+    outpos: number,
+    m: Uint8Array,
+    mpos: number,
+    n: number,
+    k: Uint8Array
+): number {
+  let i, j, u
+  const x = new Uint32Array(17),
+      r = new Uint32Array(17),
+      h = new Uint32Array(17),
+      c = new Uint32Array(17),
+      g = new Uint32Array(17)
+  for (j = 0; j < 17; j++) r[j] = h[j] = 0
+  for (j = 0; j < 16; j++) r[j] = k[j]
+  r[3] &= 15
+  r[4] &= 252
+  r[7] &= 15
+  r[8] &= 252
+  r[11] &= 15
+  r[12] &= 252
+  r[15] &= 15
 
   while (n > 0) {
-    for (j = 0; j < 17; j++) c[j] = 0;
-    for (j = 0; (j < 16) && (j < n); ++j) c[j] = m[mpos+j];
-    c[j] = 1;
-    mpos += j; n -= j;
-    add1305(h,c);
+    for (j = 0; j < 17; j++) c[j] = 0
+    for (j = 0; j < 16 && j < n; ++j) c[j] = m[mpos + j]
+    c[j] = 1
+    mpos += j
+    n -= j
+    add1305(h, c)
     for (i = 0; i < 17; i++) {
-      x[i] = 0;
-      for (j = 0; j < 17; j++) x[i] = (x[i] + (h[j] * ((j <= i) ? r[i - j] : ((320 * r[i + 17 - j])|0))) | 0) | 0;
+      x[i] = 0
+      for (j = 0; j < 17; j++) x[i] = (x[i] + h[j] * (j <= i ? r[i - j] : (320 * r[i + 17 - j]) | 0)) | 0 | 0
     }
-    for (i = 0; i < 17; i++) h[i] = x[i];
-    u = 0;
+    for (i = 0; i < 17; i++) h[i] = x[i]
+    u = 0
     for (j = 0; j < 16; j++) {
-      u = (u + h[j]) | 0;
-      h[j] = u & 255;
-      u >>>= 8;
+      u = (u + h[j]) | 0
+      h[j] = u & 255
+      u >>>= 8
     }
-    u = (u + h[16]) | 0; h[16] = u & 3;
-    u = (5 * (u >>> 2)) | 0;
+    u = (u + h[16]) | 0
+    h[16] = u & 3
+    u = (5 * (u >>> 2)) | 0
     for (j = 0; j < 16; j++) {
-      u = (u + h[j]) | 0;
-      h[j] = u & 255;
-      u >>>= 8;
+      u = (u + h[j]) | 0
+      h[j] = u & 255
+      u >>>= 8
     }
-    u = (u + h[16]) | 0; h[16] = u;
+    u = (u + h[16]) | 0
+    h[16] = u
   }
 
-  for (j = 0; j < 17; j++) g[j] = h[j];
-  add1305(h,minusp);
-  const s = (-(h[16] >>> 7) | 0);
-  for (j = 0; j < 17; j++) h[j] ^= s & (g[j] ^ h[j]);
+  for (j = 0; j < 17; j++) g[j] = h[j]
+  add1305(h, minusp)
+  const s = -(h[16] >>> 7) | 0
+  for (j = 0; j < 17; j++) h[j] ^= s & (g[j] ^ h[j])
 
-  for (j = 0; j < 16; j++) c[j] = k[j + 16];
-  c[16] = 0;
-  add1305(h,c);
-  for (j = 0; j < 16; j++) out[outpos+j] = h[j];
-  return 0;
+  for (j = 0; j < 16; j++) c[j] = k[j + 16]
+  c[16] = 0
+  add1305(h, c)
+  for (j = 0; j < 16; j++) out[outpos + j] = h[j]
+  return 0
 }
 
-function crypto_onetimeauth_verify (h: Uint8Array, hpos: number, m: Uint8Array, mpos: number, n: number, k: Uint8Array) {
-  const x = new Uint8Array(16);
-  crypto_onetimeauth(x,0,m,mpos,n,k);
-  return vn(h, hpos, x, 0, 16);
+function crypto_onetimeauth_verify(h: Uint8Array, hpos: number, m: Uint8Array, mpos: number, n: number, k: Uint8Array) {
+  const x = new Uint8Array(16)
+  crypto_onetimeauth(x, 0, m, mpos, n, k)
+  return vn(h, hpos, x, 0, 16)
 }
 
-function crypto_secretbox (c: Uint8Array, m: Uint8Array, d: number, n: Uint8Array, k: Uint8Array) {
-  if (d < 32) return -1;
-  crypto_stream_xor(c,0,m,0,d,n,k);
-  crypto_onetimeauth(c, 16, c, 32, d - 32, c);
-  for (let i = 0; i < 16; i++) c[i] = 0;
-  return 0;
+function crypto_secretbox(c: Uint8Array, m: Uint8Array, d: number, n: Uint8Array, k: Uint8Array) {
+  if (d < 32) return -1
+  crypto_stream_xor(c, 0, m, 0, d, n, k)
+  crypto_onetimeauth(c, 16, c, 32, d - 32, c)
+  for (let i = 0; i < 16; i++) c[i] = 0
+  return 0
 }
 
-function crypto_secretbox_open (m: Uint8Array, c: Uint8Array, d: number, n: Uint8Array, k: Uint8Array): number {
-  const x = new Uint8Array(32);
-  if (d < 32) return -1;
-  crypto_stream_xor(x, 0, null, 0, 32, n, k);
-  if (crypto_onetimeauth_verify(c, 16,c, 32,d - 32,x) !== 0) return -1;
-  crypto_stream_xor(m,0,c,0,d,n,k);
-  for (let i = 0; i < 32; i++) m[i] = 0;
-  return 0;
+function crypto_secretbox_open(m: Uint8Array, c: Uint8Array, d: number, n: Uint8Array, k: Uint8Array): number {
+  const x = new Uint8Array(32)
+  if (d < 32) return -1
+  crypto_stream_xor(x, 0, null, 0, 32, n, k)
+  if (crypto_onetimeauth_verify(c, 16, c, 32, d - 32, x) !== 0) return -1
+  crypto_stream_xor(m, 0, c, 0, d, n, k)
+  for (let i = 0; i < 32; i++) m[i] = 0
+  return 0
 }
 
 // function set25519(r, a) {
@@ -281,48 +321,49 @@ function crypto_secretbox_open (m: Uint8Array, c: Uint8Array, d: number, n: Uint
 //   for (i = 0; i < 16; i++) r[i] = a[i]|0;
 // }
 
-function car25519 (o: Float64Array): void {
-  let c;
-  let i;
+function car25519(o: Float64Array): void {
+  let c
+  let i
   for (i = 0; i < 16; i++) {
-    o[i] += 65536;
-    c = Math.floor(o[i] / 65536);
-    o[(i+1)*(i<15?1:0)] += c - 1 + 37 * (c-1) * (i===15?1:0);
-    o[i] -= (c * 65536);
+    o[i] += 65536
+    c = Math.floor(o[i] / 65536)
+    o[(i + 1) * (i < 15 ? 1 : 0)] += c - 1 + 37 * (c - 1) * (i === 15 ? 1 : 0)
+    o[i] -= c * 65536
   }
 }
 
-function sel25519 (p: Float64Array, q: Float64Array, b: number): void {
-  let t;
-  const c = ~(b-1);
+function sel25519(p: Float64Array, q: Float64Array, b: number): void {
+  let t
+  const c = ~(b - 1)
   for (let i = 0; i < 16; i++) {
-    t = c & (p[i] ^ q[i]);
-    p[i] ^= t;
-    q[i] ^= t;
+    t = c & (p[i] ^ q[i])
+    p[i] ^= t
+    q[i] ^= t
   }
 }
 
-function pack25519 (o: Uint8Array, n: Float64Array): void {
-  let i, j, b;
-  const m = gf(), t = gf();
-  for (i = 0; i < 16; i++) t[i] = n[i];
-  car25519(t);
-  car25519(t);
-  car25519(t);
+function pack25519(o: Uint8Array, n: Float64Array): void {
+  let i, j, b
+  const m = gf(),
+      t = gf()
+  for (i = 0; i < 16; i++) t[i] = n[i]
+  car25519(t)
+  car25519(t)
+  car25519(t)
   for (j = 0; j < 2; j++) {
-    m[0] = t[0] - 0xffed;
+    m[0] = t[0] - 0xffed
     for (i = 1; i < 15; i++) {
-      m[i] = t[i] - 0xffff - ((m[i-1]>>16) & 1);
-      m[i-1] &= 0xffff;
+      m[i] = t[i] - 0xffff - ((m[i - 1] >> 16) & 1)
+      m[i - 1] &= 0xffff
     }
-    m[15] = t[15] - 0x7fff - ((m[14]>>16) & 1);
-    b = (m[15]>>16) & 1;
-    m[14] &= 0xffff;
-    sel25519(t, m, 1-b);
+    m[15] = t[15] - 0x7fff - ((m[14] >> 16) & 1)
+    b = (m[15] >> 16) & 1
+    m[14] &= 0xffff
+    sel25519(t, m, 1 - b)
   }
   for (i = 0; i < 16; i++) {
-    o[2*i] = t[i] & 0xff;
-    o[2*i+1] = t[i]>>8;
+    o[2 * i] = t[i] & 0xff
+    o[2 * i + 1] = t[i] >> 8
   }
 }
 
@@ -339,52 +380,52 @@ function pack25519 (o: Uint8Array, n: Float64Array): void {
 //   return d[0] & 1;
 // }
 
-function unpack25519 (o: Float64Array, n: Uint8Array): void {
-  let i;
-  for (i = 0; i < 16; i++) o[i] = n[2*i] + (n[2*i+1] << 8);
-  o[15] &= 0x7fff;
+function unpack25519(o: Float64Array, n: Uint8Array): void {
+  let i
+  for (i = 0; i < 16; i++) o[i] = n[2 * i] + (n[2 * i + 1] << 8)
+  o[15] &= 0x7fff
 }
 
-function A (o: Float64Array, a: Float64Array, b: Float64Array): void {
-  let i;
-  for (i = 0; i < 16; i++) o[i] = (a[i] + b[i])|0;
+function A(o: Float64Array, a: Float64Array, b: Float64Array): void {
+  let i
+  for (i = 0; i < 16; i++) o[i] = (a[i] + b[i]) | 0
 }
 
-function Z (o: Float64Array, a: Float64Array, b: Float64Array): void {
-  let i;
-  for (i = 0; i < 16; i++) o[i] = (a[i] - b[i])|0;
+function Z(o: Float64Array, a: Float64Array, b: Float64Array): void {
+  let i
+  for (i = 0; i < 16; i++) o[i] = (a[i] - b[i]) | 0
 }
 
-function M (o: Float64Array, a: Float64Array, b: Float64Array): void {
-  let i, j;
-  const t = new Float64Array(31);
-  for (i = 0; i < 31; i++) t[i] = 0;
+function M(o: Float64Array, a: Float64Array, b: Float64Array): void {
+  let i, j
+  const t = new Float64Array(31)
+  for (i = 0; i < 31; i++) t[i] = 0
   for (i = 0; i < 16; i++) {
     for (j = 0; j < 16; j++) {
-      t[i+j] += a[i] * b[j];
+      t[i + j] += a[i] * b[j]
     }
   }
   for (i = 0; i < 15; i++) {
-    t[i] += 38 * t[i+16];
+    t[i] += 38 * t[i + 16]
   }
-  for (i = 0; i < 16; i++) o[i] = t[i];
-  car25519(o);
-  car25519(o);
+  for (i = 0; i < 16; i++) o[i] = t[i]
+  car25519(o)
+  car25519(o)
 }
 
-function S (o: Float64Array, a: Float64Array): void {
-  M(o, a, a);
+function S(o: Float64Array, a: Float64Array): void {
+  M(o, a, a)
 }
 
-function inv25519 (o: Float64Array, i: Float64Array): void {
-  const c = gf();
-  let a;
-  for (a = 0; a < 16; a++) c[a] = i[a];
+function inv25519(o: Float64Array, i: Float64Array): void {
+  const c = gf()
+  let a
+  for (a = 0; a < 16; a++) c[a] = i[a]
   for (a = 253; a >= 0; a--) {
-    S(c, c);
-    if (a !== 2 && a !== 4) M(c, c, i);
+    S(c, c)
+    if (a !== 2 && a !== 4) M(c, c, i)
   }
-  for (a = 0; a < 16; a++) o[a] = c[a];
+  for (a = 0; a < 16; a++) o[a] = c[a]
 }
 
 // function pow2523(o, i) {
@@ -398,57 +439,62 @@ function inv25519 (o: Float64Array, i: Float64Array): void {
 //   for (a = 0; a < 16; a++) o[a] = c[a];
 // }
 
-function crypto_scalarmult (q: Uint8Array, n: Uint8Array, p: Uint8Array): number {
-  const z = new Uint8Array(32);
-  const x = new Float64Array(80);
-  let r, i;
-  const a = gf(), b = gf(), c = gf(), d = gf(), e = gf(), f = gf();
-  for (i = 0; i < 31; i++) z[i] = n[i];
-  z[31]=(n[31]&127)|64;
-  z[0]&=248;
-  unpack25519(x,p);
+function crypto_scalarmult(q: Uint8Array, n: Uint8Array, p: Uint8Array): number {
+  const z = new Uint8Array(32)
+  const x = new Float64Array(80)
+  let r, i
+  const a = gf(),
+      b = gf(),
+      c = gf(),
+      d = gf(),
+      e = gf(),
+      f = gf()
+  for (i = 0; i < 31; i++) z[i] = n[i]
+  z[31] = (n[31] & 127) | 64
+  z[0] &= 248
+  unpack25519(x, p)
   for (i = 0; i < 16; i++) {
-    b[i]=x[i];
-    d[i]=a[i]=c[i]=0;
+    b[i] = x[i]
+    d[i] = a[i] = c[i] = 0
   }
-  a[0]=d[0]=1;
-  for (i=254; i>=0; --i) {
-    r=(z[i>>>3]>>>(i&7))&1;
-    sel25519(a,b,r);
-    sel25519(c,d,r);
-    A(e,a,c);
-    Z(a,a,c);
-    A(c,b,d);
-    Z(b,b,d);
-    S(d,e);
-    S(f,a);
-    M(a,c,a);
-    M(c,b,e);
-    A(e,a,c);
-    Z(a,a,c);
-    S(b,a);
-    Z(c,d,f);
-    M(a,c,_121665);
-    A(a,a,d);
-    M(c,c,a);
-    M(a,d,f);
-    M(d,b,x);
-    S(b,e);
-    sel25519(a,b,r);
-    sel25519(c,d,r);
+  a[0] = d[0] = 1
+  for (i = 254; i >= 0; --i) {
+    r = (z[i >>> 3] >>> (i & 7)) & 1
+    sel25519(a, b, r)
+    sel25519(c, d, r)
+    A(e, a, c)
+    Z(a, a, c)
+    A(c, b, d)
+    Z(b, b, d)
+    S(d, e)
+    S(f, a)
+    M(a, c, a)
+    M(c, b, e)
+    A(e, a, c)
+    Z(a, a, c)
+    S(b, a)
+    Z(c, d, f)
+    M(a, c, _121665)
+    A(a, a, d)
+    M(c, c, a)
+    M(a, d, f)
+    M(d, b, x)
+    S(b, e)
+    sel25519(a, b, r)
+    sel25519(c, d, r)
   }
   for (i = 0; i < 16; i++) {
-    x[i+16]=a[i];
-    x[i+32]=c[i];
-    x[i+48]=b[i];
-    x[i+64]=d[i];
+    x[i + 16] = a[i]
+    x[i + 32] = c[i]
+    x[i + 48] = b[i]
+    x[i + 64] = d[i]
   }
-  const x32 = x.subarray(32);
-  const x16 = x.subarray(16);
-  inv25519(x32,x32);
-  M(x16,x16,x32);
-  pack25519(q,x16);
-  return 0;
+  const x32 = x.subarray(32)
+  const x16 = x.subarray(16)
+  inv25519(x32, x32)
+  M(x16, x16, x32)
+  pack25519(q, x16)
+  return 0
 }
 
 // function crypto_scalarmult_base(q, n) {
@@ -460,10 +506,10 @@ function crypto_scalarmult (q: Uint8Array, n: Uint8Array, p: Uint8Array): number
 //   return crypto_scalarmult_base(y, x);
 // }
 
-function crypto_box_beforenm (k: Uint8Array, y: Uint8Array, x: Uint8Array): number {
-  const s = new Uint8Array(32);
-  crypto_scalarmult(s, x, y);
-  return crypto_core_hsalsa20(k, _0, s, sigma);
+function crypto_box_beforenm(k: Uint8Array, y: Uint8Array, x: Uint8Array): number {
+  const s = new Uint8Array(32)
+  crypto_scalarmult(s, x, y)
+  return crypto_core_hsalsa20(k, _0, s, sigma)
 }
 
 // var crypto_box_afternm = crypto_secretbox;
@@ -872,15 +918,15 @@ function crypto_box_beforenm (k: Uint8Array, y: Uint8Array, x: Uint8Array): numb
 //   return n;
 // }
 
-const crypto_secretbox_KEYBYTES = 32;
-const crypto_secretbox_NONCEBYTES = 24;
-const crypto_secretbox_ZEROBYTES = 32;
-const crypto_secretbox_BOXZEROBYTES = 16;
+const crypto_secretbox_KEYBYTES = 32
+const crypto_secretbox_NONCEBYTES = 24
+const crypto_secretbox_ZEROBYTES = 32
+const crypto_secretbox_BOXZEROBYTES = 16
 // const crypto_scalarmult_BYTES = 32;
 // const crypto_scalarmult_SCALARBYTES = 32;
-const crypto_box_PUBLICKEYBYTES = 32;
-const crypto_box_SECRETKEYBYTES = 32;
-const crypto_box_BEFORENMBYTES = 32;
+const crypto_box_PUBLICKEYBYTES = 32
+const crypto_box_SECRETKEYBYTES = 32
+const crypto_box_BEFORENMBYTES = 32
 // const crypto_box_NONCEBYTES = crypto_secretbox_NONCEBYTES;
 // const crypto_box_ZEROBYTES = crypto_secretbox_ZEROBYTES;
 // const crypto_box_BOXZEROBYTES = crypto_secretbox_BOXZEROBYTES;
@@ -951,20 +997,19 @@ const crypto_box_BEFORENMBYTES = 32;
 
 // /* High-level API */
 
-function checkLengths (k: Uint8Array, n: Uint8Array): void {
-  if (k.length !== crypto_secretbox_KEYBYTES) throw new Error('bad key size');
-  if (n.length !== crypto_secretbox_NONCEBYTES) throw new Error('bad nonce size');
+function checkLengths(k: Uint8Array, n: Uint8Array): void {
+  if (k.length !== crypto_secretbox_KEYBYTES) throw new Error('bad key size')
+  if (n.length !== crypto_secretbox_NONCEBYTES) throw new Error('bad nonce size')
 }
 
-function checkBoxLengths (pk: Uint8Array, sk: Uint8Array): void {
-  if (pk.length !== crypto_box_PUBLICKEYBYTES) throw new Error('bad public key size');
-  if (sk.length !== crypto_box_SECRETKEYBYTES) throw new Error('bad secret key size');
+function checkBoxLengths(pk: Uint8Array, sk: Uint8Array): void {
+  if (pk.length !== crypto_box_PUBLICKEYBYTES) throw new Error('bad public key size')
+  if (sk.length !== crypto_box_SECRETKEYBYTES) throw new Error('bad secret key size')
 }
 
-function checkArrayTypes (...args: unknown[]): void {
+function checkArrayTypes(...args: unknown[]): void {
   for (let i = 0; i < args.length; i++) {
-    if (!(args[i] instanceof Uint8Array))
-      throw new TypeError('unexpected type, use Uint8Array');
+    if (!(args[i] instanceof Uint8Array)) throw new TypeError('unexpected type, use Uint8Array')
   }
 }
 
@@ -978,25 +1023,25 @@ function checkArrayTypes (...args: unknown[]): void {
 //   return b;
 // };
 
-export function naclSecretBox (msg: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array {
-  checkArrayTypes(msg, nonce, key);
-  checkLengths(key, nonce);
-  const m = new Uint8Array(crypto_secretbox_ZEROBYTES + msg.length);
-  const c = new Uint8Array(m.length);
-  for (let i = 0; i < msg.length; i++) m[i+crypto_secretbox_ZEROBYTES] = msg[i];
-  crypto_secretbox(c, m, m.length, nonce, key);
-  return c.subarray(crypto_secretbox_BOXZEROBYTES);
+export function naclSecretBox(msg: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array {
+  checkArrayTypes(msg, nonce, key)
+  checkLengths(key, nonce)
+  const m = new Uint8Array(crypto_secretbox_ZEROBYTES + msg.length)
+  const c = new Uint8Array(m.length)
+  for (let i = 0; i < msg.length; i++) m[i + crypto_secretbox_ZEROBYTES] = msg[i]
+  crypto_secretbox(c, m, m.length, nonce, key)
+  return c.subarray(crypto_secretbox_BOXZEROBYTES)
 }
 
-export function naclSecretBoxOpen (box: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array | null {
-  checkArrayTypes(box, nonce, key);
-  checkLengths(key, nonce);
-  const c = new Uint8Array(crypto_secretbox_BOXZEROBYTES + box.length);
-  const m = new Uint8Array(c.length);
-  for (let i = 0; i < box.length; i++) c[i+crypto_secretbox_BOXZEROBYTES] = box[i];
-  if (c.length < 32) return null;
-  if (crypto_secretbox_open(m, c, c.length, nonce, key) !== 0) return null;
-  return m.subarray(crypto_secretbox_ZEROBYTES);
+export function naclSecretBoxOpen(box: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array | null {
+  checkArrayTypes(box, nonce, key)
+  checkLengths(key, nonce)
+  const c = new Uint8Array(crypto_secretbox_BOXZEROBYTES + box.length)
+  const m = new Uint8Array(c.length)
+  for (let i = 0; i < box.length; i++) c[i + crypto_secretbox_BOXZEROBYTES] = box[i]
+  if (c.length < 32) return null
+  if (crypto_secretbox_open(m, c, c.length, nonce, key) !== 0) return null
+  return m.subarray(crypto_secretbox_ZEROBYTES)
 }
 
 // nacl.secretbox.keyLength = crypto_secretbox_KEYBYTES;
@@ -1046,21 +1091,26 @@ export function naclSecretBoxOpen (box: Uint8Array, nonce: Uint8Array, key: Uint
 // nacl.box.open.after = nacl.secretbox.open;
 
 function naclBoxBefore(publicKey: Uint8Array, secretKey: Uint8Array): Uint8Array {
-  checkArrayTypes(publicKey, secretKey);
-  checkBoxLengths(publicKey, secretKey);
-  const k = new Uint8Array(crypto_box_BEFORENMBYTES);
-  crypto_box_beforenm(k, publicKey, secretKey);
-  return k;
+  checkArrayTypes(publicKey, secretKey)
+  checkBoxLengths(publicKey, secretKey)
+  const k = new Uint8Array(crypto_box_BEFORENMBYTES)
+  crypto_box_beforenm(k, publicKey, secretKey)
+  return k
 }
 
 export function naclBox(msg: Uint8Array, nonce: Uint8Array, publicKey: Uint8Array, secretKey: Uint8Array): Uint8Array {
-  const k = naclBoxBefore(publicKey, secretKey);
-  return naclSecretBox(msg, nonce, k);
+  const k = naclBoxBefore(publicKey, secretKey)
+  return naclSecretBox(msg, nonce, k)
 }
 
-export function naclBoxOpen(msg: Uint8Array, nonce: Uint8Array, publicKey: Uint8Array, secretKey: Uint8Array): Uint8Array | null {
-  const k = naclBoxBefore(publicKey, secretKey);
-  return naclSecretBoxOpen(msg, nonce, k);
+export function naclBoxOpen(
+    msg: Uint8Array,
+    nonce: Uint8Array,
+    publicKey: Uint8Array,
+    secretKey: Uint8Array
+): Uint8Array | null {
+  const k = naclBoxBefore(publicKey, secretKey)
+  return naclSecretBoxOpen(msg, nonce, k)
 }
 
 // nacl.box.keyPair = function() {
