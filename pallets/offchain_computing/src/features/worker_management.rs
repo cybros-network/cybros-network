@@ -2,12 +2,12 @@ use crate::*;
 use frame_support::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn do_add_worker(
+	pub(crate) fn do_authorize_worker(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		worker: T::AccountId
 	) -> DispatchResult {
 		ensure!(
-			!Workers::<T>::contains_key(&worker, &pool_info.id),
+			!PoolAuthorizedWorkers::<T>::contains_key(&worker, &pool_info.id),
 			Error::<T>::WorkerAlreadyAdded
 		);
 
@@ -17,7 +17,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::ImplMismatched
 		);
 
-		Workers::<T>::insert(&worker, &pool_info.id, ());
+		PoolAuthorizedWorkers::<T>::insert(&worker, &pool_info.id, ());
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.workers_count += 1;
@@ -27,16 +27,22 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_remove_worker(
+	pub(crate) fn do_revoke_worker(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		worker: T::AccountId,
 	) -> DispatchResult {
 		ensure!(
-			Workers::<T>::contains_key(&worker, &pool_info.id),
+			PoolAuthorizedWorkers::<T>::contains_key(&worker, &pool_info.id),
 			Error::<T>::WorkerNotFound
 		);
 
-		Workers::<T>::remove(&worker, &pool_info.id);
+		if WorkerSubscribedPools::<T>::contains_key(&worker, &pool_info.id) {
+			WorkerSubscribedPools::<T>::remove(&worker, &pool_info.id);
+
+			Self::deposit_event(Event::WorkerUnsubscribed { worker: worker.clone(), pool_id: pool_info.id.clone() });
+		}
+
+		PoolAuthorizedWorkers::<T>::remove(&worker, &pool_info.id);
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.workers_count -= 1;
@@ -51,7 +57,7 @@ impl<T: Config> Pallet<T> {
 		pool_id: T::PoolId
 	) -> DispatchResult {
 		ensure!(
-			Workers::<T>::contains_key(&worker, &pool_id),
+			PoolAuthorizedWorkers::<T>::contains_key(&worker, &pool_id),
 			Error::<T>::WorkerNotInThePool
 		);
 		ensure!(

@@ -274,7 +274,7 @@ pub mod pallet {
 
 	/// Workers of pools
 	#[pallet::storage]
-	pub type Workers<T: Config> = StorageDoubleMap<
+	pub type PoolAuthorizedWorkers<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::AccountId,
@@ -595,7 +595,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(7)]
 		#[pallet::weight({0})]
-		pub fn add_worker(
+		pub fn authorize_worker(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			worker: AccountIdLookupOf<T>,
@@ -607,7 +607,7 @@ pub mod pallet {
 
 			let worker = T::Lookup::lookup(worker.clone())?;
 
-			Self::do_add_worker(
+			Self::do_authorize_worker(
 				pool_info,
 				worker
 			)
@@ -616,7 +616,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(8)]
 		#[pallet::weight({0})]
-		pub fn remove_worker(
+		pub fn revoke_worker(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			worker: AccountIdLookupOf<T>,
@@ -634,7 +634,7 @@ pub mod pallet {
 				Error::<T>::NoPermission
 			);
 
-			Self::do_remove_worker(
+			Self::do_revoke_worker(
 				pool_info,
 				worker
 			)
@@ -879,7 +879,7 @@ pub mod pallet {
 			worker: &T::AccountId,
 		) -> DispatchResult {
 			ensure!(
-				Workers::<T>::contains_key(worker, pool_id),
+				PoolAuthorizedWorkers::<T>::contains_key(worker, pool_id),
 				Error::<T>::WorkerNotInThePool
 			);
 
@@ -972,7 +972,7 @@ pub mod pallet {
 			}
 
 			let _ = WorkerSubscribedPools::<T>::clear_prefix(worker, T::MaxSubscribedPoolsPerWorker::get(), None);
-			let _ = Workers::<T>::clear_prefix(worker, worker_added_pools_count, None);
+			let _ = PoolAuthorizedWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
 			CounterForWorkerSubscribedPools::<T>::remove(worker);
 			CounterForWorkerAddedPools::<T>::remove(worker);
 		}
