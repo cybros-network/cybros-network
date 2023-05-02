@@ -26,7 +26,7 @@
 
 // var u64 = function(h, l) { this.hi = h|0 >>> 0; this.lo = l|0 >>> 0; };
 
-function gf(init: Float64Array): Float64Array {
+function gf(init?: Float64Array): Float64Array {
   let i,
       r = new Float64Array(16)
   if (init) for (i = 0; i < init.length; i++) r[i] = init[i]
@@ -49,7 +49,7 @@ function gf(init: Float64Array): Float64Array {
 //     I = gf([0xa0b0, 0x4a0e, 0x1b27, 0xc4ee, 0xe478, 0xad2f, 0x1806, 0x2f43, 0xd7a7, 0x3dfb, 0x0099, 0x2b4d, 0xdf0b, 0x4fc1, 0x2480, 0x2b83]);
 
 const _0 = new Uint8Array(16)
-const _121665 = gf([0xdb41, 1])
+const _121665 = gf(Float64Array.from([0xdb41, 1]))
 
 function L32(x: number, c: number): number {
   return (x << c) | (x >>> (32 - c))
