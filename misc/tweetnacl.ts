@@ -11,7 +11,7 @@
 // - Change var to let/const
 // - Comment out unused functions
 // - export the only box/secretbox create/open functions (these are camelCase)
-// - Linting style is mostly disabled below (apart form the changes above), so should be verifyable against original
+// - Linting style is mostly disabled below (apart from the changes above), so should be verifiable against original
 // - Inline some calls (flatten, reduce call tree)
 // - Some inline let definitions on loop variables
 // - It is _messy_ the unused code is commented out, not removed
@@ -27,9 +27,8 @@
 // var u64 = function(h, l) { this.hi = h|0 >>> 0; this.lo = l|0 >>> 0; };
 
 function gf(init?: Float64Array): Float64Array {
-  let i,
-      r = new Float64Array(16)
-  if (init) for (i = 0; i < init.length; i++) r[i] = init[i]
+  const r = new Float64Array(16)
+  if (init) for (let i = 0; i < init.length; i++) r[i] = init[i]
   return r
 }
 
@@ -59,7 +58,7 @@ function ld32(x: Uint8Array, i: number): number {
   let u = x[i + 3] & 0xff
   u = (u << 8) | (x[i + 2] & 0xff)
   u = (u << 8) | (x[i + 1] & 0xff)
-  return (u << 8) | (x[i + 0] & 0xff)
+  return (u << 8) | (x[i] & 0xff)
 }
 
 // function dl64(x, i) {
@@ -293,9 +292,9 @@ function crypto_onetimeauth(
 }
 
 function crypto_onetimeauth_verify(h: Uint8Array, hpos: number, m: Uint8Array, mpos: number, n: number, k: Uint8Array) {
-  const x = new Uint8Array(16)
-  crypto_onetimeauth(x, 0, m, mpos, n, k)
-  return vn(h, hpos, x, 0, 16)
+  const y = new Uint8Array(16)
+  crypto_onetimeauth(y, 0, m, mpos, n, k)
+  return vn(h, hpos, y, 0, 16)
 }
 
 function crypto_secretbox(c: Uint8Array, m: Uint8Array, d: number, n: Uint8Array, k: Uint8Array) {

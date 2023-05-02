@@ -1,8 +1,8 @@
-import type { HexString } from 'https://deno.land/x/polkadot/util/types.ts';
+import type {HexString} from 'https://deno.land/x/polkadot/util/types.ts';
 import {
     assertReturn, u8aConcat, u8aToU8a,
 } from "https://deno.land/x/polkadot/util/mod.ts";
-import { randomAsU8a } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
+import {randomAsU8a} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 
 import {naclBox, naclBoxOpen} from "./tweetnacl.ts";
 import * as ed2curve from './ed2curve.mjs';
