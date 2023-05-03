@@ -183,8 +183,8 @@ pub mod pallet {
 		},
 		TaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
 		TaskPolicyAvailabilityUpdated { pool_id: T::PoolId, policy_id: T::PolicyId, availability: bool },
-		WorkerAdded { pool_id: T::PoolId, worker: T::AccountId },
-		WorkerRemoved { pool_id: T::PoolId, worker: T::AccountId },
+		WorkerAuthorized { pool_id: T::PoolId, worker: T::AccountId },
+		WorkerRevoked { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerSubscribed { worker: T::AccountId, pool_id: T::PoolId },
 		WorkerUnsubscribed { worker: T::AccountId, pool_id: T::PoolId },
 		TaskCreated {
