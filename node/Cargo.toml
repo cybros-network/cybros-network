@@ -32,6 +32,7 @@ sc-telemetry = { git = "https://github.com/paritytech/substrate", branch = "mast
 sc-keystore = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sc-transaction-pool = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sc-transaction-pool-api = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-statement-store = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sc-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "master" }
