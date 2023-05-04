@@ -324,7 +324,7 @@ export class OffchainComputingTaskStatusUpdatedEvent {
     }
 }
 
-export class OffchainComputingWorkerAddedEvent {
+export class OffchainComputingWorkerAuthorizedEvent {
     private readonly _chain: Chain
     private readonly event: Event
 
@@ -332,13 +332,13 @@ export class OffchainComputingWorkerAddedEvent {
     constructor(ctx: ChainContext, event: Event)
     constructor(ctx: EventContext, event?: Event) {
         event = event || ctx.event
-        assert(event.name === 'OffchainComputing.WorkerAdded')
+        assert(event.name === 'OffchainComputing.WorkerAuthorized')
         this._chain = ctx._chain
         this.event = event
     }
 
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.WorkerAdded') === '797c331fcd879fe634a85213860a97ecd0575adecd2689f258b95e6c04d3cdf3'
+        return this._chain.getEventHash('OffchainComputing.WorkerAuthorized') === '797c331fcd879fe634a85213860a97ecd0575adecd2689f258b95e6c04d3cdf3'
     }
 
     get asV100(): {poolId: number, worker: Uint8Array} {
@@ -347,7 +347,7 @@ export class OffchainComputingWorkerAddedEvent {
     }
 }
 
-export class OffchainComputingWorkerRemovedEvent {
+export class OffchainComputingWorkerRevokedEvent {
     private readonly _chain: Chain
     private readonly event: Event
 
@@ -355,13 +355,13 @@ export class OffchainComputingWorkerRemovedEvent {
     constructor(ctx: ChainContext, event: Event)
     constructor(ctx: EventContext, event?: Event) {
         event = event || ctx.event
-        assert(event.name === 'OffchainComputing.WorkerRemoved')
+        assert(event.name === 'OffchainComputing.WorkerRevoked')
         this._chain = ctx._chain
         this.event = event
     }
 
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.WorkerRemoved') === '797c331fcd879fe634a85213860a97ecd0575adecd2689f258b95e6c04d3cdf3'
+        return this._chain.getEventHash('OffchainComputing.WorkerRevoked') === '797c331fcd879fe634a85213860a97ecd0575adecd2689f258b95e6c04d3cdf3'
     }
 
     get asV100(): {poolId: number, worker: Uint8Array} {
