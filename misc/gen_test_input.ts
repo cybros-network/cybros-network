@@ -1,11 +1,11 @@
 // Generate test input for demo task executor
 
-import { parse } from "https://deno.land/std/flags/mod.ts";
+import {parse} from "https://deno.land/std/flags/mod.ts";
 import {
   cryptoWaitReady, ed25519PairFromSeed, randomAsU8a
 } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
-import { u8aToHex, hexToU8a, stringToHex } from "https://deno.land/x/polkadot/util/mod.ts";
-import { encryptMessage } from "./message_utils.ts";
+import {u8aToHex, hexToU8a, stringToHex} from "https://deno.land/x/polkadot/util/mod.ts";
+import {encryptMessage} from "./message_utils.ts";
 
 const parsedArgs = parse(Deno.args, {
   alias: {

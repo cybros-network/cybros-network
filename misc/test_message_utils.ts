@@ -1,9 +1,9 @@
 import {
   cryptoWaitReady, ed25519PairFromSeed, randomAsU8a
 } from "https://deno.land/x/polkadot/util-crypto/mod.ts";
-import { u8aToHex, u8aToString } from "https://deno.land/x/polkadot/util/mod.ts";
+import {u8aToHex, u8aToString} from "https://deno.land/x/polkadot/util/mod.ts";
 
-import { encryptMessage, decryptMessage } from "./message_utils.ts"
+import {encryptMessage, decryptMessage} from "./message_utils.ts"
 
 await cryptoWaitReady().catch((e) => {
   console.error(e.message);

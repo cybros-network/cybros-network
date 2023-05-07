@@ -98,9 +98,11 @@ pub enum TaskResult {
 	///  and report success
 	Success,
 	/// Ending status, the worker processed the item and report failed
-	Failed,
-	/// Ending status, the worker processed the item and report success
-	Errored,
+	Fail,
+	/// Ending status, the error occurred when processing the task, the error not relates to the worker itself
+	Error,
+	/// Ending status, the error occurred when processing the task, the error relates to the worker itself
+	Panic,
 }
 
 // TODO: Idea: TaskType: info will copy to Task, advanceable, creatable, minimum_deposit (more than actual will save to surplus_deposit)

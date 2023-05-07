@@ -6,22 +6,25 @@
  * Adapted to ESM by Pelle Braendgaard
  */
 
+// deno-lint-ignore-file
+
 // -- Operations copied from TweetNaCl.js. --
 
-var gf = function(init) {
-    var i, r = new Float64Array(16);
+const gf = function (init) {
+    const r = new Float64Array(16);
+    let i;
     if (init) for (i = 0; i < init.length; i++) r[i] = init[i];
     return r;
 };
 
-var gf0 = gf(),
+const gf0 = gf(),
     gf1 = gf([1]),
     D = gf([0x78a3, 0x1359, 0x4dca, 0x75eb, 0xd8ab, 0x4141, 0x0a4d, 0x0070, 0xe898, 0x7779, 0x4079, 0x8cc7, 0xfe73, 0x2b6f, 0x6cee, 0x5203]),
     I = gf([0xa0b0, 0x4a0e, 0x1b27, 0xc4ee, 0xe478, 0xad2f, 0x1806, 0x2f43, 0xd7a7, 0x3dfb, 0x0099, 0x2b4d, 0xdf0b, 0x4fc1, 0x2480, 0x2b83]);
 
 function car25519(o) {
-    var c;
-    var i;
+    let c;
+    let i;
     for (i = 0; i < 16; i++) {
         o[i] += 65536;
         c = Math.floor(o[i] / 65536);
@@ -31,8 +34,9 @@ function car25519(o) {
 }
 
 function sel25519(p, q, b) {
-    var t, c = ~(b-1);
-    for (var i = 0; i < 16; i++) {
+    const c = ~(b - 1);
+    let t;
+    for (let i = 0; i < 16; i++) {
         t = c & (p[i] ^ q[i]);
         p[i] ^= t;
         q[i] ^= t;
@@ -40,26 +44,27 @@ function sel25519(p, q, b) {
 }
 
 function unpack25519(o, n) {
-    var i;
+    let i;
     for (i = 0; i < 16; i++) o[i] = n[2*i] + (n[2*i+1] << 8);
     o[15] &= 0x7fff;
 }
 
 // addition
 function A(o, a, b) {
-    var i;
+    let i;
     for (i = 0; i < 16; i++) o[i] = (a[i] + b[i])|0;
 }
 
 // subtraction
 function Z(o, a, b) {
-    var i;
+    let i;
     for (i = 0; i < 16; i++) o[i] = (a[i] - b[i])|0;
 }
 
 // multiplication
 function M(o, a, b) {
-    var i, j, t = new Float64Array(31);
+    const t = new Float64Array(31);
+    let i, j;
     for (i = 0; i < 31; i++) t[i] = 0;
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j++) {
@@ -81,8 +86,8 @@ function S(o, a) {
 
 // inversion
 function inv25519(o, i) {
-    var c = gf();
-    var a;
+    const c = gf();
+    let a;
     for (a = 0; a < 16; a++) c[a] = i[a];
     for (a = 253; a >= 0; a--) {
         S(c, c);
@@ -92,8 +97,8 @@ function inv25519(o, i) {
 }
 
 function pack25519(o, n) {
-    var i, j, b;
-    var m = gf(), t = gf();
+    let i, j, b;
+    const m = gf(), t = gf();
     for (i = 0; i < 16; i++) t[i] = n[i];
     car25519(t);
     car25519(t);
@@ -116,13 +121,13 @@ function pack25519(o, n) {
 }
 
 function par25519(a) {
-    var d = new Uint8Array(32);
+    const d = new Uint8Array(32);
     pack25519(d, a);
     return d[0] & 1;
 }
 
 function vn(x, xi, y, yi, n) {
-    var i, d = 0;
+    let i, d = 0;
     for (i = 0; i < n; i++) d |= x[xi + i] ^ y[yi + i];
     return (1 & ((d - 1) >>> 8)) - 1;
 }
@@ -132,15 +137,15 @@ function crypto_verify_32(x, xi, y, yi) {
 }
 
 function neq25519(a, b) {
-    var c = new Uint8Array(32), d = new Uint8Array(32);
+    const c = new Uint8Array(32), d = new Uint8Array(32);
     pack25519(c, a);
     pack25519(d, b);
     return crypto_verify_32(c, 0, d, 0);
 }
 
 function pow2523(o, i) {
-    var c = gf();
-    var a;
+    const c = gf();
+    let a;
     for (a = 0; a < 16; a++) c[a] = i[a];
     for (a = 250; a >= 0; a--) {
         S(c, c);
@@ -150,12 +155,12 @@ function pow2523(o, i) {
 }
 
 function set25519(r, a) {
-    var i;
+    let i;
     for (i = 0; i < 16; i++) r[i] = a[i] | 0;
 }
 
 function unpackneg(r, p) {
-    var t = gf(), chk = gf(), num = gf(),
+    const t = gf(), chk = gf(), num = gf(),
         den = gf(), den2 = gf(), den4 = gf(),
         den6 = gf();
 
@@ -205,7 +210,7 @@ function ts64(x, i, h, l) {
     x[i+7] = l & 0xff;
 }
 
-var K = [
+const K = [
     0x428a2f98, 0xd728ae22, 0x71374491, 0x23ef65cd,
     0xb5c0fbcf, 0xec4d3b2f, 0xe9b5dba5, 0x8189dbbc,
     0x3956c25b, 0xf348b538, 0x59f111f1, 0xb605d019,
@@ -249,12 +254,13 @@ var K = [
 ];
 
 function crypto_hashblocks_hl(hh, hl, m, n) {
-    var wh = new Int32Array(16), wl = new Int32Array(16),
-        bh0, bh1, bh2, bh3, bh4, bh5, bh6, bh7,
+    const wh = new Int32Array(16);
+    const wl = new Int32Array(16);
+    let bh0, bh1, bh2, bh3, bh4, bh5, bh6, bh7,
         bl0, bl1, bl2, bl3, bl4, bl5, bl6, bl7,
         th, tl, i, j, h, l, a, b, c, d;
 
-    var ah0 = hh[0],
+    let ah0 = hh[0],
         ah1 = hh[1],
         ah2 = hh[2],
         ah3 = hh[3],
@@ -272,7 +278,7 @@ function crypto_hashblocks_hl(hh, hl, m, n) {
         al6 = hl[6],
         al7 = hl[7];
 
-    var pos = 0;
+    let pos = 0;
     while (n >= 128) {
         for (i = 0; i < 16; i++) {
             j = 8 * i + pos;
@@ -610,10 +616,11 @@ function crypto_hashblocks_hl(hh, hl, m, n) {
 }
 
 function crypto_hash(out, m, n) {
-    var hh = new Int32Array(8),
-        hl = new Int32Array(8),
-        x = new Uint8Array(256),
-        i, b = n;
+    const hh = new Int32Array(8);
+    const hl = new Int32Array(8);
+    const x = new Uint8Array(256);
+    const b = n;
+    let i;
 
     hh[0] = 0x6a09e667;
     hh[1] = 0xbb67ae85;
@@ -654,13 +661,13 @@ function crypto_hash(out, m, n) {
 // Converts Ed25519 public key to Curve25519 public key.
 // montgomeryX = (edwardsY + 1)*inverse(1 - edwardsY) mod p
 export function convertPublicKey(pk) {
-    var z = new Uint8Array(32),
+    const z = new Uint8Array(32),
         q = [gf(), gf(), gf(), gf()],
         a = gf(), b = gf();
 
     if (unpackneg(q, pk)) return null; // reject invalid key
 
-    var y = q[1];
+    const y = q[1];
 
     A(a, gf1, y);
     Z(b, gf1, y);
@@ -673,7 +680,8 @@ export function convertPublicKey(pk) {
 
 // Converts Ed25519 secret key to Curve25519 secret key.
 export function convertSecretKey(sk) {
-    var d = new Uint8Array(64), o = new Uint8Array(32), i;
+    const d = new Uint8Array(64), o = new Uint8Array(32);
+    let i;
     crypto_hash(d, sk, 32);
     d[0] &= 248;
     d[31] &= 127;
@@ -684,7 +692,7 @@ export function convertSecretKey(sk) {
 }
 
 export function convertKeyPair(edKeyPair) {
-    var publicKey = convertPublicKey(edKeyPair.publicKey);
+    const publicKey = convertPublicKey(edKeyPair.publicKey);
     if (!publicKey) return null;
     return {
         publicKey: publicKey,

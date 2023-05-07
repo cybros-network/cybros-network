@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /* eslint-disable brace-style,camelcase,comma-spacing,curly,one-var,padding-line-between-statements,space-infix-ops */
+// deno-lint-ignore-file
 
 // Adapted from https://github.com/dchest/tweetnacl-js/blob/6a9594a35a27f9c723c5f1c107e376d1c65c23b3/nacl.js
 //

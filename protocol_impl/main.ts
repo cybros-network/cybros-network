@@ -3,7 +3,7 @@ import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
 import {copySync} from "https://deno.land/std/fs/mod.ts";
 
-import {BN, hexToU8a, isHex, u8aToHex} from "https://deno.land/x/polkadot/util/mod.ts";
+import {BN, hexToU8a, isHex, u8aToHex, hexToString} from "https://deno.land/x/polkadot/util/mod.ts";
 import {cryptoWaitReady, mnemonicGenerate} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import {KeyringPair} from "https://deno.land/x/polkadot/keyring/types.ts";
 import {ApiPromise, HttpProvider, Keyring, WsProvider} from "https://deno.land/x/polkadot/api/mod.ts";
@@ -201,8 +201,9 @@ function createSubstrateApi(rpcUrl: string): ApiPromise | null {
       TaskResult: {
         _enum: [
           "Success",
-          "Failed",
-          "Errored",
+          "Fail",
+          "Error",
+          "Panic",
         ],
       },
       TaskOutput: "BoundedVec<u8, 2048>",
@@ -298,15 +299,15 @@ async function handleTask() {
   });
   const child = command.spawn();
   child.output().then(async ({code, stdout, stderr}) => {
-    const parsedOut = new TextDecoder().decode(stdout);
-    const parsedErrorOut = new TextDecoder().decode(stderr);
+    const out = new TextDecoder().decode(stdout).trim();
+    console.log(out);
+    // const errorOut = new TextDecoder().decode(stderr).trim();
 
-    console.log(parsedOut);
-    console.log(parsedErrorOut);
+    const parsedOut = JSON.parse(hexToString(out));
+    console.log(parsedOut)
 
-    const result = code === 0 ? "Success" : "Failed";
-    const taskResult = api.createType("TaskResult", result);
-    const taskOutput = api.createType("TaskOutput", parsedOut.trim())
+    const taskResult = api.createType("TaskResult", parsedOut.result);
+    const taskOutput = api.createType("TaskOutput", out);
 
     logger.info(`Sending "offchain_computing.submitTaskResult()`);
     const txPromise = api.tx.offchainComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput, null, null);
