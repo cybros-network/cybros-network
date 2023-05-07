@@ -19,11 +19,11 @@ enum Result {
   Panic = "Panic",
 }
 
-function renderResult(result: Result, payload?: any) {
+function renderResult(result: Result, data?: any) {
   console.log(stringToHex(JSON.stringify({
     result: result,
     e2e: false,
-    payload: payload ?? null,
+    data: data ?? null,
   })));
 }
 
@@ -31,13 +31,13 @@ function renderResultWithE2E(
     e2eKeyPair: Keypair,
     recipientPublicKey: HexString | string | Uint8Array,
     result: Result,
-    payload?: any
+    data?: any
 ) {
   console.log(stringToHex(JSON.stringify({
     result,
     e2e: true,
     senderPublicKey: u8aToHex(e2eKeyPair.publicKey),
-    encryptedPayload: payload ? u8aToHex(encryptMessage(JSON.stringify(payload), e2eKeyPair.secretKey, recipientPublicKey)) : null,
+    encryptedData: data ? u8aToHex(encryptMessage(JSON.stringify(data), e2eKeyPair.secretKey, recipientPublicKey)) : null,
   })));
 }
 
@@ -113,16 +113,16 @@ const parsedInput = function (input) {
     Deno.exit(1);
   }
 }(input);
-const parsedArgs = function (input, keyPair) {
+const parsedData = function (input, keyPair) {
   try {
     const e2eRequired = input.e2e ?? false;
     if (!e2eRequired) {
-      return input.args ?? [];
+      return input.data ?? null;
     }
 
     return JSON.parse(
         u8aToString(
-            decryptMessage(hexToU8a(input.encryptedArgs), keyPair.secretKey, input.senderPublicKey)
+            decryptMessage(hexToU8a(input.encryptedData), keyPair.secretKey, input.senderPublicKey)
         )
     );
   } catch (e) {
@@ -133,19 +133,19 @@ const parsedArgs = function (input, keyPair) {
   }
 }(parsedInput, e2eKeyPair);
 
-// Main stage
-
-const renderAndExit = function (result: Result, payload: any) {
+const renderAndExit = function (result: Result, data: any) {
   if (parsedInput.e2e) {
-    renderResultWithE2E(e2eKeyPair, parsedInput.senderPublicKey, result, payload);
+    renderResultWithE2E(e2eKeyPair, parsedInput.senderPublicKey, result, data);
   } else {
-    renderResult(result, payload);
+    renderResult(result, data);
   }
   Deno.exit(result == Result.Success ? 0 : 1);
 }
 
+// Main stage
+
 try {
-  const stringToEcho = parsedArgs[0].toString();
+  const stringToEcho = parsedData.toString();
   if (stringToEcho.trim().length === 0) {
     renderAndExit(Result.Error, {code: "TEXT_IS_BLANK"});
   }

@@ -18,12 +18,12 @@ const parsedArgs = parse(Deno.args, {
   string: [
     "senderSeed",
     "receiverPublicKey",
-    "arg",
+    "data",
   ],
   default: {
     senderSeed: "0x2de0738993e4675d5ea79b07cf03791e39890b11bf69d8d79ca90f244fbb862d",
     receiverPublicKey: "0x8e4e79005931e3a0e304d6f50ca233a4c5f5acda73f9507506a96307143424b5",
-    arg: "Hello",
+    data: "Hello",
   },
 });
 
@@ -47,17 +47,17 @@ const senderKeyPair = (() => {
   return ed25519PairFromSeed(seed);
 })();
 
-const args = [parsedArgs.arg]
+const data = parsedArgs.data
 if (parsedArgs.e2e) {
   console.log("E2E enabled");
 
-  const encryptedArgs = u8aToHex(
-    encryptMessage(JSON.stringify(args), senderKeyPair.secretKey, parsedArgs.receiverPublicKey)
+  const encryptedData = u8aToHex(
+    encryptMessage(data, senderKeyPair.secretKey, parsedArgs.receiverPublicKey)
   );
   const rawInput = {
     e2e: true,
     senderPublicKey: u8aToHex(senderKeyPair.publicKey),
-    encryptedArgs,
+    encryptedData,
   };
   const input = stringToHex(JSON.stringify(rawInput));
 
@@ -66,7 +66,7 @@ if (parsedArgs.e2e) {
 } else {
   const rawInput = {
     e2e: false,
-    args,
+    data,
   };
   const input = stringToHex(JSON.stringify(rawInput));
 
