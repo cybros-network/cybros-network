@@ -1,8 +1,6 @@
-// deno-lint-ignore-file no-explicit-any
-
 import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
-import { loadSync as loadEnvSync} from "https://deno.land/std/dotenv/mod.ts";
+import {loadSync as loadEnvSync} from "https://deno.land/std/dotenv/mod.ts";
 
 import type {HexString} from "https://deno.land/x/polkadot/util/types.ts";
 import type {Keypair} from "https://deno.land/x/polkadot/util-crypto/types.ts";
@@ -19,7 +17,7 @@ enum Result {
   Panic = "Panic",
 }
 
-function renderResult(result: Result, data?: any) {
+function renderResult(result: Result, data?: unknown) {
   console.log(stringToHex(JSON.stringify({
     result: result,
     e2e: false,
@@ -31,7 +29,7 @@ function renderResultWithE2E(
     e2eKeyPair: Keypair,
     recipientPublicKey: HexString | string | Uint8Array,
     result: Result,
-    data?: any
+    data?: unknown
 ) {
   console.log(stringToHex(JSON.stringify({
     result,
@@ -100,7 +98,7 @@ const e2eKeyPair = function () {
 const input = (Deno.args[0] ?? "").toString().trim();
 const parsedInput = function (input) {
   if (input.length === 0) {
-    renderResult(Result.Error, {code: "INPUT_IS_BLANK"});
+    renderResult(Result.Error, "INPUT_IS_BLANK");
     Deno.exit(1);
   }
 
@@ -109,7 +107,7 @@ const parsedInput = function (input) {
   } catch (e) {
     logger.error(e.message);
 
-    renderResult(Result.Error, {code: "INPUT_CANT_PARSE"});
+    renderResult(Result.Error, "INPUT_CANT_PARSE");
     Deno.exit(1);
   }
 }(input);
@@ -128,12 +126,12 @@ const parsedData = function (input, keyPair) {
   } catch (e) {
     logger.error(e.message);
 
-    renderResult(Result.Error, {code: "ENCRYPTED_ARGS_CANT_DECRYPT"});
+    renderResult(Result.Error, "ENCRYPTED_ARGS_CANT_DECRYPT");
     Deno.exit(1);
   }
 }(parsedInput, e2eKeyPair);
 
-const renderAndExit = function (result: Result, data: any) {
+const renderAndExit = function (result: Result, data: unknown) {
   if (parsedInput.e2e) {
     renderResultWithE2E(e2eKeyPair, parsedInput.senderPublicKey, result, data);
   } else {
@@ -147,14 +145,14 @@ const renderAndExit = function (result: Result, data: any) {
 try {
   const stringToEcho = parsedData.toString();
   if (stringToEcho.trim().length === 0) {
-    renderAndExit(Result.Error, {code: "TEXT_IS_BLANK"});
+    renderAndExit(Result.Error, "TEXT_IS_BLANK");
   }
 
   const output = `Received: ${stringToEcho}`;
-  renderAndExit(Result.Success, {output})
+  renderAndExit(Result.Success, output)
 } catch (e) {
   logger.error(e.message);
-  renderResult(Result.Error, {code: "UNEXPECTED"});
+  renderPanic("UNCOVERED_EXCEPTION");
 }
 
 Deno.exit(0);

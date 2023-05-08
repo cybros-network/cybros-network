@@ -1,8 +1,9 @@
-// deno-lint-ignore-file no-explicit-any
-
 import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
-import { loadSync as loadEnvSync} from "https://deno.land/std/dotenv/mod.ts";
+import {loadSync as loadEnvSync} from "https://deno.land/std/dotenv/mod.ts";
+import {decode as decodeBase64} from 'https://deno.land/std/encoding/base64.ts';
+import {crypto, toHashString} from "https://deno.land/std/crypto/mod.ts"
+import {parse as parsePrompt} from "./flags/mod.ts";
 
 import type {HexString} from "https://deno.land/x/polkadot/util/types.ts";
 import type {Keypair} from "https://deno.land/x/polkadot/util-crypto/types.ts";
@@ -19,7 +20,7 @@ enum Result {
   Panic = "Panic",
 }
 
-function renderResult(result: Result, data?: any) {
+function renderResult(result: Result, data?: unknown) {
   console.log(stringToHex(JSON.stringify({
     result: result,
     e2e: false,
@@ -31,7 +32,7 @@ function renderResultWithE2E(
     e2eKeyPair: Keypair,
     recipientPublicKey: HexString | string | Uint8Array,
     result: Result,
-    data?: any
+    data?: unknown
 ) {
   console.log(stringToHex(JSON.stringify({
     result,
@@ -100,7 +101,7 @@ const e2eKeyPair = function () {
 const input = (Deno.args[0] ?? "").toString().trim();
 const parsedInput = function (input) {
   if (input.length === 0) {
-    renderResult(Result.Error, {code: "INPUT_IS_BLANK"});
+    renderResult(Result.Error, "INPUT_IS_BLANK");
     Deno.exit(1);
   }
 
@@ -109,7 +110,7 @@ const parsedInput = function (input) {
   } catch (e) {
     logger.error(e.message);
 
-    renderResult(Result.Error, {code: "INPUT_CANT_PARSE"});
+    renderResult(Result.Error, "INPUT_CANT_PARSE");
     Deno.exit(1);
   }
 }(input);
@@ -128,12 +129,12 @@ const parsedData = function (input, keyPair) {
   } catch (e) {
     logger.error(e.message);
 
-    renderResult(Result.Error, {code: "ENCRYPTED_ARGS_CANT_DECRYPT"});
+    renderResult(Result.Error, "ENCRYPTED_ARGS_CANT_DECRYPT");
     Deno.exit(1);
   }
 }(parsedInput, e2eKeyPair);
 
-const renderAndExit = function (result: Result, data: any) {
+const renderAndExit = function (result: Result, data: unknown) {
   if (parsedInput.e2e) {
     renderResultWithE2E(e2eKeyPair, parsedInput.senderPublicKey, result, data);
   } else {
@@ -144,17 +145,164 @@ const renderAndExit = function (result: Result, data: any) {
 
 // Main stage
 
+const parsedArgs = parsePrompt(
+  parsedData.toString().trim().split(" "),
+  {
+    alias: {
+      "negativePrompt": "neg",
+      "cfgScale": "cfg"
+    },
+    boolean: [],
+    string: [
+      "negativePrompt",
+      "model",
+      "sampler",
+      // "cfgScale",
+      // "seed",
+      // "steps"
+    ],
+    default: {
+      "sampler": "k_lms",
+      "cfgScale": 7,
+      "seed": -1,
+      "steps": 20,
+    }
+  }
+);
+
+const prompt = parsedArgs._1 ? parsedArgs._1.toString().trim() : "";
+if (prompt.length === 0) {
+  renderAndExit(Result.Error, "PROMPT_IS_BLANK");
+}
+const negativePrompt = parsedArgs.negativePrompt ? parsedArgs.negativePrompt.trim() : "";
+const cfgScale = Number(parsedArgs.cfgScale);
+if (cfgScale !== parsedArgs.cfgScale) {
+  renderAndExit(Result.Error, "CFG_SCALE_INVALID");
+} else if (cfgScale < 1) {
+  renderAndExit(Result.Error, "CFG_SCALE_SMALLER_THAN_ONE");
+  Deno.exit(1);
+}
+const seed = parseInt(parsedArgs.seed);
+if (seed !== parsedArgs.seed) {
+  renderAndExit(Result.Error, "SEED_NOT_INTEGER");
+}
+const steps = parseInt(parsedArgs.steps);
+if (steps !== parsedArgs.steps) {
+  renderAndExit(Result.Error, "STEPS_NOT_INTEGER");
+} else if (steps < 1) {
+  renderAndExit(Result.Error, "STEPS_SMALLER_THAN_ONE");
+}
+const modelName = parsedArgs.model ?? "sd-v1-5-inpainting";
+const samplerName = parsedArgs.sampler;
+
+let modelTitle: string | null = null;
+let samplerTitle: string | null = null;
+
+// Check model
 try {
-  const stringToEcho = parsedData.toString();
-  if (stringToEcho.trim().length === 0) {
-    renderAndExit(Result.Error, {code: "TEXT_IS_BLANK"});
+  const resp = await fetch(`${env.SD_API_BASE}/sd-models`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const models = await resp.json();
+
+  for (const item of models) {
+    if (item.model_name == modelName) {
+      modelTitle = item.title
+      break;
+    }
   }
 
-  const output = `Received: ${stringToEcho}`;
-  renderAndExit(Result.Success, {output})
+  if (!modelTitle) {
+    logger.error(`Model "${modelName}" not found`);
+    renderAndExit(Result.Error, "MODEL_NOT_FOUND");
+  }
 } catch (e) {
-  logger.error(e.message);
-  renderResult(Result.Error, {code: "UNEXPECTED"});
+  logger.error(e.meesage);
+  renderAndExit(Result.Error, "SD_API_ERROR");
 }
+
+// Check sampler
+try {
+  const resp = await fetch(`${env.SD_API_BASE}/samplers`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const samplers = await resp.json();
+
+  for (const item of samplers) {
+    if (item.name === samplerName || item.aliases.includes(samplerName)) {
+      samplerTitle = item.name;
+      break;
+    }
+  }
+
+  if (!samplerTitle) {
+    logger.error(`Sampler "${samplerTitle}" not found`);
+    renderAndExit(Result.Error, "SAMPLER_NOT_FOUND");
+  }
+} catch (e) {
+  logger.error(e.meesage);
+  renderAndExit(Result.Error, "SD_API_ERROR");
+}
+
+// Switch model
+try {
+  const _resp = await fetch(`${env.SD_API_BASE}/options`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      "sd_model_checkpoint": modelTitle
+    }),
+  });
+} catch (e) {
+  logger.error(e.meesage);
+  renderAndExit(Result.Error, "SD_API_ERROR");
+}
+
+// Call txt2img
+let image: Uint8Array;
+let responsePayload: string;
+let responsePayloadHash: string;
+try {
+  const requestPayload: {
+    "prompt": string,
+    "negative_prompt"?: string,
+    "sampler_name": string,
+    "cfg_scale": number,
+    "seed": number,
+    "steps": number,
+  } = {
+    prompt,
+    negative_prompt: negativePrompt.length > 0 ? negativePrompt : undefined,
+    sampler_name: samplerTitle,
+    cfg_scale: cfgScale,
+    seed,
+    steps,
+  };
+
+  const resp = await fetch(`${env.SD_API_BASE}/txt2img`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(requestPayload),
+  });
+  responsePayload = await resp.text();
+  responsePayloadHash = "0x" + toHashString(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(responsePayload)));
+  const parsedResponsePayload = JSON.parse(responsePayload);
+  image = decodeBase64(parsedResponsePayload.images[0]);
+} catch (e) {
+  logger.error(e.meesage);
+  renderAndExit(Result.Error, "SD_API_ERROR");
+}
+
+// TODO: Upload
 
 Deno.exit(0);
