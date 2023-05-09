@@ -11,6 +11,9 @@ import {u8aToString, hexToString, hexToU8a, stringToHex, u8aToHex} from "https:/
 import {cryptoWaitReady, ed25519PairFromSeed} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import {encryptMessage, decryptMessage} from "./message_utils.ts"
 
+import { Akord, Auth } from "npm:@akord/akord-js";
+import { AkordWallet } from "npm:@akord/crypto";
+
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));
 
 enum Result {
@@ -303,6 +306,88 @@ try {
   renderAndExit(Result.Error, "SD_API_ERROR");
 }
 
-// TODO: Upload
+Auth.configure({ storage: localStorage });
+Auth.configure({ apiKey: env.AKORD_API_KEY });
 
-Deno.exit(0);
+const wallet = await AkordWallet.importFromBackupPhrase(env.AKORD_ACCOUNT_BACKUP_PHRASE);
+const akord = await Akord.init(wallet);
+
+class File extends Blob {
+  lastModified: Date;
+  name: string;
+
+  constructor(sources: Uint8Array[], name: string, mimeType: string, lastModified: Date) {
+    super(sources, { type: mimeType });
+    this.name = name;
+    this.lastModified = lastModified;
+  }
+}
+
+// Upload image
+let uploadedImageUrl: string;
+try {
+  const imageFileName = `${responsePayloadHash}.png`
+  const imageFile = new File([image], imageFileName, "image/png", (new Date()).getTime())
+  const { stackId } = await akord.stack.create(env.AKORD_VAULT_ID, imageFile, imageFileName);
+  uploadedImageUrl = `https://arweave.net/${await akord.stack.getUri(stackId)}`;
+} catch (e) {
+  logger.error(e.meesage);
+  renderAndExit(Result.Error, "ARWEAVE_UPLOAD_ERROR");
+}
+
+// Upload proof
+let uploadedProofUrl: string;
+try {
+  const proofFileName = `${responsePayloadHash}.proof.json`
+  const proofFile = new File([new TextEncoder().encode(responsePayload)], proofFileName, "application/json", (new Date()).getTime())
+  const { stackId } = await akord.stack.create(env.AKORD_VAULT_ID, proofFile, proofFileName);
+  uploadedProofUrl = `https://arweave.net/${await akord.stack.getUri(stackId)}`;
+} catch (e) {
+  logger.error(e.meesage);
+  renderAndExit(Result.Error, "ARWEAVE_UPLOAD_ERROR");
+}
+
+const metadata = {
+  mediaUri: uploadedImageUrl,
+  proofUri: uploadedProofUrl,
+  proofHash: responsePayloadHash,
+}
+
+// Upload metadata
+let uploadedMetadataUrl: string;
+try {
+  const metadataFileName = `${responsePayloadHash}.metadata.json`
+  const metadataFile = new File([new TextEncoder().encode(JSON.stringify(metadata))], metadataFileName, "application/json", (new Date()).getTime())
+  const { stackId } = await akord.stack.create(env.AKORD_VAULT_ID, metadataFile, metadataFileName);
+  uploadedMetadataUrl = `https://arweave.net/${await akord.stack.getUri(stackId)}`;
+} catch (e) {
+  logger.error(e.meesage);
+  renderAndExit(Result.Error, "ARWEAVE_UPLOAD_ERROR");
+}
+
+renderAndExit(Result.Success, uploadedMetadataUrl);
+
+// // Currently Deno lacking crypto support that Areweave needed, so just left the code here
+// import Arweave from "npm:arweave";
+// const arweave = Arweave.init({
+//     host: 'arweave.net',// Hostname or IP address for a Arweave host
+//     protocol: 'https',  // Network protocol http or https
+//     timeout: 20000,     // Network request timeouts in milliseconds
+//     logging: false,     // Enable network request logging
+// });
+//
+// const key = {};
+// const address = await arweave.wallets.jwkToAddress(key);
+// const balance = arweave.ar.winstonToAr(await arweave.wallets.getBalance(address));
+// console.log(`${address}: ${balance}`)
+//
+// const imageFile = Deno.readFileSync("./test.png");
+// let tx = await arweave.createTransaction({
+//     data: imageFile
+// }, key);
+// tx.addTag('Content-Type', 'image/png');
+// await arweave.transactions.sign(tx, key);
+// console.log(tx);
+//
+// const response = await arweave.transactions.post(tx);
+// console.log(response);
