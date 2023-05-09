@@ -11,8 +11,9 @@ import {u8aToString, hexToString, hexToU8a, stringToHex, u8aToHex} from "https:/
 import {cryptoWaitReady, ed25519PairFromSeed} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import {encryptMessage, decryptMessage} from "./message_utils.ts"
 
-import { Akord, Auth } from "npm:@akord/akord-js";
-import { AkordWallet } from "npm:@akord/crypto";
+import {NodeJs} from "npm:@akord/akord-js/lib/types/file.js";
+import {Akord, Auth} from "npm:@akord/akord-js";
+import {AkordWallet} from "npm:@akord/crypto";
 
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));
 
@@ -312,23 +313,12 @@ Auth.configure({ apiKey: env.AKORD_API_KEY });
 const wallet = await AkordWallet.importFromBackupPhrase(env.AKORD_ACCOUNT_BACKUP_PHRASE);
 const akord = await Akord.init(wallet);
 
-class File extends Blob {
-  lastModified: Date;
-  name: string;
-
-  constructor(sources: Uint8Array[], name: string, mimeType: string, lastModified: Date) {
-    super(sources, { type: mimeType });
-    this.name = name;
-    this.lastModified = lastModified;
-  }
-}
-
 // Upload image
 let uploadedImageUrl: string;
 try {
   const imageFileName = `${responsePayloadHash}.png`
-  const imageFile = new File([image], imageFileName, "image/png", (new Date()).getTime())
-  const { stackId } = await akord.stack.create(env.AKORD_VAULT_ID, imageFile, imageFileName);
+  const imageFile = new NodeJs.File([image], imageFileName, "image/png", (new Date()).getTime())
+  const {stackId} = await akord.stack.create(env.AKORD_VAULT_ID, imageFile, imageFileName);
   uploadedImageUrl = `https://arweave.net/${await akord.stack.getUri(stackId)}`;
 } catch (e) {
   logger.error(e.meesage);
@@ -339,8 +329,8 @@ try {
 let uploadedProofUrl: string;
 try {
   const proofFileName = `${responsePayloadHash}.proof.json`
-  const proofFile = new File([new TextEncoder().encode(responsePayload)], proofFileName, "application/json", (new Date()).getTime())
-  const { stackId } = await akord.stack.create(env.AKORD_VAULT_ID, proofFile, proofFileName);
+  const proofFile = new NodeJs.File([new TextEncoder().encode(responsePayload)], proofFileName, "application/json", (new Date()).getTime())
+  const {stackId} = await akord.stack.create(env.AKORD_VAULT_ID, proofFile, proofFileName);
   uploadedProofUrl = `https://arweave.net/${await akord.stack.getUri(stackId)}`;
 } catch (e) {
   logger.error(e.meesage);
@@ -357,8 +347,8 @@ const metadata = {
 let uploadedMetadataUrl: string;
 try {
   const metadataFileName = `${responsePayloadHash}.metadata.json`
-  const metadataFile = new File([new TextEncoder().encode(JSON.stringify(metadata))], metadataFileName, "application/json", (new Date()).getTime())
-  const { stackId } = await akord.stack.create(env.AKORD_VAULT_ID, metadataFile, metadataFileName);
+  const metadataFile = new NodeJs.File([new TextEncoder().encode(JSON.stringify(metadata))], metadataFileName, "application/json", (new Date()).getTime())
+  const {stackId} = await akord.stack.create(env.AKORD_VAULT_ID, metadataFile, metadataFileName);
   uploadedMetadataUrl = `https://arweave.net/${await akord.stack.getUri(stackId)}`;
 } catch (e) {
   logger.error(e.meesage);
@@ -376,7 +366,7 @@ renderAndExit(Result.Success, uploadedMetadataUrl);
 //     logging: false,     // Enable network request logging
 // });
 //
-// const key = {};
+// const key = {}; // JWT get from Arweave wallet
 // const address = await arweave.wallets.jwkToAddress(key);
 // const balance = arweave.ar.winstonToAr(await arweave.wallets.getBalance(address));
 // console.log(`${address}: ${balance}`)
