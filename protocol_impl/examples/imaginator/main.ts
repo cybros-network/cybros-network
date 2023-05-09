@@ -337,10 +337,12 @@ try {
   renderAndExit(Result.Error, "ARWEAVE_UPLOAD_ERROR");
 }
 
+// compatible with https://docs.opensea.io/docs/metadata-standards
 const metadata = {
-  mediaUri: uploadedImageUrl,
-  proofUri: uploadedProofUrl,
-  proofHash: responsePayloadHash,
+  name: "Yet another AI generated artwork",
+  image: uploadedImageUrl,
+  proof: uploadedProofUrl,
+  proof_hash: responsePayloadHash,
 }
 
 // Upload metadata
