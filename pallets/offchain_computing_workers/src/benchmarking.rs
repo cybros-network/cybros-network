@@ -377,6 +377,8 @@ mod benchmarks {
 
 	// TODO: benchmark other paths of heartbeat
 
+	// This line generates test cases for benchmarking, and could be run by:
+	//   `cargo test --features runtime-benchmarks`
 	impl_benchmark_test_suite! {
 		OffchainComputingWorkers,
 		crate::mock::new_test_ext(),

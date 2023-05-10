@@ -11,8 +11,7 @@ import {u8aToString, hexToString, hexToU8a, stringToHex, u8aToHex} from "https:/
 import {cryptoWaitReady, ed25519PairFromSeed} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import {encryptMessage, decryptMessage} from "./message_utils.ts"
 
-import {NodeJs} from "npm:@akord/akord-js/lib/types/file.js";
-import {Akord, Auth} from "npm:@akord/akord-js";
+import {Akord, Auth, NodeJs} from "npm:@akord/akord-js";
 import {AkordWallet} from "npm:@akord/crypto";
 
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));
@@ -299,7 +298,7 @@ try {
     body: JSON.stringify(requestPayload),
   });
   responsePayload = await resp.text();
-  responsePayloadHash = "0x" + toHashString(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(responsePayload)));
+  responsePayloadHash = toHashString(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(responsePayload)));
   const parsedResponsePayload = JSON.parse(responsePayload);
   image = decodeBase64(parsedResponsePayload.images[0]);
 } catch (e) {
@@ -342,7 +341,7 @@ const metadata = {
   name: "Yet another AI generated artwork",
   image: uploadedImageUrl,
   proof: uploadedProofUrl,
-  proof_hash: responsePayloadHash,
+  proof_hash: `BLAKE2S|${responsePayloadHash}`,
 }
 
 // Upload metadata
