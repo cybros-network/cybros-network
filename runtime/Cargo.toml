@@ -118,6 +118,7 @@ runtime-benchmarks = [
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-vesting/runtime-benchmarks",
+	"pallet-sudo/runtime-benchmarks",
 	"pallet-offchain_computing_workers/runtime-benchmarks",
 	"pallet-offchain_computing/runtime-benchmarks",
 ]

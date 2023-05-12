@@ -441,6 +441,7 @@ mod benches {
 		[pallet_multisig, Multisig]
 		[pallet_balances, Balances]
 		[pallet_vesting, Vesting]
+		[pallet_sudo, Sudo]
 		[pallet_offchain_computing_workers, OffchainComputingWorkers]
 	);
 }

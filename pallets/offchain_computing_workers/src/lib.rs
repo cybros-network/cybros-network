@@ -1,4 +1,3 @@
-#![feature(let_chains)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod macros;
