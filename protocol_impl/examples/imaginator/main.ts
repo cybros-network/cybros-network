@@ -11,7 +11,7 @@ import {u8aToString, hexToString, hexToU8a, stringToHex, u8aToHex} from "https:/
 import {cryptoWaitReady, ed25519PairFromSeed} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import {encryptMessage, decryptMessage} from "./message_utils.ts"
 
-import {Akord, Auth, NodeJs} from "npm:@akord/akord-js";
+import {Akord, Auth, NodeJs} from "npm:@akord/akord-js@4.3.0-beta.4";
 import {AkordWallet} from "npm:@akord/crypto";
 
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));
