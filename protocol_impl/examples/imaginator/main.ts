@@ -11,7 +11,7 @@ import {u8aToString, hexToString, hexToU8a, stringToHex, u8aToHex} from "https:/
 import {cryptoWaitReady, ed25519PairFromSeed} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import {encryptMessage, decryptMessage} from "./message_utils.ts"
 
-import {Akord, Auth, NodeJs} from "npm:@akord/akord-js@4.3.0-beta.4";
+import {Akord, Auth, NodeJs} from "npm:@akord/akord-js@4.3.0-beta.1";
 import {AkordWallet} from "npm:@akord/crypto";
 
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));
@@ -101,7 +101,7 @@ const e2eKeyPair = function () {
   }
 }()
 
-const input = (Deno.args[0] ?? "").toString().trim();
+const input = (Deno.args[0] ?? "").toString().replaceAll(/(\r\n|\n|\r)/gm, "").trim();
 const parsedInput = function (input) {
   if (input.length === 0) {
     renderResult(Result.Error, "INPUT_IS_BLANK");
@@ -152,23 +152,45 @@ const parsedArgs = parsePrompt(
   parsedData.toString().trim().split(" "),
   {
     alias: {
+      "steps": "step",
       "negativePrompt": "neg",
-      "cfgScale": "cfg"
+      "cfgScale": "cfg",
+      "clipSkip": "clip",
+      "enableHr": "hr",
+      "hrUpscaler": "hr-upscaler",
+      "hrScale": "hr-upscale",
+      "restoreFaces": "restore-faces",
+      "denoisingStrength": "denoising",
+      "hrSecondPassSteps": "hr-steps",
+      "etaNoiseSeedDelta": "ensd",
     },
-    boolean: [],
+    boolean: [
+      "enableHr",
+      "restoreFaces",
+      "tiling",
+    ],
     string: [
       "negativePrompt",
       "model",
       "sampler",
-      // "cfgScale",
-      // "seed",
-      // "steps"
+      "hrUpscaler",
     ],
     default: {
       "sampler": "k_lms",
       "cfgScale": 7,
       "seed": -1,
       "steps": 20,
+      "width": 512,
+      "height": 512,
+      "clipSkip": 1,
+      "etaNoiseSeedDelta": 0,
+      "enableHr": false,
+      "restoreFaces": false,
+      "tiling": false,
+      "hrUpscaler": "None",
+      "denoisingStrength": 0.7,
+      "hrScale": 2,
+      "hrSecondPassSteps": 20,
     }
   }
 );
@@ -193,9 +215,75 @@ const steps = parseInt(parsedArgs.steps);
 if (steps !== parsedArgs.steps) {
   renderAndExit(Result.Error, "STEPS_NOT_INTEGER");
 } else if (steps < 1) {
-  renderAndExit(Result.Error, "STEPS_SMALLER_THAN_ONE");
+  renderAndExit(Result.Error, "STEPS_TOO_SMALL");
+} else if (steps > 150) {
+  renderAndExit(Result.Error, "STEPS_TOO_LARGE");
 }
-const modelName = parsedArgs.model ?? "sd-v1-5-inpainting";
+const width = parseInt(parsedArgs.width);
+if (width !== parsedArgs.width) {
+  renderAndExit(Result.Error, "WIDTH_NOT_INTEGER");
+} else if (width < 128) {
+  renderAndExit(Result.Error, "WIDTH_TOO_SMALL");
+} else if (width > 2048) {
+  renderAndExit(Result.Error, "WIDTH_TOO_LARGE");
+}
+const height = parseInt(parsedArgs.height);
+if (height !== parsedArgs.height) {
+  renderAndExit(Result.Error, "HEIGHT_NOT_INTEGER");
+} else if (height < 128) {
+  renderAndExit(Result.Error, "HEIGHT_TOO_SMALL");
+} else if (height > 2048) {
+  renderAndExit(Result.Error, "HEIGHT_TOO_LARGE");
+}
+const clipSkip = parseInt(parsedArgs.clipSkip);
+if (clipSkip !== parsedArgs.clipSkip) {
+  renderAndExit(Result.Error, "CLIP_SKIP_NOT_INTEGER");
+} else if (clipSkip < 1) {
+  renderAndExit(Result.Error, "CLIP_SKIP_TOO_SMALL");
+} else if (clipSkip > 12) {
+  renderAndExit(Result.Error, "CLIP_SKIP_TOO_LARGE");
+}
+const etaNoiseSeedDelta = parseInt(parsedArgs.etaNoiseSeedDelta);
+if (etaNoiseSeedDelta !== parsedArgs.etaNoiseSeedDelta) {
+  renderAndExit(Result.Error, "ENSD_NOT_INTEGER");
+}
+const enableHr = parsedArgs.enableHr ?? false;
+const restoreFaces = parsedArgs.restoreFaces ?? false;
+const tiling = parsedArgs.tiling ?? false;
+
+const denoisingStrength = Number(parsedArgs.denoisingStrength);
+if (enableHr) {
+  if (denoisingStrength !== parsedArgs.denoisingStrength) {
+    renderAndExit(Result.Error, "DENOISING_STRENGTH_INVALID");
+  } else if (denoisingStrength < 0) {
+    renderAndExit(Result.Error, "DENOISING_STRENGTH_TOO_SMALL");
+  } else if (denoisingStrength > 1) {
+    renderAndExit(Result.Error, "DENOISING_STRENGTH_TOO_LARGE");
+  }
+}
+const hrScale = Number(parsedArgs.hrScale);
+if (enableHr) {
+  if (hrScale !== parsedArgs.hrScale) {
+    renderAndExit(Result.Error, "HR_SCALE_INVALID");
+  } else if (hrScale < 1) {
+    renderAndExit(Result.Error, "HR_SCALE_TOO_SMALL");
+  } else if (hrScale > 4) {
+    renderAndExit(Result.Error, "HR_SCALE_TOO_LARGE");
+  }
+}
+const hrSecondPassSteps = parseInt(parsedArgs.hrSecondPassSteps);
+if (hrSecondPassSteps) {
+  if (hrSecondPassSteps !== parsedArgs.hrSecondPassSteps) {
+    renderAndExit(Result.Error, "HR_SECOND_PASS_STEPS_NOT_INTEGER");
+  } else if (hrSecondPassSteps < 1) {
+    renderAndExit(Result.Error, "HR_SECOND_PASS_STEPS_TOO_SMALL");
+  } else if (hrSecondPassSteps > 150) {
+    renderAndExit(Result.Error, "HR_SECOND_PASS_STEPS_TOO_LARGE");
+  }
+}
+const hrUpscaler = parsedArgs.hrUpscaler ?? "None";
+
+const modelName = parsedArgs.model ?? "v2-1_768-ema-pruned";
 const samplerName = parsedArgs.sampler;
 
 let modelTitle: string | null = null;
@@ -253,21 +341,23 @@ try {
   renderAndExit(Result.Error, "SD_API_ERROR");
 }
 
-// Switch model
-try {
-  const _resp = await fetch(`${env.SD_API_BASE}/options`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      "sd_model_checkpoint": modelTitle
-    }),
-  });
-} catch (e) {
-  logger.error(e.meesage);
-  renderAndExit(Result.Error, "SD_API_ERROR");
-}
+// // Switch model and model level configurations
+// try {
+//   const _resp = await fetch(`${env.SD_API_BASE}/options`, {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//     },
+//     body: JSON.stringify({
+//       "sd_model_checkpoint": modelTitle,
+//       "CLIP_stop_at_last_layers": clipSkip,
+//       "eta_noise_seed_delta": etaNoiseSeedDelta,
+//     }),
+//   });
+// } catch (e) {
+//   logger.error(e.meesage);
+//   renderAndExit(Result.Error, "SD_API_ERROR");
+// }
 
 // Call txt2img
 let image: Uint8Array;
@@ -275,20 +365,51 @@ let responsePayload: string;
 let responsePayloadHash: string;
 try {
   const requestPayload: {
+    "override_settings": unknown,
+    "override_settings_restore_afterwards": boolean,
     "prompt": string,
     "negative_prompt"?: string,
     "sampler_name": string,
     "cfg_scale": number,
     "seed": number,
     "steps": number,
+    "width": number,
+    "height": number
+    "restore_faces": boolean,
+    "tiling": boolean,
+    "enable_hr": boolean,
+    "hr_scale": number,
+    "hr_upscaler": string,
+    "hr_second_pass_steps": string,
+    "denoising_strength": number,
   } = {
+    override_settings: {
+      "sd_model_checkpoint": modelTitle,
+      "CLIP_stop_at_last_layers": clipSkip,
+      "eta_noise_seed_delta": etaNoiseSeedDelta,
+    },
+    override_settings_restore_afterwards: true,
     prompt,
     negative_prompt: negativePrompt.length > 0 ? negativePrompt : undefined,
     sampler_name: samplerTitle,
     cfg_scale: cfgScale,
     seed,
     steps,
+    width,
+    height,
+    restore_faces: restoreFaces,
+    tiling,
+    enable_hr: enableHr,
   };
+
+  if (enableHr) {
+    Object.assign({
+      hr_scale: hrScale,
+      hr_upscaler: hrUpscaler,
+      hr_second_pass_steps: hrSecondPassSteps,
+      denoising_strength: denoisingStrength,
+    })
+  }
 
   const resp = await fetch(`${env.SD_API_BASE}/txt2img`, {
     method: "POST",

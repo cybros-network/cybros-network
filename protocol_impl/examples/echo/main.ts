@@ -148,8 +148,7 @@ try {
     renderAndExit(Result.Error, "TEXT_IS_BLANK");
   }
 
-  const output = `Received: ${stringToEcho}`;
-  renderAndExit(Result.Success, output)
+  renderAndExit(Result.Success, stringToEcho)
 } catch (e) {
   logger.error(e.message);
   renderPanic("UNCOVERED_EXCEPTION");
