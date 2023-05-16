@@ -456,7 +456,7 @@
   },
   "npm": {
     "specifiers": {
-      "@akord/akord-js@4.3.0-beta.1": "@akord/akord-js@4.3.0-beta.1_rxjs@7.8.1",
+      "@akord/akord-js": "@akord/akord-js@4.5.0_rxjs@7.8.1",
       "@akord/crypto": "@akord/crypto@0.11.0"
     },
     "packages": {
@@ -467,11 +467,11 @@
           "amazon-cognito-identity-js": "amazon-cognito-identity-js@6.1.2"
         }
       },
-      "@akord/akord-js@4.3.0-beta.1_rxjs@7.8.1": {
-        "integrity": "sha512-e8tR0/MY6VAQqkLXl1c7Uz8v8WUZlbOpcJH5Ce+4m0teBZlB1DQVNXRH0acj/0o9nmOFRAuhY2/YlYweY0JYew==",
+      "@akord/akord-js@4.5.0_rxjs@7.8.1": {
+        "integrity": "sha512-ze8oUjmruI33OVQG+tvevwlVFLCXTkAU0NOoNBnElo4BJnCvKUKTTTvDevTJ5lLRePKPleRaoDKB/YBoexbZRA==",
         "dependencies": {
           "@akord/akord-auth": "@akord/akord-auth@0.26.0",
-          "@akord/crypto": "@akord/crypto@0.10.6",
+          "@akord/crypto": "@akord/crypto@0.11.0",
           "@akord/ts-cacheable": "@akord/ts-cacheable@1.0.11_rxjs@7.8.1",
           "axios": "axios@0.24.0",
           "blueimp-load-image": "blueimp-load-image@5.16.0",
@@ -494,18 +494,6 @@
       },
       "@akord/crypto@0.10.0": {
         "integrity": "sha512-1C1djkZWIeT7QIAx6LYyPFi+VHMJHWS+MfTpkNL44V8ncAcgHuVDUhlvN7NLLDAryhGWPh91RVBUoGhR0zz9Qw==",
-        "dependencies": {
-          "@akord/browser-level": "@akord/browser-level@1.0.2",
-          "bip39": "bip39@3.1.0",
-          "ethereum-cryptography": "ethereum-cryptography@1.2.0",
-          "libsodium-wrappers": "libsodium-wrappers@0.7.11",
-          "memory-level": "memory-level@1.0.0",
-          "reflect-metadata": "reflect-metadata@0.1.13",
-          "tweetnacl": "tweetnacl@1.0.3"
-        }
-      },
-      "@akord/crypto@0.10.6": {
-        "integrity": "sha512-gmySRiefue+jIyJOM/PRPUtXPkusBwvEJh+I3HTXZU6n1ulZQC7fyQeNHb4XltL+H3EanLCGrhMN9j4EatEeVQ==",
         "dependencies": {
           "@akord/browser-level": "@akord/browser-level@1.0.2",
           "bip39": "bip39@3.1.0",

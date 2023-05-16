@@ -11,7 +11,7 @@ import {u8aToString, hexToString, hexToU8a, stringToHex, u8aToHex} from "https:/
 import {cryptoWaitReady, ed25519PairFromSeed} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
 import {encryptMessage, decryptMessage} from "./message_utils.ts"
 
-import {Akord, Auth, NodeJs} from "npm:@akord/akord-js@4.3.0-beta.1";
+import {Akord, Auth} from "npm:@akord/akord-js";
 import {AkordWallet} from "npm:@akord/crypto";
 
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));
@@ -101,7 +101,7 @@ const e2eKeyPair = function () {
   }
 }()
 
-const input = (Deno.args[0] ?? "").toString().replaceAll(/(\r\n|\n|\r)/gm, "").trim();
+const input = (Deno.args[0] ?? "").toString().trim();
 const parsedInput = function (input) {
   if (input.length === 0) {
     renderResult(Result.Error, "INPUT_IS_BLANK");
@@ -148,8 +148,20 @@ const renderAndExit = function (result: Result, data: unknown) {
 
 // Main stage
 
+class UploadableFile extends Blob {
+  name: string;
+  lastModified: number;
+
+  constructor(source: BlobPart, name: string, mimeType: string, lastModified: number) {
+    super([source], { type: mimeType });
+    this.name = name;
+    this.lastModified = lastModified;
+  }
+}
+
+const rawPrompt = parsedData.toString().replaceAll(/(\r\n|\n|\r)/gm, " ").trim();
 const parsedArgs = parsePrompt(
-  parsedData.toString().trim().split(" "),
+  rawPrompt.split(" "),
   {
     alias: {
       "steps": "step",
@@ -437,7 +449,12 @@ const akord = await Akord.init(wallet);
 let uploadedImageUrl: string;
 try {
   const imageFileName = `${responsePayloadHash}.png`
-  const imageFile = new NodeJs.File([image], imageFileName, "image/png", (new Date()).getTime())
+  const imageFile = new UploadableFile(
+    image,
+    imageFileName,
+    "image/png",
+    (new Date()).getTime()
+  );
   const {stackId} = await akord.stack.create(env.AKORD_VAULT_ID, imageFile, imageFileName);
   uploadedImageUrl = `https://arweave.net/${await akord.stack.getUri(stackId)}`;
 } catch (e) {
@@ -449,7 +466,12 @@ try {
 let uploadedProofUrl: string;
 try {
   const proofFileName = `${responsePayloadHash}.proof.json`
-  const proofFile = new NodeJs.File([new TextEncoder().encode(responsePayload)], proofFileName, "application/json", (new Date()).getTime())
+  const proofFile = new UploadableFile(
+    new TextEncoder().encode(responsePayload),
+    proofFileName,
+    "application/json",
+    (new Date()).getTime()
+  );
   const {stackId} = await akord.stack.create(env.AKORD_VAULT_ID, proofFile, proofFileName);
   uploadedProofUrl = `https://arweave.net/${await akord.stack.getUri(stackId)}`;
 } catch (e) {
@@ -469,7 +491,12 @@ const metadata = {
 let uploadedMetadataUrl: string;
 try {
   const metadataFileName = `${responsePayloadHash}.metadata.json`
-  const metadataFile = new NodeJs.File([new TextEncoder().encode(JSON.stringify(metadata))], metadataFileName, "application/json", (new Date()).getTime())
+  const metadataFile = new UploadableFile(
+    new TextEncoder().encode(JSON.stringify(metadata)),
+    metadataFileName,
+    "application/json",
+    (new Date()).getTime()
+  );
   const {stackId} = await akord.stack.create(env.AKORD_VAULT_ID, metadataFile, metadataFileName);
   uploadedMetadataUrl = `https://arweave.net/${await akord.stack.getUri(stackId)}`;
 } catch (e) {
