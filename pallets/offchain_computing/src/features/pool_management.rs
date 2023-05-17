@@ -35,6 +35,8 @@ impl<T: Config> Pallet<T> {
 			owner_deposit: T::CreatePoolDeposit::get(),
 			impl_id: impl_id.clone(),
 			creating_task_availability: true,
+			min_impl_spec_version: 1,
+			max_impl_spec_version: 1,
 			task_policies_count: 0,
 			tasks_count: 0,
 			workers_count: 0,
@@ -111,6 +113,26 @@ impl<T: Config> Pallet<T> {
 		T::Currency::unreserve(&pool_info.owner, metadata_entry.actual_deposit);
 
 		Self::deposit_event(Event::PoolMetadataRemoved { pool_id: pool_info.id });
+		Ok(())
+	}
+
+	pub(crate) fn do_update_pool_spec_version_range(
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		min_version: ImplSpecVersion,
+		max_version: ImplSpecVersion
+	) -> DispatchResult {
+		ensure!(
+			max_version >= min_version,
+			Error::<T>::InvalidImplSpecVersionRange
+		);
+
+		let mut new_pool_info = pool_info.clone();
+		new_pool_info.min_impl_spec_version = min_version;
+		new_pool_info.max_impl_spec_version = max_version;
+
+		Pools::<T>::insert(&pool_info.id, new_pool_info);
+
+		Self::deposit_event(Event::PoolImplSpecVersionRangeUpdated { pool_id: pool_info.id, min_version, max_version });
 		Ok(())
 	}
 

@@ -17,6 +17,12 @@ impl<T: Config> Pallet<T> {
 		now: u64,
 		expires_in: Option<u64>,
 	) -> DispatchResult {
+		ensure!(
+			impl_spec_version >= pool_info.min_impl_spec_version &&
+			impl_spec_version <= pool_info.max_impl_spec_version,
+			Error::<T>::UnsupportedImplSpecVersion
+		);
+
 		let expires_in = expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
 		ensure!(expires_in >= T::MinTaskExpiresIn::get(), Error::<T>::ExpiresInTooSmall);
 		ensure!(expires_in <= T::MaxTaskExpiresIn::get(), Error::<T>::ExpiresInTooLarge);
@@ -31,7 +37,7 @@ impl<T: Config> Pallet<T> {
 		T::Currency::reserve(&depositor, total_deposit)?;
 
 		let expires_at = now + expires_in;
-		let task = TaskInfo::<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion> {
+		let task = TaskInfo::<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>> {
 			id: task_id.clone(),
 			policy_id: policy_info.id.clone(),
 			owner: owner.clone(),
@@ -116,7 +122,7 @@ impl<T: Config> Pallet<T> {
 
 	fn do_actual_destroy_task(
 		pool_id: T::PoolId,
-		task: TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+		task: TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 		destroyer: T::AccountId
 	) -> DispatchResult {
 		let task_id = task.id;

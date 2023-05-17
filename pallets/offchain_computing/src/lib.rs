@@ -174,6 +174,7 @@ pub mod pallet {
 		PoolMetadataUpdated { pool_id: T::PoolId, metadata: BoundedVec<u8, T::PoolMetadataLimit> },
 		PoolMetadataRemoved { pool_id: T::PoolId },
 		PoolCreatingTaskAvailabilityUpdated { pool_id: T::PoolId, availability: bool },
+		PoolImplSpecVersionRangeUpdated { pool_id: T::PoolId, min_version: ImplSpecVersion, max_version: ImplSpecVersion },
 		TaskPolicyCreated {
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
@@ -239,6 +240,8 @@ pub mod pallet {
 		TaskStillValid,
 		TaskExpired,
 		TaskAlreadyAssigned,
+		UnsupportedImplSpecVersion,
+		InvalidImplSpecVersionRange,
 	}
 
 	/// Pools info.
@@ -303,7 +306,7 @@ pub mod pallet {
 		T::PoolId,
 		Blake2_128Concat,
 		T::TaskId,
-		TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+		TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 		OptionQuery,
 	>;
 
@@ -504,6 +507,23 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(3)]
 		#[pallet::weight({0})]
+		pub fn update_pool_impl_spec_version_range(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			new_min_version: ImplSpecVersion,
+			new_max_version: ImplSpecVersion,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
+			Self::ensure_pool_owner(&who, &pool_info)?;
+
+			Self::do_update_pool_spec_version_range(pool_info, new_min_version, new_max_version)
+		}
+
+		#[transactional]
+		#[pallet::call_index(4)]
+		#[pallet::weight({0})]
 		pub fn toggle_pool_task_creatable(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -518,7 +538,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(4)]
+		#[pallet::call_index(5)]
 		#[pallet::weight({0})]
 		pub fn create_task_policy(
 			origin: OriginFor<T>,
@@ -553,7 +573,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(5)]
+		#[pallet::call_index(6)]
 		#[pallet::weight({0})]
 		pub fn destroy_task_policy(
 			origin: OriginFor<T>,
@@ -572,7 +592,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(6)]
+		#[pallet::call_index(7)]
 		#[pallet::weight({0})]
 		pub fn update_task_policy_availability(
 			origin: OriginFor<T>,
@@ -593,7 +613,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(7)]
+		#[pallet::call_index(8)]
 		#[pallet::weight({0})]
 		pub fn authorize_worker(
 			origin: OriginFor<T>,
@@ -614,7 +634,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(8)]
+		#[pallet::call_index(9)]
 		#[pallet::weight({0})]
 		pub fn revoke_worker(
 			origin: OriginFor<T>,
@@ -641,7 +661,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(9)]
+		#[pallet::call_index(10)]
 		#[pallet::weight({0})]
 		pub fn subscribe_pool(
 			origin: OriginFor<T>,
@@ -656,7 +676,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(10)]
+		#[pallet::call_index(11)]
 		#[pallet::weight({0})]
 		pub fn unsubscribe_pool(
 			origin: OriginFor<T>,
@@ -671,7 +691,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(11)]
+		#[pallet::call_index(12)]
 		#[pallet::weight({0})]
 		pub fn create_task(
 			origin: OriginFor<T>,
@@ -737,7 +757,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(12)]
+		#[pallet::call_index(13)]
 		#[pallet::weight({0})]
 		pub fn destroy_task(
 			origin: OriginFor<T>,
@@ -754,7 +774,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(13)]
+		#[pallet::call_index(14)]
 		#[pallet::weight({0})]
 		pub fn destroy_expired_task(
 			origin: OriginFor<T>,
@@ -773,7 +793,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(14)]
+		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
 		pub fn take_task(
 			origin: OriginFor<T>,
@@ -790,7 +810,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(15)]
+		#[pallet::call_index(16)]
 		#[pallet::weight({0})]
 		pub fn release_task(
 			origin: OriginFor<T>,
@@ -803,7 +823,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(16)]
+		#[pallet::call_index(17)]
 		#[pallet::weight({0})]
 		pub fn submit_task_result(
 			origin: OriginFor<T>,
@@ -837,7 +857,7 @@ pub mod pallet {
 
 		pub(crate) fn ensure_task_owner(
 			who: &T::AccountId,
-			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>
+			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>
 		) -> DispatchResult {
 			ensure!(
 				who == &task.owner,
@@ -848,7 +868,7 @@ pub mod pallet {
 		}
 
 		pub(crate) fn ensure_task_expired(
-			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 			now: u64
 		) -> DispatchResult {
 			// TODO: need deadline
@@ -863,7 +883,7 @@ pub mod pallet {
 		// Comment this because of difficulty reason,
 		// we decide to let the `expires_at` be soft expiring
 		// pub(crate) fn ensure_task_not_expired(
-		// 	task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+		// 	task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 		// 	now: u64
 		// ) -> DispatchResult {
 		// 	ensure!(
@@ -899,7 +919,7 @@ pub mod pallet {
 		}
 
 		pub(crate) fn ensure_task_assignee(
-			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>, ImplSpecVersion>,
+			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 			worker: &T::AccountId,
 		) -> DispatchResult {
 			let assignee = task.assignee.clone().ok_or(Error::<T>::NoPermission)?;

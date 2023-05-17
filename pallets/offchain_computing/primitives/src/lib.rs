@@ -9,6 +9,8 @@ use frame_support::{
 	RuntimeDebug,
 };
 
+use base_primitives::ImplSpecVersion;
+
 /// Generic data that stored on-chain
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(DataLimit))]
@@ -73,6 +75,8 @@ pub struct PoolInfo<PoolId, AccountId, Balance, ImplId> {
 	pub impl_id: ImplId,
 	/// Allow create new task
 	pub creating_task_availability: bool,
+	pub min_impl_spec_version: ImplSpecVersion,
+	pub max_impl_spec_version: ImplSpecVersion,
 	/// The total number of outstanding task policies of this pool.
 	pub task_policies_count: u32,
 	/// The total number of outstanding tasks of this pool.
@@ -108,7 +112,7 @@ pub enum TaskResult {
 // TODO: Idea: TaskType: info will copy to Task, advanceable, creatable, minimum_deposit (more than actual will save to surplus_deposit)
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct TaskInfo<TaskId, PolicyId, AccountId, Balance, ImplSpecVersion> {
+pub struct TaskInfo<TaskId, PolicyId, AccountId, Balance> {
 	pub id: TaskId,
 	pub policy_id: PolicyId,
 	pub owner: AccountId,

@@ -18,6 +18,8 @@ scale-info = { version = "2.6.0", default-features = false, features = ["derive"
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
+base-primitives = { package = "pallet-offchain_computing_workers-primitives", path = "../../offchain_computing_workers/primitives", default-features = false }
+
 [features]
 default = ["std"]
 std = [
@@ -25,4 +27,5 @@ std = [
 	"scale-info/std",
 	"sp-std/std",
 	"frame-support/std",
+	"base-primitives/std",
 ]
