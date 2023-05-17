@@ -157,7 +157,7 @@ try {
   renderAndExit(Result.Success, stringToEcho)
 } catch (e) {
   logger.error(JSON.stringify(e));
-  renderPanic(debug, "UNCOVERED_EXCEPTION");
+  renderPanic(isProd, "UNCOVERED_EXCEPTION");
 }
 
 Deno.exit(0);

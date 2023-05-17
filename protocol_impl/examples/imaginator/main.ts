@@ -222,11 +222,11 @@ if (cfgScale !== parsedArgs.cfgScale) {
   renderAndExit(Result.Error, "CFG_SCALE_SMALLER_THAN_ONE");
   Deno.exit(1);
 }
-const seed = parseInt(parsedArgs.seed);
+const seed = parseInt(parsedArgs.seed.toString());
 if (seed !== parsedArgs.seed) {
   renderAndExit(Result.Error, "SEED_NOT_INTEGER");
 }
-const steps = parseInt(parsedArgs.steps);
+const steps = parseInt(parsedArgs.steps.toString());
 if (steps !== parsedArgs.steps) {
   renderAndExit(Result.Error, "STEPS_NOT_INTEGER");
 } else if (steps < 1) {
@@ -234,7 +234,7 @@ if (steps !== parsedArgs.steps) {
 } else if (steps > 150) {
   renderAndExit(Result.Error, "STEPS_TOO_LARGE");
 }
-const width = parseInt(parsedArgs.width);
+const width = parseInt(parsedArgs.width.toString());
 if (width !== parsedArgs.width) {
   renderAndExit(Result.Error, "WIDTH_NOT_INTEGER");
 } else if (width < 128) {
@@ -242,7 +242,7 @@ if (width !== parsedArgs.width) {
 } else if (width > 2048) {
   renderAndExit(Result.Error, "WIDTH_TOO_LARGE");
 }
-const height = parseInt(parsedArgs.height);
+const height = parseInt(parsedArgs.height.toString());
 if (height !== parsedArgs.height) {
   renderAndExit(Result.Error, "HEIGHT_NOT_INTEGER");
 } else if (height < 128) {
@@ -250,7 +250,7 @@ if (height !== parsedArgs.height) {
 } else if (height > 2048) {
   renderAndExit(Result.Error, "HEIGHT_TOO_LARGE");
 }
-const clipSkip = parseInt(parsedArgs.clipSkip);
+const clipSkip = parseInt(parsedArgs.clipSkip.toString());
 if (clipSkip !== parsedArgs.clipSkip) {
   renderAndExit(Result.Error, "CLIP_SKIP_NOT_INTEGER");
 } else if (clipSkip < 1) {
@@ -258,7 +258,7 @@ if (clipSkip !== parsedArgs.clipSkip) {
 } else if (clipSkip > 12) {
   renderAndExit(Result.Error, "CLIP_SKIP_TOO_LARGE");
 }
-const etaNoiseSeedDelta = parseInt(parsedArgs.etaNoiseSeedDelta);
+const etaNoiseSeedDelta = parseInt(parsedArgs.etaNoiseSeedDelta.toString());
 if (etaNoiseSeedDelta !== parsedArgs.etaNoiseSeedDelta) {
   renderAndExit(Result.Error, "ENSD_NOT_INTEGER");
 }
@@ -287,7 +287,7 @@ if (enableHr) {
     renderAndExit(Result.Error, "HR_SCALE_TOO_LARGE");
   }
 }
-const hrSecondPassSteps = parseInt(parsedArgs.hrSecondPassSteps);
+const hrSecondPassSteps = parseInt(parsedArgs.hrSecondPassSteps.toString());
 if (hrSecondPassSteps) {
   if (hrSecondPassSteps !== parsedArgs.hrSecondPassSteps) {
     renderAndExit(Result.Error, "HR_SECOND_PASS_STEPS_NOT_INTEGER");
