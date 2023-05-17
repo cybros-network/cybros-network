@@ -17,33 +17,37 @@ enum Result {
   Panic = "Panic",
 }
 
-function renderResult(result: Result, data?: unknown) {
-  console.log(stringToHex(JSON.stringify({
+function renderResult(encode: boolean, result: Result, data?: unknown) {
+  const output = JSON.stringify({
     result: result,
     e2e: false,
     data: data ?? null,
-  })));
+  });
+  console.log(encode ? stringToHex(output) : output);
 }
 
 function renderResultWithE2E(
-    e2eKeyPair: Keypair,
-    recipientPublicKey: HexString | string | Uint8Array,
-    result: Result,
-    data?: unknown
+  encode: boolean,
+  e2eKeyPair: Keypair,
+  recipientPublicKey: HexString | string | Uint8Array,
+  result: Result,
+  data?: unknown
 ) {
-  console.log(stringToHex(JSON.stringify({
+  const output = JSON.stringify({
     result,
     e2e: true,
     senderPublicKey: u8aToHex(e2eKeyPair.publicKey),
     encryptedData: data ? u8aToHex(encryptMessage(JSON.stringify(data), e2eKeyPair.secretKey, recipientPublicKey)) : null,
-  })));
+  });
+  console.log(encode ? stringToHex(output) : output);
 }
 
-function renderPanic(code: string) {
-  console.log(stringToHex(JSON.stringify({
+function renderPanic(encode: boolean, code: string) {
+  const output = JSON.stringify({
     result: Result.Panic,
     code,
-  })));
+  });
+  console.log(encode ? stringToHex(output) : output);
 }
 
 // Stdout will be the output that submit to chain, we could use log for debugging
@@ -54,9 +58,9 @@ async function initializeLogger(logFilename: string) {
       file: new log.handlers.FileHandler("NOTSET", {
         filename: logFilename,
         formatter: (rec) =>
-            JSON.stringify(
-                { ts: rec.datetime, topic: rec.loggerName, level: rec.levelName, msg: rec.msg },
-            ),
+          JSON.stringify(
+            { ts: rec.datetime, topic: rec.loggerName, level: rec.levelName, msg: rec.msg },
+          ),
       }),
     },
     loggers: {
@@ -68,29 +72,31 @@ async function initializeLogger(logFilename: string) {
   });
 }
 
+const env = loadEnvSync();
+const isProd = env.DEBUG !== "1"
+
 await cryptoWaitReady().catch((e) => {
   console.error(e.message);
 
-  renderPanic("INIT_CRYPTO_FAIL");
+  renderPanic(isProd, "INIT_CRYPTO_FAIL");
   Deno.exit(1);
 });
 
 await initializeLogger(path.resolve(path.join(workPath, "run.log"))).catch((e) => {
   console.error(e.message);
 
-  renderPanic("INIT_LOGGER_FAIL");
+  renderPanic(isProd, "INIT_LOGGER_FAIL");
   Deno.exit(1);
 });
 const logger = log.getLogger("default");
 
-const env = loadEnvSync();
 const e2eKeyPair = function () {
   try {
     return ed25519PairFromSeed(hexToU8a(env.E2E_KEY_SEED));
   } catch (e) {
-    logger.error(e.message);
+    logger.error(JSON.stringify(e));
 
-    renderPanic("LOAD_E2E_KEYPAIR_FAIL");
+    renderPanic(isProd, "LOAD_E2E_KEYPAIR_FAIL");
     Deno.exit(1);
   }
 }()
@@ -98,16 +104,16 @@ const e2eKeyPair = function () {
 const input = (Deno.args[0] ?? "").toString().trim();
 const parsedInput = function (input) {
   if (input.length === 0) {
-    renderResult(Result.Error, "INPUT_IS_BLANK");
+    renderResult(isProd, Result.Error, "INPUT_IS_BLANK");
     Deno.exit(1);
   }
 
   try {
     return JSON.parse(hexToString(input));
   } catch (e) {
-    logger.error(e.message);
+    logger.error(JSON.stringify(e));
 
-    renderResult(Result.Error, "INPUT_CANT_PARSE");
+    renderResult(isProd, Result.Error, "INPUT_CANT_PARSE");
     Deno.exit(1);
   }
 }(input);
@@ -119,23 +125,23 @@ const parsedData = function (input, keyPair) {
     }
 
     return JSON.parse(
-        u8aToString(
-            decryptMessage(hexToU8a(input.encryptedData), keyPair.secretKey, input.senderPublicKey)
-        )
+      u8aToString(
+        decryptMessage(hexToU8a(input.encryptedData), keyPair.secretKey, input.senderPublicKey)
+      )
     );
   } catch (e) {
-    logger.error(e.message);
+    logger.error(JSON.stringify(e));
 
-    renderResult(Result.Error, "ENCRYPTED_ARGS_CANT_DECRYPT");
+    renderResult(isProd, Result.Error, "ENCRYPTED_ARGS_CANT_DECRYPT");
     Deno.exit(1);
   }
 }(parsedInput, e2eKeyPair);
 
 const renderAndExit = function (result: Result, data: unknown) {
   if (parsedInput.e2e) {
-    renderResultWithE2E(e2eKeyPair, parsedInput.senderPublicKey, result, data);
+    renderResultWithE2E(isProd, e2eKeyPair, parsedInput.senderPublicKey, result, data);
   } else {
-    renderResult(result, data);
+    renderResult(isProd, result, data);
   }
   Deno.exit(result == Result.Success ? 0 : 1);
 }
@@ -150,8 +156,8 @@ try {
 
   renderAndExit(Result.Success, stringToEcho)
 } catch (e) {
-  logger.error(e.message);
-  renderPanic("UNCOVERED_EXCEPTION");
+  logger.error(JSON.stringify(e));
+  renderPanic(debug, "UNCOVERED_EXCEPTION");
 }
 
 Deno.exit(0);

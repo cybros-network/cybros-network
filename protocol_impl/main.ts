@@ -13,8 +13,6 @@ import {AnyJson} from "https://deno.land/x/polkadot/types-codec/types/helpers.ts
 
 const APP_NAME = "Cybros protocol reference implementation";
 const APP_VERSION = "v0.0.1-dev";
-const IMPL_ID = 1;
-const IMPL_SPEC_VERSION = 1;
 const IMPL_BUILD_VERSION = 1;
 const IMPL_BUILD_MAGIC_BYTES = new Uint8Array([0]);
 
@@ -29,6 +27,8 @@ const parsedArgs = parse(Deno.args, {
     "ownerPhrase": "owner-phrase",
     "noHeartbeat": "no-heartbeat",
     "subscribePool": "subscribe-pool",
+    "implId": "impl",
+    "implSpecVersion": "spec",
   },
   boolean: [
     "help",
@@ -54,6 +54,8 @@ const parsedArgs = parse(Deno.args, {
     version: false,
     ownerPhrase: "",
     noHeartbeat: false,
+    implId: 1,
+    implSpecVersion: 1,
   },
 });
 
@@ -281,6 +283,7 @@ async function handleTask() {
   copySync(taskExecutorPath, taskWorkPath, { overwrite: true })
 
   // Run the task
+  console.log(task.input);
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
@@ -336,6 +339,9 @@ if (parsedArgs.version) {
   console.log("");
 }
 
+const implId = parsedArgs.implId ?? 1;
+const implSpecVersion = parsedArgs.implSpecVersion ?? 1;
+
 const taskExecutorPath = path.resolve(parsedArgs.taskExecutorPath);
 const dataPath = path.resolve(path.join(parsedArgs.workPath, "data"));
 const tempPath = path.resolve(path.join(parsedArgs.workPath, "tmp"));
@@ -353,6 +359,8 @@ await prepareDirectory(logPath).catch((e) => {
   Deno.exit(1);
 });
 
+console.log(`Impl id: ${implId}`);
+console.log(`Impl spec version: ${implSpecVersion}`);
 console.log(`Task executor path: ${taskExecutorPath}`);
 console.log(`Data path: ${dataPath}`);
 console.log(`Temp path: ${tempPath}`);
@@ -518,7 +526,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     if (window.ownerKeyPair !== null) {
       const initialDeposit = numberToBalance(10000);
       logger.info(`Sending "offchain_computing_workers.registerWorker(worker, implId, initialDeposit)`);
-      const txPromise = api.tx.offchainComputingWorkers.registerWorker(window.workerKeyPair.address, IMPL_ID, initialDeposit);
+      const txPromise = api.tx.offchainComputingWorkers.registerWorker(window.workerKeyPair.address, implId, initialDeposit);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.ownerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -547,8 +555,8 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     }
 
     const payload = api.createType("OnlinePayload", {
-      "impl_id": IMPL_ID,
-      "impl_spec_version": IMPL_SPEC_VERSION,
+      "impl_id": implId,
+      "impl_spec_version": implSpecVersion,
       "impl_build_version": IMPL_BUILD_VERSION,
       "impl_build_magic_bytes": IMPL_BUILD_MAGIC_BYTES,
     });
@@ -708,7 +716,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
       }
     }
 
-    let assignableTasksCount = tasks.filter((task: AnyJson) => task.status === TaskStatus.Pending && task.assignee === null && task.implSpecVersion == IMPL_SPEC_VERSION ).length
+    let assignableTasksCount = tasks.filter((task: AnyJson) => task.status === TaskStatus.Pending && task.assignee === null && task.implSpecVersion == implSpecVersion ).length
     let myTasksCount = (await api.query.offchainComputing.counterForWorkerAssignedTasks(window.workerKeyPair.address)).toNumber()
     if (assignableTasksCount > 0 && myTasksCount <= 1) {
       logger.info("taking a new task");
