@@ -1,21 +1,22 @@
 .DS_Store
 *.swp
 .vscode
-.idea/
+.idea
 
-**/tmp/
-**/target/
+**/target
 **/*.rs.bk
 .wasm-binaries
 rls*.log
 **/Cargo.lock
-
 !/Cargo.lock
 
 **/node_modules
 
-/protocol_impl/data/
-/protocol_impl/log/
+**/tmp
+**/.env
+
+/protocol_impl/data
+/protocol_impl/log
 /protocol_impl/main.js
 
 /squid/lib
