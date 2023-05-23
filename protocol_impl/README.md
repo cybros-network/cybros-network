@@ -1,4 +1,4 @@
-A prototype of Cybros off-chain implementation
+A prototype of Cybros protocol implementation
 ====
 
 This is a quick and dirty implementation that shows few use cases:
@@ -20,7 +20,6 @@ For now, You also need to know [Polkadot.js](https://polkadot.js.org/apps/?rpc=w
 - [Install latest Deno](https://deno.com/manual@v1.33.4/getting_started/installation) first.
 - Caching dependencies
   - `deno cache --reload ./main.ts`
-  - `cd ./examples/simple_echo && deno cache --reload ./main.ts`
   - `cd ./examples/echo && deno cache --reload ./main.ts`
   - `cd ./examples/imaginator && deno cache --reload ./main.ts`
   - Note: If you meet `error: The source code is invalid, as it does not match the expected hash in the lock file.`, just delete `deno.lock` then retry
