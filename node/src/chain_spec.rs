@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use runtime_primitives::types::AccountId;
 use runtime::{
-	AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	AuraConfig, BalancesConfig, RuntimeGenesisConfig, GrandpaConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use sc_chain_spec::Properties;
 use sc_service::ChainType;
@@ -54,7 +54,7 @@ struct GenesisConfigProfile {
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
-pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
+pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
 
 pub fn development() -> Result<ChainSpec, String> {
 	let genesis_profile_in_bytes = include_bytes!("../res/development_network_genesis_config.json");
@@ -130,7 +130,7 @@ fn genesis_config(
 	root_key: AccountId,
 	endowed_accounts: Vec<(AccountId, u128)>,
 	_enable_println: bool,
-) -> GenesisConfig {
+) -> RuntimeGenesisConfig {
 	assert!(
 		initial_authorities
 			.iter()
@@ -145,7 +145,7 @@ fn genesis_config(
 		"All the genesis accounts must be endowed; qed."
 	);
 
-	GenesisConfig {
+	RuntimeGenesisConfig {
 		system: SystemConfig {
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
