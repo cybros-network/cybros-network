@@ -15,6 +15,8 @@ import {Akord, Auth} from "npm:@akord/akord-js";
 import {AkordWallet} from "npm:@akord/crypto";
 
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));
+const isProd = Deno.env.get("DEBUG") !== "1"
+const env = loadEnvSync();
 
 enum Result {
   Success = "Success",
@@ -61,6 +63,7 @@ async function initializeLogger(logFilename: string) {
   // logger not write to log instantly, need explict call `logger.handlers[0].flush()`
   await log.setup({
     handlers: {
+      console: new log.handlers.ConsoleHandler("NOTSET"),
       file: new log.handlers.FileHandler("NOTSET", {
         filename: logFilename,
         formatter: (rec) =>
@@ -72,14 +75,11 @@ async function initializeLogger(logFilename: string) {
     loggers: {
       default: {
         level: "NOTSET",
-        handlers: ["file"],
+        handlers: isProd ? ["file"] : ["console"],
       },
     },
   });
 }
-
-const env = loadEnvSync();
-const isProd = env.DEBUG !== "1"
 
 await cryptoWaitReady().catch((e) => {
   console.error(e.message);
