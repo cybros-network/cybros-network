@@ -306,11 +306,14 @@ async function handleTask() {
     console.log(out);
     // const errorOut = new TextDecoder().decode(stderr).trim();
 
-    const parsedOut = JSON.parse(hexToString(out));
-    console.log(parsedOut)
+    let parsedOut;
+    try {
+      parsedOut = JSON.parse(hexToString(out));
+      console.log(parsedOut);
+    } catch (_e) {}
 
-    const taskResult = api.createType("TaskResult", parsedOut.result);
-    const taskOutput = api.createType("TaskOutput", out);
+    const taskResult = api.createType("TaskResult", parsedOut ? parsedOut.result : "Success");
+    const taskOutput = out && out.length > 0 ? api.createType("TaskOutput", out) : null;
 
     logger.info(`Sending "offchain_computing.submitTaskResult()`);
     const txPromise = api.tx.offchainComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput, null, null);
