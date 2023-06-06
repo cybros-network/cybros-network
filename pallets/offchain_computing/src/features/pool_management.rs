@@ -34,11 +34,11 @@ impl<T: Config> Pallet<T> {
 			owner: owner.clone(),
 			owner_deposit: T::CreatePoolDeposit::get(),
 			impl_id: impl_id.clone(),
-			creating_task_availability: true,
+			create_job_availability: true,
 			min_impl_spec_version: 1,
 			max_impl_spec_version: 1,
-			task_policies_count: 0,
-			tasks_count: 0,
+			job_policies_count: 0,
+			jobs_count: 0,
 			workers_count: 0,
 		};
 
@@ -55,14 +55,14 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 		Self::ensure_pool_owner(&who, &pool_info)?;
-		ensure!(pool_info.tasks_count == 0, Error::<T>::PoolNotEmpty);
+		ensure!(pool_info.jobs_count == 0, Error::<T>::PoolNotEmpty);
 		ensure!(pool_info.workers_count == 0, Error::<T>::PoolNotEmpty);
 
 		if let Some(metadata_entry) = PoolMetadata::<T>::take(&pool_id) {
 			T::Currency::unreserve(&pool_info.owner, metadata_entry.actual_deposit);
 		}
 
-		let _ = TaskPolicies::<T>::clear_prefix(&pool_id, pool_info.task_policies_count, None);
+		let _ = JobPolicies::<T>::clear_prefix(&pool_id, pool_info.job_policies_count, None);
 
 		Pools::<T>::remove(&pool_id);
 		AccountOwningPools::<T>::remove(&pool_info.owner, &pool_id);
@@ -136,16 +136,16 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_toggle_pool_task_creatable(
+	pub(crate) fn do_toggle_pool_job_creatable(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		creatable: bool
 	) -> DispatchResult {
 		let mut new_pool_info = pool_info.clone();
-		new_pool_info.creating_task_availability = creatable;
+		new_pool_info.create_job_availability = creatable;
 
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		Self::deposit_event(Event::PoolCreatingTaskAvailabilityUpdated { pool_id: pool_info.id, availability: creatable });
+		Self::deposit_event(Event::PoolCreateJobAvailabilityUpdated { pool_id: pool_info.id, availability: creatable });
 		Ok(())
 	}
 }

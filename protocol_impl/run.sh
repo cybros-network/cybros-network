@@ -10,4 +10,4 @@ deno run \
   --allow-net \
   --allow-write="$APP_PATH/data,$APP_PATH/tmp,$APP_PATH/log" \
   --allow-read="$DENO_PATH,$PWD,$APP_PATH/data,$APP_PATH/tmp,$APP_PATH/log,$EXECUTOR_PATH" \
-  "$APP_PATH"/main.ts --task-executor-path "$EXECUTOR_PATH" "$@"
+  "$APP_PATH"/main.ts --job-executor-path "$EXECUTOR_PATH" "$@"

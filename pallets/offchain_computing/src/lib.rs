@@ -77,11 +77,11 @@ pub mod pallet {
 
 		type UnixTime: UnixTime;
 
-		/// Identifier for the tasks' pool.
+		/// Identifier for the jobs' pool.
 		type PoolId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + AutoIncrement;
 
-		/// The type used to identify a task within a pool.
-		type TaskId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + AutoIncrement;
+		/// The type used to identify a job within a pool.
+		type JobId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + AutoIncrement;
 
 		/// The type used to identify a policy within a pool.
 		type PolicyId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + AutoIncrement;
@@ -94,9 +94,9 @@ pub mod pallet {
 		#[pallet::constant]
 		type CreatePoolDeposit: Get<BalanceOf<Self>>;
 
-		/// The basic amount of funds that must be reserved for a task.
+		/// The basic amount of funds that must be reserved for a job.
 		#[pallet::constant]
-		type CreatingTaskDeposit: Get<BalanceOf<Self>>;
+		type DepositPerJob: Get<BalanceOf<Self>>;
 
 		/// The basic amount of funds that must be reserved when adding metadata to your item.
 		#[pallet::constant]
@@ -106,9 +106,9 @@ pub mod pallet {
 		#[pallet::constant]
 		type DepositPerByte: Get<BalanceOf<Self>>;
 
-		/// The limit of tasks a worker could be assigned
+		/// The limit of jobs a worker could be assigned
 		#[pallet::constant]
-		type MaxAssignedTasksPerWorker: Get<u32>;
+		type MaxAssignedJobsPerWorker: Get<u32>;
 
 		/// The limit of pools a worker could be subscribed
 		#[pallet::constant]
@@ -118,9 +118,9 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxPoliciesPerPool: Get<u32>;
 
-		/// The limit of tasks in a pool
+		/// The limit of jobs in a pool
 		#[pallet::constant]
-		type MaxTasksPerPool: Get<u32>;
+		type MaxJobsPerPool: Get<u32>;
 
 		/// The limit of workers in a pool
 		#[pallet::constant]
@@ -128,15 +128,15 @@ pub mod pallet {
 
 		/// The min `expires_in` can be set
 		#[pallet::constant]
-		type MinTaskExpiresIn: Get<u64>;
+		type MinJobExpiresIn: Get<u64>;
 
 		/// The max `expires_in` can be set
 		#[pallet::constant]
-		type MaxTaskExpiresIn: Get<u64>;
+		type MaxJobExpiresIn: Get<u64>;
 
 		/// The default `expires_in` if not given
 		#[pallet::constant]
-		type DefaultTaskExpiresIn: Get<u64>;
+		type DefaultJobExpiresIn: Get<u64>;
 
 		/// The maximum length of pool's metadata stored on-chain.
 		#[pallet::constant]
@@ -154,7 +154,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type ProofLimit: Get<u32>;
 
-		// TODO: Support create task by off-chain pre-sign message
+		// TODO: Support to create new job by off-chain pre-sign message
 		// /// Off-Chain signature type.
 		// ///
 		// /// Can verify whether an `Self::OffchainPublic` created a signature.
@@ -173,35 +173,35 @@ pub mod pallet {
 		PoolDestroyed { pool_id: T::PoolId },
 		PoolMetadataUpdated { pool_id: T::PoolId, metadata: BoundedVec<u8, T::PoolMetadataLimit> },
 		PoolMetadataRemoved { pool_id: T::PoolId },
-		PoolCreatingTaskAvailabilityUpdated { pool_id: T::PoolId, availability: bool },
+		PoolCreateJobAvailabilityUpdated { pool_id: T::PoolId, availability: bool },
 		PoolImplSpecVersionRangeUpdated { pool_id: T::PoolId, min_version: ImplSpecVersion, max_version: ImplSpecVersion },
-		TaskPolicyCreated {
+		JobPolicyCreated {
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
-			creating_task_scope: ApplicableScope,
+			applicable_scope: ApplicableScope,
 			start_block: Option<T::BlockNumber>,
 			end_block: Option<T::BlockNumber>
 		},
-		TaskPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
-		TaskPolicyAvailabilityUpdated { pool_id: T::PoolId, policy_id: T::PolicyId, availability: bool },
+		JobPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
+		JobPolicyAvailabilityUpdated { pool_id: T::PoolId, policy_id: T::PolicyId, availability: bool },
 		WorkerAuthorized { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRevoked { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerSubscribed { worker: T::AccountId, pool_id: T::PoolId },
 		WorkerUnsubscribed { worker: T::AccountId, pool_id: T::PoolId },
-		TaskCreated {
+		JobCreated {
 			pool_id: T::PoolId,
-			task_id: T::TaskId,
+			job_id: T::JobId,
 			policy_id: T::PolicyId,
 			owner: T::AccountId,
 			impl_spec_version: ImplSpecVersion,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			expires_in: u64
 		},
-		TaskDestroyed { pool_id: T::PoolId, task_id: T::TaskId, destroyer: T::AccountId },
-		TaskAssigned { pool_id: T::PoolId, task_id: T::TaskId, assignee: T::AccountId },
-		TaskReleased { pool_id: T::PoolId, task_id: T::TaskId },
-		TaskStatusUpdated { pool_id: T::PoolId, task_id: T::TaskId, status: TaskStatus },
-		TaskResultUpdated { pool_id: T::PoolId, task_id: T::TaskId, result: TaskResult, output: Option<BoundedVec<u8, T::OutputLimit>>, proof: Option<BoundedVec<u8, T::ProofLimit>> },
+		JobDestroyed { pool_id: T::PoolId, job_id: T::JobId, destroyer: T::AccountId },
+		JobAssigned { pool_id: T::PoolId, job_id: T::JobId, assignee: T::AccountId },
+		JobReleased { pool_id: T::PoolId, job_id: T::JobId },
+		JobStatusUpdated { pool_id: T::PoolId, job_id: T::JobId, status: JobStatus },
+		JobResultUpdated { pool_id: T::PoolId, job_id: T::JobId, result: JobResult, output: Option<BoundedVec<u8, T::OutputLimit>>, proof: Option<BoundedVec<u8, T::ProofLimit>> },
 	}
 
 	// Errors inform users that something went wrong.
@@ -210,19 +210,19 @@ pub mod pallet {
 		InternalError,
 		PoolIdTaken,
 		PolicyIdTaken,
-		TaskIdTaken,
+		JobIdTaken,
 		PoolNotEmpty,
 		NoPermission,
 		WorkerNotFound,
 		WorkerNotInThePool,
 		WorkerNotSubscribeThePool,
 		PoolNotFound,
-		PoolCreatingTaskUnavailable,
-		TaskPoliciesPerPoolLimitExceeded,
-		PolicyNotApplicable,
-		PolicyUnavailable,
-		PolicyNotFound,
-		PolicyStillInUse,
+		PoolCreateNewJobUnavailable,
+		JobPoliciesPerPoolLimitExceeded,
+		JobPolicyNotApplicable,
+		JobPolicyUnavailable,
+		JobPolicyNotFound,
+		JobPolicyStillInUse,
 		ExpiresInTooSmall,
 		ExpiresInTooLarge,
 		WorkerAlreadyAdded,
@@ -231,15 +231,15 @@ pub mod pallet {
 		ImplMismatched,
 		ImplNotFound,
 		TasksPerPoolLimitExceeded,
-		TaskNotFound,
-		WorkerAssignedTasksLimitExceeded,
-		NoAssignableTask,
-		TaskIsProcessing,
-		TaskIsProcessed,
-		TaskAssigneeLocked,
-		TaskStillValid,
-		TaskExpired,
-		TaskAlreadyAssigned,
+		JobNotFound,
+		WorkerAssignedJobsLimitExceeded,
+		NoAssignableJob,
+		JobIsProcessing,
+		JobIsProcessed,
+		JobAssigneeLocked,
+		JobStillValid,
+		JobExpired,
+		JobAlreadyAssigned,
 		UnsupportedImplSpecVersion,
 		InvalidImplSpecVersionRange,
 	}
@@ -263,15 +263,15 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	/// Tasks info.
+	/// Jobs info.
 	#[pallet::storage]
-	pub type TaskPolicies<T: Config> = StorageDoubleMap<
+	pub type JobPolicies<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
 		Blake2_128Concat,
 		T::PolicyId,
-		TaskPolicy<T::PolicyId, T::BlockNumber>,
+		JobPolicy<T::PolicyId, T::BlockNumber>,
 		OptionQuery,
 	>;
 
@@ -298,47 +298,47 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	/// Tasks info.
+	/// Jobs info.
 	#[pallet::storage]
-	pub type Tasks<T: Config> = StorageDoubleMap<
+	pub type Jobs<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
 		Blake2_128Concat,
-		T::TaskId,
-		TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>,
+		T::JobId,
+		JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 		OptionQuery,
 	>;
 
 	#[pallet::storage]
-	pub type TaskInputs<T: Config> = StorageDoubleMap<
+	pub type JobInputs<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
 		Blake2_128Concat,
-		T::TaskId,
+		T::JobId,
 		ChainStoredData<T::AccountId, BalanceOf<T>, T::InputLimit>,
 		OptionQuery,
 	>;
 
 	#[pallet::storage]
-	pub type TaskOutputs<T: Config> = StorageDoubleMap<
+	pub type JobOutputs<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
 		Blake2_128Concat,
-		T::TaskId,
+		T::JobId,
 		ChainStoredData<T::AccountId, BalanceOf<T>, T::OutputLimit>,
 		OptionQuery,
 	>;
 
 	#[pallet::storage]
-	pub type TaskProofs<T: Config> = StorageDoubleMap<
+	pub type JobProofs<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
 		Blake2_128Concat,
-		T::TaskId,
+		T::JobId,
 		ChainStoredData<T::AccountId, BalanceOf<T>, T::ProofLimit>,
 		OptionQuery,
 	>;
@@ -348,10 +348,10 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type NextPoolId<T: Config> = StorageValue<_, T::PoolId, OptionQuery>;
 
-	/// Stores the `TaskId` that is going to be used for the next task.
-	/// This gets incremented whenever a new task is created.
+	/// Stores the `JobId` that is going to be used for the next job.
+	/// This gets incremented whenever a new job is created.
 	#[pallet::storage]
-	pub type NextTaskPolicyId<T: Config> = StorageMap<
+	pub type NextJobPolicyId<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
@@ -359,14 +359,14 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	/// Stores the `TaskId` that is going to be used for the next task.
-	/// This gets incremented whenever a new task is created.
+	/// Stores the `JobId` that is going to be used for the next job.
+	/// This gets incremented whenever a new job is created.
 	#[pallet::storage]
-	pub type NextTaskId<T: Config> = StorageMap<
+	pub type NextJobId<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
-		T::TaskId,
+		T::JobId,
 		OptionQuery,
 	>;
 
@@ -383,39 +383,39 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	/// The tasks held by any given account; set out this way so that tasks owned by a single
+	/// The jobs held by any given account; set out this way so that jobs owned by a single
 	/// account can be enumerated.
 	#[pallet::storage]
-	pub type AccountOwningTasks<T: Config> = StorageNMap<
+	pub type AccountOwningJobs<T: Config> = StorageNMap<
 		_,
 		(
 			NMapKey<Blake2_128Concat, T::AccountId>, // owner
 			NMapKey<Blake2_128Concat, T::PoolId>,
-			NMapKey<Blake2_128Concat, T::TaskId>,
+			NMapKey<Blake2_128Concat, T::JobId>,
 		),
 		(),
 		OptionQuery,
 	>;
 
 	#[pallet::storage]
-	pub type WorkerAssignedTasks<T: Config> = StorageNMap<
+	pub type WorkerAssignedJobs<T: Config> = StorageNMap<
 		_,
 		(
 			NMapKey<Blake2_128Concat, T::AccountId>, // owner
 			NMapKey<Blake2_128Concat, T::PoolId>,
-			NMapKey<Blake2_128Concat, T::TaskId>,
+			NMapKey<Blake2_128Concat, T::JobId>,
 		),
 		(),
 		OptionQuery,
 	>;
 
 	#[pallet::storage]
-	pub type AssignableTasks<T: Config> = StorageNMap<
+	pub type AssignableJobs<T: Config> = StorageNMap<
 		_,
 		(
 			NMapKey<Blake2_128Concat, T::PoolId>,
 			NMapKey<Blake2_128Concat, ImplSpecVersion>,
-			NMapKey<Blake2_128Concat, T::TaskId>,
+			NMapKey<Blake2_128Concat, T::JobId>,
 		),
 		(),
 		OptionQuery,
@@ -440,7 +440,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	pub type CounterForWorkerAssignedTasks<T: Config> = StorageMap<
+	pub type CounterForWorkerAssignedJobs<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		T::AccountId,
@@ -524,7 +524,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(4)]
 		#[pallet::weight({0})]
-		pub fn toggle_pool_task_creatable(
+		pub fn toggle_pool_job_creatable(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			creatable: bool
@@ -534,16 +534,16 @@ pub mod pallet {
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_toggle_pool_task_creatable(pool_info, creatable)
+			Self::do_toggle_pool_job_creatable(pool_info, creatable)
 		}
 
 		#[transactional]
 		#[pallet::call_index(5)]
 		#[pallet::weight({0})]
-		pub fn create_task_policy(
+		pub fn create_job_policy(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			creating_task_scope: ApplicableScope,
+			applicable_scope: ApplicableScope,
 			start_block: Option<T::BlockNumber>,
 			end_block: Option<T::BlockNumber>
 		) -> DispatchResult {
@@ -553,21 +553,21 @@ pub mod pallet {
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
 			ensure!(
-				pool_info.task_policies_count.clone() <= T::MaxPoliciesPerPool::get(),
-				Error::<T>::TaskPoliciesPerPoolLimitExceeded
+				pool_info.job_policies_count.clone() <= T::MaxPoliciesPerPool::get(),
+				Error::<T>::JobPoliciesPerPoolLimitExceeded
 			);
 
-			let policy_id = NextTaskPolicyId::<T>::get(&pool_id).unwrap_or(T::PolicyId::initial_value());
-			Self::do_create_task_policy(
+			let policy_id = NextJobPolicyId::<T>::get(&pool_id).unwrap_or(T::PolicyId::initial_value());
+			Self::do_create_job_policy(
 				pool_info,
 				policy_id.clone(),
-				creating_task_scope,
+				applicable_scope,
 				start_block,
 				end_block
 			)?;
 
 			let next_id = policy_id.increment();
-			NextTaskPolicyId::<T>::set(&pool_id, Some(next_id));
+			NextJobPolicyId::<T>::set(&pool_id, Some(next_id));
 
 			Ok(())
 		}
@@ -575,7 +575,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(6)]
 		#[pallet::weight({0})]
-		pub fn destroy_task_policy(
+		pub fn destroy_job_policy(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
@@ -585,7 +585,7 @@ pub mod pallet {
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_destroy_task_policy(
+			Self::do_destroy_job_policy(
 				pool_info,
 				policy_id
 			)
@@ -594,7 +594,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(7)]
 		#[pallet::weight({0})]
-		pub fn update_task_policy_availability(
+		pub fn update_job_policy_availability(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
@@ -605,7 +605,7 @@ pub mod pallet {
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_update_task_policy_availability(
+			Self::do_update_job_policy_availability(
 				pool_id,
 				policy_id,
 				availability
@@ -693,7 +693,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(12)]
 		#[pallet::weight({0})]
-		pub fn create_task(
+		pub fn create_job(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
@@ -706,42 +706,42 @@ pub mod pallet {
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(
-				pool_info.creating_task_availability,
-				Error::<T>::PoolCreatingTaskUnavailable
+				pool_info.create_job_availability,
+				Error::<T>::PoolCreateNewJobUnavailable
 			);
 			ensure!(
-				pool_info.tasks_count <= T::MaxTasksPerPool::get(),
+				pool_info.jobs_count <= T::MaxJobsPerPool::get(),
 				Error::<T>::TasksPerPoolLimitExceeded
 			);
 
-			let policy = TaskPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::PolicyNotFound)?;
+			let policy = JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
 			ensure!(
 				policy.availability,
-				Error::<T>::PolicyUnavailable
+				Error::<T>::JobPolicyUnavailable
 			);
 			let current_block = frame_system::Pallet::<T>::block_number();
 			if let Some(start_block) = policy.start_block {
-				ensure!(current_block >= start_block , Error::<T>::PolicyNotApplicable);
+				ensure!(current_block >= start_block , Error::<T>::JobPolicyNotApplicable);
 			}
 			if let Some(end_block) = policy.end_block {
-				ensure!(current_block <= end_block, Error::<T>::PolicyNotApplicable);
+				ensure!(current_block <= end_block, Error::<T>::JobPolicyNotApplicable);
 			}
-			match policy.creating_task_scope {
+			match policy.applicable_scope {
 				ApplicableScope::Owner => {
 					ensure!(
 						&pool_info.owner == &who,
-						Error::<T>::PolicyNotApplicable
+						Error::<T>::JobPolicyNotApplicable
 					)
 				},
 				ApplicableScope::Public => {}
 			};
 
-			let task_id = NextTaskId::<T>::get(&pool_id).unwrap_or(T::TaskId::initial_value());
+			let job_id = NextJobId::<T>::get(&pool_id).unwrap_or(T::JobId::initial_value());
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
-			Self::do_create_task(
+			Self::do_create_job(
 				pool_info,
 				policy,
-				task_id.clone(),
+				job_id.clone(),
 				who.clone(),
 				who,
 				impl_spec_version,
@@ -750,8 +750,8 @@ pub mod pallet {
 				soft_expires_in
 			)?;
 
-			let next_id = task_id.increment();
-			NextTaskId::<T>::set(&pool_id, Some(next_id));
+			let next_id = job_id.increment();
+			NextJobId::<T>::set(&pool_id, Some(next_id));
 
 			Ok(())
 		}
@@ -759,34 +759,34 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(13)]
 		#[pallet::weight({0})]
-		pub fn destroy_task(
+		pub fn destroy_job(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			task_id: T::TaskId,
+			job_id: T::JobId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_destroy_task(
+			Self::do_destroy_job(
 				who,
 				pool_id,
-				task_id
+				job_id
 			)
 		}
 
 		#[transactional]
 		#[pallet::call_index(14)]
 		#[pallet::weight({0})]
-		pub fn destroy_expired_task(
+		pub fn destroy_expired_job(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			task_id: T::TaskId,
+			job_id: T::JobId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
-			Self::do_destroy_expired_task(
+			Self::do_destroy_expired_job(
 				pool_id,
-				task_id,
+				job_id,
 				who,
 				now
 			)
@@ -795,41 +795,41 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
-		pub fn take_task(
+		pub fn take_job(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			task_id: Option<T::TaskId>,
+			job_id: Option<T::JobId>,
 			processing: bool,
 			soft_expires_in: Option<u64>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
-			let expires_in = soft_expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
-			Self::do_assign_task(pool_id, task_id, who, now, processing, expires_in)
+			let expires_in = soft_expires_in.unwrap_or(T::DefaultJobExpiresIn::get());
+			Self::do_assign_job(pool_id, job_id, who, now, processing, expires_in)
 		}
 
 		#[transactional]
 		#[pallet::call_index(16)]
 		#[pallet::weight({0})]
-		pub fn release_task(
+		pub fn release_job(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			task_id: T::TaskId
+			job_id: T::JobId
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_release_task(pool_id, task_id, who)
+			Self::do_release_job(pool_id, job_id, who)
 		}
 
 		#[transactional]
 		#[pallet::call_index(17)]
 		#[pallet::weight({0})]
-		pub fn submit_task_result(
+		pub fn submit_job_result(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			task_id: T::TaskId,
-			result: TaskResult,
+			job_id: T::JobId,
+			result: JobResult,
 			output: Option<BoundedVec<u8, T::OutputLimit>>,
 			proof: Option<BoundedVec<u8, T::ProofLimit>>,
 			soft_expires_in: Option<u64>
@@ -837,8 +837,8 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
-			let expires_in = soft_expires_in.unwrap_or(T::DefaultTaskExpiresIn::get());
-			Self::do_submit_task_result(pool_id, task_id, who, result, output, proof, now, expires_in)
+			let expires_in = soft_expires_in.unwrap_or(T::DefaultJobExpiresIn::get());
+			Self::do_submit_job_result(pool_id, job_id, who, result, output, proof, now, expires_in)
 		}
 	}
 
@@ -855,26 +855,26 @@ pub mod pallet {
 			Ok(())
 		}
 
-		pub(crate) fn ensure_task_owner(
+		pub(crate) fn ensure_job_owner(
 			who: &T::AccountId,
-			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>
+			job: &JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>
 		) -> DispatchResult {
 			ensure!(
-				who == &task.owner,
+				who == &job.owner,
 				Error::<T>::NoPermission
 			);
 
 			Ok(())
 		}
 
-		pub(crate) fn ensure_task_expired(
-			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>,
+		pub(crate) fn ensure_job_expired(
+			job: &JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 			now: u64
 		) -> DispatchResult {
 			// TODO: need deadline
 			ensure!(
-				task.expires_at < now,
-				Error::<T>::TaskStillValid
+				job.expires_at < now,
+				Error::<T>::JobStillValid
 			);
 
 			Ok(())
@@ -882,13 +882,13 @@ pub mod pallet {
 
 		// Comment this because of difficulty reason,
 		// we decide to let the `expires_at` be soft expiring
-		// pub(crate) fn ensure_task_not_expired(
-		// 	task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>,
+		// pub(crate) fn ensure_job_not_expired(
+		// 	job: &JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 		// 	now: u64
 		// ) -> DispatchResult {
 		// 	ensure!(
-		// 		task.expires_at >= now,
-		// 		Error::<T>::TaskExpired
+		// 		job.expires_at >= now,
+		// 		Error::<T>::JobExpired
 		// 	);
 		//
 		// 	Ok(())
@@ -918,11 +918,11 @@ pub mod pallet {
 			Ok(())
 		}
 
-		pub(crate) fn ensure_task_assignee(
-			task: &TaskInfo<T::TaskId, T::PolicyId, T::AccountId, BalanceOf<T>>,
+		pub(crate) fn ensure_job_assignee(
+			job: &JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 			worker: &T::AccountId,
 		) -> DispatchResult {
-			let assignee = task.assignee.clone().ok_or(Error::<T>::NoPermission)?;
+			let assignee = job.assignee.clone().ok_or(Error::<T>::NoPermission)?;
 
 			ensure!(
 				&assignee == worker,
@@ -943,7 +943,7 @@ pub mod pallet {
 		}
 
 		fn can_offline(worker: &T::AccountId) -> bool {
-			CounterForWorkerAssignedTasks::<T>::get(worker) == 0
+			CounterForWorkerAssignedJobs::<T>::get(worker) == 0
 		}
 
 		fn after_unresponsive(_worker: &T::AccountId) {
@@ -951,18 +951,18 @@ pub mod pallet {
 		}
 
 		fn before_offline(worker: &T::AccountId, _reason: OfflineReason) {
-			if CounterForWorkerAssignedTasks::<T>::get(worker) == 0 {
+			if CounterForWorkerAssignedJobs::<T>::get(worker) == 0 {
 				return
 			}
 
 			for pool_id in WorkerSubscribedPools::<T>::iter_key_prefix(worker) {
-				for task_id in WorkerAssignedTasks::<T>::iter_key_prefix((worker.clone(), pool_id.clone())) {
-					let _: Result<(), DispatchError> = Tasks::<T>::try_mutate_exists(&pool_id, &task_id, |task| -> Result<(), DispatchError> {
-						if let Some(mut task) = task.as_mut() {
-							task.status = TaskStatus::Discarded;
-							task.ended_at = Some(T::UnixTime::now().as_secs().saturated_into::<u64>());
+				for job_id in WorkerAssignedJobs::<T>::iter_key_prefix((worker.clone(), pool_id.clone())) {
+					let _: Result<(), DispatchError> = Jobs::<T>::try_mutate_exists(&pool_id, &job_id, |job| -> Result<(), DispatchError> {
+						if let Some(mut job) = job.as_mut() {
+							job.status = JobStatus::Discarded;
+							job.ended_at = Some(T::UnixTime::now().as_secs().saturated_into::<u64>());
 
-							Self::deposit_event(Event::TaskStatusUpdated { pool_id: pool_id.clone(), task_id: task_id.clone(), status: TaskStatus::Discarded });
+							Self::deposit_event(Event::JobStatusUpdated { pool_id: pool_id.clone(), job_id: job_id.clone(), status: JobStatus::Discarded });
 						}
 
 						Ok(())
@@ -970,7 +970,7 @@ pub mod pallet {
 				}
 			}
 
-			CounterForWorkerAssignedTasks::<T>::insert(worker, 0);
+			CounterForWorkerAssignedJobs::<T>::insert(worker, 0);
 		}
 
 		fn after_refresh_attestation(_worker: &T::AccountId, _payload: &OnlinePayload<ImplIdOf<T>>, _verified_attestation: &VerifiedAttestation) {

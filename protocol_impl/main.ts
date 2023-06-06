@@ -23,7 +23,7 @@ const parsedArgs = parse(Deno.args, {
     "port": "p",
     "rpcUrl": "rpc-url",
     "workPath": "work-path",
-    "taskExecutorPath": "task-executor-path",
+    "jobExecutorPath": "job-executor-path",
     "ownerPhrase": "owner-phrase",
     "noHeartbeat": "no-heartbeat",
     "subscribePool": "subscribe-pool",
@@ -40,7 +40,7 @@ const parsedArgs = parse(Deno.args, {
     "bind",
     "port",
     "workPath",
-    "taskExecutorPath",
+    "jobExecutorPath",
     "ownerPhrase",
     "subscribePool",
   ],
@@ -49,7 +49,7 @@ const parsedArgs = parse(Deno.args, {
     bind: "127.0.0.1",
     port: "8080",
     workPath: path.dirname(path.fromFileUrl(import.meta.url)),
-    taskExecutorPath: path.join(path.dirname(path.fromFileUrl(import.meta.url)), "examples/echo"),
+    jobExecutorPath: path.join(path.dirname(path.fromFileUrl(import.meta.url)), "examples/echo"),
     help: false,
     version: false,
     ownerPhrase: "",
@@ -88,8 +88,8 @@ ${APP_NAME}
 Warning: This is just a prototype implementation,
          in final product, it should be protected by TEE (Trusted Execution Environment) technology,
          which means the app's memories, instructions, and persists data will encrypt by CPU, and only the exact CPU can load them.
-         Task deployers' can get an attestation for their task is running in a TEE.
-         Without TEE protection, bad task may harm your OS, or you may discover sensitive data,
+         Job deployers' can get an attestation for their job is running in a TEE.
+         Without TEE protection, bad job may harm your OS, or you may discover sensitive data,
          so PLEASE DO NOT USE FOR PRODUCTION.
          `.trim());
 }
@@ -104,7 +104,7 @@ Options:
     --work-path <PATH>
       The work path of the app, default is the app located path
     --subscribe-pool <POOL_ID>
-      Subscribe tasks of the given pool
+      Subscribe jobs of the given pool
     --owner-phrase <PHRASE>
       Inject the owner wallet, will enable some shortcuts (e.g. auto do register if it hasn't).
       WARNING: Keep safe of your owner wallet
@@ -200,7 +200,7 @@ function createSubstrateApi(rpcUrl: string): ApiPromise | null {
           OptOut: null,
         },
       },
-      TaskResult: {
+      JobResult: {
         _enum: [
           "Success",
           "Fail",
@@ -208,7 +208,7 @@ function createSubstrateApi(rpcUrl: string): ApiPromise | null {
           "Panic",
         ],
       },
-      TaskOutput: "BoundedVec<u8, 2048>",
+      JobOutput: "BoundedVec<u8, 2048>",
       Proof: "BoundedVec<u8, 2048>",
     },
   });
@@ -234,7 +234,7 @@ enum FlipFlopStage {
   // FlopToFlip = "FlopToFlip",
 }
 
-enum TaskStatus {
+enum JobStatus {
   Pending = "Pending",
   Processing = "Processing",
   Processed = "Processed",
@@ -252,50 +252,50 @@ function balanceToNumber(value: BN | string) {
   return bnValue.div(bn1e9).toNumber() / 1e3;
 }
 
-async function handleTask() {
+async function handleJob() {
   const logger = log.getLogger("background");
   const api = window.substrateApi;
-  const task = window.locals.currentTask;
+  const job = window.locals.currentJob;
 
-  if (task.status === TaskStatus.Processing && window.locals.sentProcessedTaskAt) {
-    logger.debug("Waiting processed task extrinsic finalize");
+  if (job.status === JobStatus.Processing && window.locals.sentProcessedJobAt) {
+    logger.debug("Waiting processed job extrinsic finalize");
 
     return;
   }
 
   // TODO: Handle timeout or canceled
 
-  if (window.locals.runningTask) {
-    console.log("Task is running...");
+  if (window.locals.runningJob) {
+    console.log("Job is running...");
     return;
   }
 
-  // console.log(task)
-  console.log(`Processing ${task.id}`);
+  // console.log(job)
+  console.log(`Processing ${job.id}`);
 
-  const taskWorkPath = path.join(tempPath, "task"); // TODO:
+  const jobWorkPath = path.join(tempPath, "job"); // TODO:
 
-  await prepareDirectory(taskWorkPath).catch((e) => {
+  await prepareDirectory(jobWorkPath).catch((e) => {
     console.error(e.message);
     Deno.exit(1);
   });
 
-  copySync(taskExecutorPath, taskWorkPath, { overwrite: true })
+  copySync(jobExecutorPath, jobWorkPath, { overwrite: true })
 
-  // Run the task
-  console.log(task.input);
+  // Run the job
+  console.log(job.input);
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
       "--no-prompt",
       "--allow-env",
       "--allow-net",
-      `--allow-read=${taskWorkPath}`,
-      `--allow-write=${taskWorkPath}`,
-      path.join(taskWorkPath, "main.ts"),
-      task.input,
+      `--allow-read=${jobWorkPath}`,
+      `--allow-write=${jobWorkPath}`,
+      path.join(jobWorkPath, "main.ts"),
+      job.input,
     ],
-    cwd: taskWorkPath,
+    cwd: jobWorkPath,
     clearEnv: true,
     stdout: "piped",
     stderr: "piped",
@@ -312,21 +312,21 @@ async function handleTask() {
       console.log(parsedOut);
     } catch (_e) {}
 
-    const taskResult = api.createType("TaskResult", parsedOut ? parsedOut.result : "Success");
-    const taskOutput = out && out.length > 0 ? api.createType("TaskOutput", out) : null;
+    const jobResult = api.createType("JobResult", parsedOut ? parsedOut.result : "Success");
+    const jobOutput = out && out.length > 0 ? api.createType("JobOutput", out) : null;
 
-    logger.info(`Sending "offchain_computing.submitTaskResult()`);
-    const txPromise = api.tx.offchainComputing.submitTaskResult(window.subscribePool, task.id, taskResult, taskOutput, null, null);
+    logger.info(`Sending "offchain_computing.submitJobResult()`);
+    const txPromise = api.tx.offchainComputing.submitJobResult(window.subscribePool, job.id, jobResult, jobOutput, null, null);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
     // TODO: Catch whether failed
 
-    window.locals.sentProcessedTaskAt = window.latestBlockNumber;
-    window.locals.runningTask = undefined;
+    window.locals.sentProcessedJobAt = window.latestBlockNumber;
+    window.locals.runningJob = undefined;
   });
 
-  window.locals.runningTask = child;
+  window.locals.runningJob = child;
 }
 
 if (parsedArgs.version) {
@@ -345,7 +345,7 @@ if (parsedArgs.version) {
 const implId = parsedArgs.implId ?? 1;
 const implSpecVersion = parsedArgs.implSpecVersion ?? 1;
 
-const taskExecutorPath = path.resolve(parsedArgs.taskExecutorPath);
+const jobExecutorPath = path.resolve(parsedArgs.jobExecutorPath);
 const dataPath = path.resolve(path.join(parsedArgs.workPath, "data"));
 const tempPath = path.resolve(path.join(parsedArgs.workPath, "tmp"));
 const logPath = path.resolve(path.join(parsedArgs.workPath, "log"));
@@ -364,7 +364,7 @@ await prepareDirectory(logPath).catch((e) => {
 
 console.log(`Impl id: ${implId}`);
 console.log(`Impl spec version: ${implSpecVersion}`);
-console.log(`Task executor path: ${taskExecutorPath}`);
+console.log(`Job executor path: ${jobExecutorPath}`);
 console.log(`Data path: ${dataPath}`);
 console.log(`Temp path: ${tempPath}`);
 console.log(`Log path: ${logPath}`);
@@ -432,11 +432,11 @@ interface Locals {
   sentOnlineAt?: number;
   sentHeartbeatAt?: number;
   sentSubscribePoolAt?: number;
-  sentTakeTaskAt?: number;
-  sentProcessedTaskAt?: number;
+  sentTakeJobAt?: number;
+  sentProcessedJobAt?: number;
 
-  currentTask?: any;
-  runningTask?: Deno.Process;
+  currentJob?: any;
+  runningJob?: Deno.Process;
 }
 
 declare global {
@@ -670,74 +670,74 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     window.locals.sentSubscribePoolAt = undefined
   }
 
-  // if (window.locals.sentTakeTaskAt && window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
-  //   logger.debug("Waiting take task extrinsic finalize");
+  // if (window.locals.sentTakeJobAt && window.locals.sentTakeJobAt >= window.finalizedBlockNumber) {
+  //   logger.debug("Waiting take job extrinsic finalize");
   //
   //   return;
   // }
 
-  if (window.locals.sentProcessedTaskAt) {
-    // if (window.locals.sentTakeTaskAt >= window.finalizedBlockNumber) {
-    //   logger.debug("Waiting submit task result extrinsic finalize");
+  if (window.locals.sentProcessedJobAt) {
+    // if (window.locals.sentTakeJobAt >= window.finalizedBlockNumber) {
+    //   logger.debug("Waiting submit job result extrinsic finalize");
     // } else {
-    //   window.locals.sentTakeTaskAt = undefined;
-    //   window.locals.sentProcessedTaskAt = undefined;
-    //   window.locals.runningTask = undefined;
-    //   window.locals.currentTask = undefined;
+    //   window.locals.sentTakeJobAt = undefined;
+    //   window.locals.sentProcessedJobAt = undefined;
+    //   window.locals.runningJob = undefined;
+    //   window.locals.currentJob = undefined;
     // }
-    window.locals.sentTakeTaskAt = undefined;
-    window.locals.sentProcessedTaskAt = undefined;
-    window.locals.runningTask = undefined;
-    window.locals.currentTask = undefined;
+    window.locals.sentTakeJobAt = undefined;
+    window.locals.sentProcessedJobAt = undefined;
+    window.locals.runningJob = undefined;
+    window.locals.currentJob = undefined;
   }
 
-  if (window.locals.currentTask === undefined) {
-    window.locals.sentTakeTaskAt = undefined;
+  if (window.locals.currentJob === undefined) {
+    window.locals.sentTakeJobAt = undefined;
 
-    const tasks =
-      (await api.query.offchainComputing.tasks.entries(window.subscribePool))
-        .map(([_k, task]) => task.toJSON());
+    const jobs =
+      (await api.query.offchainComputing.jobs.entries(window.subscribePool))
+        .map(([_k, job]) => job.toJSON());
 
-    const tasksOfMine = tasks
-      .filter((task: AnyJson) => task.status != TaskStatus.Processed && task.assignee === window.workerKeyPair.address)
+    const jobsOfMine = jobs
+      .filter((job: AnyJson) => job.status != JobStatus.Processed && job.assignee === window.workerKeyPair.address)
       .sort((a: AnyJson, b: AnyJson) => a.id - b.id);
-    if (tasksOfMine.length > 0) {
-      console.log(`Tasks assign to me: ${tasksOfMine.map((i) => i.id)}`);
-      const task = tasksOfMine[0];
-      // console.log(task);
+    if (jobsOfMine.length > 0) {
+      console.log(`Jobs assign to me: ${jobsOfMine.map((i) => i.id)}`);
+      const job = jobsOfMine[0];
+      // console.log(job);
 
-      if ((task && window.locals.currentTask === undefined) || window.locals.currentTask.id == task.id) {
-        const input = (await api.query.offchainComputing.taskInputs(window.subscribePool, task.id)).unwrapOr(null);
+      if ((job && window.locals.currentJob === undefined) || window.locals.currentJob.id == job.id) {
+        const input = (await api.query.offchainComputing.jobInputs(window.subscribePool, job.id)).unwrapOr(null);
         // console.log(input);
-        task.input = input !== null ? u8aToHex(input.data) : "";
-        task.rawInput = input;
-        // console.log(task.input);
+        job.input = input !== null ? u8aToHex(input.data) : "";
+        job.rawInput = input;
+        // console.log(job.input);
 
-        window.locals.currentTask = task
+        window.locals.currentJob = job
 
-        await handleTask();
+        await handleJob();
       }
     }
 
-    let assignableTasksCount = tasks.filter((task: AnyJson) => task.status === TaskStatus.Pending && task.assignee === null && task.implSpecVersion == implSpecVersion ).length
-    let myTasksCount = (await api.query.offchainComputing.counterForWorkerAssignedTasks(window.workerKeyPair.address)).toNumber()
-    if (assignableTasksCount > 0 && myTasksCount <= 1 && window.locals.sentTakeTaskAt === undefined) {
-      logger.info("taking a new task");
+    let assignableJobsCount = jobs.filter((job: AnyJson) => job.status === JobStatus.Pending && job.assignee === null && job.implSpecVersion == implSpecVersion ).length
+    let myJobsCount = (await api.query.offchainComputing.counterForWorkerAssignedJobs(window.workerKeyPair.address)).toNumber()
+    if (assignableJobsCount > 0 && myJobsCount <= 1 && window.locals.sentTakeJobAt === undefined) {
+      logger.info("taking a new job");
 
-      logger.info(`Sending "offchain_computing.take_task(${window.subscribePool}, null, true, null)`);
-      const txPromise = api.tx.offchainComputing.takeTask(window.subscribePool, null, true, null);
+      logger.info(`Sending "offchain_computing.take_job(${window.subscribePool}, null, true, null)`);
+      const txPromise = api.tx.offchainComputing.takeJob(window.subscribePool, null, true, null);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
       // TODO: Catch whether failed
 
-      window.locals.sentTakeTaskAt = window.latestBlockNumber;
+      window.locals.sentTakeJobAt = window.latestBlockNumber;
 
       return;
-    } else if (window.locals.sentTakeTaskAt && window.locals.sentTakeTaskAt >= finalizedBlockNumber) {
-      window.locals.sentTakeTaskAt = undefined;
+    } else if (window.locals.sentTakeJobAt && window.locals.sentTakeJobAt >= finalizedBlockNumber) {
+      window.locals.sentTakeJobAt = undefined;
     } else {
-      // logger.info("No new task");
+      // logger.info("No new job");
       return;
     }
   }
