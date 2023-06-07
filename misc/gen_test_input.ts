@@ -1,4 +1,4 @@
-// Generate test input for demo task executor
+// Generate test input for demo job executor
 
 import {parse} from "https://deno.land/std/flags/mod.ts";
 import {
