@@ -1,7 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod macros;
-mod traits;
 mod features;
 
 #[cfg(test)]
@@ -27,7 +25,7 @@ macro_rules! log {
 }
 
 use frame_support::{
-	traits::{Currency, ReservableCurrency, UnixTime},
+	traits::{Currency, ReservableCurrency, UnixTime, Incrementable},
 	transactional,
 };
 use sp_runtime::{
@@ -56,7 +54,6 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_std::{fmt::Display, prelude::*};
-	use traits::AutoIncrement;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -78,13 +75,13 @@ pub mod pallet {
 		type UnixTime: UnixTime;
 
 		/// Identifier for the jobs' pool.
-		type PoolId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + AutoIncrement;
+		type PoolId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + Incrementable;
 
 		/// The type used to identify a job within a pool.
-		type JobId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + AutoIncrement;
+		type JobId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + Incrementable;
 
 		/// The type used to identify a policy within a pool.
-		type PolicyId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + AutoIncrement;
+		type PolicyId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + Incrementable;
 
 		/// Standard collection creation is only allowed if the origin attempting it and the
 		/// collection are in this set.
@@ -458,7 +455,7 @@ pub mod pallet {
 			impl_id: ImplIdOf<T>
 		) -> DispatchResult {
 			let owner = T::CreatePoolOrigin::ensure_origin(origin)?;
-			let pool_id = NextPoolId::<T>::get().unwrap_or(T::PoolId::initial_value());
+			let pool_id = NextPoolId::<T>::get().unwrap_or(101u32.into());
 
 			Self::do_create_pool(
 				owner,
@@ -557,7 +554,7 @@ pub mod pallet {
 				Error::<T>::JobPoliciesPerPoolLimitExceeded
 			);
 
-			let policy_id = NextJobPolicyId::<T>::get(&pool_id).unwrap_or(T::PolicyId::initial_value());
+			let policy_id = NextJobPolicyId::<T>::get(&pool_id).unwrap_or(1u32.into());
 			Self::do_create_job_policy(
 				pool_info,
 				policy_id.clone(),
@@ -736,7 +733,7 @@ pub mod pallet {
 				ApplicableScope::Public => {}
 			};
 
-			let job_id = NextJobId::<T>::get(&pool_id).unwrap_or(T::JobId::initial_value());
+			let job_id = NextJobId::<T>::get(&pool_id).unwrap_or(1u32.into());
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			Self::do_create_job(
 				pool_info,

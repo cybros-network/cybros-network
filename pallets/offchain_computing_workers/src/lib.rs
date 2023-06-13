@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod macros;
 mod traits;
 mod features;
 pub mod weights;
@@ -45,7 +44,7 @@ use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	ensure,
 	traits::{
-		Currency, ExistenceRequirement, Get, Randomness, ReservableCurrency, UnixTime,
+		Currency, ExistenceRequirement, Get, Randomness, ReservableCurrency, UnixTime, Incrementable
 	},
 	transactional,
 };
@@ -62,7 +61,6 @@ mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::traits::AtLeast32BitUnsigned;
 	use sp_std::fmt::Display;
-	use crate::traits::AutoIncrement;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -87,7 +85,7 @@ mod pallet {
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 
 		/// Identifier for the protocol implementation.
-		type ImplId: Member + Parameter + MaxEncodedLen + Copy + Display + AtLeast32BitUnsigned + AutoIncrement;
+		type ImplId: Member + Parameter + MaxEncodedLen + Copy + Display + AtLeast32BitUnsigned + Incrementable;
 
 		/// Who can register implementation
 		type RegisterImplOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
@@ -537,7 +535,7 @@ mod pallet {
 			deployment_permission: ApplicableScope,
 		) -> DispatchResult {
 			let owner = T::RegisterImplOrigin::ensure_origin(origin)?;
-			let impl_id = NextImplId::<T>::get().unwrap_or(T::ImplId::initial_value());
+			let impl_id = NextImplId::<T>::get().unwrap_or(101u32.into());
 
 			Self::do_register_impl(
 				impl_id,

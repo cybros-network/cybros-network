@@ -1,5 +1,4 @@
 use scale_codec::MaxEncodedLen;
-use sp_runtime::Saturating;
 use frame_support::{
 	dispatch::DispatchResult,
 	traits::{
@@ -10,14 +9,6 @@ use frame_support::{
 	Parameter
 };
 use primitives::{OfflineReason, OnlinePayload, WorkerInfo, VerifiedAttestation, ImplInfo};
-
-use crate::macros::impl_auto_increment;
-
-pub trait AutoIncrement {
-	fn increment(&self) -> Self;
-	fn initial_value() -> Self;
-}
-impl_auto_increment!(u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
 
 /// Trait describing something that implements a hook for any operations to perform when a staker is
 /// slashed.
