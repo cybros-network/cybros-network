@@ -1,6 +1,6 @@
 FROM ubuntu:22.04 as builder
 
-ARG RUST_TOOLCHAIN='nightly-2023-02-03'
+ARG RUST_TOOLCHAIN='1.70.0'
 ARG CARGO_PROFILE='production'
 
 RUN apt-get update && \
