@@ -3,7 +3,7 @@ FROM docker.io/library/node:lts-alpine
 # Prevent problems on MacOS Apple Silicon chip
 RUN apk add --no-cache python3 make g++ git
 
-ARG GIT_REPO='https://github.com/paritytech/substrate-matrix-faucet.git'
+ARG GIT_REPO='https://github.com/paritytech/polkadot-testnet-faucet.git'
 ARG GIT_TAG='main'
 RUN git clone --depth 1 --recurse-submodules --shallow-submodules -j 8 -b ${GIT_TAG} ${GIT_REPO} /backend
 
