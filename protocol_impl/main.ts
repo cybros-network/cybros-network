@@ -54,7 +54,7 @@ const parsedArgs = parse(Deno.args, {
     version: false,
     ownerPhrase: "",
     noHeartbeat: false,
-    implId: 1,
+    implId: 101,
     implSpecVersion: 1,
   },
 });
