@@ -43,7 +43,6 @@ where
 	P: TransactionPool + 'static,
 {
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
-	use sc_rpc::dev::{Dev, DevApiServer};
 	use substrate_frame_rpc_system::{System, SystemApiServer};
 
 	let mut module = RpcModule::new(());
@@ -51,7 +50,6 @@ where
 
 	module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
 	module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
-	module.merge(Dev::new(client.clone(), deny_unsafe).into_rpc())?;
 
 	Ok(module)
 }

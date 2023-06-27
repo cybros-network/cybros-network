@@ -49,7 +49,6 @@ pallet-transaction-payment = { git = "https://github.com/paritytech/substrate", 
 
 # These dependencies are used for the node's RPCs
 jsonrpsee = { version = "0.16.2", features = ["server"] }
-sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-api = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sc-rpc-api = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "master" }
