@@ -10,35 +10,39 @@ export interface ApplicableScope_Public {
     __kind: 'Public'
 }
 
-export type TaskResult = TaskResult_Success | TaskResult_Failed | TaskResult_Errored
+export type JobResult = JobResult_Success | JobResult_Fail | JobResult_Error | JobResult_Panic
 
-export interface TaskResult_Success {
+export interface JobResult_Success {
     __kind: 'Success'
 }
 
-export interface TaskResult_Failed {
-    __kind: 'Failed'
+export interface JobResult_Fail {
+    __kind: 'Fail'
 }
 
-export interface TaskResult_Errored {
-    __kind: 'Errored'
+export interface JobResult_Error {
+    __kind: 'Error'
 }
 
-export type TaskStatus = TaskStatus_Pending | TaskStatus_Processing | TaskStatus_Processed | TaskStatus_Discarded
+export interface JobResult_Panic {
+    __kind: 'Panic'
+}
 
-export interface TaskStatus_Pending {
+export type JobStatus = JobStatus_Pending | JobStatus_Processing | JobStatus_Processed | JobStatus_Discarded
+
+export interface JobStatus_Pending {
     __kind: 'Pending'
 }
 
-export interface TaskStatus_Processing {
+export interface JobStatus_Processing {
     __kind: 'Processing'
 }
 
-export interface TaskStatus_Processed {
+export interface JobStatus_Processed {
     __kind: 'Processed'
 }
 
-export interface TaskStatus_Discarded {
+export interface JobStatus_Discarded {
     __kind: 'Discarded'
 }
 

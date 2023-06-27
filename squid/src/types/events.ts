@@ -2,6 +2,236 @@ import assert from 'assert'
 import {Chain, ChainContext, EventContext, Event, Result, Option} from './support'
 import * as v100 from './v100'
 
+export class OffchainComputingJobAssignedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.JobAssigned')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.JobAssigned') === 'afa6ec0d6dcdc2fa03b5f4d02a08bfd3adf490976f1f5080cf7d783c88c59315'
+    }
+
+    get asV100(): {poolId: number, jobId: number, assignee: Uint8Array} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingJobCreatedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.JobCreated')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.JobCreated') === 'e94a5c8c02617218a29175a6620559324059f6b913c21c02e8033e15625c61bd'
+    }
+
+    get asV100(): {poolId: number, jobId: number, policyId: number, owner: Uint8Array, implSpecVersion: number, input: (Uint8Array | undefined), expiresIn: bigint} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingJobDestroyedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.JobDestroyed')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.JobDestroyed') === 'f0703febafc1df3e5a5e622278d7a3dc4e1c7c42fe96acbd8dd37f6ddd13bbfd'
+    }
+
+    get asV100(): {poolId: number, jobId: number, destroyer: Uint8Array} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingJobPolicyAvailabilityUpdatedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.JobPolicyAvailabilityUpdated')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.JobPolicyAvailabilityUpdated') === '898c4597e9122ea992f8c2888507b78530394fb594c42efbf45bc2728f464363'
+    }
+
+    get asV100(): {poolId: number, policyId: number, availability: boolean} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingJobPolicyCreatedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.JobPolicyCreated')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.JobPolicyCreated') === '2fdcfa465bf69e7c0acd0c667d4e33944626eb86e207ccae5af65ccf1e69dbf8'
+    }
+
+    get asV100(): {poolId: number, policyId: number, applicableScope: v100.ApplicableScope, startBlock: (number | undefined), endBlock: (number | undefined)} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingJobPolicyDestroyedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.JobPolicyDestroyed')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.JobPolicyDestroyed') === '0a745627569b6e48894cab5a1744a734efdb1d3dfb30516a25ee14ebc11efd29'
+    }
+
+    get asV100(): {poolId: number, policyId: number} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingJobReleasedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.JobReleased')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.JobReleased') === 'b0297d16a829746a9da69425d229c5371423f3c3590a167521b432486abddac5'
+    }
+
+    get asV100(): {poolId: number, jobId: number} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingJobResultUpdatedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.JobResultUpdated')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.JobResultUpdated') === '46bfc8318d1eec0722fd53179348b372fa85cd942c03333d6014048410f7f735'
+    }
+
+    get asV100(): {poolId: number, jobId: number, result: v100.JobResult, output: (Uint8Array | undefined), proof: (Uint8Array | undefined)} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingJobStatusUpdatedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.JobStatusUpdated')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.JobStatusUpdated') === '87918cd4ffa1fe11c78f43852ab3c669c246a43be50e45bc4d580fc6543fb39a'
+    }
+
+    get asV100(): {poolId: number, jobId: number, status: v100.JobStatus} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingPoolCreateJobAvailabilityUpdatedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.PoolCreateJobAvailabilityUpdated')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.PoolCreateJobAvailabilityUpdated') === 'e873f768ffe88b6663087f7f3610b1ad0d07087456214e4325e5498fab453ea5'
+    }
+
+    get asV100(): {poolId: number, availability: boolean} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
 export class OffchainComputingPoolCreatedEvent {
     private readonly _chain: Chain
     private readonly event: Event
@@ -20,29 +250,6 @@ export class OffchainComputingPoolCreatedEvent {
     }
 
     get asV100(): {owner: Uint8Array, poolId: number, implId: number} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingPoolCreatingTaskAvailabilityUpdatedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.PoolCreatingTaskAvailabilityUpdated')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.PoolCreatingTaskAvailabilityUpdated') === 'e873f768ffe88b6663087f7f3610b1ad0d07087456214e4325e5498fab453ea5'
-    }
-
-    get asV100(): {poolId: number, availability: boolean} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
@@ -112,213 +319,6 @@ export class OffchainComputingPoolMetadataUpdatedEvent {
     }
 
     get asV100(): {poolId: number, metadata: Uint8Array} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingTaskAssignedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.TaskAssigned')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskAssigned') === '7e59e249e6907cc336a441cd3879c996f2b722d83af3ec95d9fe017ebd6ff67b'
-    }
-
-    get asV100(): {poolId: number, taskId: number, assignee: Uint8Array} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingTaskCreatedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.TaskCreated')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskCreated') === '93d876ce0a7d0efd8e609ff81e6e41fe7803b746c42b793afa896fe7afa2f092'
-    }
-
-    get asV100(): {poolId: number, taskId: number, policyId: number, owner: Uint8Array, implSpecVersion: number, input: (Uint8Array | undefined), expiresIn: bigint} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingTaskDestroyedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.TaskDestroyed')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskDestroyed') === '783cfd4d481195c995e6ebabb8223a8ea568b07b8279c8a0e660c5960a5c7cd8'
-    }
-
-    get asV100(): {poolId: number, taskId: number, destroyer: Uint8Array} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingTaskPolicyAvailabilityUpdatedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.TaskPolicyAvailabilityUpdated')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskPolicyAvailabilityUpdated') === '898c4597e9122ea992f8c2888507b78530394fb594c42efbf45bc2728f464363'
-    }
-
-    get asV100(): {poolId: number, policyId: number, availability: boolean} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingTaskPolicyCreatedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.TaskPolicyCreated')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskPolicyCreated') === 'cf77fa43433bd91a20f89e458b4aad071fb4ed3ea38be1146dd2462f24583b76'
-    }
-
-    get asV100(): {poolId: number, policyId: number, creatingTaskScope: v100.ApplicableScope, startBlock: (number | undefined), endBlock: (number | undefined)} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingTaskPolicyDestroyedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.TaskPolicyDestroyed')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskPolicyDestroyed') === '0a745627569b6e48894cab5a1744a734efdb1d3dfb30516a25ee14ebc11efd29'
-    }
-
-    get asV100(): {poolId: number, policyId: number} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingTaskReleasedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.TaskReleased')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskReleased') === 'd5c91082f6820aa9eaf82fb1d956566efe99689b6746c2c2f384bbb0515c3bea'
-    }
-
-    get asV100(): {poolId: number, taskId: number} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingTaskResultUpdatedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.TaskResultUpdated')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskResultUpdated') === 'a9813d17fe7f3170522f7fd3ac94bc16918e1f11ce13300813980a8f593590ad'
-    }
-
-    get asV100(): {poolId: number, taskId: number, result: v100.TaskResult, output: (Uint8Array | undefined), proof: (Uint8Array | undefined)} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingTaskStatusUpdatedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.TaskStatusUpdated')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.TaskStatusUpdated') === '1cff08689f48bed99324800b5d74f3f579e0dd05dadb1d1ad4661f9ac02be73b'
-    }
-
-    get asV100(): {poolId: number, taskId: number, status: v100.TaskStatus} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }

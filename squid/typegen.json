@@ -1,6 +1,6 @@
 {
   "outDir": "src/types",
-  "specVersions": "http://localhost:8888/graphql",
+  "specVersions": "https://squid-archive.cybros.network/graphql",
   "events": [
     "OffchainComputingWorkers.WorkerRegistered",
     "OffchainComputingWorkers.WorkerDeregistered",
@@ -21,20 +21,20 @@
     "OffchainComputing.PoolDestroyed",
     "OffchainComputing.PoolMetadataUpdated",
     "OffchainComputing.PoolMetadataRemoved",
-    "OffchainComputing.PoolCreatingTaskAvailabilityUpdated",
-    "OffchainComputing.TaskPolicyCreated",
-    "OffchainComputing.TaskPolicyDestroyed",
-    "OffchainComputing.TaskPolicyAvailabilityUpdated",
+    "OffchainComputing.PoolCreateJobAvailabilityUpdated",
+    "OffchainComputing.JobPolicyCreated",
+    "OffchainComputing.JobPolicyDestroyed",
+    "OffchainComputing.JobPolicyAvailabilityUpdated",
     "OffchainComputing.WorkerAuthorized",
     "OffchainComputing.WorkerRevoked",
     "OffchainComputing.WorkerSubscribed",
     "OffchainComputing.WorkerUnsubscribed",
-    "OffchainComputing.TaskCreated",
-    "OffchainComputing.TaskDestroyed",
-    "OffchainComputing.TaskAssigned",
-    "OffchainComputing.TaskReleased",
-    "OffchainComputing.TaskStatusUpdated",
-    "OffchainComputing.TaskResultUpdated"
+    "OffchainComputing.JobCreated",
+    "OffchainComputing.JobDestroyed",
+    "OffchainComputing.JobAssigned",
+    "OffchainComputing.JobReleased",
+    "OffchainComputing.JobStatusUpdated",
+    "OffchainComputing.JobResultUpdated"
   ],
   "calls": [ 
   ],
