@@ -1,11 +1,11 @@
 [package]
-name = "cybros-primal-runtime-primitives"
+name = "cybros-runtime-primitives"
 version = "0.0.1-dev"
-description = "Cybros Primal runtime low-level primitives."
+description = "Cybros runtimes' common low-level primitives."
 authors.workspace = true
 repository.workspace = true
+license.workspace = true
 edition = "2021"
-license = "Apache-2.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

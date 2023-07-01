@@ -16,8 +16,23 @@
 // You should have received a copy of the GNU General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod pool_management;
-pub mod job_policies_management;
-pub mod worker_management;
-pub mod job_management;
-pub mod job_lifecycle;
+use crate::*;
+use frame_support::traits::{ConstU128, ConstU32};
+
+impl pallet_balances::Config for Runtime {
+	/// The ubiquitous event type.
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+	/// The type for recording an account's balance.
+	type Balance = Balance;
+	type DustRemoval = ();
+	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
+	type AccountStore = System;
+	type ReserveIdentifier = [u8; 8];
+	type RuntimeHoldReason = ();
+	type FreezeIdentifier = ();
+	type MaxLocks = ConstU32<50>;
+	type MaxReserves = ();
+	type MaxHolds = ();
+	type MaxFreezes = ();
+}

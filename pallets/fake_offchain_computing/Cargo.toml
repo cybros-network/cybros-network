@@ -4,7 +4,7 @@ version = "0.0.1-dev"
 description = "Substrate pallet to providing fake off-chain computing jobs, this is a test-only pallet for pallet-offchain_computing_workers"
 authors.workspace = true
 repository.workspace = true
-license = "Apache-2.0"
+license.workspace = true
 edition = "2021"
 publish = false
 

@@ -4,7 +4,7 @@ version = "0.0.1-dev"
 description = "Cybros Primal runtime"
 authors.workspace = true
 repository.workspace = true
-license = "Apache-2.0"
+license.workspace = true
 edition = "2021"
 publish = false
 
@@ -54,11 +54,11 @@ pallet-vesting = { git = "https://github.com/paritytech/substrate", branch = "ma
 
 pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
-pallet-offchain_computing_workers = { path = "../pallets/offchain_computing_workers", default-features = false }
-pallet-offchain_computing = { path = "../pallets/offchain_computing", default-features = false }
+pallet-offchain_computing_workers = { path = "../../pallets/offchain_computing_workers", default-features = false }
+pallet-offchain_computing = { path = "../../pallets/offchain_computing", default-features = false }
 
 # Local Dependencies
-runtime-primitives = { package = "cybros-primal-runtime-primitives", path = "primitives", default-features = false }
+runtime-primitives = { package = "cybros-runtime-primitives", path = "../../runtime-primitives", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "master", optional = true }

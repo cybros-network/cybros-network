@@ -16,8 +16,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod pool_management;
-pub mod job_policies_management;
-pub mod worker_management;
-pub mod job_management;
-pub mod job_lifecycle;
+use crate::*;
+use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+use frame_support::traits::{ConstBool, ConstU32};
+
+impl pallet_aura::Config for Runtime {
+	type AuthorityId = AuraId;
+	type MaxAuthorities = ConstU32<32>;
+	type DisabledValidators = ();
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+}

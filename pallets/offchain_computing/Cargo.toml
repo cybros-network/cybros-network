@@ -4,7 +4,7 @@ version = "0.0.1-dev"
 description = "Cybros off-chain computing protocol pallet, powered by pallet-offchain_computing_workers"
 authors.workspace = true
 repository.workspace = true
-license = "Apache-2.0"
+license.workspace = true
 edition = "2021"
 publish = false
 

@@ -1,10 +1,28 @@
+// This file is part of Cybros.
+
+// Copyright (C) Jun Jiang.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Cybros is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Cybros is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
+
 //! Setup code for [`super::command`] which would otherwise bloat that module.
 //!
 //! Should only be used for benchmarking as it may break in other contexts.
 
 use crate::service::FullClient;
 
-use runtime::{AccountId, Balance, BalancesCall, SystemCall};
+use primal_runtime::{AccountId, Balance, BalancesCall, SystemCall};
 use sc_cli::Result;
 use sc_client_api::BlockBackend;
 use sp_core::{Encode, Pair};
@@ -92,42 +110,51 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for TransferKeepAliveBuilder {
 pub fn create_benchmark_extrinsic(
 	client: &FullClient,
 	sender: sp_core::sr25519::Pair,
-	call: runtime::RuntimeCall,
+	call: primal_runtime::RuntimeCall,
 	nonce: u32,
-) -> runtime::UncheckedExtrinsic {
+) -> primal_runtime::UncheckedExtrinsic {
 	let genesis_hash = client.block_hash(0).ok().flatten().expect("Genesis block exists; qed");
 	let best_hash = client.chain_info().best_hash;
 	let best_block = client.chain_info().best_number;
 
-	let period = runtime::BlockHashCount::get()
+	let period = primal_runtime::BlockHashCount::get()
 		.checked_next_power_of_two()
 		.map(|c| c / 2)
 		.unwrap_or(2) as u64;
-	let extra: runtime::SignedExtra = (
-		frame_system::CheckNonZeroSender::<runtime::Runtime>::new(),
-		frame_system::CheckSpecVersion::<runtime::Runtime>::new(),
-		frame_system::CheckTxVersion::<runtime::Runtime>::new(),
-		frame_system::CheckGenesis::<runtime::Runtime>::new(),
-		frame_system::CheckEra::<runtime::Runtime>::from(sp_runtime::generic::Era::mortal(
+	let extra: primal_runtime::SignedExtra = (
+		frame_system::CheckNonZeroSender::<primal_runtime::Runtime>::new(),
+		frame_system::CheckSpecVersion::<primal_runtime::Runtime>::new(),
+		frame_system::CheckTxVersion::<primal_runtime::Runtime>::new(),
+		frame_system::CheckGenesis::<primal_runtime::Runtime>::new(),
+		frame_system::CheckEra::<primal_runtime::Runtime>::from(sp_runtime::generic::Era::mortal(
 			period,
 			best_block.saturated_into(),
 		)),
-		frame_system::CheckNonce::<runtime::Runtime>::from(nonce),
-		frame_system::CheckWeight::<runtime::Runtime>::new(),
-		pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(0),
+		frame_system::CheckNonce::<primal_runtime::Runtime>::from(nonce),
+		frame_system::CheckWeight::<primal_runtime::Runtime>::new(),
+		pallet_transaction_payment::ChargeTransactionPayment::<primal_runtime::Runtime>::from(0),
 	);
 
-	let raw_payload = runtime::SignedPayload::from_raw(
+	let raw_payload = primal_runtime::SignedPayload::from_raw(
 		call.clone(),
 		extra.clone(),
-		((), runtime::VERSION.spec_version, runtime::VERSION.transaction_version, genesis_hash, best_hash, (), (), ()),
+		(
+			(),
+			primal_runtime::VERSION.spec_version,
+			primal_runtime::VERSION.transaction_version,
+			genesis_hash,
+			best_hash,
+			(),
+			(),
+			()
+		),
 	);
 	let signature = raw_payload.using_encoded(|e| sender.sign(e));
 
-	runtime::UncheckedExtrinsic::new_signed(
+	primal_runtime::UncheckedExtrinsic::new_signed(
 		call.clone(),
 		sp_runtime::AccountId32::from(sender.public()).into(),
-		runtime::Signature::Sr25519(signature.clone()),
+		primal_runtime::Signature::Sr25519(signature.clone()),
 		extra.clone(),
 	)
 }

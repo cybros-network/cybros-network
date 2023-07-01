@@ -253,3 +253,9 @@ by appending your own. A few useful ones are as follow.
 # Check whether the code is compilable
 ./scripts/docker_run.sh cargo check
 ```
+
+## License
+
+Pallets (`/pallets`), runtimes (`/runtimes`), and the node (`/node`) are licensed under [GPL v3.0 License](./GPL3-LICENSE).
+
+The protocol implementation (`/protocol_impl`) and all other utilities are licensed under [MIT License](./MIT-LICENSE).

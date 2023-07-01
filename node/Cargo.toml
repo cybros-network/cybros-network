@@ -1,11 +1,11 @@
 [package]
 name = "cybros-node"
 version = "0.0.1-dev"
-description = "Cybros node, powered by Substrate."
+description = "Cybros Network node, powered by Substrate."
 authors.workspace = true
 homepage.workspace = true
 repository.workspace = true
-license = "Apache-2.0"
+license.workspace = true
 edition = "2021"
 publish = false
 
@@ -62,8 +62,8 @@ frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch =
 frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 # Local Dependencies
-runtime = { package = "cybros-primal-runtime", path = "../runtime" }
-runtime-primitives = { package = "cybros-primal-runtime-primitives", path = "../runtime/primitives" }
+runtime-primitives = { package = "cybros-runtime-primitives", path = "../runtime-primitives" }
+primal-runtime = { package = "cybros-primal-runtime", path = "../runtimes/primal" }
 
 # CLI-specific dependencies
 try-runtime-cli = { git = "https://github.com/paritytech/substrate", branch = "master", optional = true }
@@ -75,13 +75,13 @@ substrate-build-script-utils = { git = "https://github.com/paritytech/substrate"
 default = []
 # Dependencies that are only required if runtime benchmarking should be build.
 runtime-benchmarks = [
-	"runtime/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
+	"primal-runtime/runtime-benchmarks",
 ]
 # Enable features that allow the runtime to be tried and debugged. Name might be subject to change
 # in the near future.
 try-runtime = [
 	"try-runtime-cli/try-runtime",
-	"runtime/try-runtime",
+	"primal-runtime/try-runtime",
 ]

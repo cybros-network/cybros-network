@@ -1,3 +1,21 @@
+// This file is part of Cybros.
+
+// Copyright (C) Jun Jiang.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Cybros is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Cybros is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
+
 //! Low-level types used throughout the Substrate code.
 
 #![allow(missing_docs)]
@@ -7,7 +25,6 @@ pub use constants::*;
 
 pub mod types {
 	use sp_runtime::{
-		generic,
 		traits::{IdentifyAccount, Verify, AccountIdLookup, BlakeTwo256},
 		MultiSignature,
 	};
@@ -33,12 +50,6 @@ pub mod types {
 	/// Balance of an account.
 	pub type Balance = u128;
 
-	/// Id of a NFT collection.
-	pub type CollectionId = u32;
-
-	/// Id of a NFT item.
-	pub type ItemId = u32;
-
 	/// Type used for expressing timestamp.
 	pub type Moment = u64;
 
@@ -50,14 +61,6 @@ pub mod types {
 
 	/// The hashing algorithm used used by the chain.
 	pub type Hashing = BlakeTwo256;
-
-	/// A timestamp: milliseconds since the unix epoch.
-	/// `u64` is enough to represent a duration of half a billion years, when the
-	/// time scale is milliseconds.
-	pub type Timestamp = u64;
-
-	/// Digest item type.
-	pub type DigestItem = generic::DigestItem;
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know

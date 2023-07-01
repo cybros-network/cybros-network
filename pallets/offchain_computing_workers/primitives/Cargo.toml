@@ -4,7 +4,7 @@ version = "0.0.1-dev"
 description = "A crate that hosts a common definitions that are relevant for the pallet-offchain_computing_workers."
 authors.workspace = true
 repository.workspace = true
-license = "Apache-2.0"
+license.workspace = true
 edition = "2021"
 publish = false
 

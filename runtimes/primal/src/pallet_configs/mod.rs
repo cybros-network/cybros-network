@@ -16,8 +16,24 @@
 // You should have received a copy of the GNU General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod pool_management;
-pub mod job_policies_management;
-pub mod worker_management;
-pub mod job_management;
-pub mod job_lifecycle;
+mod system;
+mod timestamp;
+mod insecure_randomness_collective_flip;
+
+mod aura;
+mod grandpa;
+
+mod multisig;
+mod proxy;
+mod utility;
+
+mod balances;
+mod transaction_payment;
+mod vesting;
+
+mod offchain_computing_workers;
+mod offchain_computing;
+
+mod sudo;
+
+pub use system::*;

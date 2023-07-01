@@ -16,8 +16,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod pool_management;
-pub mod job_policies_management;
-pub mod worker_management;
-pub mod job_management;
-pub mod job_lifecycle;
+use crate::*;
+
+impl pallet_utility::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type PalletsOrigin = OriginCaller;
+	type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}

@@ -1403,7 +1403,7 @@ version = "0.0.1-dev"
 dependencies = [
  "clap",
  "cybros-primal-runtime",
- "cybros-primal-runtime-primitives",
+ "cybros-runtime-primitives",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "frame-system",
@@ -1447,7 +1447,7 @@ dependencies = [
 name = "cybros-primal-runtime"
 version = "0.0.1-dev"
 dependencies = [
- "cybros-primal-runtime-primitives",
+ "cybros-runtime-primitives",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -1488,7 +1488,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cybros-primal-runtime-primitives"
+name = "cybros-runtime-primitives"
 version = "0.0.1-dev"
 dependencies = [
  "frame-support",

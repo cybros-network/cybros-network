@@ -16,8 +16,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod pool_management;
-pub mod job_policies_management;
-pub mod worker_management;
-pub mod job_management;
-pub mod job_lifecycle;
+use crate::*;
+use frame_support::traits::ConstU64;
+
+impl pallet_timestamp::Config for Runtime {
+	/// A timestamp: milliseconds since the unix epoch.
+	type Moment = Moment;
+	type OnTimestampSet = Aura;
+	type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
+	type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
+}
