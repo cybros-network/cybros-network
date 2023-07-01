@@ -249,4 +249,4 @@ Pallets (`/pallets`), runtimes (`/runtimes`), and the node (`/node`) are license
 
 The protocol implementation (`/protocol_impl`) and all other utilities are licensed under [MIT License](./MIT-LICENSE).
 
-Third-party vendors (`/vendor`) have their own licenses.
+Third-party vendors (`/vendors`) have their own licenses.
