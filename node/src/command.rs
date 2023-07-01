@@ -34,7 +34,7 @@ use runtime_primitives::{constants::currency::EXISTENTIAL_DEPOSIT, opaque::Block
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Cybros Network".into()
+		"Cybros Network node".into()
 	}
 
 	fn impl_version() -> String {
