@@ -41,4 +41,4 @@ RUN useradd -m -u 1000 -U -s /bin/sh -d /runner runner && \
 USER runner
 EXPOSE 30333 9933 9944 9615
 VOLUME ["/data"]
-ENTRYPOINT ["/usr/local/bin/node"]
+ENTRYPOINT ["/usr/local/bin/cybros-node"]

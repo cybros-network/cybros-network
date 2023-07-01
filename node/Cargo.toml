@@ -15,7 +15,7 @@ build = "build.rs"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [[bin]]
-name = "node"
+name = "cybros-node"
 path = "src/main.rs"
 
 [dependencies]

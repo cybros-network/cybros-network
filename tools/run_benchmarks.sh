@@ -7,7 +7,7 @@ cd "$PROJECT_ROOT"
 
 echo "*** Run benchmark for pallet-computing_workers ***"
 
-./target/production/node benchmark pallet \
+./target/production/cybros-node benchmark pallet \
   --pallet=pallet_offchain_computing_workers \
   --extrinsic="*" \
   --chain=dev \

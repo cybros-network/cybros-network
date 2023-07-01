@@ -1,23 +1,12 @@
 # Cybros Network
 
-Web3+ generic computing.
+Web3 Job Scheduler connecting everything.
 
 ## Getting Started
 
 Follow the steps below to get started with the Node, or get it up and running right from
 your browser in just a few clicks using
 the [Substrate Playground](https://docs.substrate.io/playground/) :hammer_and_wrench:
-
-### Using Nix
-
-Install [nix](https://nixos.org/) and optionally [direnv](https://github.com/direnv/direnv) and
-[lorri](https://github.com/nix-community/lorri) for a fully plug and play experience for setting up
-the development environment. To get all the correct dependencies activate direnv `direnv allow` and
-lorri `lorri shell`.
-
-### Rust Setup
-
-First, complete the [basic Rust setup instructions](./docs/rust-setup.md).
 
 ### Run
 
@@ -69,7 +58,7 @@ Once the project has been built, the following command can be used to explore al
 subcommands:
 
 ```sh
-./target/release/cybros-node -h
+./target/release/node -h
 ```
 
 ## Run
@@ -259,3 +248,5 @@ by appending your own. A few useful ones are as follow.
 Pallets (`/pallets`), runtimes (`/runtimes`), and the node (`/node`) are licensed under [GPL v3.0 License](./GPL3-LICENSE).
 
 The protocol implementation (`/protocol_impl`) and all other utilities are licensed under [MIT License](./MIT-LICENSE).
+
+Third-party vendors (`/vendor`) have their own licenses.
