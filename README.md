@@ -247,6 +247,8 @@ by appending your own. A few useful ones are as follow.
 
 Pallets (`/pallets`), runtimes (`/runtimes`), and the node (`/node`) are licensed under [GPL v3.0 License](./GPL3-LICENSE).
 
+All primitives (`*-primitives`) are licensed under [GPL v3.0](./GPL3-LICENSE) with a classpath linking exception.
+
 The protocol implementation (`/protocol_impl`) and all other utilities are licensed under [MIT License](./MIT-LICENSE).
 
 Third-party vendors (`/vendors`) have their own licenses.

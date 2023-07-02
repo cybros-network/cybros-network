@@ -4,7 +4,7 @@ version = "0.0.1-dev"
 description = "Cybros runtimes' common low-level primitives."
 authors.workspace = true
 repository.workspace = true
-license.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 edition = "2021"
 
 [package.metadata.docs.rs]
