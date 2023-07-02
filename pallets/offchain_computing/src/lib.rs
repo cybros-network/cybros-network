@@ -207,7 +207,8 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			job_id: T::JobId,
 			policy_id: T::PolicyId,
-			owner: T::AccountId,
+			depositor: T::AccountId,
+			principal: T::AccountId,
 			impl_spec_version: ImplSpecVersion,
 			auto_destroy_after_processed: bool,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
@@ -777,6 +778,75 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(13)]
 		#[pallet::weight({0})]
+		pub fn create_job_for(
+			origin: OriginFor<T>,
+			principal: T::AccountId,
+			pool_id: T::PoolId,
+			policy_id: T::PolicyId,
+			impl_spec_version: ImplSpecVersion,
+			auto_destroy_after_processed: bool,
+			input: Option<BoundedVec<u8, T::InputLimit>>,
+			soft_expires_in: Option<u64>,
+			// TODO: Tips?
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
+			ensure!(
+				pool_info.create_job_availability,
+				Error::<T>::PoolCreateNewJobUnavailable
+			);
+			ensure!(
+				pool_info.jobs_count <= T::MaxJobsPerPool::get(),
+				Error::<T>::TasksPerPoolLimitExceeded
+			);
+
+			let policy = JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
+			ensure!(
+				policy.availability,
+				Error::<T>::JobPolicyUnavailable
+			);
+			let current_block = frame_system::Pallet::<T>::block_number();
+			if let Some(start_block) = policy.start_block {
+				ensure!(current_block >= start_block , Error::<T>::JobPolicyNotApplicable);
+			}
+			if let Some(end_block) = policy.end_block {
+				ensure!(current_block <= end_block, Error::<T>::JobPolicyNotApplicable);
+			}
+			match policy.applicable_scope {
+				ApplicableScope::Owner => {
+					ensure!(
+						&pool_info.owner == &principal,
+						Error::<T>::JobPolicyNotApplicable
+					)
+				},
+				ApplicableScope::Public => {}
+			};
+
+			let job_id = NextJobId::<T>::get(&pool_id).unwrap_or(1u32.into());
+			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
+			Self::do_create_job(
+				pool_info,
+				policy,
+				job_id.clone(),
+				principal,
+				who,
+				impl_spec_version,
+				auto_destroy_after_processed,
+				input,
+				now,
+				soft_expires_in
+			)?;
+
+			let next_id = job_id.increment();
+			NextJobId::<T>::set(&pool_id, Some(next_id));
+
+			Ok(())
+		}
+
+		#[transactional]
+		#[pallet::call_index(14)]
+		#[pallet::weight({0})]
 		pub fn destroy_job(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -793,7 +863,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(14)]
+		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
 		pub fn destroy_expired_job(
 			origin: OriginFor<T>,
@@ -812,7 +882,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(15)]
+		#[pallet::call_index(16)]
 		#[pallet::weight({0})]
 		pub fn take_job(
 			origin: OriginFor<T>,
@@ -829,7 +899,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(16)]
+		#[pallet::call_index(17)]
 		#[pallet::weight({0})]
 		pub fn release_job(
 			origin: OriginFor<T>,
@@ -842,7 +912,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(17)]
+		#[pallet::call_index(18)]
 		#[pallet::weight({0})]
 		pub fn submit_job_result(
 			origin: OriginFor<T>,
@@ -879,7 +949,7 @@ pub mod pallet {
 			job: &JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>
 		) -> DispatchResult {
 			ensure!(
-				who == &job.owner,
+				who == &job.principal,
 				Error::<T>::NoPermission
 			);
 

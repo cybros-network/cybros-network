@@ -28,7 +28,7 @@ impl<T: Config> Pallet<T> {
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		policy_info: JobPolicy<T::PolicyId, T::BlockNumber>,
 		job_id: T::JobId,
-		owner: T::AccountId,
+		principal: T::AccountId,
 		depositor: T::AccountId,
 		impl_spec_version: ImplSpecVersion,
 		auto_destroy_after_processed: bool,
@@ -59,11 +59,11 @@ impl<T: Config> Pallet<T> {
 		let job = JobInfo::<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>> {
 			id: job_id.clone(),
 			policy_id: policy_info.id.clone(),
-			auto_destroy_after_processed,
-			owner: owner.clone(),
 			depositor: depositor.clone(),
 			deposit: job_deposit,
+			principal: principal.clone(),
 			impl_spec_version,
+			auto_destroy_after_processed,
 			status: JobStatus::Pending,
 			result: None,
 			expires_at,
@@ -94,13 +94,14 @@ impl<T: Config> Pallet<T> {
 		JobPolicies::<T>::insert(&pool_info.id, &policy_info.id, new_policy_info);
 
 		AssignableJobs::<T>::insert((pool_info.id.clone(), impl_spec_version.clone(), job_id.clone()), ());
-		AccountOwningJobs::<T>::insert((owner.clone(), pool_info.id.clone(), job_id.clone()), ());
+		AccountOwningJobs::<T>::insert((principal.clone(), pool_info.id.clone(), job_id.clone()), ());
 
 		Self::deposit_event(Event::JobCreated {
 			pool_id: pool_info.id,
 			job_id,
 			policy_id: policy_info.id,
-			owner: owner.clone(),
+			depositor,
+			principal,
 			impl_spec_version,
 			auto_destroy_after_processed,
 			input: input_data,
@@ -199,7 +200,7 @@ impl<T: Config> Pallet<T> {
 				})?;
 			}
 		}
-		AccountOwningJobs::<T>::remove((job.owner.clone(), pool_id.clone(), job_id.clone()));
+		AccountOwningJobs::<T>::remove((job.principal.clone(), pool_id.clone(), job_id.clone()));
 
 		Self::deposit_event(Event::JobDestroyed { pool_id, job_id, destroyer });
 		Ok(())
