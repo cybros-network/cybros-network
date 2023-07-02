@@ -209,6 +209,7 @@ pub mod pallet {
 			policy_id: T::PolicyId,
 			owner: T::AccountId,
 			impl_spec_version: ImplSpecVersion,
+			auto_destroy_after_processed: bool,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			expires_in: u64
 		},
@@ -713,6 +714,7 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
 			impl_spec_version: ImplSpecVersion,
+			auto_destroy_after_processed: bool,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			soft_expires_in: Option<u64>,
 			// TODO: Tips?
@@ -760,6 +762,7 @@ pub mod pallet {
 				who.clone(),
 				who,
 				impl_spec_version,
+				auto_destroy_after_processed,
 				input,
 				now,
 				soft_expires_in
@@ -784,7 +787,8 @@ pub mod pallet {
 			Self::do_destroy_job(
 				who,
 				pool_id,
-				job_id
+				job_id,
+				false
 			)
 		}
 

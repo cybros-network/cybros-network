@@ -31,6 +31,7 @@ impl<T: Config> Pallet<T> {
 		owner: T::AccountId,
 		depositor: T::AccountId,
 		impl_spec_version: ImplSpecVersion,
+		auto_destroy_after_processed: bool,
 		input_data: Option<BoundedVec<u8, T::InputLimit>>,
 		now: u64,
 		expires_in: Option<u64>,
@@ -58,6 +59,7 @@ impl<T: Config> Pallet<T> {
 		let job = JobInfo::<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>> {
 			id: job_id.clone(),
 			policy_id: policy_info.id.clone(),
+			auto_destroy_after_processed,
 			owner: owner.clone(),
 			depositor: depositor.clone(),
 			deposit: job_deposit,
@@ -100,6 +102,7 @@ impl<T: Config> Pallet<T> {
 			policy_id: policy_info.id,
 			owner: owner.clone(),
 			impl_spec_version,
+			auto_destroy_after_processed,
 			input: input_data,
 			expires_in
 		});
@@ -109,10 +112,15 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_destroy_job(
 		who: T::AccountId,
 		pool_id: T::PoolId,
-		job_id: T::JobId
+		job_id: T::JobId,
+		force: bool
 	) -> DispatchResult {
 		let job = Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)?;
-		Self::ensure_job_owner(&who, &job)?;
+
+		if !force {
+			Self::ensure_job_owner(&who, &job)?;
+		}
+
 		ensure!(
 			match job.status {
 				JobStatus::Pending | JobStatus::Processed | JobStatus::Discarded => true,

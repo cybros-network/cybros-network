@@ -133,6 +133,7 @@ pub enum JobResult {
 pub struct JobInfo<JobId, PolicyId, AccountId, Balance> {
 	pub id: JobId,
 	pub policy_id: PolicyId,
+	pub auto_destroy_after_processed: bool,
 	pub owner: AccountId,
 	pub depositor: AccountId,
 	pub deposit: Balance,
