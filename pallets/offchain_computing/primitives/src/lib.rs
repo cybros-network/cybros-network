@@ -135,7 +135,7 @@ pub struct JobInfo<JobId, PolicyId, AccountId, Balance> {
 	pub policy_id: PolicyId,
 	pub depositor: AccountId,
 	pub deposit: Balance,
-	pub principal: AccountId,
+	pub beneficiary: AccountId,
 	/// The implementation spec version
 	pub impl_spec_version: ImplSpecVersion,
 	pub auto_destroy_after_processed: bool,

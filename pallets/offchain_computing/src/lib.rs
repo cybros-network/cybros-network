@@ -208,7 +208,7 @@ pub mod pallet {
 			job_id: T::JobId,
 			policy_id: T::PolicyId,
 			depositor: T::AccountId,
-			principal: T::AccountId,
+			beneficiary: T::AccountId,
 			impl_spec_version: ImplSpecVersion,
 			auto_destroy_after_processed: bool,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
@@ -403,10 +403,10 @@ pub mod pallet {
 	/// The jobs held by any given account; set out this way so that jobs owned by a single
 	/// account can be enumerated.
 	#[pallet::storage]
-	pub type AccountOwningJobs<T: Config> = StorageNMap<
+	pub type AccountBeneficialJobs<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Blake2_128Concat, T::AccountId>, // owner
+			NMapKey<Blake2_128Concat, T::AccountId>, // Beneficiary
 			NMapKey<Blake2_128Concat, T::PoolId>,
 			NMapKey<Blake2_128Concat, T::JobId>,
 		),
@@ -780,7 +780,7 @@ pub mod pallet {
 		#[pallet::weight({0})]
 		pub fn create_job_for(
 			origin: OriginFor<T>,
-			principal: T::AccountId,
+			beneficiary: T::AccountId,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
 			impl_spec_version: ImplSpecVersion,
@@ -816,7 +816,7 @@ pub mod pallet {
 			match policy.applicable_scope {
 				ApplicableScope::Owner => {
 					ensure!(
-						&pool_info.owner == &principal,
+						&pool_info.owner == &beneficiary,
 						Error::<T>::JobPolicyNotApplicable
 					)
 				},
@@ -829,7 +829,7 @@ pub mod pallet {
 				pool_info,
 				policy,
 				job_id.clone(),
-				principal,
+				beneficiary,
 				who,
 				impl_spec_version,
 				auto_destroy_after_processed,
@@ -944,12 +944,12 @@ pub mod pallet {
 			Ok(())
 		}
 
-		pub(crate) fn ensure_job_owner(
+		pub(crate) fn ensure_job_beneficiary_or_depositor(
 			who: &T::AccountId,
 			job: &JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>
 		) -> DispatchResult {
 			ensure!(
-				who == &job.principal,
+				who == &job.beneficiary || who == &job.depositor,
 				Error::<T>::NoPermission
 			);
 
