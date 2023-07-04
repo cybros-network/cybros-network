@@ -20,8 +20,8 @@ overflow-checks = true
 
 [workspace.package]
 authors = ["Jasl <https://github.com/jasl>", "Cybros Developers"]
-homepage = "https://github.com/jasl/cybros-network"
-repository = "https://github.com/jasl/cybros-network"
+homepage = "https://github.com/cybros-network/cybros-network"
+repository = "https://github.com/cybros-network/cybros-network"
 license = "GPL-3.0-or-later"
 
 [workspace]
@@ -33,7 +33,7 @@ members = [
     "runtimes/*",
 ]
 exclude = [
-    "vendor",
+    "vendors",
 ]
 
 # The list of dependencies below (which can be both direct and indirect dependencies) are crates
