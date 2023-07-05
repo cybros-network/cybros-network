@@ -28,7 +28,9 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_pool(
 		owner: T::AccountId,
 		pool_id: T::PoolId,
-		impl_id: ImplIdOf<T>
+		impl_id: ImplIdOf<T>,
+		create_job_enabled: bool,
+		auto_destroy_processed_job_enabled: bool
 	) -> DispatchResult {
 		ensure!(!Pools::<T>::contains_key(&pool_id), Error::<T>::PoolIdTaken);
 
@@ -52,7 +54,8 @@ impl<T: Config> Pallet<T> {
 			owner: owner.clone(),
 			owner_deposit: T::CreatePoolDeposit::get(),
 			impl_id: impl_id.clone(),
-			create_job_enabled: true,
+			create_job_enabled,
+			auto_destroy_processed_job_enabled,
 			min_impl_spec_version: 1,
 			max_impl_spec_version: 1,
 			job_policies_count: 0,
@@ -63,7 +66,7 @@ impl<T: Config> Pallet<T> {
 		Pools::<T>::insert(&pool_id, pool_info);
 		AccountOwningPools::<T>::insert(&owner, &pool_id, ());
 
-		Self::deposit_event(Event::PoolCreated { owner, pool_id, impl_id });
+		Self::deposit_event(Event::PoolCreated { owner, pool_id, impl_id, create_job_enabled, auto_destroy_processed_job_enabled: auto_destroy_processed_job_enabled });
 		Ok(())
 	}
 
@@ -134,36 +137,34 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_update_pool_spec_version_range(
+	pub(crate) fn do_update_pool_settings(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
-		min_version: ImplSpecVersion,
-		max_version: ImplSpecVersion
+		min_impl_spec_version: ImplSpecVersion,
+		max_impl_spec_version: ImplSpecVersion,
+		create_job_enabled: bool,
+		auto_destroy_processed_job_enabled: bool,
 	) -> DispatchResult {
 		ensure!(
-			max_version >= min_version,
+			max_impl_spec_version >= min_impl_spec_version,
 			Error::<T>::InvalidImplSpecVersionRange
 		);
 
 		let mut new_pool_info = pool_info.clone();
-		new_pool_info.min_impl_spec_version = min_version;
-		new_pool_info.max_impl_spec_version = max_version;
+		new_pool_info.min_impl_spec_version = min_impl_spec_version;
+		new_pool_info.max_impl_spec_version = max_impl_spec_version;
+		new_pool_info.create_job_enabled = create_job_enabled;
+		new_pool_info.auto_destroy_processed_job_enabled = auto_destroy_processed_job_enabled;
 
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		Self::deposit_event(Event::PoolImplSpecVersionRangeUpdated { pool_id: pool_info.id, min_version, max_version });
-		Ok(())
-	}
-
-	pub(crate) fn do_toggle_pool_job_creatable(
-		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
-		creatable: bool
-	) -> DispatchResult {
-		let mut new_pool_info = pool_info.clone();
-		new_pool_info.create_job_enabled = creatable;
-
-		Pools::<T>::insert(&pool_info.id, new_pool_info);
-
-		Self::deposit_event(Event::PoolCreateJobEnablementUpdated { pool_id: pool_info.id, enabled: creatable });
+		Self::deposit_event(
+			Event::PoolSettingsUpdated {
+				pool_id: pool_info.id,
+				min_impl_spec_version,
+				max_impl_spec_version,
+				create_job_enabled,
+				auto_destroy_processed_job_enabled
+			});
 		Ok(())
 	}
 }

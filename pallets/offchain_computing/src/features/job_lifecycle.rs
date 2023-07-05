@@ -98,35 +98,26 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		Self::ensure_worker_in_pool(&pool_id, &worker)?;
 
-		Jobs::<T>::try_mutate_exists(&pool_id, &job_id, |job| -> Result<(), DispatchError> {
-			let Some(job) = job else {
-				return Err(Error::<T>::JobNotFound.into())
-			};
-			// Comment this because current `expires_at` actually a soft expiring
-			// Self::ensure_job_not_expired(&task, now)?;
+		let mut job = Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)?;
+		ensure!(
+			match job.status {
+				JobStatus::Processing | JobStatus::Processed => false,
+				_ => true
+			},
+			Error::<T>::JobAssigneeLocked
+		);
+		Self::ensure_job_assignee(&job, &worker)?;
 
-			let assignee = job.assignee.clone().ok_or(Error::<T>::NoPermission)?;
-			ensure!(worker == assignee, Error::<T>::NoPermission);
+		job.assignee = None;
+		job.assigned_at = None;
 
-			ensure!(
-				match job.status {
-					JobStatus::Processing | JobStatus::Processed => false,
-					_ => true
-				},
-				Error::<T>::JobAssigneeLocked
-			);
-
-			job.assignee = None;
-			job.assigned_at = None;
-
-			CounterForWorkerAssignedJobs::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
-				*counter -= 1;
-				Ok(())
-			})?;
-			AssignableJobs::<T>::insert((pool_id.clone(), job.impl_spec_version.clone(), job_id.clone()), ());
-
+		CounterForWorkerAssignedJobs::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
+			*counter -= 1;
 			Ok(())
 		})?;
+		AssignableJobs::<T>::insert((pool_id.clone(), job.impl_spec_version.clone(), job_id.clone()), ());
+
+		Jobs::<T>::insert(&pool_id, &job_id, job);
 
 		Self::deposit_event(Event::JobReleased { pool_id, job_id });
 		Ok(())
@@ -142,57 +133,51 @@ impl<T: Config> Pallet<T> {
 		now: u64,
 		expires_in: u64,
 	) -> DispatchResult {
-		Jobs::<T>::try_mutate_exists(&pool_id, &job_id, |job| -> Result<(), DispatchError> {
-			let Some(job) = job else {
-				return Err(Error::<T>::JobNotFound.into())
+		let mut job = Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)?;
+		ensure!(
+			match job.status {
+				JobStatus::Pending | JobStatus::Processing => true,
+				_ => false
+			},
+			Error::<T>::JobIsProcessed
+		);
+		// Comment this because current `expires_at` actually a soft expiring
+		// Self::ensure_job_not_expired(&task, now)?;
+		Self::ensure_job_assignee(&job, &worker)?;
+
+		job.expires_at = now + expires_in;
+		job.status = JobStatus::Processed;
+		job.result = Some(result.clone());
+		job.ended_at = Some(now);
+
+		if let Some(output_data) = output_data.clone() {
+			let deposit = T::DepositPerByte::get()
+				.saturating_mul(((output_data.len()) as u32).into());
+			let depositor = job.assignee.clone().ok_or(Error::<T>::NoPermission)?;
+			T::Currency::reserve(&depositor, deposit)?;
+
+			let output_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::OutputLimit> {
+				depositor,
+				actual_deposit: deposit,
+				surplus_deposit: Zero::zero(),
+				data: output_data.clone(),
 			};
-			ensure!(
-				match job.status {
-					JobStatus::Pending | JobStatus::Processing => true,
-					_ => false
-				},
-				Error::<T>::JobIsProcessed
-			);
-			// Comment this because current `expires_at` actually a soft expiring
-			// Self::ensure_job_not_expired(&task, now)?;
-			Self::ensure_job_assignee(job, &worker)?;
+			JobOutputs::<T>::insert(&pool_id, &job_id, output_entry);
+		}
+		if let Some(proof_data) = proof_data.clone() {
+			let deposit = T::DepositPerByte::get()
+				.saturating_mul(((proof_data.len()) as u32).into());
+			let depositor = job.assignee.clone().ok_or(Error::<T>::NoPermission)?;
+			T::Currency::reserve(&depositor, deposit)?;
 
-			job.expires_at = now + expires_in;
-			job.status = JobStatus::Processed;
-			job.result = Some(result.clone());
-			job.ended_at = Some(now);
-
-			if let Some(output_data) = output_data.clone() {
-				let deposit = T::DepositPerByte::get()
-					.saturating_mul(((output_data.len()) as u32).into());
-				let depositor = job.assignee.clone().ok_or(Error::<T>::NoPermission)?;
-				T::Currency::reserve(&depositor, deposit)?;
-
-				let output_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::OutputLimit> {
-					depositor,
-					actual_deposit: deposit,
-					surplus_deposit: Zero::zero(),
-					data: output_data.clone(),
-				};
-				JobOutputs::<T>::insert(&pool_id, &job_id, output_entry);
-			}
-			if let Some(proof_data) = proof_data.clone() {
-				let deposit = T::DepositPerByte::get()
-					.saturating_mul(((proof_data.len()) as u32).into());
-				let depositor = job.assignee.clone().ok_or(Error::<T>::NoPermission)?;
-				T::Currency::reserve(&depositor, deposit)?;
-
-				let proof_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::ProofLimit> {
-					depositor,
-					actual_deposit: deposit,
-					surplus_deposit: Zero::zero(),
-					data: proof_data.clone(),
-				};
-				JobProofs::<T>::insert(&pool_id, &job_id, proof_entry);
-			}
-
-			Ok(())
-		})?;
+			let proof_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::ProofLimit> {
+				depositor,
+				actual_deposit: deposit,
+				surplus_deposit: Zero::zero(),
+				data: proof_data.clone(),
+			};
+			JobProofs::<T>::insert(&pool_id, &job_id, proof_entry);
+		}
 
 		CounterForWorkerAssignedJobs::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
 			*counter -= 1;
@@ -200,7 +185,14 @@ impl<T: Config> Pallet<T> {
 		})?;
 
 		Self::deposit_event(Event::JobResultUpdated { pool_id: pool_id.clone(), job_id: job_id.clone(), result, output: output_data, proof: proof_data });
-		Self::deposit_event(Event::JobStatusUpdated { pool_id, job_id, status: JobStatus::Processed });
+		Self::deposit_event(Event::JobStatusUpdated { pool_id: pool_id.clone(), job_id: job_id.clone(), status: JobStatus::Processed });
+
+		let pool_info = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolNotFound)?;
+		if pool_info.auto_destroy_processed_job_enabled {
+			Self::do_actual_destroy_job(pool_id, job, worker, true)?
+		} else {
+			Jobs::<T>::insert(&pool_id, &job_id, job);
+		}
 
 		Ok(())
 	}

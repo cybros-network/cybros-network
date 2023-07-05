@@ -144,7 +144,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	fn do_actual_destroy_job(
+	pub(crate) fn do_actual_destroy_job(
 		pool_id: T::PoolId,
 		job: JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 		destroyer: T::AccountId,

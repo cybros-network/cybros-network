@@ -184,12 +184,23 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		PoolCreated { owner: T::AccountId, pool_id: T::PoolId, impl_id: ImplIdOf<T> },
+		PoolCreated {
+			owner: T::AccountId,
+			pool_id: T::PoolId,
+			impl_id: ImplIdOf<T>,
+			create_job_enabled: bool,
+			auto_destroy_processed_job_enabled: bool
+		},
 		PoolDestroyed { pool_id: T::PoolId },
 		PoolMetadataUpdated { pool_id: T::PoolId, metadata: BoundedVec<u8, T::PoolMetadataLimit> },
 		PoolMetadataRemoved { pool_id: T::PoolId },
-		PoolCreateJobEnablementUpdated { pool_id: T::PoolId, enabled: bool },
-		PoolImplSpecVersionRangeUpdated { pool_id: T::PoolId, min_version: ImplSpecVersion, max_version: ImplSpecVersion },
+		PoolSettingsUpdated {
+			pool_id: T::PoolId,
+			min_impl_spec_version: ImplSpecVersion,
+			max_impl_spec_version: ImplSpecVersion,
+			create_job_enabled: bool,
+			auto_destroy_processed_job_enabled: bool
+		},
 		JobPolicyCreated {
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
@@ -199,7 +210,7 @@ pub mod pallet {
 		},
 		JobPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
 		JobPolicyEnablementUpdated { pool_id: T::PoolId, policy_id: T::PolicyId, enabled: bool },
-		WorkerAuthorized { pool_id: T::PoolId, worker: T::AccountId },
+		WorkerPermitted { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRevoked { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerSubscribed { worker: T::AccountId, pool_id: T::PoolId },
 		WorkerUnsubscribed { worker: T::AccountId, pool_id: T::PoolId },
@@ -217,7 +228,13 @@ pub mod pallet {
 		JobAssigned { pool_id: T::PoolId, job_id: T::JobId, assignee: T::AccountId },
 		JobReleased { pool_id: T::PoolId, job_id: T::JobId },
 		JobStatusUpdated { pool_id: T::PoolId, job_id: T::JobId, status: JobStatus },
-		JobResultUpdated { pool_id: T::PoolId, job_id: T::JobId, result: JobResult, output: Option<BoundedVec<u8, T::OutputLimit>>, proof: Option<BoundedVec<u8, T::ProofLimit>> },
+		JobResultUpdated {
+			pool_id: T::PoolId,
+			job_id: T::JobId,
+			result: JobResult,
+			output: Option<BoundedVec<u8, T::OutputLimit>>,
+			proof: Option<BoundedVec<u8, T::ProofLimit>>
+		},
 	}
 
 	// Errors inform users that something went wrong.
@@ -293,7 +310,7 @@ pub mod pallet {
 
 	/// Workers of pools
 	#[pallet::storage]
-	pub type PoolAuthorizedWorkers<T: Config> = StorageDoubleMap<
+	pub type PoolPermitteddWorkers<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::AccountId,
@@ -471,7 +488,9 @@ pub mod pallet {
 		#[pallet::weight({0})]
 		pub fn create_pool(
 			origin: OriginFor<T>,
-			impl_id: ImplIdOf<T>
+			impl_id: ImplIdOf<T>,
+			create_job_enabled: bool,
+			auto_destroy_processed_job_enabled: bool
 		) -> DispatchResult {
 			let owner = T::CreatePoolOrigin::ensure_origin(origin)?;
 			let pool_id = NextPoolId::<T>::get().unwrap_or(101u32.into());
@@ -479,7 +498,9 @@ pub mod pallet {
 			Self::do_create_pool(
 				owner,
 				pool_id.clone(),
-				impl_id
+				impl_id,
+				create_job_enabled,
+				auto_destroy_processed_job_enabled
 			)?;
 
 			let next_id = pool_id.increment();
@@ -523,38 +544,30 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(3)]
 		#[pallet::weight({0})]
-		pub fn update_pool_impl_spec_version_range(
+		pub fn update_pool_settings(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			new_min_version: ImplSpecVersion,
-			new_max_version: ImplSpecVersion,
+			min_impl_spec_version: ImplSpecVersion,
+			max_impl_spec_version: ImplSpecVersion,
+			create_job_enabled: bool,
+			auto_destroy_processed_job_enabled: bool,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_update_pool_spec_version_range(pool_info, new_min_version, new_max_version)
+			Self::do_update_pool_settings(
+				pool_info,
+				min_impl_spec_version,
+				max_impl_spec_version,
+				create_job_enabled,
+				auto_destroy_processed_job_enabled
+			)
 		}
 
 		#[transactional]
 		#[pallet::call_index(4)]
-		#[pallet::weight({0})]
-		pub fn toggle_pool_job_creatable(
-			origin: OriginFor<T>,
-			pool_id: T::PoolId,
-			creatable: bool
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
-			Self::ensure_pool_owner(&who, &pool_info)?;
-
-			Self::do_toggle_pool_job_creatable(pool_info, creatable)
-		}
-
-		#[transactional]
-		#[pallet::call_index(5)]
 		#[pallet::weight({0})]
 		pub fn create_job_policy(
 			origin: OriginFor<T>,
@@ -589,7 +602,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(6)]
+		#[pallet::call_index(5)]
 		#[pallet::weight({0})]
 		pub fn destroy_job_policy(
 			origin: OriginFor<T>,
@@ -608,7 +621,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(7)]
+		#[pallet::call_index(6)]
 		#[pallet::weight({0})]
 		pub fn update_job_policy_enablement(
 			origin: OriginFor<T>,
@@ -629,9 +642,9 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(8)]
+		#[pallet::call_index(7)]
 		#[pallet::weight({0})]
-		pub fn authorize_worker(
+		pub fn permit_worker(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			worker: AccountIdLookupOf<T>,
@@ -643,14 +656,14 @@ pub mod pallet {
 
 			let worker = T::Lookup::lookup(worker.clone())?;
 
-			Self::do_authorize_worker(
+			Self::do_permit_worker(
 				pool_info,
 				worker
 			)
 		}
 
 		#[transactional]
-		#[pallet::call_index(9)]
+		#[pallet::call_index(8)]
 		#[pallet::weight({0})]
 		pub fn revoke_worker(
 			origin: OriginFor<T>,
@@ -677,7 +690,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(10)]
+		#[pallet::call_index(9)]
 		#[pallet::weight({0})]
 		pub fn subscribe_pool(
 			origin: OriginFor<T>,
@@ -692,7 +705,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(11)]
+		#[pallet::call_index(10)]
 		#[pallet::weight({0})]
 		pub fn unsubscribe_pool(
 			origin: OriginFor<T>,
@@ -707,7 +720,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(12)]
+		#[pallet::call_index(11)]
 		#[pallet::weight({0})]
 		pub fn create_job(
 			origin: OriginFor<T>,
@@ -773,7 +786,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(13)]
+		#[pallet::call_index(12)]
 		#[pallet::weight({0})]
 		pub fn create_job_for(
 			origin: OriginFor<T>,
@@ -840,7 +853,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(14)]
+		#[pallet::call_index(13)]
 		#[pallet::weight({0})]
 		pub fn destroy_job(
 			origin: OriginFor<T>,
@@ -858,7 +871,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(15)]
+		#[pallet::call_index(14)]
 		#[pallet::weight({0})]
 		pub fn destroy_expired_job(
 			origin: OriginFor<T>,
@@ -877,7 +890,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(16)]
+		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
 		pub fn take_job(
 			origin: OriginFor<T>,
@@ -894,7 +907,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(17)]
+		#[pallet::call_index(16)]
 		#[pallet::weight({0})]
 		pub fn release_job(
 			origin: OriginFor<T>,
@@ -907,7 +920,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(18)]
+		#[pallet::call_index(17)]
 		#[pallet::weight({0})]
 		pub fn submit_job_result(
 			origin: OriginFor<T>,
@@ -983,7 +996,7 @@ pub mod pallet {
 			worker: &T::AccountId,
 		) -> DispatchResult {
 			ensure!(
-				PoolAuthorizedWorkers::<T>::contains_key(worker, pool_id),
+				PoolPermitteddWorkers::<T>::contains_key(worker, pool_id),
 				Error::<T>::WorkerNotInThePool
 			);
 
@@ -1076,7 +1089,7 @@ pub mod pallet {
 			}
 
 			let _ = WorkerSubscribedPools::<T>::clear_prefix(worker, T::MaxSubscribedPoolsPerWorker::get(), None);
-			let _ = PoolAuthorizedWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
+			let _ = PoolPermitteddWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
 			CounterForWorkerSubscribedPools::<T>::remove(worker);
 			CounterForWorkerAddedPools::<T>::remove(worker);
 		}

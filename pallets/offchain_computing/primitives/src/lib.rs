@@ -93,7 +93,11 @@ pub struct PoolInfo<PoolId, AccountId, Balance, ImplId> {
 	pub impl_id: ImplId,
 	/// Allow to create new job
 	pub create_job_enabled: bool,
+	/// Auto destroy processed job
+	pub auto_destroy_processed_job_enabled: bool,
+	/// Minimum impl spec version
 	pub min_impl_spec_version: ImplSpecVersion,
+	/// Maximum impl spec version
 	pub max_impl_spec_version: ImplSpecVersion,
 	/// The total number of outstanding job policies of this pool.
 	pub job_policies_count: u32,

@@ -20,12 +20,12 @@ use crate::*;
 use frame_support::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn do_authorize_worker(
+	pub(crate) fn do_permit_worker(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		worker: T::AccountId
 	) -> DispatchResult {
 		ensure!(
-			!PoolAuthorizedWorkers::<T>::contains_key(&worker, &pool_info.id),
+			!PoolPermitteddWorkers::<T>::contains_key(&worker, &pool_info.id),
 			Error::<T>::WorkerAlreadyAdded
 		);
 
@@ -35,13 +35,13 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::ImplMismatched
 		);
 
-		PoolAuthorizedWorkers::<T>::insert(&worker, &pool_info.id, ());
+		PoolPermitteddWorkers::<T>::insert(&worker, &pool_info.id, ());
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.workers_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		Self::deposit_event(Event::WorkerAuthorized { pool_id: pool_info.id, worker: worker.clone() });
+		Self::deposit_event(Event::WorkerPermitted { pool_id: pool_info.id, worker: worker.clone() });
 		Ok(())
 	}
 
@@ -50,7 +50,7 @@ impl<T: Config> Pallet<T> {
 		worker: T::AccountId,
 	) -> DispatchResult {
 		ensure!(
-			PoolAuthorizedWorkers::<T>::contains_key(&worker, &pool_info.id),
+			PoolPermitteddWorkers::<T>::contains_key(&worker, &pool_info.id),
 			Error::<T>::WorkerNotFound
 		);
 
@@ -60,7 +60,7 @@ impl<T: Config> Pallet<T> {
 			Self::deposit_event(Event::WorkerUnsubscribed { worker: worker.clone(), pool_id: pool_info.id.clone() });
 		}
 
-		PoolAuthorizedWorkers::<T>::remove(&worker, &pool_info.id);
+		PoolPermitteddWorkers::<T>::remove(&worker, &pool_info.id);
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.workers_count -= 1;
@@ -75,7 +75,7 @@ impl<T: Config> Pallet<T> {
 		pool_id: T::PoolId
 	) -> DispatchResult {
 		ensure!(
-			PoolAuthorizedWorkers::<T>::contains_key(&worker, &pool_id),
+			PoolPermitteddWorkers::<T>::contains_key(&worker, &pool_id),
 			Error::<T>::WorkerNotInThePool
 		);
 		ensure!(
