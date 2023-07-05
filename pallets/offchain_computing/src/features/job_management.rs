@@ -31,7 +31,6 @@ impl<T: Config> Pallet<T> {
 		beneficiary: T::AccountId,
 		depositor: T::AccountId,
 		impl_spec_version: ImplSpecVersion,
-		auto_destroy_after_processed: bool,
 		input_data: Option<BoundedVec<u8, T::InputLimit>>,
 		now: u64,
 		expires_in: Option<u64>,
@@ -63,7 +62,6 @@ impl<T: Config> Pallet<T> {
 			deposit: job_deposit,
 			beneficiary: beneficiary.clone(),
 			impl_spec_version,
-			auto_destroy_after_processed,
 			status: JobStatus::Pending,
 			result: None,
 			expires_at,
@@ -103,7 +101,6 @@ impl<T: Config> Pallet<T> {
 			depositor,
 			beneficiary,
 			impl_spec_version,
-			auto_destroy_after_processed,
 			input: input_data,
 			expires_in
 		});
@@ -130,7 +127,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::JobIsProcessing
 		);
 
-		Self::do_actual_destroy_job(pool_id, job, who)
+		Self::do_actual_destroy_job(pool_id, job, who, force)
 	}
 
 	pub(crate) fn do_destroy_expired_job(
@@ -142,7 +139,7 @@ impl<T: Config> Pallet<T> {
 		let job = Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)?;
 		Self::ensure_job_expired(&job, now)?;
 
-		Self::do_actual_destroy_job(pool_id, job, destroyer)?;
+		Self::do_actual_destroy_job(pool_id, job, destroyer, false)?;
 
 		Ok(())
 	}
@@ -150,7 +147,8 @@ impl<T: Config> Pallet<T> {
 	fn do_actual_destroy_job(
 		pool_id: T::PoolId,
 		job: JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
-		destroyer: T::AccountId
+		destroyer: T::AccountId,
+		force: bool
 	) -> DispatchResult {
 		let job_id = job.id;
 
@@ -202,7 +200,7 @@ impl<T: Config> Pallet<T> {
 		}
 		AccountBeneficialJobs::<T>::remove((job.beneficiary.clone(), pool_id.clone(), job_id.clone()));
 
-		Self::deposit_event(Event::JobDestroyed { pool_id, job_id, destroyer });
+		Self::deposit_event(Event::JobDestroyed { pool_id, job_id, destroyer, force });
 		Ok(())
 	}
 }

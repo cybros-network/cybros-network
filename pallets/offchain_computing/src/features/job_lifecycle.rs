@@ -142,7 +142,6 @@ impl<T: Config> Pallet<T> {
 		now: u64,
 		expires_in: u64,
 	) -> DispatchResult {
-		let mut destroy_job = false;
 		Jobs::<T>::try_mutate_exists(&pool_id, &job_id, |job| -> Result<(), DispatchError> {
 			let Some(job) = job else {
 				return Err(Error::<T>::JobNotFound.into())
@@ -192,8 +191,6 @@ impl<T: Config> Pallet<T> {
 				JobProofs::<T>::insert(&pool_id, &job_id, proof_entry);
 			}
 
-			destroy_job = job.auto_destroy_after_processed;
-
 			Ok(())
 		})?;
 
@@ -203,11 +200,7 @@ impl<T: Config> Pallet<T> {
 		})?;
 
 		Self::deposit_event(Event::JobResultUpdated { pool_id: pool_id.clone(), job_id: job_id.clone(), result, output: output_data, proof: proof_data });
-		Self::deposit_event(Event::JobStatusUpdated { pool_id: pool_id.clone(), job_id: job_id.clone(), status: JobStatus::Processed });
-
-		if destroy_job {
-			Self::do_destroy_job(worker, pool_id, job_id, true)?;
-		}
+		Self::deposit_event(Event::JobStatusUpdated { pool_id, job_id, status: JobStatus::Processed });
 
 		Ok(())
 	}

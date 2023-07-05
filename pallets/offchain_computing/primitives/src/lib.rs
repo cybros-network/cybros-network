@@ -138,7 +138,6 @@ pub struct JobInfo<JobId, PolicyId, AccountId, Balance> {
 	pub beneficiary: AccountId,
 	/// The implementation spec version
 	pub impl_spec_version: ImplSpecVersion,
-	pub auto_destroy_after_processed: bool,
 	pub status: JobStatus,
 	pub result: Option<JobResult>,
 	/// This is soft expiring time, which means even the job has expired,
