@@ -25,7 +25,7 @@ impl<T: Config> Pallet<T> {
 		worker: T::AccountId
 	) -> DispatchResult {
 		ensure!(
-			!PoolPermitteddWorkers::<T>::contains_key(&worker, &pool_info.id),
+			!PoolPermittedWorkers::<T>::contains_key(&worker, &pool_info.id),
 			Error::<T>::WorkerAlreadyAdded
 		);
 
@@ -35,7 +35,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::ImplMismatched
 		);
 
-		PoolPermitteddWorkers::<T>::insert(&worker, &pool_info.id, ());
+		PoolPermittedWorkers::<T>::insert(&worker, &pool_info.id, ());
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.workers_count += 1;
@@ -50,7 +50,7 @@ impl<T: Config> Pallet<T> {
 		worker: T::AccountId,
 	) -> DispatchResult {
 		ensure!(
-			PoolPermitteddWorkers::<T>::contains_key(&worker, &pool_info.id),
+			PoolPermittedWorkers::<T>::contains_key(&worker, &pool_info.id),
 			Error::<T>::WorkerNotFound
 		);
 
@@ -60,7 +60,7 @@ impl<T: Config> Pallet<T> {
 			Self::deposit_event(Event::WorkerUnsubscribed { worker: worker.clone(), pool_id: pool_info.id.clone() });
 		}
 
-		PoolPermitteddWorkers::<T>::remove(&worker, &pool_info.id);
+		PoolPermittedWorkers::<T>::remove(&worker, &pool_info.id);
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.workers_count -= 1;
@@ -75,7 +75,7 @@ impl<T: Config> Pallet<T> {
 		pool_id: T::PoolId
 	) -> DispatchResult {
 		ensure!(
-			PoolPermitteddWorkers::<T>::contains_key(&worker, &pool_id),
+			PoolPermittedWorkers::<T>::contains_key(&worker, &pool_id),
 			Error::<T>::WorkerNotInThePool
 		);
 		ensure!(

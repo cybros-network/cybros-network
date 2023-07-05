@@ -310,7 +310,7 @@ pub mod pallet {
 
 	/// Workers of pools
 	#[pallet::storage]
-	pub type PoolPermitteddWorkers<T: Config> = StorageDoubleMap<
+	pub type PoolPermittedWorkers<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::AccountId,
@@ -996,7 +996,7 @@ pub mod pallet {
 			worker: &T::AccountId,
 		) -> DispatchResult {
 			ensure!(
-				PoolPermitteddWorkers::<T>::contains_key(worker, pool_id),
+				PoolPermittedWorkers::<T>::contains_key(worker, pool_id),
 				Error::<T>::WorkerNotInThePool
 			);
 
@@ -1089,7 +1089,7 @@ pub mod pallet {
 			}
 
 			let _ = WorkerSubscribedPools::<T>::clear_prefix(worker, T::MaxSubscribedPoolsPerWorker::get(), None);
-			let _ = PoolPermitteddWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
+			let _ = PoolPermittedWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
 			CounterForWorkerSubscribedPools::<T>::remove(worker);
 			CounterForWorkerAddedPools::<T>::remove(worker);
 		}

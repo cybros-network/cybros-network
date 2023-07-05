@@ -640,7 +640,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
   }
 
   const [invited, subscribed] = await Promise.all([
-    api.query.offchainComputing.poolAuthorizedWorkers(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
+    api.query.offchainComputing.poolPermittedWorkers(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
     api.query.offchainComputing.workerSubscribedPools(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
   ]);
 
@@ -767,4 +767,4 @@ app.addEventListener(
   "listen",
   (_e) => console.log(`Listening on http://${parsedArgs.bind}:${parsedArgs.port}`),
 );
-await app.listen({ hostname: parsedArgs.bind, port: parsedArgs.port, secure: false });
+await app.listen({ hostname: parsedArgs.bind, port: parseInt(parsedArgs.port), secure: false });
