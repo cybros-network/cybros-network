@@ -34,7 +34,7 @@ impl<T: Config> Pallet<T> {
 
 		let policy = JobPolicy::<T::PolicyId, T::BlockNumber> {
 			id: policy_id.clone(),
-			availability: true,
+			enabled: true,
 			applicable_scope: applicable_scope.clone(),
 			start_block: start_block.clone(),
 			end_block: end_block.clone(),
@@ -75,10 +75,10 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_update_job_policy_availability(
+	pub(crate) fn do_update_job_policy_enablement(
 		pool_id: T::PoolId,
 		policy_id: T::PolicyId,
-		availability: bool
+		enabled: bool
 	) -> DispatchResult {
 		ensure!(
 			JobPolicies::<T>::contains_key(&pool_id, &policy_id),
@@ -86,10 +86,10 @@ impl<T: Config> Pallet<T> {
 		);
 
 		let mut policy = JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
-		policy.availability = availability;
+		policy.enabled = enabled;
 		JobPolicies::<T>::insert(&pool_id, &policy_id, policy.clone());
 
-		Self::deposit_event(Event::JobPolicyAvailabilityUpdated { pool_id, policy_id, availability });
+		Self::deposit_event(Event::JobPolicyEnablementUpdated { pool_id, policy_id, enabled });
 		Ok(())
 	}
 }

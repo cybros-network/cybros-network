@@ -188,7 +188,7 @@ pub mod pallet {
 		PoolDestroyed { pool_id: T::PoolId },
 		PoolMetadataUpdated { pool_id: T::PoolId, metadata: BoundedVec<u8, T::PoolMetadataLimit> },
 		PoolMetadataRemoved { pool_id: T::PoolId },
-		PoolCreateJobAvailabilityUpdated { pool_id: T::PoolId, availability: bool },
+		PoolCreateJobEnablementUpdated { pool_id: T::PoolId, enabled: bool },
 		PoolImplSpecVersionRangeUpdated { pool_id: T::PoolId, min_version: ImplSpecVersion, max_version: ImplSpecVersion },
 		JobPolicyCreated {
 			pool_id: T::PoolId,
@@ -198,7 +198,7 @@ pub mod pallet {
 			end_block: Option<T::BlockNumber>
 		},
 		JobPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
-		JobPolicyAvailabilityUpdated { pool_id: T::PoolId, policy_id: T::PolicyId, availability: bool },
+		JobPolicyEnablementUpdated { pool_id: T::PoolId, policy_id: T::PolicyId, enabled: bool },
 		WorkerAuthorized { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRevoked { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerSubscribed { worker: T::AccountId, pool_id: T::PoolId },
@@ -610,21 +610,21 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(7)]
 		#[pallet::weight({0})]
-		pub fn update_job_policy_availability(
+		pub fn update_job_policy_enablement(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
-			availability: bool
+			enabled: bool
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_update_job_policy_availability(
+			Self::do_update_job_policy_enablement(
 				pool_id,
 				policy_id,
-				availability
+				enabled
 			)
 		}
 
@@ -722,7 +722,7 @@ pub mod pallet {
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(
-				pool_info.create_job_availability,
+				pool_info.create_job_enabled,
 				Error::<T>::PoolCreateNewJobUnavailable
 			);
 			ensure!(
@@ -732,7 +732,7 @@ pub mod pallet {
 
 			let policy = JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
 			ensure!(
-				policy.availability,
+				policy.enabled,
 				Error::<T>::JobPolicyUnavailable
 			);
 			let current_block = frame_system::Pallet::<T>::block_number();
@@ -789,7 +789,7 @@ pub mod pallet {
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(
-				pool_info.create_job_availability,
+				pool_info.create_job_enabled,
 				Error::<T>::PoolCreateNewJobUnavailable
 			);
 			ensure!(
@@ -799,7 +799,7 @@ pub mod pallet {
 
 			let policy = JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
 			ensure!(
-				policy.availability,
+				policy.enabled,
 				Error::<T>::JobPolicyUnavailable
 			);
 			let current_block = frame_system::Pallet::<T>::block_number();

@@ -64,7 +64,7 @@ pub struct JobPolicy<PoolId, BlockNumber> {
 	/// Policy's id
 	pub id: PoolId,
 	/// This policy is available to use
-	pub availability: bool,
+	pub enabled: bool,
 	/// Who can applicable with the policy
 	pub applicable_scope: ApplicableScope,
 	// TODO：rates strategy
@@ -92,7 +92,7 @@ pub struct PoolInfo<PoolId, AccountId, Balance, ImplId> {
 	/// The implementation id
 	pub impl_id: ImplId,
 	/// Allow to create new job
-	pub create_job_availability: bool,
+	pub create_job_enabled: bool,
 	pub min_impl_spec_version: ImplSpecVersion,
 	pub max_impl_spec_version: ImplSpecVersion,
 	/// The total number of outstanding job policies of this pool.

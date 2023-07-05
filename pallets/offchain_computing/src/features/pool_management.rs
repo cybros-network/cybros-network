@@ -52,7 +52,7 @@ impl<T: Config> Pallet<T> {
 			owner: owner.clone(),
 			owner_deposit: T::CreatePoolDeposit::get(),
 			impl_id: impl_id.clone(),
-			create_job_availability: true,
+			create_job_enabled: true,
 			min_impl_spec_version: 1,
 			max_impl_spec_version: 1,
 			job_policies_count: 0,
@@ -159,11 +159,11 @@ impl<T: Config> Pallet<T> {
 		creatable: bool
 	) -> DispatchResult {
 		let mut new_pool_info = pool_info.clone();
-		new_pool_info.create_job_availability = creatable;
+		new_pool_info.create_job_enabled = creatable;
 
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		Self::deposit_event(Event::PoolCreateJobAvailabilityUpdated { pool_id: pool_info.id, availability: creatable });
+		Self::deposit_event(Event::PoolCreateJobEnablementUpdated { pool_id: pool_info.id, enabled: creatable });
 		Ok(())
 	}
 }
