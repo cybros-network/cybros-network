@@ -1,46 +1,185 @@
-# Cybros Network
+Cybros Network
+====
 
-Web3 Job Scheduler connecting everything.
+Cybros Network is a Web 3 infra that provides blockchain-based job scheduling ability,
+which is extremely useful for automation, edge tech (like AI) and Web 2 services integration, oracles, etc.
+It shall help innovate new dApp forms we have yet to see.
 
-## Getting Started
+## Why Cybros
 
-Follow the steps below to get started with the Node, or get it up and running right from
-your browser in just a few clicks using
-the [Substrate Playground](https://docs.substrate.io/playground/) :hammer_and_wrench:
+> WIP
 
-### Run
+## Why job
 
-Use Rust's native `cargo` command to build and launch the node:
+> WIP
 
-```sh
-cargo run --release -- --dev
-```
+You can learn more about "job" from Wikipedia
+- Job https://en.wikipedia.org/wiki/Job_(computing)
+- Job scheduler: https://en.wikipedia.org/wiki/Job_scheduler
+- Job queue: https://en.wikipedia.org/wiki/Job_queue
+
+## Goal
+
+- Provides a way to connect the non-blockchain world, including work with Web2 services, IoT sensors, GPUs, etc.
+  - Help to build a computing power supply chain for developers.
+- Easy to interact with other blockchain systems.
+
+## Concepts
+
+### Job
+
+A job is a unit of work or execution.
+It runs in an off-chain environment and can access most resources,
+including on-chain, off-chain, and hardware.
+
+### Implementation (impl)
+
+Implementation is an application that implements Cybros protocol
+for executing a specific job written by the developer,
+requiring a register on-chain before use.
+
+### Implementation Build (impl build)
+
+Implementation build is a release of an Implementation,
+requiring a register on-chain before deployment to workers.
+
+### Worker
+
+Worker is a running instance of an Implementation build.
+
+### Pool
+
+Pool is used for managing workers and acts as a jobs queue.
+It must bind with an Implementation and can't change after creation,
+so workers must run allowed Implementation builds.
+
+**Note:** Implementation can create multiple pools,
+isolating workers and jobs in those pools.
+
+#### Job policy
+
+Job policy is the contract for consumers to create jobs in a pool
+which defines the pricing to create a job, how to share profit
+between the pool and the worker, etc.
+It is read-only and can only delete once created.
+
+## Technical abstract
+
+### Implementation
+
+- Allow developers to register freely. Deposit required.
+  - Requires to declare decentralization: only the implementation's owner can deploy, and only the people in allow list can deploy, or anyone can deploy.
+    - The network shall validate the worker's owner when it attempts to go online.
+  - Requires to declare trustless: Trusted Execution Environment (TEE) required, Certificate-based license issued by the implementation owner needed or no requirement.
+    - The network shall validate the worker's attestation when it attempts to go online and may require to refresh the attestation.
+- Interacting with the network with signed extrinsic calls
+  - Online, requesting offline
+  - Respond offences
+    - Like Substrate's offences, it will be offline and get slashed if there is no answer in the time window.
+  - Refresh attestation
+  - Submit job progress and result
+- No limit to programming languages and running environments.
+  - It only requires interaction with the network.
+
+### Implementation build
+
+- Developers require register builds on-chain.
+  - The hash is optional because only TEE can get a non-tempering hash that the network can help to verify.
+- The network can help developers manage builds' lifecycle.
+  - Released: workers can go online with the build.
+  - Deprecated: online workers can still work, but new workers, including offline workers, can not go online with the build.
+  - Retired: Online workers will force offline, and no worker can go online with the build.
+
+### Worker
+
+- No limit to what kind of hardware and software. It's only required to connect with the network.
+  - You could deploy a full/light node locally.
+  - Edge IoT devices could connect to an RPC gateway.
+  - Browsers can use Smoldot light client and WebAssembly.
+- Workers have their wallets to gather income and pay gas fees.
+  - The owner can withdraw profit at will.
+- Workers must subscribe to pools to get jobs.
+- Workers shall get random and periodicity offence challenges when online
+  - A successful response shall update its uptime.
+    - It's possible to calculate the uptime ratio.
+  - It will be offline and may get slashed if it does not respond in time.
+
+### Pool
+
+- It must bind to an Implementation and can't be changed.
+- The owner must permit workers first to subscribe to the pool.
+- It must add workers first so that it can process jobs.
+  - It's flexible to add and remove workers.
+- Incoming jobs shall schedule to a worker by the network, and jobs shall run in parallel.
+  - Workers' performance and amount influence the handling capacity.
+- It can set metadata on-chain to store configurations.
+
+### Job Policy
+
+- It can create multiple in a pool.
+  - It can specify who can apply the policy: the pool owner, selected users, or anyone.
+  - It can specify a period of validity.
+
+### Job
+
+- It has a status: Pending, Processing, Processed, and Discarded.
+- The business also has a status: Success, Fail, (expected) Error, and (unexpected) Panic.
+- The worker who processed the job can submit proof of confidence if it is running in a TEE.
+- The Implementation's developer can also make proof of the job result.
+- Input and output will save to the network during the job's lifecycle.
+  - The job's creator and the worker must deposit for on-chain storage and will return after the job is processed.
+  - There have limitations for input and output size, which currently is 2KiB.
+- Workers in a pool may have different Implement builds.
+  - It can declare ABI called spec version. The scheduler will help to assign the job to a worker that can process the spec version.
+- The scheduler runs in network validators and securing by NPoS consensus.
+- There has a plan to support DAG-based workflow and scheduled jobs.
+
+### Others
+
+The network provides the essential infrastructure for management workers and jobs.
+However, economic incentives for workers and decentralized Implementation builds distribution are outside the scope.
+
+We recommend building the workers' economic incentive layer by integration with LSD products or Smart Contracts.
+
+We plan to develop a decentralized FaaS-like platform for decentralized job execution.
+- It will be an Implementation, just like others.
+- The developer experience should be similar to Smart Contracts.
+- It should support TEE to ensure its confidentiality.
+- It should support ZK to help developers make proof of jobs' results.
+- It should have an economic incentive layer for workers.
+
+## Project Structure
+
+- `/node` the node
+- `/pallets`
+  - `offchain_computing_workers` The pallet for managing Implementations, Builds, and workers
+  - `offchain_computing` The pallet for managing pools, jobs, and scheduling
+- `/runtimes/primal` The runtime of the Primal development network
+- `/protocol_impl` A demo Implementation build written in Deno
+  - `examples/simple_echo` The simplest sample, it will echo the input as output
+  - `examples/echo` A complex echo sample that supports e2e encryption.
+  - `examples/imaginator` a real-world sample that shows a MidJourney-like AIGC service based on Stable Diffusion
+- `/squid` The Subsquid indexer
+- `/docs` Docs
+
+## Development
 
 ### Build
-
-The `cargo run` command will perform an initial build. Use the following command to build the node
-without launching it:
 
 ```sh
 cargo build --release
 ```
 
-### Embedded Docs
+### Run
 
 Once the project has been built, the following command can be used to explore all parameters and
 subcommands:
 
 ```sh
-./target/release/node -h
+./target/release/cybros-node -h
 ```
 
-## Run
-
-The provided `cargo run` command will launch a temporary node and its state will be discarded after
-you terminate the process. After the project has been built, there are other ways to launch the
-node.
-
-### Single-Node Development Chain
+#### Single-Node Development Chain
 
 This command will start the single-node development chain with non-persistent state:
 
@@ -48,173 +187,16 @@ This command will start the single-node development chain with non-persistent st
 ./target/release/cybros-node --dev
 ```
 
-Purge the development chain's state:
-
-```bash
-./target/release/cybros-node purge-chain --dev
-```
-
-Start the development chain with detailed logging:
-
-```bash
-RUST_BACKTRACE=1 ./target/release/cybros-node -ldebug --dev
-```
-
-> Development chain means that the state of our chain will be in a tmp folder while the nodes are
-> running. Also, **alice** account will be authority and sudo account as declared in the
-> [genesis state](https://github.com/substrate-developer-hub/substrate-node-template/blob/main/node/src/chain_spec.rs#L49)
-> .
-> At the same time the following accounts will be pre-funded:
-> - Alice
-> - Bob
-> - Alice//stash
-> - Bob//stash
-
-In case of being interested in maintaining the chain' state between runs a base path must be added
-so the db can be stored in the provided folder instead of a temporal one. We could use this folder
-to store different chain databases, as a different folder will be created per different chain that
-is ran. The following commands shows how to use a newly created folder as our db base path.
-
-```bash
-// Create a folder to use as the db base path
-$ mkdir my-chain-state
-
-// Use of that folder to store the chain state
-$ ./target/release/cybros-node --dev --base-path ./my-chain-state/
-
-// Check the folder structure created inside the base path after running the chain
-$ ls ./my-chain-state
-chains
-$ ls ./my-chain-state/chains/
-dev
-$ ls ./my-chain-state/chains/dev
-db keystore network
-```
-
-### Connect with Polkadot-JS Apps Front-end
+#### Connect with Polkadot-JS Apps Front-end
 
 Once the node is running locally, you can connect it with **Polkadot-JS Apps** front-end
 to interact with your chain. [Click
 here](https://polkadot.js.org/apps/#/explorer?rpc=ws://localhost:9944) connecting the Apps to your
 local node.
 
-### Multi-Node Local Testnet
+## Getting Started
 
-If you want to see the multi-node consensus algorithm in action, refer to our
-[Simulate a network tutorial](https://docs.substrate.io/tutorials/get-started/simulate-network/).
-
-## Project Structure
-
-A Substrate project such as this consists of a number of components that are spread across a few
-directories.
-
-### Node
-
-A blockchain node is an application that allows users to participate in a blockchain network.
-Substrate-based blockchain nodes expose a number of capabilities:
-
-- Networking: Substrate nodes use the [`libp2p`](https://libp2p.io/) networking stack to allow the
-  nodes in the network to communicate with one another.
-- Consensus: Blockchains must have a way to come to
-  [consensus](https://docs.substrate.io/main-docs/fundamentals/consensus/) on the state of the
-  network. Substrate makes it possible to supply custom consensus engines and also ships with
-  several consensus mechanisms that have been built on top of
-  [Web3 Foundation research](https://research.web3.foundation/en/latest/polkadot/NPoS/index.html).
-- RPC Server: A remote procedure call (RPC) server is used to interact with Substrate nodes.
-
-There are several files in the `node` directory - take special note of the following:
-
-- [`chain_spec.rs`](./node/src/chain_spec.rs): A
-  [chain specification](https://docs.substrate.io/main-docs/build/chain-spec/) is a
-  source code file that defines a Substrate chain's initial (genesis) state. Chain specifications
-  are useful for development and testing, and critical when architecting the launch of a
-  production chain. Take note of the `development_config` and `testnet_genesis` functions, which
-  are used to define the genesis state for the local development chain configuration. These
-  functions identify some
-  [well-known accounts](https://docs.substrate.io/reference/command-line-tools/subkey/)
-  and use them to configure the blockchain's initial state.
-- [`service.rs`](./node/src/service.rs): This file defines the node implementation. Take note of
-  the libraries that this file imports and the names of the functions it invokes. In particular,
-  there are references to consensus-related topics, such as the
-  [block finalization and forks](https://docs.substrate.io/main-docs/fundamentals/consensus/#finalization-and-forks)
-  and other [consensus mechanisms](https://docs.substrate.io/main-docs/fundamentals/consensus/#default-consensus-models)
-  such as Aura for block authoring and GRANDPA for finality.
-
-After the node has been [built](#build), refer to the embedded documentation to learn more about the
-capabilities and configuration parameters that it exposes:
-
-```shell
-./target/release/cybros-node --help
-```
-
-### Runtime
-
-In Substrate, the terms
-"runtime" and "state transition function"
-are analogous - they refer to the core logic of the blockchain that is responsible for validating
-blocks and executing the state changes they define. The Substrate project in this repository uses
-[FRAME](https://docs.substrate.io/main-docs/fundamentals/runtime-intro/#frame) to construct a
-blockchain runtime. FRAME allows runtime developers to declare domain-specific logic in modules
-called "pallets". At the heart of FRAME is a helpful
-[macro language](https://docs.substrate.io/reference/frame-macros/) that makes it easy to
-create pallets and flexibly compose them to create blockchains that can address
-[a variety of needs](https://substrate.io/ecosystem/projects/).
-
-Review the [FRAME runtime implementation](./runtime/src/lib.rs) included in this node and note
-the following:
-
-- This file configures several pallets to include in the runtime. Each pallet configuration is
-  defined by a code block that begins with `impl $PALLET_NAME::Config for Runtime`.
-- The pallets are composed into a single runtime by way of the
-  [`construct_runtime!`](https://crates.parity.io/frame_support/macro.construct_runtime.html)
-  macro, which is part of the core
-  FRAME Support [system](https://docs.substrate.io/reference/frame-pallets/#system-pallets) library.
-
-### Pallets
-
-The runtime in this project is constructed using many FRAME pallets that ship with the
-[core Substrate repository](https://github.com/paritytech/substrate/tree/master/frame).
-
-A FRAME pallet is compromised of a number of blockchain primitives:
-
-- Storage: FRAME defines a rich set of powerful
-  [storage abstractions](https://docs.substrate.io/main-docs/build/runtime-storage/) that makes
-  it easy to use Substrate's efficient key-value database to manage the evolving state of a
-  blockchain.
-- Dispatchables: FRAME pallets define special types of functions that can be invoked (dispatched)
-  from outside of the runtime in order to update its state.
-- Events: Substrate uses [events and errors](https://docs.substrate.io/main-docs/build/events-errors/)
-  to notify users of important changes in the runtime.
-- Errors: When a dispatchable fails, it returns an error.
-- Config: The `Config` configuration interface is used to define the types and parameters upon
-  which a FRAME pallet depends.
-
-### Run in Docker
-
-First, install [Docker](https://docs.docker.com/get-docker/) and
-[Docker Compose](https://docs.docker.com/compose/install/).
-
-Then run the following command to start a single node development chain.
-
-```bash
-./scripts/docker_run.sh
-```
-
-This command will firstly compile your code, and then start a local development network. You can
-also replace the default command
-(`cargo build --release && ./target/release/cybros-node --dev --ws-external`)
-by appending your own. A few useful ones are as follow.
-
-```bash
-# Run Substrate node without re-compiling
-./scripts/docker_run.sh ./target/release/cybros-node --dev --ws-external
-
-# Purge the local dev chain
-./scripts/docker_run.sh ./target/release/cybros-node purge-chain --dev
-
-# Check whether the code is compilable
-./scripts/docker_run.sh cargo check
-```
+See [How-to](./docs/how-to.md) for details.
 
 ## License
 

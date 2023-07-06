@@ -43,7 +43,7 @@ So we need add `add_deposit()` for tasks.
 
 TODO: DAG? not quiet difficult, just add a RC field for dependent tasks, when 0 can be enabled
 
-### Basic rates for create tasks (in `CreateTaskPolicy`)
+### Basic rates for create tasks (in `JobPolicy`)
 
 I think we could support fixed rate first, user will pay a fixed amount of money to creating a task.
 
@@ -52,7 +52,7 @@ I think we could support fixed rate first, user will pay a fixed amount of money
 I think we could support commission (percentage 0 - 100) first,
 the pool will take some cut from user fee - Pool set a commission, the task runner and the pool share the fee
 
-### Finalize off-chain computing protocol v0
+### Finalize Cybros protocol v0
 
 When we examined our design by use-cases, we could make the first version of the protocol
 
@@ -163,7 +163,7 @@ In addition, HyperV and vSphere has attestation too, but I don't know it's possi
 
 ### Rates for create tasks
 
-We have `CreateTaskPolicy` but we don't design how to charge for task, current I can figure out:
+We have `JobPolicy` but we don't design how to charge for task, current I can figure out:
 
 - Fixed rate
 - Based on running time, it should has a upper limit
@@ -204,7 +204,7 @@ I know blockchain has its limit, but I want to ensure we can maximize throughput
 I'm considering minting application as a NFT, pool owns a sub-NFT of the application NFT,
 base on that, we could design how to share profit between application owner (the NFT owner) and pool.
 
-### Off-chain computing protocol v1, stabilize everything, audit all of our works
+### Cybros protocol v1, stabilize everything, audit all of our works
 
 These are must things when it becomes a serious business.
 
@@ -212,21 +212,12 @@ These are must things when it becomes a serious business.
 
 It will be the permanent main network.
 
-### Becoming a public decentralized off-chain computing network
+### Becoming a public decentralized Cybros network
 
 This is the final goal, will achieve when above ideas are cleared,
 so this one should always be placed at the end of the list :)
 
 ## Questions
-
-### Allow to attach a small size of memo on submit heartbeat
-
-The chain doesn't care what it is, it may be useful for monitoring worker metrics.
-
-It will not store on chain, just on event.
-
-However, it will increase Call data which would harmful for total TXs in a block,
-and I'm not sure how useful for monitoring workers, people should build their own monitoring for their workers.
 
 ### Stake for Pools
 

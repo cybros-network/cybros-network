@@ -40,7 +40,7 @@ pub enum OfflineReason {
 	Forced,
 	Unresponsive,
 	AttestationExpired,
-	ImplBuildBlocked,
+	ImplBuildRetired,
 	InsufficientDepositFunds,
 	Other,
 }
@@ -241,7 +241,7 @@ pub enum ImplBuildStatus {
 	/// Deprecated will forbid new workers online with this build
 	Deprecated,
 	/// Blocked will forbid workers online, and heartbeat, so they have to upgrade
-	Blocked,
+	Retired,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]

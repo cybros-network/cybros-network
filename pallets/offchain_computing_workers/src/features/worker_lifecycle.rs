@@ -281,7 +281,7 @@ impl<T: Config> Pallet<T> {
 		};
 
 		if !valid_impl_build {
-			Self::set_worker_offline(&worker, OfflineReason::ImplBuildBlocked);
+			Self::set_worker_offline(&worker, OfflineReason::ImplBuildRetired);
 
 			return Ok(())
 		}
