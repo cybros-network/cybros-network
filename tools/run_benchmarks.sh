@@ -16,7 +16,6 @@ echo "*** Run benchmark for pallet-computing_workers ***"
   --no-storage-info \
   --no-median-slopes \
   --no-min-squares \
-  --execution=wasm \
   --wasm-execution=compiled \
   --heap-pages=4096 \
   --output=./pallets/offchain_computing_workers/src/weights.rs \
