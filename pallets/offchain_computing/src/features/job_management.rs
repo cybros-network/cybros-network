@@ -122,10 +122,7 @@ impl<T: Config> Pallet<T> {
 		}
 
 		ensure!(
-			match job.status {
-				JobStatus::Pending | JobStatus::Processed | JobStatus::Discarded => true,
-				_ => false
-			},
+			matches!(job.status, JobStatus::Pending | JobStatus::Processed | JobStatus::Discarded),
 			Error::<T>::JobIsProcessing
 		);
 

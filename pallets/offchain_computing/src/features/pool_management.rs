@@ -112,7 +112,8 @@ impl<T: Config> Pallet<T> {
 				},
 				Ordering::Less => {
 					T::Currency::unreserve(&pool_info.owner, old_deposit - deposit);
-				}
+				},
+				_ => {}
 			};
 
 			*metadata_entry = Some(ChainStoredData {

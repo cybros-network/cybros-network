@@ -100,10 +100,7 @@ impl<T: Config> Pallet<T> {
 
 		let mut job = Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)?;
 		ensure!(
-			match job.status {
-				JobStatus::Processing | JobStatus::Processed => false,
-				_ => true
-			},
+			!matches!(job.status, JobStatus::Processing | JobStatus::Processed),
 			Error::<T>::JobAssigneeLocked
 		);
 		Self::ensure_job_assignee(&job, &worker)?;
@@ -136,10 +133,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		let mut job = Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)?;
 		ensure!(
-			match job.status {
-				JobStatus::Pending | JobStatus::Processing => true,
-				_ => false
-			},
+			matches!(job.status, JobStatus::Pending | JobStatus::Processing),
 			Error::<T>::JobIsProcessed
 		);
 		// Comment this because current `expires_at` actually a soft expiring
