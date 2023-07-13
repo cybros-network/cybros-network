@@ -183,10 +183,7 @@ impl<T: Config> Pallet<T> {
 		}
 
 		ensure!(
-			match worker_info.status {
-				WorkerStatus::Online | WorkerStatus::RequestingOffline => true,
-				_ => false,
-			},
+			matches!(worker_info.status, WorkerStatus::Online | WorkerStatus::RequestingOffline),
 			Error::<T>::WorkerNotOnline
 		);
 
@@ -275,10 +272,7 @@ impl<T: Config> Pallet<T> {
 			return Err(Error::<T>::InternalError.into())
 		};
 		let impl_build_info = ImplBuilds::<T>::get(worker_info.impl_id, impl_build_version).ok_or(Error::<T>::InternalError)?;
-		let valid_impl_build = match impl_build_info.status {
-			ImplBuildStatus::Released | ImplBuildStatus::Deprecated => true,
-			_ => false
-		};
+		let valid_impl_build = matches!(impl_build_info.status, ImplBuildStatus::Released | ImplBuildStatus::Deprecated);
 
 		if !valid_impl_build {
 			Self::set_worker_offline(&worker, OfflineReason::ImplBuildRetired);
