@@ -51,16 +51,16 @@ impl<T: Config> Pallet<T> {
 			let job_id = AssignableJobs::<T>::iter_key_prefix(
 			(
 					pool_id.clone(),
-					worker_impl_spec_version.clone()
+					worker_impl_spec_version
 				)
 			).next().ok_or(Error::<T>::NoAssignableJob)?;
 			Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)
 		}?;
 		ensure!(
-			worker_impl_spec_version == job.impl_spec_version.clone(),
+			worker_impl_spec_version == job.impl_spec_version,
 			Error::<T>::ImplMismatched
 		);
-		AssignableJobs::<T>::remove((pool_id.clone(), job.impl_spec_version.clone(), job.id.clone()));
+		AssignableJobs::<T>::remove((pool_id.clone(), job.impl_spec_version, job.id.clone()));
 
 		// It is possible to get a expired job, but actually it is a soft expiring
 		// Comment this because current `expires_at` actually a soft expiring
@@ -115,7 +115,7 @@ impl<T: Config> Pallet<T> {
 			*counter -= 1;
 			Ok(())
 		})?;
-		AssignableJobs::<T>::insert((pool_id.clone(), job.impl_spec_version.clone(), job_id.clone()), ());
+		AssignableJobs::<T>::insert((pool_id.clone(), job.impl_spec_version, job_id.clone()), ());
 
 		Jobs::<T>::insert(&pool_id, &job_id, job);
 

@@ -92,7 +92,7 @@ impl<T: Config> Pallet<T> {
 		new_policy_info.jobs_count += 1;
 		JobPolicies::<T>::insert(&pool_info.id, &policy_info.id, new_policy_info);
 
-		AssignableJobs::<T>::insert((pool_info.id.clone(), impl_spec_version.clone(), job_id.clone()), ());
+		AssignableJobs::<T>::insert((pool_info.id.clone(), impl_spec_version, job_id.clone()), ());
 		AccountBeneficialJobs::<T>::insert((beneficiary.clone(), pool_info.id.clone(), job_id.clone()), ());
 
 		Self::deposit_event(Event::JobCreated {
@@ -190,10 +190,10 @@ impl<T: Config> Pallet<T> {
 		})?;
 
 		if job.status == JobStatus::Pending {
-			AssignableJobs::<T>::remove((pool_id.clone(), job.impl_spec_version.clone(), job_id.clone()));
+			AssignableJobs::<T>::remove((pool_id.clone(), job.impl_spec_version, job_id.clone()));
 		} else if job.status == JobStatus::Processing || job.status == JobStatus::Discarded {
 			if let Some(worker) = &job.assignee {
-				CounterForWorkerAssignedJobs::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
+				CounterForWorkerAssignedJobs::<T>::try_mutate(worker, |counter| -> Result<(), DispatchError> {
 					*counter -= 1;
 					Ok(())
 				})?;

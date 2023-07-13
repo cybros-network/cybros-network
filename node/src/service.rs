@@ -30,7 +30,7 @@ use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use std::{sync::Arc, time::Duration};
 
 use runtime_primitives::opaque::Block;
-use primal_runtime;
+
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -93,7 +93,7 @@ pub fn new_partial(
 		})
 		.transpose()?;
 
-	let executor = sc_service::new_native_or_wasm_executor(&config);
+	let executor = sc_service::new_native_or_wasm_executor(config);
 
 	let (client, backend, keystore_container, task_manager) =
 		sc_service::new_full_parts::<Block, primal_runtime::RuntimeApi, _>(

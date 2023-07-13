@@ -87,7 +87,7 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 	type Balance = Balance;
 	type DustRemoval = ();
-	type ExistentialDeposit = ConstU128<{ 1 * CENTS }>;
+	type ExistentialDeposit = ConstU128<{ CENTS }>;
 	type AccountStore = System;
 	type ReserveIdentifier = [u8; 8];
 	type RuntimeHoldReason = ();
@@ -115,9 +115,9 @@ impl pallet_offchain_computing_workers::Config for Test {
 	type ImplId = u32;
 	type RegisterImplOrigin = EnsureSigned<Self::AccountId>;
 	type RegisterWorkerDeposit = ConstU128<{ 100 * DOLLARS }>;
-	type RegisterImplDeposit = ConstU128<{ 1 * DOLLARS }>;
-	type ImplMetadataDepositBase = ConstU128<{ 1 * DOLLARS }>;
-	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
+	type RegisterImplDeposit = ConstU128<{ DOLLARS }>;
+	type ImplMetadataDepositBase = ConstU128<{ DOLLARS }>;
+	type DepositPerByte = ConstU128<{ CENTS }>;
 	type ImplMetadataLimit = ConstU32<50>;
 	type MaxImplBuilds = ConstU32<4>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<3>;
@@ -137,10 +137,10 @@ impl pallet_offchain_computing::Config for Test {
 	type JobId = u32;
 	type PolicyId = u32;
 	type CreatePoolOrigin = frame_system::EnsureSigned<Self::AccountId>;
-	type CreatePoolDeposit = ConstU128<{ 1 * DOLLARS }>;
-	type DepositPerJob = ConstU128<{ 1 * DOLLARS }>;
-	type MetadataDepositBase = ConstU128<{ 1 * CENTS }>;
-	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
+	type CreatePoolDeposit = ConstU128<{ DOLLARS }>;
+	type DepositPerJob = ConstU128<{ DOLLARS }>;
+	type MetadataDepositBase = ConstU128<{ CENTS }>;
+	type DepositPerByte = ConstU128<{ CENTS }>;
 	type MaxAssignedJobsPerWorker = ConstU32<8>;
 	type MaxSubscribedPoolsPerWorker = ConstU32<8>;
 	type MaxPoliciesPerPool = ConstU32<3>;
@@ -192,7 +192,7 @@ pub(crate) fn set_balance(who: AccountId, new_free: Balance, new_reserved: Balan
 	assert_ok!(
 		Balances::force_set_balance(
 			RuntimeOrigin::root(),
-			who.clone().into(),
+			who.clone(),
 			new_free.saturating_add(new_reserved)
 		)
 	);

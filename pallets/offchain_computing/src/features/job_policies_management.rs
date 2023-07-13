@@ -37,8 +37,8 @@ impl<T: Config> Pallet<T> {
 			id: policy_id.clone(),
 			enabled: true,
 			applicable_scope: applicable_scope.clone(),
-			start_block: start_block.clone(),
-			end_block: end_block.clone(),
+			start_block,
+			end_block,
 			jobs_count: 0,
 		};
 		JobPolicies::<T>::insert(&pool_info.id, &policy_id, policy);

@@ -85,7 +85,7 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 	type Balance = Balance;
 	type DustRemoval = ();
-	type ExistentialDeposit = ConstU128<{ 1 * CENTS }>;
+	type ExistentialDeposit = ConstU128<{ CENTS }>;
 	type AccountStore = System;
 	type ReserveIdentifier = [u8; 8];
 	type RuntimeHoldReason = ();
@@ -113,9 +113,9 @@ impl pallet_offchain_computing_workers::Config for Test {
 	type ImplId = u32;
 	type RegisterImplOrigin = EnsureSigned<Self::AccountId>;
 	type RegisterWorkerDeposit = ConstU128<{ 100 * DOLLARS }>;
-	type RegisterImplDeposit = ConstU128<{ 1 * DOLLARS }>;
-	type ImplMetadataDepositBase = ConstU128<{ 1 * DOLLARS }>;
-	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
+	type RegisterImplDeposit = ConstU128<{ DOLLARS }>;
+	type ImplMetadataDepositBase = ConstU128<{ DOLLARS }>;
+	type DepositPerByte = ConstU128<{ CENTS }>;
 	type ImplMetadataLimit = ConstU32<50>;
 	type MaxImplBuilds = ConstU32<4>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<3>;
@@ -162,9 +162,9 @@ pub(crate) fn set_balance(who: AccountId, new_free: Balance) {
 	assert_ok!(
 		Balances::force_set_balance(
 			RuntimeOrigin::root(),
-			who.into(),
+			who,
 			new_free
 		)
 	);
-	assert_eq!(Balances::free_balance(&who), new_free);
+	assert_eq!(Balances::free_balance(who), new_free);
 }

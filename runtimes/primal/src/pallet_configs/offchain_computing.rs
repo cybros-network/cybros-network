@@ -31,10 +31,10 @@ impl pallet_offchain_computing::Config for Runtime {
 	type JobId = u32;
 	type PolicyId = u32;
 	type CreatePoolOrigin = EnsureSigned<Self::AccountId>;
-	type CreatePoolDeposit = ConstU128<{ 1 * UNITS }>;
-	type DepositPerJob = ConstU128<{ 1 * UNITS }>;
-	type MetadataDepositBase = ConstU128<{ 1 * CENTS }>;
-	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
+	type CreatePoolDeposit = ConstU128<{ UNITS }>;
+	type DepositPerJob = ConstU128<{ UNITS }>;
+	type MetadataDepositBase = ConstU128<{ CENTS }>;
+	type DepositPerByte = ConstU128<{ CENTS }>;
 	type MaxAssignedJobsPerWorker = ConstU32<8>;
 	type MaxSubscribedPoolsPerWorker = ConstU32<8>;
 	type MaxPoliciesPerPool = ConstU32<8>;

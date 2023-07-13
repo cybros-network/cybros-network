@@ -118,9 +118,11 @@ pub struct OnlinePayload<ImplId> {
 
 /// Worker's status
 #[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen, RuntimeDebug)]
+#[derive(Default)]
 pub enum WorkerStatus {
 	/// Initial status for a new registered worker.
-	Registered,
+	#[default]
+ Registered,
 	/// The worker is online so it can accept job
 	/// Transit from `Registered` and `Offline`, and `Unresponsive`
 	/// not sure for `RequestingOffline` (may have side effect)
@@ -139,11 +141,7 @@ pub enum WorkerStatus {
 	Offline,
 }
 
-impl Default for WorkerStatus {
-	fn default() -> Self {
-		WorkerStatus::Registered
-	}
-}
+
 
 #[cfg(feature = "std")]
 impl fmt::Display for WorkerStatus {
@@ -192,18 +190,16 @@ pub struct WorkerInfo<AccountId, Balance, ImplId> {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug)]
+#[derive(Default)]
 pub enum FlipFlopStage {
-	Flip,
+	#[default]
+ Flip,
 	Flop,
 	FlipToFlop,
 	FlopToFlip,
 }
 
-impl Default for FlipFlopStage {
-	fn default() -> Self {
-		FlipFlopStage::Flip
-	}
-}
+
 
 #[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
 pub enum ApplicableScope {

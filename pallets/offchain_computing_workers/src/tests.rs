@@ -74,7 +74,7 @@ fn register_worker_for(owner: AccountId, worker: AccountId, impl_id: ImplId, ini
 	assert_ok!(
 		OffchainComputingWorkers::register_worker(
 			RuntimeOrigin::signed(owner),
-			worker.into(),
+			worker,
 			impl_id,
 			initial_deposit
 		)
@@ -130,6 +130,6 @@ fn deregister_worker_works() {
 		assert_ok!(OffchainComputingWorkers::deregister_worker(RuntimeOrigin::signed(ALICE), ALICE_WORKER));
 
 		assert_eq!(Balances::free_balance(ALICE), 200 * DOLLARS);
-		assert_eq!(Account::<Test>::contains_key(ALICE_WORKER), false);
+		assert!(!Account::<Test>::contains_key(ALICE_WORKER));
 	});
 }

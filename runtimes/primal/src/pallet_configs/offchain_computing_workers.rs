@@ -29,8 +29,8 @@ impl pallet_offchain_computing_workers::Config for Runtime {
 	type RegisterImplOrigin = EnsureSigned<Self::AccountId>;
 	type RegisterWorkerDeposit = ConstU128<{ 100 * UNITS }>;
 	type RegisterImplDeposit = ConstU128<{ 100 * UNITS }>;
-	type ImplMetadataDepositBase = ConstU128<{ 1 * UNITS }>;
-	type DepositPerByte = ConstU128<{ 1 * CENTS }>;
+	type ImplMetadataDepositBase = ConstU128<{ UNITS }>;
+	type DepositPerByte = ConstU128<{ CENTS }>;
 	type ImplMetadataLimit = ConstU32<2048>; // 2KiB
 	type MaxImplBuilds = ConstU32<8>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<100>;

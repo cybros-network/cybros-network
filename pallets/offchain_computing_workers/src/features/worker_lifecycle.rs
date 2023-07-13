@@ -38,7 +38,7 @@ impl<T: Config> Pallet<T> {
 		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
 
-		let current_status = worker_info.status.clone();
+		let current_status = worker_info.status;
 
 		match current_status {
 			WorkerStatus::Registered | WorkerStatus::Unresponsive | WorkerStatus::Offline => {},
@@ -53,7 +53,7 @@ impl<T: Config> Pallet<T> {
 		}
 
 		ensure!(
-			worker_info.impl_id == payload.impl_id.clone(),
+			worker_info.impl_id == payload.impl_id,
 			Error::<T>::ImplMismatched
 		);
 
@@ -66,7 +66,7 @@ impl<T: Config> Pallet<T> {
 			);
 		}
 
-		let mut impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, payload.impl_build_version).ok_or(Error::<T>::ImplBuildNotFound)?;
+		let mut impl_build_info = ImplBuilds::<T>::get(worker_info.impl_id, payload.impl_build_version).ok_or(Error::<T>::ImplBuildNotFound)?;
 		ensure!(
 			impl_build_info.status == ImplBuildStatus::Released,
 			Error::<T>::ImplBuildRestricted
@@ -109,7 +109,7 @@ impl<T: Config> Pallet<T> {
 
 		if current_status != WorkerStatus::Unresponsive {
 			impl_build_info.workers_count += 1;
-			ImplBuilds::<T>::insert(&payload.impl_id, &payload.impl_build_version, impl_build_info);
+			ImplBuilds::<T>::insert(payload.impl_id, payload.impl_build_version, impl_build_info);
 		}
 
 		let next_heartbeat = Self::flip_flop_for_online(&worker);
@@ -271,10 +271,10 @@ impl<T: Config> Pallet<T> {
 			return Ok(())
 		}
 
-		let Some(impl_build_version) = worker_info.impl_build_version.clone() else {
+		let Some(impl_build_version) = worker_info.impl_build_version else {
 			return Err(Error::<T>::InternalError.into())
 		};
-		let impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, &impl_build_version).ok_or(Error::<T>::InternalError)?;
+		let impl_build_info = ImplBuilds::<T>::get(worker_info.impl_id, impl_build_version).ok_or(Error::<T>::InternalError)?;
 		let valid_impl_build = match impl_build_info.status {
 			ImplBuildStatus::Released | ImplBuildStatus::Deprecated => true,
 			_ => false

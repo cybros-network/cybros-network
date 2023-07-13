@@ -36,16 +36,16 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(!Workers::<T>::contains_key(&worker), Error::<T>::AlreadyRegistered);
 
-		let mut impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
+		let mut impl_info = Impls::<T>::get(impl_id).ok_or(Error::<T>::ImplNotFound)?;
 		impl_info.workers_count += 1;
-		Impls::<T>::insert(&impl_id, impl_info);
+		Impls::<T>::insert(impl_id, impl_info);
 
 		let worker_info = WorkerInfo {
 			account: worker.clone(),
 			owner: owner.clone(),
 			deposit,
 			status: WorkerStatus::Registered,
-			impl_id: impl_id.clone(),
+			impl_id,
 			impl_spec_version: None,
 			impl_build_version: None,
 			attestation_method: None,
@@ -95,9 +95,9 @@ impl<T: Config> Pallet<T> {
 			ExistenceRequirement::AllowDeath,
 		)?;
 
-		let mut impl_info = Impls::<T>::get(&worker_info.impl_id).ok_or(Error::<T>::ImplNotFound)?;
+		let mut impl_info = Impls::<T>::get(worker_info.impl_id).ok_or(Error::<T>::ImplNotFound)?;
 		impl_info.workers_count -= 1;
-		Impls::<T>::insert(&worker_info.impl_id, impl_info);
+		Impls::<T>::insert(worker_info.impl_id, impl_info);
 
 		Workers::<T>::remove(&worker);
 		AccountOwningWorkers::<T>::remove(&owner, &worker);

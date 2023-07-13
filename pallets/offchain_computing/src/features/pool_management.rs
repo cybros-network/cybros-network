@@ -66,7 +66,7 @@ impl<T: Config> Pallet<T> {
 		Pools::<T>::insert(&pool_id, pool_info);
 		AccountOwningPools::<T>::insert(&owner, &pool_id, ());
 
-		Self::deposit_event(Event::PoolCreated { owner, pool_id, impl_id, create_job_enabled, auto_destroy_processed_job_enabled: auto_destroy_processed_job_enabled });
+		Self::deposit_event(Event::PoolCreated { owner, pool_id, impl_id, create_job_enabled, auto_destroy_processed_job_enabled });
 		Ok(())
 	}
 

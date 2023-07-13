@@ -583,7 +583,7 @@ pub mod pallet {
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
 			ensure!(
-				pool_info.job_policies_count.clone() <= T::MaxPoliciesPerPool::get(),
+				pool_info.job_policies_count <= T::MaxPoliciesPerPool::get(),
 				Error::<T>::JobPoliciesPerPoolLimitExceeded
 			);
 
