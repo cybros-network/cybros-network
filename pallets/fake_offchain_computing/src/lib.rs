@@ -52,7 +52,7 @@ use pallet_offchain_computing_workers::{
 };
 
 // pub(crate) type BalanceOf<T> =
-// 	<<T as Config>::Currency as OffchainWorkerManageable<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::BlockNumber>>::Balance;
+// 	<<T as Config>::Currency as OffchainWorkerManageable<<T as frame_system::Config>::AccountId, BlockNumberFor<T>>::Balance;
 
 pub(crate) type BalanceOf<T> =
 	<<T as Config>::OffchainWorkerManageable as OffchainWorkerManageable<<T as frame_system::Config>::AccountId>>::Balance;

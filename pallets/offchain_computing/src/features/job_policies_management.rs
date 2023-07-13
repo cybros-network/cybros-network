@@ -18,21 +18,22 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
+use frame_system::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_job_policy(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		policy_id: T::PolicyId,
 		applicable_scope: ApplicableScope,
-		start_block: Option<T::BlockNumber>,
-		end_block: Option<T::BlockNumber>
+		start_block: Option<BlockNumberFor<T>>,
+		end_block: Option<BlockNumberFor<T>>
 	) -> DispatchResult {
 		ensure!(
 			!JobPolicies::<T>::contains_key(&pool_info.id, &policy_id),
 			Error::<T>::PolicyIdTaken
 		);
 
-		let policy = JobPolicy::<T::PolicyId, T::BlockNumber> {
+		let policy = JobPolicy::<T::PolicyId, BlockNumberFor<T>> {
 			id: policy_id.clone(),
 			enabled: true,
 			applicable_scope: applicable_scope.clone(),

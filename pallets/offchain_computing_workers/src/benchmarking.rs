@@ -22,7 +22,10 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use frame_benchmarking::{v2::*, account, impl_benchmark_test_suite, whitelisted_caller};
-use frame_system::{Account, RawOrigin};
+use frame_system::{
+	pallet_prelude::BlockNumberFor,
+	Account, RawOrigin,
+};
 
 use frame_support::{
 	sp_runtime::{
@@ -31,9 +34,7 @@ use frame_support::{
 	},
 	assert_ok, fail,
 };
-use primitives::{
-	AttestationMethod, FlipFlopStage, OnlinePayload, WorkerStatus,
-};
+use primitives::{AttestationMethod, OnlinePayload};
 
 use crate::Pallet as OffchainComputingWorkers;
 use super::*;
@@ -361,12 +362,12 @@ mod benchmarks {
 		match stage {
 			FlipFlopStage::Flip => {
 				assert_eq!(FlopSet::<T>::contains_key(&worker), true);
-				FlopSet::<T>::insert(&worker, T::BlockNumber::zero());
+				FlopSet::<T>::insert(&worker, BlockNumberFor::<T>::zero());
 				FlipOrFlop::<T>::set(FlipFlopStage::Flop);
 			},
 			FlipFlopStage::Flop => {
 				assert_eq!(FlipSet::<T>::contains_key(&worker), true);
-				FlipSet::<T>::insert(&worker, T::BlockNumber::zero());
+				FlipSet::<T>::insert(&worker, BlockNumberFor::<T>::zero());
 				FlipOrFlop::<T>::set(FlipFlopStage::Flip);
 			},
 			_ => fail!("Other stages is unexpected")

@@ -18,15 +18,16 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
+use frame_system::pallet_prelude::*;
 use sp_runtime::{
 	traits::Zero,
-	Saturating
+	Saturating,
 };
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_job(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
-		policy_info: JobPolicy<T::PolicyId, T::BlockNumber>,
+		policy_info: JobPolicy<T::PolicyId, BlockNumberFor<T>>,
 		job_id: T::JobId,
 		beneficiary: T::AccountId,
 		depositor: T::AccountId,

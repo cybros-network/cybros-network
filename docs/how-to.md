@@ -82,7 +82,7 @@ then you should see the success event on the `Network -> Explorer` page:
 #### Create a pool
 
 Use Alice to send the extrinsic
-`offchainComputingWorkers.createPool(implId, createJobEnabled, autoDestroyProcessedJobEnabled)`
+`offchainComputing.createPool(implId, createJobEnabled, autoDestroyProcessedJobEnabled)`
 - `implId` fill `101`
 - `createJobEnabled` choose `Yes` or the pool will not allow to create new job
 - `autoDestroyProcessedJobEnabled` can choose `Yes`
@@ -94,7 +94,7 @@ then you should see the success event on the `Network -> Explorer` page:
 #### Create a job policy
 
 Use Alice to send the extrinsic
-`offchainComputingWorkers.createJobPolicy(poolId, applicableScope, startBlock, endBlock)`
+`offchainComputing.createJobPolicy(poolId, applicableScope, startBlock, endBlock)`
 - `poolId` fill `101` (we got the `poolId` from previous extrinsic)
 - `applicableScope` can choose `Public` which means anyone could use the policy
 - `startBlock` and `endBlock` can keep `None` which means the policy never expires
@@ -125,7 +125,7 @@ then you should see events on the `Network -> Explorer` page:
 
 #### Add the worker to the pool
 
-Use Alice to send the extrinsic `offchainComputingWorkers.authorizeWorker(poolId, worker)`
+Use Alice to send the extrinsic `offchainComputing.authorizeWorker(poolId, worker)`
 - `poolId` fill `101`
 - `worker` fill `5CmLkeupoN7tSthSD6hFj9wHYc9RyMRAWb38uo5BD6LEViGw` (we got the address from the worker starting)
 

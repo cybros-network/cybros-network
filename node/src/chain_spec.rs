@@ -167,12 +167,14 @@ fn genesis_config(
 		system: SystemConfig {
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
+			..Default::default()
 		},
 		aura: AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.1.clone())).collect()
 		},
 		grandpa: GrandpaConfig {
-			authorities: initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect()
+			authorities: initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect(),
+			..Default::default()
 		},
 		balances: BalancesConfig {
 			balances: endowed_accounts,

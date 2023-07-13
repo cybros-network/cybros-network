@@ -25,16 +25,17 @@ use frame_support::{
 use frame_system::EnsureSigned;
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
-	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
+	BuildStorage,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
-pub(crate) type BlockNumber = u64;
 pub(crate) type Balance = u128;
 pub(crate) type AccountId = u64;
+
+pub(crate) const INIT_TIMESTAMP: u64 = 30_000;
+pub(crate) const BLOCK_TIME: u64 = 1000;
 
 pub(crate) const MILLI_CENTS: Balance = 1_000_000;
 pub(crate) const CENTS: Balance = 1_000 * MILLI_CENTS;
@@ -42,11 +43,7 @@ pub(crate) const DOLLARS: Balance = 100 * CENTS;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-	pub struct Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
+	pub struct Test {
 		System: frame_system,
 		Balances: pallet_balances,
 		Timestamp: pallet_timestamp,
@@ -63,12 +60,11 @@ impl frame_system::Config for Test {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
 	type Index = u64;
-	type BlockNumber = BlockNumber;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
+	type Block = Block;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = ConstU64<250>;
 	type DbWeight = ();
@@ -142,24 +138,24 @@ impl pallet_fake_offchain_computing::Config for Test {
 // Build genesis storage according to the mock runtime.
 #[allow(unused)]
 pub(crate) fn new_test_ext() -> sp_io::TestExternalities {
-	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+	let mut t = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 	// Customize genesis config here
 	t.into()
 }
 
 #[allow(unused)]
-pub(crate) fn run_to_block(n: BlockNumber) {
+pub(crate) fn run_to_block(n: u64) {
 	// NOTE that this function only simulates modules of interest. Depending on new pallet may
 	// require adding it here.
 	assert!(System::block_number() < n);
-	while System::block_number() < n {
-		let b = System::block_number();
 
-		if System::block_number() > 1 {
+	for b in (System::block_number() + 1)..=n {
+		System::set_block_number(b);
+		System::on_initialize(System::block_number());
+		Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
+		if b != n {
 			System::on_finalize(System::block_number());
 		}
-		System::set_block_number(b + 1);
-		System::on_initialize(System::block_number());
 	}
 }
 

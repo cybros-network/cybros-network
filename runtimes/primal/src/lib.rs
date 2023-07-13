@@ -181,12 +181,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 
 // Create the runtime by composing the FRAME pallet_configs that were previously configured.
 construct_runtime!(
-	pub struct Runtime
-	where
-		Block = Block,
-		NodeBlock = opaque::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
+	pub struct Runtime {
 		// System support
 		System: frame_system = 0,
 		Timestamp: pallet_timestamp = 1,

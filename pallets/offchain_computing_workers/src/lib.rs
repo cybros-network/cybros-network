@@ -66,6 +66,7 @@ use frame_support::{
 	},
 	transactional,
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 
 pub(crate) type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
 pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -100,7 +101,7 @@ mod pallet {
 		type UnixTime: UnixTime;
 
 		/// Something that provides randomness in the runtime.
-		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
+		type Randomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
 
 		/// Identifier for the protocol implementation.
 		type ImplId: Member + Parameter + MaxEncodedLen + Copy + Display + AtLeast32BitUnsigned + Incrementable;
@@ -189,11 +190,11 @@ mod pallet {
 
 	/// Storage for flip set, this is for online checking
 	#[pallet::storage]
-	pub(crate) type FlipSet<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::AccountId, T::BlockNumber>;
+	pub(crate) type FlipSet<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>>;
 
 	/// Storage for flop set, this is for online checking
 	#[pallet::storage]
-	pub(crate) type FlopSet<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::AccountId, T::BlockNumber>;
+	pub(crate) type FlopSet<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>>;
 
 	/// Storage for stage of flip-flop, this is used for online checking
 	#[pallet::storage]
@@ -201,7 +202,7 @@ mod pallet {
 
 	/// Storage for stage of flip-flop, this is used for online checking
 	#[pallet::storage]
-	pub(crate) type CurrentFlipFlopStartedAt<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
+	pub(crate) type CurrentFlipFlopStartedAt<T: Config> = StorageValue<_, BlockNumberFor<T>, ValueQuery>;
 
 	/// Stores the `ImplId` that is going to be used for the next implementation.
 	/// This gets incremented whenever a new impl is created.
@@ -244,7 +245,7 @@ mod pallet {
 			impl_build_version: ImplBuildVersion,
 			attestation_method: AttestationMethod,
 			attestation_expires_at: Option<u64>,
-			next_heartbeat: T::BlockNumber,
+			next_heartbeat: BlockNumberFor<T>,
 		},
 		WorkerUnresponsive { worker: T::AccountId },
 		/// The worker is requesting offline
@@ -252,7 +253,7 @@ mod pallet {
 		/// The worker is offline
 		WorkerOffline { worker: T::AccountId, reason: OfflineReason },
 		/// The worker send heartbeat successfully
-		WorkerHeartbeatReceived { worker: T::AccountId, next: T::BlockNumber, uptime: u64 },
+		WorkerHeartbeatReceived { worker: T::AccountId, next: BlockNumberFor<T>, uptime: u64 },
 		/// The worker refresh its attestation successfully
 		WorkerAttestationRefreshed { worker: T::AccountId, expires_at: Option<u64> },
 		ImplRegistered {
@@ -335,7 +336,7 @@ mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_initialize(n: T::BlockNumber) -> Weight {
+		fn on_initialize(n: BlockNumberFor<T>) -> Weight {
 			let mut reads: u64 = 2; // Read FlipOrFlop and CurrentFlipFlopStartedAt
 			let mut writes: u64 = 0;
 
@@ -678,7 +679,7 @@ impl<T: Config> Pallet<T> {
 		FlipSet::<T>::remove(worker);
 		FlopSet::<T>::remove(worker);
 		Workers::<T>::mutate(worker, |worker_info| {
-			if let Some(mut info) = worker_info.as_mut() {
+			if let Some(info) = worker_info.as_mut() {
 				info.status = WorkerStatus::Unresponsive;
 			}
 		});
@@ -692,10 +693,10 @@ impl<T: Config> Pallet<T> {
 		FlipSet::<T>::remove(worker);
 		FlopSet::<T>::remove(worker);
 		Workers::<T>::mutate(worker, |worker_info| {
-			if let Some(mut info) = worker_info.as_mut() {
+			if let Some(info) = worker_info.as_mut() {
 				if let Some(impl_build_version) = info.impl_build_version.clone() {
 					ImplBuilds::<T>::mutate(&info.impl_id, &impl_build_version, |impl_build_info| {
-						if let Some(mut info) = impl_build_info.as_mut() {
+						if let Some(info) = impl_build_info.as_mut() {
 							info.workers_count -= 1;
 						}
 					});
@@ -716,7 +717,7 @@ impl<T: Config> Pallet<T> {
 		Self::deposit_event(Event::<T>::WorkerOffline { worker: worker.clone(), reason });
 	}
 
-	pub(crate) fn flip_flop_for_online(worker: &T::AccountId) -> T::BlockNumber {
+	pub(crate) fn flip_flop_for_online(worker: &T::AccountId) -> BlockNumberFor<T> {
 		let next_heartbeat = Self::generate_next_heartbeat_block();
 		let stage = FlipOrFlop::<T>::get();
 		match stage {
@@ -825,7 +826,7 @@ impl<T: Config> Pallet<T> {
 		random_number
 	}
 
-	pub(crate) fn generate_next_heartbeat_block() -> T::BlockNumber {
+	pub(crate) fn generate_next_heartbeat_block() -> BlockNumberFor<T> {
 		let current_flip_flop_started_at = CurrentFlipFlopStartedAt::<T>::get();
 		let duration = T::CollectingHeartbeatsDurationInBlocks::get();
 		let random_delay = Self::generate_random_number(0) % (duration * 4 / 5); // Give ~20% room

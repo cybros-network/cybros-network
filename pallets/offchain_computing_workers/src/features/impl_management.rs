@@ -197,7 +197,7 @@ impl<T: Config> Pallet<T> {
 		status: ImplBuildStatus
 	) -> DispatchResult {
 		ImplBuilds::<T>::try_mutate(&impl_id, &impl_build_version, |impl_build_info| -> Result<(), DispatchError> {
-			let Some(mut info) = impl_build_info.as_mut() else {
+			let Some(info) = impl_build_info.as_mut() else {
 				return Err(Error::<T>::ImplBuildNotFound.into())
 			};
 

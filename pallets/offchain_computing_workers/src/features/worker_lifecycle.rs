@@ -200,7 +200,7 @@ impl<T: Config> Pallet<T> {
 
 			// the worker should keep sending heartbeat until get permission to offline
 			Workers::<T>::mutate(&worker, |worker_info| {
-				if let Some(mut info) = worker_info.as_mut() {
+				if let Some(info) = worker_info.as_mut() {
 					info.status = WorkerStatus::RequestingOffline;
 				}
 			});

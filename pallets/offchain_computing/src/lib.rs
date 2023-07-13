@@ -46,6 +46,7 @@ use frame_support::{
 	traits::{Currency, ReservableCurrency, UnixTime, Incrementable},
 	transactional,
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::{
 	traits::{
 		AtLeast32BitUnsigned, StaticLookup,
@@ -205,8 +206,8 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
 			applicable_scope: ApplicableScope,
-			start_block: Option<T::BlockNumber>,
-			end_block: Option<T::BlockNumber>
+			start_block: Option<BlockNumberFor<T>>,
+			end_block: Option<BlockNumberFor<T>>
 		},
 		JobPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
 		JobPolicyEnablementUpdated { pool_id: T::PoolId, policy_id: T::PolicyId, enabled: bool },
@@ -304,7 +305,7 @@ pub mod pallet {
 		T::PoolId,
 		Blake2_128Concat,
 		T::PolicyId,
-		JobPolicy<T::PolicyId, T::BlockNumber>,
+		JobPolicy<T::PolicyId, BlockNumberFor<T>>,
 		OptionQuery,
 	>;
 
@@ -573,8 +574,8 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			applicable_scope: ApplicableScope,
-			start_block: Option<T::BlockNumber>,
-			end_block: Option<T::BlockNumber>
+			start_block: Option<BlockNumberFor<T>>,
+			end_block: Option<BlockNumberFor<T>>
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -1055,7 +1056,7 @@ pub mod pallet {
 			for pool_id in WorkerSubscribedPools::<T>::iter_key_prefix(worker) {
 				for job_id in WorkerAssignedJobs::<T>::iter_key_prefix((worker.clone(), pool_id.clone())) {
 					let _: Result<(), DispatchError> = Jobs::<T>::try_mutate_exists(&pool_id, &job_id, |job| -> Result<(), DispatchError> {
-						if let Some(mut job) = job.as_mut() {
+						if let Some(job) = job.as_mut() {
 							job.status = JobStatus::Discarded;
 							job.ended_at = Some(T::UnixTime::now().as_secs().saturated_into::<u64>());
 
