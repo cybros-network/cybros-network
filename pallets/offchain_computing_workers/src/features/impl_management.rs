@@ -18,6 +18,7 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
+use sp_std::cmp::Ordering;
 
 impl<T: Config> Pallet<T> {
 	pub fn do_register_impl(
@@ -86,11 +87,14 @@ impl<T: Config> Pallet<T> {
 				.saturating_add(T::ImplMetadataDepositBase::get());
 
 			let old_deposit = metadata_entry.take().map_or(Zero::zero(), |m| m.actual_deposit);
-			if deposit > old_deposit {
-				T::Currency::reserve(&impl_info.owner, deposit - old_deposit)?;
-			} else if deposit < old_deposit {
-				T::Currency::unreserve(&impl_info.owner, old_deposit - deposit);
-			}
+			match deposit.cmp(&old_deposit) {
+				Ordering::Greater => {
+					T::Currency::reserve(&impl_info.owner, deposit - old_deposit)?;
+				},
+				Ordering::Less => {
+					T::Currency::unreserve(&impl_info.owner, old_deposit - deposit);
+				}
+			};
 
 			*metadata_entry = Some(ChainStoredData {
 				depositor: impl_info.owner.clone(),

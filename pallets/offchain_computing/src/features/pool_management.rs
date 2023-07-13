@@ -22,6 +22,7 @@ use sp_runtime::{
 	traits::Zero,
 	Saturating
 };
+use sp_std::cmp::Ordering;
 use pallet_offchain_computing_workers::ApplicableScope;
 
 impl<T: Config> Pallet<T> {
@@ -105,11 +106,14 @@ impl<T: Config> Pallet<T> {
 				.saturating_add(T::MetadataDepositBase::get());
 
 			let old_deposit = metadata_entry.take().map_or(Zero::zero(), |m| m.actual_deposit);
-			if deposit > old_deposit {
-				T::Currency::reserve(&pool_info.owner, deposit - old_deposit)?;
-			} else if deposit < old_deposit {
-				T::Currency::unreserve(&pool_info.owner, old_deposit - deposit);
-			}
+			match deposit.cmp(&old_deposit) {
+				Ordering::Greater => {
+					T::Currency::reserve(&pool_info.owner, deposit - old_deposit)?;
+				},
+				Ordering::Less => {
+					T::Currency::unreserve(&pool_info.owner, old_deposit - deposit);
+				}
+			};
 
 			*metadata_entry = Some(ChainStoredData {
 				depositor: pool_info.owner.clone(),

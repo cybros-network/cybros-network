@@ -123,6 +123,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	#[allow(clippy::too_many_arguments)]
 	pub(crate) fn do_submit_job_result(
 		pool_id: T::PoolId,
 		job_id: T::JobId,

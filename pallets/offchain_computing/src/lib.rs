@@ -759,7 +759,7 @@ pub mod pallet {
 			match policy.applicable_scope {
 				ApplicableScope::Owner => {
 					ensure!(
-						&pool_info.owner == &who,
+						pool_info.owner == who,
 						Error::<T>::JobPolicyNotApplicable
 					)
 				},
@@ -826,7 +826,7 @@ pub mod pallet {
 			match policy.applicable_scope {
 				ApplicableScope::Owner => {
 					ensure!(
-						&pool_info.owner == &beneficiary,
+						pool_info.owner == beneficiary,
 						Error::<T>::JobPolicyNotApplicable
 					)
 				},
