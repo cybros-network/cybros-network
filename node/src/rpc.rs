@@ -33,7 +33,7 @@ use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
 use runtime_primitives::{
 	opaque::Block,
-	types::{AccountId, Balance, Index},
+	types::{AccountId, Balance, Nonce},
 };
 
 pub use sc_rpc_api::DenyUnsafe;
@@ -55,7 +55,7 @@ where
 	C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
 	C: Send + Sync + 'static,
 	C: sc_client_api::BlockBackend<Block>,
-	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
+	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + 'static,
