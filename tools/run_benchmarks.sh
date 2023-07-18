@@ -20,4 +20,4 @@ echo "*** Run benchmark for pallet-computing_workers ***"
   --heap-pages=4096 \
   --output=./pallets/offchain_computing_workers/src/weights.rs \
   --template=./pallet-weight-template.hbs \
-  --header ./GPL3-HEADER
+  --header ./AGPL3-HEADER

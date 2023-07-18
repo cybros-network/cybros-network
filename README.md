@@ -200,9 +200,9 @@ See [How-to](./docs/how-to.md) for details.
 
 ## License
 
-Pallets (`/pallets`), runtimes (`/runtimes`), and the node (`/node`) are licensed under [GPL v3.0 License](./GPL3-LICENSE).
+Pallets (`/pallets`), runtimes (`/runtimes`), and the node (`/node`) are licensed under [AGPL v3.0 License](./AGPL3-LICENSE).
 
-All primitives (`*-primitives`) are licensed under [GPL v3.0](./GPL3-LICENSE) with a classpath linking exception.
+All primitives (`*-primitives`) are licensed under [GPL v3.0 with a classpath linking exception](./GPL3-LICENSE).
 
 The protocol implementation (`/protocol_impl`) and all other utilities are licensed under [MIT License](./MIT-LICENSE).
 
