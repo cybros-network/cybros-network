@@ -122,7 +122,7 @@ pub struct OnlinePayload<ImplId> {
 pub enum WorkerStatus {
 	/// Initial status for a new registered worker.
 	#[default]
- Registered,
+	Registered,
 	/// The worker is online so it can accept job
 	/// Transit from `Registered` and `Offline`, and `Unresponsive`
 	/// not sure for `RequestingOffline` (may have side effect)
@@ -193,7 +193,7 @@ pub struct WorkerInfo<AccountId, Balance, ImplId> {
 #[derive(Default)]
 pub enum FlipFlopStage {
 	#[default]
- Flip,
+	Flip,
 	Flop,
 	FlipToFlop,
 	FlopToFlip,

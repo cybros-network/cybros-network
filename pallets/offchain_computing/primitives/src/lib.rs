@@ -29,6 +29,8 @@ use frame_support::{
 
 use base_primitives::ImplSpecVersion;
 
+pub type UniqueTrackId = u32;
+
 /// Generic data that stored on-chain
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(DataLimit))]
@@ -136,6 +138,7 @@ pub enum JobResult {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct JobInfo<JobId, PolicyId, AccountId, Balance> {
 	pub id: JobId,
+	pub unique_track_id: Option<UniqueTrackId>,
 	pub policy_id: PolicyId,
 	pub depositor: AccountId,
 	pub deposit: Balance,

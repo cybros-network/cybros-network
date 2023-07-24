@@ -30,6 +30,7 @@ impl<T: Config> Pallet<T> {
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
 		policy_info: JobPolicy<T::PolicyId, BlockNumberFor<T>>,
 		job_id: T::JobId,
+		unique_track_id: Option<UniqueTrackId>,
 		beneficiary: T::AccountId,
 		depositor: T::AccountId,
 		impl_spec_version: ImplSpecVersion,
@@ -59,6 +60,7 @@ impl<T: Config> Pallet<T> {
 		let expires_at = now + expires_in;
 		let job = JobInfo::<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>> {
 			id: job_id.clone(),
+			unique_track_id,
 			policy_id: policy_info.id.clone(),
 			depositor: depositor.clone(),
 			deposit: job_deposit,
@@ -74,6 +76,9 @@ impl<T: Config> Pallet<T> {
 			ended_at: None,
 		};
 		Jobs::<T>::insert(&pool_info.id, &job_id, job);
+		if let Some(unique_track_id) = unique_track_id {
+			IndexedJobs::<T>::insert(&pool_info.id, unique_track_id, job_id.clone())
+		}
 
 		if let Some(input_data) = input_data.clone() {
 			let input = ChainStoredData::<T::AccountId, BalanceOf<T>, T::InputLimit> {
@@ -99,6 +104,7 @@ impl<T: Config> Pallet<T> {
 		Self::deposit_event(Event::JobCreated {
 			pool_id: pool_info.id,
 			job_id,
+			unique_track_id,
 			policy_id: policy_info.id,
 			depositor,
 			beneficiary,
@@ -150,6 +156,7 @@ impl<T: Config> Pallet<T> {
 		force: bool
 	) -> DispatchResult {
 		let job_id = job.id;
+		let unique_track_id = job.unique_track_id;
 
 		T::Currency::unreserve(&job.depositor, job.deposit);
 		if let Some(input_entry) = JobInputs::<T>::take(&pool_id, &job_id) {
@@ -165,6 +172,10 @@ impl<T: Config> Pallet<T> {
 			T::Currency::unreserve(&proof_entry.depositor, deposit);
 		}
 
+		if let Some(unique_track_id) = unique_track_id {
+			IndexedJobs::<T>::remove(&pool_id, unique_track_id);
+		}
+		Jobs::<T>::remove(&pool_id, &job_id);
 		Jobs::<T>::remove(&pool_id, &job_id);
 
 		Pools::<T>::try_mutate_exists(&pool_id, |pool_info| -> Result<(), DispatchError> {
@@ -199,7 +210,7 @@ impl<T: Config> Pallet<T> {
 		}
 		AccountBeneficialJobs::<T>::remove((job.beneficiary.clone(), pool_id.clone(), job_id.clone()));
 
-		Self::deposit_event(Event::JobDestroyed { pool_id, job_id, destroyer, force });
+		Self::deposit_event(Event::JobDestroyed { pool_id, job_id, unique_track_id, destroyer, force });
 		Ok(())
 	}
 }

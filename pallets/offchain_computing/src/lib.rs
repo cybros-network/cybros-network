@@ -211,13 +211,14 @@ pub mod pallet {
 		},
 		JobPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
 		JobPolicyEnablementUpdated { pool_id: T::PoolId, policy_id: T::PolicyId, enabled: bool },
-		WorkerPermitted { pool_id: T::PoolId, worker: T::AccountId },
+		WorkerProvisioned { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerRevoked { pool_id: T::PoolId, worker: T::AccountId },
 		WorkerSubscribed { worker: T::AccountId, pool_id: T::PoolId },
 		WorkerUnsubscribed { worker: T::AccountId, pool_id: T::PoolId },
 		JobCreated {
 			pool_id: T::PoolId,
 			job_id: T::JobId,
+			unique_track_id: Option<UniqueTrackId>,
 			policy_id: T::PolicyId,
 			depositor: T::AccountId,
 			beneficiary: T::AccountId,
@@ -225,7 +226,13 @@ pub mod pallet {
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			expires_in: u64
 		},
-		JobDestroyed { pool_id: T::PoolId, job_id: T::JobId, destroyer: T::AccountId, force: bool },
+		JobDestroyed {
+			pool_id: T::PoolId,
+			job_id: T::JobId,
+			unique_track_id: Option<UniqueTrackId>,
+			destroyer: T::AccountId,
+			force: bool
+		},
 		JobAssigned { pool_id: T::PoolId, job_id: T::JobId, assignee: T::AccountId },
 		JobReleased { pool_id: T::PoolId, job_id: T::JobId },
 		JobStatusUpdated { pool_id: T::PoolId, job_id: T::JobId, status: JobStatus },
@@ -268,6 +275,7 @@ pub mod pallet {
 		JobNotFound,
 		WorkerAssignedJobsLimitExceeded,
 		NoAssignableJob,
+		UniqueTrackIdNotUnique,
 		JobIsProcessing,
 		JobIsProcessed,
 		JobAssigneeLocked,
@@ -311,7 +319,7 @@ pub mod pallet {
 
 	/// Workers of pools
 	#[pallet::storage]
-	pub type PoolPermittedWorkers<T: Config> = StorageDoubleMap<
+	pub type PoolProvisionedWorkers<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::AccountId,
@@ -341,6 +349,17 @@ pub mod pallet {
 		Blake2_128Concat,
 		T::JobId,
 		JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
+		OptionQuery,
+	>;
+
+	#[pallet::storage]
+	pub type IndexedJobs<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::PoolId,
+		Blake2_128Concat,
+		UniqueTrackId,
+		T::JobId,
 		OptionQuery,
 	>;
 
@@ -645,7 +664,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(7)]
 		#[pallet::weight({0})]
-		pub fn permit_worker(
+		pub fn provision_worker(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			worker: AccountIdLookupOf<T>,
@@ -657,7 +676,7 @@ pub mod pallet {
 
 			let worker = T::Lookup::lookup(worker.clone())?;
 
-			Self::do_permit_worker(
+			Self::do_provision_worker(
 				pool_info,
 				worker
 			)
@@ -727,6 +746,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
+			unique_track_id: Option<UniqueTrackId>,
 			impl_spec_version: ImplSpecVersion,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			soft_expires_in: Option<u64>,
@@ -743,6 +763,13 @@ pub mod pallet {
 				pool_info.jobs_count <= T::MaxJobsPerPool::get(),
 				Error::<T>::TasksPerPoolLimitExceeded
 			);
+
+			if let Some(unique_track_id) = unique_track_id {
+				ensure!(
+					!IndexedJobs::<T>::contains_key(&pool_id, unique_track_id),
+					Error::<T>::UniqueTrackIdNotUnique
+				);
+			}
 
 			let policy = JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
 			ensure!(
@@ -772,6 +799,7 @@ pub mod pallet {
 				pool_info,
 				policy,
 				job_id.clone(),
+				unique_track_id,
 				who.clone(),
 				who,
 				impl_spec_version,
@@ -794,6 +822,7 @@ pub mod pallet {
 			beneficiary: T::AccountId,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
+			unique_track_id: Option<UniqueTrackId>,
 			impl_spec_version: ImplSpecVersion,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			soft_expires_in: Option<u64>,
@@ -810,6 +839,13 @@ pub mod pallet {
 				pool_info.jobs_count <= T::MaxJobsPerPool::get(),
 				Error::<T>::TasksPerPoolLimitExceeded
 			);
+
+			if let Some(unique_track_id) = unique_track_id {
+				ensure!(
+					!IndexedJobs::<T>::contains_key(&pool_id, unique_track_id),
+					Error::<T>::UniqueTrackIdNotUnique
+				);
+			}
 
 			let policy = JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
 			ensure!(
@@ -839,6 +875,7 @@ pub mod pallet {
 				pool_info,
 				policy,
 				job_id.clone(),
+				unique_track_id,
 				beneficiary,
 				who,
 				impl_spec_version,
@@ -997,7 +1034,7 @@ pub mod pallet {
 			worker: &T::AccountId,
 		) -> DispatchResult {
 			ensure!(
-				PoolPermittedWorkers::<T>::contains_key(worker, pool_id),
+				PoolProvisionedWorkers::<T>::contains_key(worker, pool_id),
 				Error::<T>::WorkerNotInThePool
 			);
 
@@ -1090,7 +1127,7 @@ pub mod pallet {
 			}
 
 			let _ = WorkerSubscribedPools::<T>::clear_prefix(worker, T::MaxSubscribedPoolsPerWorker::get(), None);
-			let _ = PoolPermittedWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
+			let _ = PoolProvisionedWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
 			CounterForWorkerSubscribedPools::<T>::remove(worker);
 			CounterForWorkerAddedPools::<T>::remove(worker);
 		}
