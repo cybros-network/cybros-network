@@ -524,7 +524,7 @@ pub mod pallet {
 			)?;
 
 			let next_id = pool_id.increment();
-			NextPoolId::<T>::set(Some(next_id));
+			NextPoolId::<T>::set(next_id);
 
 			Ok(())
 		}
@@ -616,7 +616,7 @@ pub mod pallet {
 			)?;
 
 			let next_id = policy_id.increment();
-			NextJobPolicyId::<T>::set(&pool_id, Some(next_id));
+			NextJobPolicyId::<T>::set(&pool_id, next_id);
 
 			Ok(())
 		}
@@ -809,7 +809,7 @@ pub mod pallet {
 			)?;
 
 			let next_id = job_id.increment();
-			NextJobId::<T>::set(&pool_id, Some(next_id));
+			NextJobId::<T>::set(&pool_id, next_id);
 
 			Ok(())
 		}
@@ -885,7 +885,7 @@ pub mod pallet {
 			)?;
 
 			let next_id = job_id.increment();
-			NextJobId::<T>::set(&pool_id, Some(next_id));
+			NextJobId::<T>::set(&pool_id, next_id);
 
 			Ok(())
 		}

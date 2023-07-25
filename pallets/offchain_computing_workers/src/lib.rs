@@ -564,7 +564,7 @@ mod pallet {
 			)?;
 
 			let next_impl_id = impl_id.increment();
-			NextImplId::<T>::set(Some(next_impl_id));
+			NextImplId::<T>::set(next_impl_id);
 
 			Ok(())
 		}
