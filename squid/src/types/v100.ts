@@ -46,7 +46,7 @@ export interface JobStatus_Discarded {
     __kind: 'Discarded'
 }
 
-export type ImplBuildStatus = ImplBuildStatus_Released | ImplBuildStatus_Deprecated | ImplBuildStatus_Blocked
+export type ImplBuildStatus = ImplBuildStatus_Released | ImplBuildStatus_Deprecated | ImplBuildStatus_Retired
 
 export interface ImplBuildStatus_Released {
     __kind: 'Released'
@@ -56,8 +56,8 @@ export interface ImplBuildStatus_Deprecated {
     __kind: 'Deprecated'
 }
 
-export interface ImplBuildStatus_Blocked {
-    __kind: 'Blocked'
+export interface ImplBuildStatus_Retired {
+    __kind: 'Retired'
 }
 
 export type AttestationMethod = AttestationMethod_OptOut
@@ -66,7 +66,7 @@ export interface AttestationMethod_OptOut {
     __kind: 'OptOut'
 }
 
-export type OfflineReason = OfflineReason_Graceful | OfflineReason_Forced | OfflineReason_Unresponsive | OfflineReason_AttestationExpired | OfflineReason_ImplBuildBlocked | OfflineReason_InsufficientDepositFunds | OfflineReason_Other
+export type OfflineReason = OfflineReason_Graceful | OfflineReason_Forced | OfflineReason_Unresponsive | OfflineReason_AttestationExpired | OfflineReason_ImplBuildRetired | OfflineReason_InsufficientDepositFunds | OfflineReason_Other
 
 export interface OfflineReason_Graceful {
     __kind: 'Graceful'
@@ -84,8 +84,8 @@ export interface OfflineReason_AttestationExpired {
     __kind: 'AttestationExpired'
 }
 
-export interface OfflineReason_ImplBuildBlocked {
-    __kind: 'ImplBuildBlocked'
+export interface OfflineReason_ImplBuildRetired {
+    __kind: 'ImplBuildRetired'
 }
 
 export interface OfflineReason_InsufficientDepositFunds {

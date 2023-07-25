@@ -5,6 +5,7 @@
     "OffchainComputingWorkers.WorkerRegistered",
     "OffchainComputingWorkers.WorkerDeregistered",
     "OffchainComputingWorkers.WorkerOnline",
+    "OffchainComputingWorkers.WorkerUnresponsive",
     "OffchainComputingWorkers.WorkerRequestingOffline",
     "OffchainComputingWorkers.WorkerOffline",
     "OffchainComputingWorkers.WorkerHeartbeatReceived",
@@ -21,11 +22,11 @@
     "OffchainComputing.PoolDestroyed",
     "OffchainComputing.PoolMetadataUpdated",
     "OffchainComputing.PoolMetadataRemoved",
-    "OffchainComputing.PoolCreateJobAvailabilityUpdated",
+    "OffchainComputing.PoolSettingsUpdated",
     "OffchainComputing.JobPolicyCreated",
     "OffchainComputing.JobPolicyDestroyed",
-    "OffchainComputing.JobPolicyAvailabilityUpdated",
-    "OffchainComputing.WorkerAuthorized",
+    "OffchainComputing.JobPolicyEnablementUpdated",
+    "OffchainComputing.WorkerProvisioned",
     "OffchainComputing.WorkerRevoked",
     "OffchainComputing.WorkerSubscribed",
     "OffchainComputing.WorkerUnsubscribed",
@@ -36,7 +37,7 @@
     "OffchainComputing.JobStatusUpdated",
     "OffchainComputing.JobResultUpdated"
   ],
-  "calls": [ 
+  "calls": [
   ],
   "storage": [
   ]

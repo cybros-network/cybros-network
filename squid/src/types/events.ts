@@ -39,10 +39,10 @@ export class OffchainComputingJobCreatedEvent {
     }
 
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.JobCreated') === 'e94a5c8c02617218a29175a6620559324059f6b913c21c02e8033e15625c61bd'
+        return this._chain.getEventHash('OffchainComputing.JobCreated') === '2ca1a72fb554128c8618ed4dea31ea14b5f07bbc5b7ca888ed8a5bf0244f67cd'
     }
 
-    get asV100(): {poolId: number, jobId: number, policyId: number, owner: Uint8Array, implSpecVersion: number, input: (Uint8Array | undefined), expiresIn: bigint} {
+    get asV100(): {poolId: number, jobId: number, uniqueTrackId: (number | undefined), policyId: number, depositor: Uint8Array, beneficiary: Uint8Array, implSpecVersion: number, input: (Uint8Array | undefined), expiresIn: bigint} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
@@ -62,33 +62,10 @@ export class OffchainComputingJobDestroyedEvent {
     }
 
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.JobDestroyed') === 'f0703febafc1df3e5a5e622278d7a3dc4e1c7c42fe96acbd8dd37f6ddd13bbfd'
+        return this._chain.getEventHash('OffchainComputing.JobDestroyed') === '97c1f6f2901e643a2159e7f69a3c2fdda583ca933f60779b0e603156dd5296df'
     }
 
-    get asV100(): {poolId: number, jobId: number, destroyer: Uint8Array} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
-export class OffchainComputingJobPolicyAvailabilityUpdatedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.JobPolicyAvailabilityUpdated')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.JobPolicyAvailabilityUpdated') === '898c4597e9122ea992f8c2888507b78530394fb594c42efbf45bc2728f464363'
-    }
-
-    get asV100(): {poolId: number, policyId: number, availability: boolean} {
+    get asV100(): {poolId: number, jobId: number, uniqueTrackId: (number | undefined), destroyer: Uint8Array, force: boolean} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
@@ -135,6 +112,29 @@ export class OffchainComputingJobPolicyDestroyedEvent {
     }
 
     get asV100(): {poolId: number, policyId: number} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingJobPolicyEnablementUpdatedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.JobPolicyEnablementUpdated')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.JobPolicyEnablementUpdated') === '14b8d3cdf7df15a6e7d0ac211564ea5a4c966b86fcdd995eac3a987c41ca6146'
+    }
+
+    get asV100(): {poolId: number, policyId: number, enabled: boolean} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
@@ -209,29 +209,6 @@ export class OffchainComputingJobStatusUpdatedEvent {
     }
 }
 
-export class OffchainComputingPoolCreateJobAvailabilityUpdatedEvent {
-    private readonly _chain: Chain
-    private readonly event: Event
-
-    constructor(ctx: EventContext)
-    constructor(ctx: ChainContext, event: Event)
-    constructor(ctx: EventContext, event?: Event) {
-        event = event || ctx.event
-        assert(event.name === 'OffchainComputing.PoolCreateJobAvailabilityUpdated')
-        this._chain = ctx._chain
-        this.event = event
-    }
-
-    get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.PoolCreateJobAvailabilityUpdated') === 'e873f768ffe88b6663087f7f3610b1ad0d07087456214e4325e5498fab453ea5'
-    }
-
-    get asV100(): {poolId: number, availability: boolean} {
-        assert(this.isV100)
-        return this._chain.decodeEvent(this.event)
-    }
-}
-
 export class OffchainComputingPoolCreatedEvent {
     private readonly _chain: Chain
     private readonly event: Event
@@ -246,10 +223,10 @@ export class OffchainComputingPoolCreatedEvent {
     }
 
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.PoolCreated') === 'a9ac9e4043ff752859bf4ca3b9ad673f6296e4a2ae65a6e9c16866bb25bb6aaa'
+        return this._chain.getEventHash('OffchainComputing.PoolCreated') === '9ee7b2b124899a27c7c1adb59ceedd04ea0cb81f092b946f4bc808ebc17333be'
     }
 
-    get asV100(): {owner: Uint8Array, poolId: number, implId: number} {
+    get asV100(): {owner: Uint8Array, poolId: number, implId: number, createJobEnabled: boolean, autoDestroyProcessedJobEnabled: boolean} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
     }
@@ -324,7 +301,7 @@ export class OffchainComputingPoolMetadataUpdatedEvent {
     }
 }
 
-export class OffchainComputingWorkerAuthorizedEvent {
+export class OffchainComputingPoolSettingsUpdatedEvent {
     private readonly _chain: Chain
     private readonly event: Event
 
@@ -332,13 +309,36 @@ export class OffchainComputingWorkerAuthorizedEvent {
     constructor(ctx: ChainContext, event: Event)
     constructor(ctx: EventContext, event?: Event) {
         event = event || ctx.event
-        assert(event.name === 'OffchainComputing.WorkerAuthorized')
+        assert(event.name === 'OffchainComputing.PoolSettingsUpdated')
         this._chain = ctx._chain
         this.event = event
     }
 
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputing.WorkerAuthorized') === '797c331fcd879fe634a85213860a97ecd0575adecd2689f258b95e6c04d3cdf3'
+        return this._chain.getEventHash('OffchainComputing.PoolSettingsUpdated') === '41628b04b807369b6a8a2beaedb67a8dcdb05c46a6285c696f61045ca76c7343'
+    }
+
+    get asV100(): {poolId: number, minImplSpecVersion: number, maxImplSpecVersion: number, createJobEnabled: boolean, autoDestroyProcessedJobEnabled: boolean} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingWorkerProvisionedEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputing.WorkerProvisioned')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputing.WorkerProvisioned') === '797c331fcd879fe634a85213860a97ecd0575adecd2689f258b95e6c04d3cdf3'
     }
 
     get asV100(): {poolId: number, worker: Uint8Array} {
@@ -488,7 +488,7 @@ export class OffchainComputingWorkersImplBuildStatusUpdatedEvent {
     }
 
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildStatusUpdated') === '356bb2aa1d8495aceb0ba1ac8ccd487546011b5b3333b479399cc71d3a98f7d8'
+        return this._chain.getEventHash('OffchainComputingWorkers.ImplBuildStatusUpdated') === '991c4e673e2b47723a8d672e05c9f8cf23cbfa1b63ac37797d0ff43de6877337'
     }
 
     get asV100(): {implId: number, implBuildVersion: number, status: v100.ImplBuildStatus} {
@@ -716,7 +716,7 @@ export class OffchainComputingWorkersWorkerOfflineEvent {
      * The worker is offline
      */
     get isV100(): boolean {
-        return this._chain.getEventHash('OffchainComputingWorkers.WorkerOffline') === 'be68ea183df47ac51c4c737f9a34a5747f849f9f967d1bc49e63e7bb170ab8d8'
+        return this._chain.getEventHash('OffchainComputingWorkers.WorkerOffline') === '706d1637d5f1fb899e7a3e835222f70500beae35e8007feefe5671bde57b1b0e'
     }
 
     /**
@@ -809,6 +809,29 @@ export class OffchainComputingWorkersWorkerRequestingOfflineEvent {
     /**
      * The worker is requesting offline
      */
+    get asV100(): {worker: Uint8Array} {
+        assert(this.isV100)
+        return this._chain.decodeEvent(this.event)
+    }
+}
+
+export class OffchainComputingWorkersWorkerUnresponsiveEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'OffchainComputingWorkers.WorkerUnresponsive')
+        this._chain = ctx._chain
+        this.event = event
+    }
+
+    get isV100(): boolean {
+        return this._chain.getEventHash('OffchainComputingWorkers.WorkerUnresponsive') === '92a756e29fcd5c189000de949169e0c1ab6089e641fedb90b510a59a4b108e28'
+    }
+
     get asV100(): {worker: Uint8Array} {
         assert(this.isV100)
         return this._chain.decodeEvent(this.event)
