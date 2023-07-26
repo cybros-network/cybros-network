@@ -17,8 +17,8 @@
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-// `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
-#![recursion_limit = "256"]
+// `construct_runtime!` does a lot of recursion and requires us to increase the limits.
+#![recursion_limit = "1024"]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]

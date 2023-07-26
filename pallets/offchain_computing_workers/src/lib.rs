@@ -81,6 +81,13 @@ mod pallet {
 	use sp_runtime::traits::AtLeast32BitUnsigned;
 	use sp_std::fmt::Display;
 
+	// use frame_support::traits::fungible::{
+	// 	Inspect as InspectFungible,
+	// 	Mutate as MutateFungible,
+	// 	InspectHold as InspectHoldFungible,
+	// 	MutateHold as MutateHoldFungible,
+	// };
+
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -96,6 +103,7 @@ mod pallet {
 
 		/// The system's currency for payment.
 		type Currency: ReservableCurrency<Self::AccountId>;
+		// type Currency: InspectFungible<Self::AccountId, Balance = Self::Balance> + MutateFungible<Self::AccountId>;
 
 		/// Time used for verify attestation
 		type UnixTime: UnixTime;
@@ -104,7 +112,7 @@ mod pallet {
 		type Randomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
 
 		/// Identifier for the protocol implementation.
-		type ImplId: Member + Parameter + MaxEncodedLen + Copy + Display + AtLeast32BitUnsigned + Incrementable;
+		type ImplId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + Incrementable;
 
 		/// Who can register implementation
 		type RegisterImplOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
@@ -557,7 +565,7 @@ mod pallet {
 			let impl_id = NextImplId::<T>::get().unwrap_or(101u32.into());
 
 			Self::do_register_impl(
-				impl_id,
+				impl_id.clone(),
 				owner,
 				attestation_method,
 				deployment_permission
@@ -594,7 +602,7 @@ mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let impl_info = Impls::<T>::get(impl_id).ok_or(Error::<T>::ImplNotFound)?;
+			let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
 			Self::ensure_impl_owner(&who, &impl_info)?;
 
 			if let Some(new_metadata) = new_metadata {
@@ -666,7 +674,7 @@ mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let impl_info = Impls::<T>::get(impl_id).ok_or(Error::<T>::ImplNotFound)?;
+			let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
 			Self::ensure_impl_owner(&who, &impl_info)?;
 
 			Self::do_update_impl_build_status(impl_id, version, status)
@@ -695,7 +703,7 @@ impl<T: Config> Pallet<T> {
 		Workers::<T>::mutate(worker, |worker_info| {
 			if let Some(info) = worker_info.as_mut() {
 				if let Some(impl_build_version) = info.impl_build_version {
-					ImplBuilds::<T>::mutate(info.impl_id, impl_build_version, |impl_build_info| {
+					ImplBuilds::<T>::mutate(&info.impl_id, impl_build_version, |impl_build_info| {
 						if let Some(info) = impl_build_info.as_mut() {
 							info.workers_count -= 1;
 						}

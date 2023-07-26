@@ -66,7 +66,7 @@ impl<T: Config> Pallet<T> {
 			);
 		}
 
-		let mut impl_build_info = ImplBuilds::<T>::get(worker_info.impl_id, payload.impl_build_version).ok_or(Error::<T>::ImplBuildNotFound)?;
+		let mut impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, payload.impl_build_version).ok_or(Error::<T>::ImplBuildNotFound)?;
 		ensure!(
 			impl_build_info.status == ImplBuildStatus::Released,
 			Error::<T>::ImplBuildRestricted
@@ -271,7 +271,7 @@ impl<T: Config> Pallet<T> {
 		let Some(impl_build_version) = worker_info.impl_build_version else {
 			return Err(Error::<T>::InternalError.into())
 		};
-		let impl_build_info = ImplBuilds::<T>::get(worker_info.impl_id, impl_build_version).ok_or(Error::<T>::InternalError)?;
+		let impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, impl_build_version).ok_or(Error::<T>::InternalError)?;
 		let valid_impl_build = matches!(impl_build_info.status, ImplBuildStatus::Released | ImplBuildStatus::Deprecated);
 
 		if !valid_impl_build {
