@@ -81,13 +81,6 @@ mod pallet {
 	use sp_runtime::traits::AtLeast32BitUnsigned;
 	use sp_std::fmt::Display;
 
-	// use frame_support::traits::fungible::{
-	// 	Inspect as InspectFungible,
-	// 	Mutate as MutateFungible,
-	// 	InspectHold as InspectHoldFungible,
-	// 	MutateHold as MutateHoldFungible,
-	// };
-
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -103,7 +96,6 @@ mod pallet {
 
 		/// The system's currency for payment.
 		type Currency: ReservableCurrency<Self::AccountId>;
-		// type Currency: InspectFungible<Self::AccountId, Balance = Self::Balance> + MutateFungible<Self::AccountId>;
 
 		/// Time used for verify attestation
 		type UnixTime: UnixTime;

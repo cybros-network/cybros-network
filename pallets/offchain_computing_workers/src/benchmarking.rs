@@ -44,7 +44,10 @@ const WORKER_KEY_TYPE: KeyTypeId = KeyTypeId(*b"work");
 
 fn add_mock_impl<T: Config>(owner: &T::AccountId) -> T::ImplId {
 	let reserved_deposit = T::RegisterImplDeposit::get();
-	let owner_balance = reserved_deposit.saturating_add((11 * DOLLARS).saturated_into::<BalanceOf<T>>());
+	let owner_balance =
+		reserved_deposit.saturating_add(
+			(11 * DOLLARS).saturated_into::<BalanceOf<T>>()
+		).saturating_add(T::Currency::minimum_balance());
 	let _ = T::Currency::make_free_balance_be(&owner, owner_balance);
 
 	assert_ok!(OffchainComputingWorkers::<T>::register_impl(
@@ -57,7 +60,7 @@ fn add_mock_impl<T: Config>(owner: &T::AccountId) -> T::ImplId {
 
 	assert_ok!(OffchainComputingWorkers::<T>::register_impl_build(
 		RawOrigin::Signed(owner.clone()).into(),
-		impl_info.id,
+		impl_info.id.clone(),
 		1u32,
 		None
 	));
@@ -70,7 +73,7 @@ fn mock_online_payload_and_attestation<T: Config>(
 	impl_id: T::ImplId
 ) -> (OnlinePayload<T::ImplId>, Attestation) {
 	let payload = OnlinePayload::<T::ImplId> {
-		impl_id,
+		impl_id: impl_id.clone(),
 		impl_spec_version: 1,
 		impl_build_version: 1,
 		impl_build_magic_bytes: Default::default()
@@ -103,7 +106,7 @@ fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::Accoun
 
 fn add_mock_online_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::AccountId, impl_id: Option<T::ImplId>) -> T::AccountId {
 	let impl_id = impl_id.unwrap_or_else(|| add_mock_impl::<T>(owner));
-	let worker = add_mock_worker::<T>(worker_public, owner, impl_id);
+	let worker = add_mock_worker::<T>(worker_public, owner, impl_id.clone());
 
 	let (payload, attestation) = mock_online_payload_and_attestation::<T>(worker_public, impl_id);
 	assert_ok!(
@@ -224,7 +227,7 @@ mod benchmarks {
 		let owner: T::AccountId = whitelisted_caller();
 		let impl_id = add_mock_impl::<T>(&owner);
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id);
+		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id.clone());
 		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public, impl_id);
 
 		#[extrinsic_call]
@@ -246,7 +249,7 @@ mod benchmarks {
 		let owner: T::AccountId = whitelisted_caller();
 		let impl_id = add_mock_impl::<T>(&owner);
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
-		let worker = add_mock_online_worker::<T>(&worker_public, &owner, Some(impl_id));
+		let worker = add_mock_online_worker::<T>(&worker_public, &owner, Some(impl_id.clone()));
 		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public, impl_id);
 		let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 
