@@ -11,7 +11,7 @@ Once set up, we encourage to contribute to the Squid community and make a PR to 
 
 ## Where do I get a type bundle for my chain?
 
-Most chains publish their type bundles as an npm package. One of the best places to check for the latest version is the [polkadot-js/app repo](https://github.com/polkadot-js/apps/tree/master/packages/apps-config). Note, however, that a types bundle is only needed for pre-Metadata v14 blocks, so for recently deployed chains it may be not needed. 
+Most chains publish their type bundles as an npm package. One of the best places to check for the latest version is the [polkadot-js/app repo](https://github.com/polkadot-js/apps/tree/master/packages/apps-config). Note, however, that a types bundle is only needed for pre-Metadata v14 blocks, so for recently deployed chains it may be not needed.
 
 Note that the type bundle format for typegen is slightly different from `OverrideBundleDefinition` of `polkadot.js`. The structure is as follows, all the fields are optional.
 
@@ -44,7 +44,7 @@ TL;DR: If you're ok dropping the database, simply update `schema.graphql` and ru
 bash scripts/reset-schema.sh
 ```
 
-OBS! The database will be wiped out, so if it's not an option, read below. 
+OBS! The database will be wiped out, so if it's not an option, read below.
 
 
 Here's a step-by-step instruction. First, generated the model files:
@@ -54,7 +54,7 @@ npx sqd codegen
 npm run build
 ```
 
-Now you have to options: either create a migration for an incremental schema update or recreate the whole schema from scratch. 
+Now you have to options: either create a migration for an incremental schema update or recreate the whole schema from scratch.
 
 During the development process, recreating the schema is often more convenient. However, if you already have a running API in production and don't want to resync it, having an incremental update is preferrable (but requires data backfilling).
 
@@ -96,25 +96,25 @@ First, make sure you have compiled your project with
 npm run build
 ```
 
-Then simply run 
+Then simply run
 ```
-node -r dotenv/config lib/index.js
+node -r dotenv/config lib/main.js
 ```
 
-Note that `-r dotenv/config` ensures that the database settings are picked up from `.env`. If you the environment variables them elsewhere, skip it. 
+Note that `-r dotenv/config` ensures that the database settings are picked up from `.env`. If you the environment variables them elsewhere, skip it.
 
 ## How do I deploy my API to the Subsquid Hosted service?
 
 Login to the [Subsquid Hosted Service](https://app.subsquid.io) with your github handle to obtain a deployment key. Then create a Squid (that is, your deployment) and follow the instructions.
 
-## How do I know which events and extrinsics I need for the handlers? 
+## How do I know which events and extrinsics I need for the handlers?
 
-This part depends on the runtime business-logic of the chain. The primary and the most reliable source of information is thus the Rust sources for the pallets used by the chain. 
+This part depends on the runtime business-logic of the chain. The primary and the most reliable source of information is thus the Rust sources for the pallets used by the chain.
 For a quick lookup of the documentation and the data format it is often useful to check `Runtime` section of Subscan, e.g. for [Statemine](https://statemine.subscan.io/runtime). One can see the deployed pallets and drill down to events and extrinsics from there. One can also choose the spec version on the drop down.
 
 ## How do I decode the event data? And how to deal with runtime upgrades?
 
-Runtime upgrades may change the event data and even the event logic altogether, but Squid gets you covered with a first-class support for runtime upgrades. 
+Runtime upgrades may change the event data and even the event logic altogether, but Squid gets you covered with a first-class support for runtime upgrades.
 
 Subsquid SDK comes with a tool called metadata explorer which makes it easy to keep track of all runtime upgrades happen so far.
 
@@ -149,15 +149,15 @@ function getTransferEvent(ctx: EventHandlerContext): TransferEvent {
     // instanciate type-safe facade around event data
     let event = new BalancesTransferEvent(ctx)
     // initial version, with runtime spec 1020
-    if (event.isV1020) { 
-        let [from, to, amount, fee] = event.asV1020 
+    if (event.isV1020) {
+        let [from, to, amount, fee] = event.asV1020
         return {from, to, amount}
     // first upgrade at runtime spec version 1050
-    } else if (event.isV1050) { 
+    } else if (event.isV1050) {
         let [from, to, amount] = event.asV1050
         return {from, to, amount}
     } else { // current version
-        // This cast will assert,  
+        // This cast will assert,
         // that the type of a given event matches
         // the type of generated facade.
         return event.asLatest

@@ -1,4 +1,4 @@
-export enum TaskStatus {
+export enum JobStatus {
     Pending = "Pending",
     Processing = "Processing",
     Processed = "Processed",

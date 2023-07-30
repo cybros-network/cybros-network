@@ -1,7 +1,7 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToMany as OneToMany_} from "typeorm"
 import {Worker} from "./worker.model"
 import {Pool} from "./pool.model"
-import {Task} from "./task.model"
+import {Job} from "./job.model"
 
 @Entity_()
 export class Account {
@@ -22,14 +22,14 @@ export class Account {
     poolsCount!: number
 
     @Column_("int4", {nullable: false})
-    createdTasksCount!: number
+    createdJobsCount!: number
 
-    @OneToMany_(() => Worker, e => e._owner)
+    @OneToMany_(() => Worker, e => e.refOwner)
     owningWorkers!: Worker[]
 
-    @OneToMany_(() => Pool, e => e._owner)
+    @OneToMany_(() => Pool, e => e.refOwner)
     owningPools!: Pool[]
 
-    @OneToMany_(() => Task, e => e._owner)
-    owningTasks!: Task[]
+    @OneToMany_(() => Job, e => e.refBeneficiary)
+    beneficialJobs!: Job[]
 }

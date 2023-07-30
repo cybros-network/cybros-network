@@ -3,8 +3,8 @@ import {
     Account,
     Impl, ImplBuild,
     Worker, WorkerEvent,
-    Pool, TaskPolicy, PoolWorkers,
-    Task,
+    Pool, JobPolicy, PoolWorkers,
+    Job, JobEvent,
 } from "./model"
 
 export class AccountsManager extends EntitiesManager<Account> {
@@ -15,7 +15,7 @@ export class AccountsManager extends EntitiesManager<Account> {
                 id,
                 workersCount: 0,
                 poolsCount: 0,
-                createdTasksCount: 0,
+                createdJobsCount: 0,
             })
         });
     }
@@ -29,10 +29,7 @@ export class ImplsManager extends EntitiesManager<Impl> {
                 id,
                 onlineWorkersCount: 0,
                 poolsCount: 0,
-                tasksCount: 0,
-                successfulTasksCount: 0,
-                failedTasksCount: 0,
-                erroredTasksCount: 0,
+                jobsCount: 0,
             })
         });
     }
@@ -45,10 +42,11 @@ export class ImplBuildsManager extends EntitiesManager<ImplBuild> {
             newEntityFunc: id => new ImplBuild({
                 id,
                 onlineWorkersCount: 0,
-                tasksCount: 0,
-                successfulTasksCount: 0,
-                failedTasksCount: 0,
-                erroredTasksCount: 0,
+                processingJobsCount: 0,
+                successfulJobsCount: 0,
+                failedJobsCount: 0,
+                erroredJobsCount: 0,
+                panickyJobsCount: 0,
             })
         });
     }
@@ -61,11 +59,12 @@ export class WorkersManager extends EntitiesManager<Worker> {
             newEntityFunc: id => new Worker({
                 id,
                 poolsCount: 0,
-                processingTasksCount: 0,
-                assignedTasksCount: 0,
-                successfulTasksCount: 0,
-                failedTasksCount: 0,
-                erroredTasksCount: 0,
+                pendingJobsCount: 0,
+                processingJobsCount: 0,
+                successfulJobsCount: 0,
+                failedJobsCount: 0,
+                erroredJobsCount: 0,
+                panickyJobsCount: 0,
             })
         });
     }
@@ -86,12 +85,12 @@ export class PoolsManager extends EntitiesManager<Pool> {
             entityClass: entityClass ? entityClass : Pool,
             newEntityFunc: id => new Pool({
                 id,
-                pendingTasksCount: 0,
-                processingTasksCount: 0,
-                createdTasksCount: 0,
-                successfulTasksCount: 0,
-                failedTasksCount: 0,
-                erroredTasksCount: 0,
+                pendingJobsCount: 0,
+                processingJobsCount: 0,
+                successfulJobsCount: 0,
+                failedJobsCount: 0,
+                erroredJobsCount: 0,
+                panickyJobsCount: 0,
                 workersCount: 0,
                 onlineWorkersCount: 0,
             })
@@ -99,11 +98,11 @@ export class PoolsManager extends EntitiesManager<Pool> {
     }
 }
 
-export class TaskPoliciesManager extends EntitiesManager<TaskPolicy> {
-    constructor(entityClass?: typeof TaskPolicy) {
+export class JobPoliciesManager extends EntitiesManager<JobPolicy> {
+    constructor(entityClass?: typeof JobPolicy) {
         super({
-            entityClass: entityClass ? entityClass : TaskPolicy,
-            newEntityFunc: id => new TaskPolicy({id})
+            entityClass: entityClass ? entityClass : JobPolicy,
+            newEntityFunc: id => new JobPolicy({id})
         });
     }
 }
@@ -117,11 +116,20 @@ export class PoolWorkersManager extends EntitiesManager<PoolWorkers> {
     }
 }
 
-export class TasksManager extends EntitiesManager<Task> {
-    constructor(entityClass?: typeof Task) {
+export class JobsManager extends EntitiesManager<Job> {
+    constructor(entityClass?: typeof Job) {
         super({
-            entityClass: entityClass ? entityClass : Task,
-            newEntityFunc: id => new Task({id})
+            entityClass: entityClass ? entityClass : Job,
+            newEntityFunc: id => new Job({id})
+        });
+    }
+}
+
+export class JobEventsManager extends EntitiesManager<JobEvent> {
+    constructor(entityClass?: typeof JobEvent) {
+        super({
+            entityClass: entityClass ? entityClass : JobEvent,
+            newEntityFunc: id => new JobEvent({id})
         });
     }
 }

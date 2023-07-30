@@ -1,10 +1,10 @@
-import { type Context } from "../processor"
+import type { Context } from "../processor"
 import {
     OffchainComputingPoolCreatedEvent as PoolCreatedEvent,
     OffchainComputingPoolDestroyedEvent as PoolDestroyedEvent,
     OffchainComputingPoolMetadataUpdatedEvent as PoolMetadataUpdatedEvent,
     OffchainComputingPoolMetadataRemovedEvent as PoolMetadataRemovedEvent,
-    OffchainComputingPoolCreatingTaskAvailabilityUpdatedEvent as PoolCreatingTaskAvailabilityUpdatedEvent,
+    OffchainComputingPoolSettingsUpdatedEvent as PoolSettingsUpdatedEvent,
 } from "../types/events"
 import { decodeSS58Address } from "../utils";
 import assert from "assert";
@@ -16,7 +16,10 @@ interface PoolChanges {
     owner?: string
     implId?: number
 
-    creatingTaskAvailability?: boolean
+    minImplSpecVersion?: number,
+    maxImplSpecVersion?: number,
+    createJobEnabled?: boolean
+    autoDestroyProcessedJobEnabled?: boolean
     metadata?: Uint8Array | null
 
     createdAt: Date
@@ -28,12 +31,19 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
     const changeSet = new Map<string, PoolChanges>();
 
     for (let block of ctx.blocks) {
+        assert(block.header.timestamp)
         const blockTime = new Date(block.header.timestamp);
 
-        for (let item of block.items) {
-            if (item.name == "OffchainComputing.PoolCreated") {
-                let e = new PoolCreatedEvent(ctx, item.event)
-                let rec: { owner: Uint8Array, poolId: number, implId: number }
+        for (let event of block.events) {
+            if (event.name == "OffchainComputing.PoolCreated") {
+                let e = new PoolCreatedEvent(ctx, event)
+                let rec: {
+                    owner: Uint8Array,
+                    poolId: number,
+                    implId: number,
+                    createJobEnabled: boolean,
+                    autoDestroyProcessedJobEnabled: boolean
+                }
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -50,15 +60,18 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
 
                 changes.owner = decodeSS58Address(rec.owner)
                 changes.implId = rec.poolId
-                changes.creatingTaskAvailability = true
+                changes.minImplSpecVersion = 1
+                changes.maxImplSpecVersion = 1
+                changes.createJobEnabled = rec.createJobEnabled
+                changes.autoDestroyProcessedJobEnabled = rec.autoDestroyProcessedJobEnabled
                 changes.metadata = null
 
                 changes.deletedAt = null
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.PoolDestroyed") {
-                let e = new PoolDestroyedEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputing.PoolDestroyed") {
+                let e = new PoolDestroyedEvent(ctx, event)
                 let rec: { poolId: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -78,8 +91,8 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.PoolMetadataUpdated") {
-                let e = new PoolMetadataUpdatedEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputing.PoolMetadataUpdated") {
+                let e = new PoolMetadataUpdatedEvent(ctx, event)
                 let rec: { poolId: number, metadata: Uint8Array }
                 if (e.isV100) {
                     rec = e.asV100
@@ -100,8 +113,8 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.PoolMetadataRemoved") {
-                let e = new PoolMetadataRemovedEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputing.PoolMetadataRemoved") {
+                let e = new PoolMetadataRemovedEvent(ctx, event)
                 let rec: { poolId: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -122,9 +135,15 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.PoolCreatingTaskAvailabilityUpdated") {
-                let e = new PoolCreatingTaskAvailabilityUpdatedEvent(ctx, item.event)
-                let rec: {poolId: number, availability: boolean}
+            } else if (event.name == "OffchainComputing.PoolSettingsUpdated") {
+                let e = new PoolSettingsUpdatedEvent(ctx, event)
+                let rec: {
+                    poolId: number,
+                    minImplSpecVersion: number,
+                    maxImplSpecVersion: number,
+                    createJobEnabled: boolean,
+                    autoDestroyProcessedJobEnabled: boolean
+                }
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -140,7 +159,10 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 }
                 assert(!changes.deletedAt)
 
-                changes.creatingTaskAvailability = rec.availability
+                changes.minImplSpecVersion = rec.minImplSpecVersion
+                changes.maxImplSpecVersion = rec.maxImplSpecVersion
+                changes.createJobEnabled = rec.createJobEnabled
+                changes.autoDestroyProcessedJobEnabled = rec.autoDestroyProcessedJobEnabled
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)

@@ -1,4 +1,4 @@
-import {type Context} from "../processor"
+import type { Context} from "../processor"
 import {
     OffchainComputingWorkersWorkerAttestationRefreshedEvent as WorkerAttestationRefreshedEvent,
     OffchainComputingWorkersWorkerDeregisteredEvent as WorkerDeregisteredEvent,
@@ -9,10 +9,9 @@ import {
     OffchainComputingWorkersWorkerRequestingOfflineEvent as WorkerRequestingOfflineEvent,
 } from "../types/events"
 import * as v100 from "../types/v100"
-import {AttestationMethod, OfflineReason, WorkerEventKind, WorkerStatus} from "../model"
-import {decodeSS58Address} from "../utils"
+import { AttestationMethod, OfflineReason, WorkerEventKind, WorkerStatus } from "../model"
+import { decodeSS58Address } from "../utils"
 import assert from "assert";
-import {BigDecimal} from "@subsquid/big-decimal";
 
 function decodeAttestationMethod(attestationMethod?: v100.AttestationMethod): AttestationMethod {
     if (!attestationMethod) {
@@ -43,8 +42,8 @@ function decodeOfflineReason(offlineReason?: v100.OfflineReason): OfflineReason 
             return OfflineReason.Unresponsive
         case "AttestationExpired":
             return OfflineReason.AttestationExpired
-        case "ImplBuildBlocked":
-            return OfflineReason.ImplBuildBlocked
+        case "ImplBuildRetired":
+            return OfflineReason.ImplBuildRetired
         case "InsufficientDepositFunds":
             return OfflineReason.InsufficientDepositFunds
         case "Other":
@@ -56,6 +55,7 @@ function decodeOfflineReason(offlineReason?: v100.OfflineReason): OfflineReason 
 
 interface WorkerEvent {
     readonly id: string
+    readonly sequence: number
 
     readonly kind: WorkerEventKind
     readonly payload?: any
@@ -66,6 +66,7 @@ interface WorkerEvent {
 
 interface WorkerChanges {
     readonly id: string
+    readonly address: string
 
     owner?: string
     implId?: number
@@ -96,12 +97,13 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
     const changeSet= new Map<string, WorkerChanges>();
 
     for (let block of ctx.blocks) {
+        assert(block.header.timestamp)
         const blockNumber = block.header.height
         const blockTime = new Date(block.header.timestamp);
 
-        for (let item of block.items) {
-            if (item.name == "OffchainComputingWorkers.WorkerRegistered") {
-                let e = new WorkerRegisteredEvent(ctx, item.event)
+        for (let event of block.events) {
+            if (event.name == "OffchainComputingWorkers.WorkerRegistered") {
+                let e = new WorkerRegisteredEvent(ctx, event)
                 let rec: { worker: Uint8Array, owner: Uint8Array, implId: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -109,9 +111,11 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     throw new Error("Unsupported spec")
                 }
 
-                const id = decodeSS58Address(rec.worker)
+                const address = decodeSS58Address(rec.worker)
+                const id = address
                 const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    address,
                     createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
@@ -129,7 +133,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.registerWorkerCounterChange = 1
                 changes.onlineWorkerCounterChange = 0
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.Registered,
                     payload: { implId: rec.implId },
                     blockNumber,
@@ -137,8 +142,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 })
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.WorkerDeregistered") {
-                let e = new WorkerDeregisteredEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.WorkerDeregistered") {
+                let e = new WorkerDeregisteredEvent(ctx, event)
                 let rec: { worker: Uint8Array, force: boolean }
                 if (e.isV100) {
                     rec = e.asV100
@@ -146,9 +151,11 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     throw new Error('Unsupported spec')
                 }
 
-                const id = decodeSS58Address(rec.worker)
+                const address = decodeSS58Address(rec.worker)
+                const id = address
                 let changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    address,
                     createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
@@ -172,7 +179,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.registerWorkerCounterChange -= 1
                 changes.onlineWorkerCounterChange -= rec.force ? 1 : 0
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.Deregistered,
                     payload: {force: rec.force},
                     blockNumber,
@@ -180,8 +188,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 })
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.WorkerOnline") {
-                let e = new WorkerOnlineEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.WorkerOnline") {
+                let e = new WorkerOnlineEvent(ctx, event)
                 let rec: {
                     worker: Uint8Array,
                     implSpecVersion: number,
@@ -196,9 +204,11 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     throw new Error('Unsupported spec')
                 }
 
-                const id = decodeSS58Address(rec.worker)
+                const address = decodeSS58Address(rec.worker)
+                const id = address
                 const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    address,
                     createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
@@ -220,15 +230,16 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
                 changes.onlineWorkerCounterChange += 1
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.Online,
                     blockNumber,
                     blockTime,
                 })
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.WorkerRequestingOffline") {
-                let e = new WorkerRequestingOfflineEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.WorkerRequestingOffline") {
+                let e = new WorkerRequestingOfflineEvent(ctx, event)
                 let rec: { worker: Uint8Array }
                 if (e.isV100) {
                     rec = e.asV100
@@ -236,9 +247,11 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     throw new Error('Unsupported spec')
                 }
 
-                const id = decodeSS58Address(rec.worker)
+                const address = decodeSS58Address(rec.worker)
+                const id = address
                 const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    address,
                     createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
@@ -251,15 +264,16 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.updatedAt = blockTime
 
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.RequestingOffline,
                     blockNumber,
                     blockTime,
                 })
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.WorkerOffline") {
-                let e = new WorkerOfflineEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.WorkerOffline") {
+                let e = new WorkerOfflineEvent(ctx, event)
                 let rec: { worker: Uint8Array, reason: v100.OfflineReason }
                 if (e.isV100) {
                     rec = e.asV100
@@ -267,9 +281,11 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     throw new Error('Unsupported spec')
                 }
 
-                const id = decodeSS58Address(rec.worker)
+                const address = decodeSS58Address(rec.worker)
+                const id = address
                 const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    address,
                     createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
@@ -294,15 +310,16 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
                 changes.onlineWorkerCounterChange -= 1
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.Offline,
                     blockNumber,
                     blockTime,
                 })
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.WorkerHeartbeatReceived") {
-                let e = new WorkerHeartbeatReceivedEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.WorkerHeartbeatReceived") {
+                let e = new WorkerHeartbeatReceivedEvent(ctx, event)
                 let rec: { worker: Uint8Array, next: number, uptime: bigint }
                 if (e.isV100) {
                     rec = e.asV100
@@ -310,9 +327,11 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     throw new Error('Unsupported spec')
                 }
 
-                const id = decodeSS58Address(rec.worker)
+                const address = decodeSS58Address(rec.worker)
+                const id = address
                 const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    address,
                     createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
@@ -326,8 +345,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.WorkerAttestationRefreshed") {
-                let e = new WorkerAttestationRefreshedEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.WorkerAttestationRefreshed") {
+                let e = new WorkerAttestationRefreshedEvent(ctx, event)
                 let rec: { worker: Uint8Array, expiresAt: (bigint | undefined) }
                 if (e.isV100) {
                     rec = e.asV100
@@ -335,9 +354,11 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                     throw new Error('Unsupported spec')
                 }
 
-                const id = decodeSS58Address(rec.worker)
+                const address = decodeSS58Address(rec.worker)
+                const id = address
                 const changes: WorkerChanges = changeSet.get(id) || {
                     id,
+                    address,
                     createdAt: blockTime,
                     updatedAt: blockTime,
                     registerWorkerCounterChange: 0,
@@ -351,7 +372,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.updatedAt = blockTime
 
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.AttestationRefreshed,
                     blockNumber,
                     blockTime,

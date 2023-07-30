@@ -1,12 +1,12 @@
-import {type Context} from "../processor"
+import type { Context } from "../processor"
 import {
     OffchainComputingWorkersImplBuildDeregisteredEvent as ImplBuildDeregisteredEvent,
     OffchainComputingWorkersImplBuildRegisteredEvent as ImplBuildRegisteredEvent,
     OffchainComputingWorkersImplBuildStatusUpdatedEvent as ImplBuildStatusUpdatedEvent,
 } from "../types/events"
 import * as v100 from "../types/v100"
-import {ImplBuildStatus} from "../model"
-import {u8aToHex} from "../utils"
+import { ImplBuildStatus } from "../model"
+import { u8aToHex } from "../utils"
 import assert from "assert";
 
 function decodeImplBuildStatus(implBuildStatus?: v100.ImplBuildStatus): ImplBuildStatus {
@@ -20,8 +20,8 @@ function decodeImplBuildStatus(implBuildStatus?: v100.ImplBuildStatus): ImplBuil
             return ImplBuildStatus.Released
         case "Deprecated":
             return ImplBuildStatus.Deprecated
-        case "Blocked":
-            return ImplBuildStatus.Blocked
+        case "Retired":
+            return ImplBuildStatus.Retired
         default:
             throw new Error(`Unrecognized impl build status ${kind}`)
     }
@@ -44,11 +44,12 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
     const changeSet= new Map<string, ImplBuildChanges>();
 
     for (let block of ctx.blocks) {
+        assert(block.header.timestamp)
         const blockTime = new Date(block.header.timestamp);
 
-        for (let item of block.items) {
-            if (item.name == "OffchainComputingWorkers.ImplBuildRegistered") {
-                let e = new ImplBuildRegisteredEvent(ctx, item.event)
+        for (let event of block.events) {
+            if (event.name == "OffchainComputingWorkers.ImplBuildRegistered") {
+                let e = new ImplBuildRegisteredEvent(ctx, event)
                 let rec: {
                     implId: number,
                     implBuildVersion: number,
@@ -77,8 +78,8 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.ImplBuildDeregistered") {
-                let e = new ImplBuildDeregisteredEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.ImplBuildDeregistered") {
+                let e = new ImplBuildDeregisteredEvent(ctx, event)
                 let rec: { implId: number, implBuildVersion: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -101,8 +102,8 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.ImplBuildStatusUpdated") {
-                let e = new ImplBuildStatusUpdatedEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.ImplBuildStatusUpdated") {
+                let e = new ImplBuildStatusUpdatedEvent(ctx, event)
                 let rec: { implId: number, implBuildVersion: number, status: v100.ImplBuildStatus }
                 if (e.isV100) {
                     rec = e.asV100

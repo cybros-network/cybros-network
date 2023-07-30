@@ -199,8 +199,6 @@ pub enum FlipFlopStage {
 	FlopToFlip,
 }
 
-
-
 #[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
 pub enum ApplicableScope {
 	/// Only the owner could use the implementations.

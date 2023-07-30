@@ -93,7 +93,7 @@
       "cmd": [
         "node",
         "--require=dotenv/config",
-        "lib/index.js"
+        "lib/main.js"
       ]
     },
     "process:prod": {
@@ -103,7 +103,7 @@
       ],
       "cmd": [
         "node",
-        "lib/index.js"
+        "lib/main.js"
       ],
       "hidden": true
     },

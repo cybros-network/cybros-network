@@ -13,7 +13,7 @@ services:
     depends_on:
       - db
     restart: on-failure
-    image: subsquid/substrate-ingest:firesquid
+    image: subsquid/substrate-ingest:firesquid # arrowsquid
     command: [
       "-e", "wss://node-rpc.cybros.network",
       "-c", "5", # allow up to 20 pending requests for the above endpoint (default is 5)

@@ -1,4 +1,4 @@
-import { type Context } from "../processor"
+import type { Context } from "../processor"
 import {
     OffchainComputingWorkersImplRegisteredEvent as ImplRegisteredEvent,
     OffchainComputingWorkersImplDeregisteredEvent as ImplDeregisteredEvent,
@@ -60,11 +60,12 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
     const changeSet= new Map<string, ImplChanges>();
 
     for (let block of ctx.blocks) {
+        assert(block.header.timestamp)
         const blockTime = new Date(block.header.timestamp);
 
-        for (let item of block.items) {
-            if (item.name == "OffchainComputingWorkers.ImplRegistered") {
-                let e = new ImplRegisteredEvent(ctx, item.event)
+        for (let event of block.events) {
+            if (event.name == "OffchainComputingWorkers.ImplRegistered") {
+                let e = new ImplRegisteredEvent(ctx, event)
                 let rec: {
                     implId: number,
                     owner: Uint8Array,
@@ -93,8 +94,8 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.ImplDeregistered") {
-                let e = new ImplDeregisteredEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.ImplDeregistered") {
+                let e = new ImplDeregisteredEvent(ctx, event)
                 let rec: { implId: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -113,8 +114,8 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 changes.deletedAt = blockTime
 
                 changeSet.set(id, changes)
-            } if (item.name == "OffchainComputingWorkers.ImplDeploymentScopeUpdated") {
-                let e = new ImplDeploymentScopeUpdatedEvent(ctx, item.event)
+            } if (event.name == "OffchainComputingWorkers.ImplDeploymentScopeUpdated") {
+                let e = new ImplDeploymentScopeUpdatedEvent(ctx, event)
                 let rec: {
                     implId: number, scope: v100.ApplicableScope
                 }
@@ -137,8 +138,8 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.ImplMetadataUpdated") {
-                let e = new ImplMetadataUpdatedEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.ImplMetadataUpdated") {
+                let e = new ImplMetadataUpdatedEvent(ctx, event)
                 let rec: { implId: number, metadata: Uint8Array }
                 if (e.isV100) {
                     rec = e.asV100
@@ -159,8 +160,8 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputingWorkers.ImplMetadataRemoved") {
-                let e = new ImplMetadataRemovedEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputingWorkers.ImplMetadataRemoved") {
+                let e = new ImplMetadataRemovedEvent(ctx, event)
                 let rec: { implId: number }
                 if (e.isV100) {
                     rec = e.asV100

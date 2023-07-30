@@ -21,45 +21,11 @@
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::prelude::*;
-use frame_support::{
-	pallet_prelude::BoundedVec,
-	traits::Get,
-	RuntimeDebug,
-};
+use frame_support::RuntimeDebug;
 
-use base_primitives::ImplSpecVersion;
+pub use base_primitives::{ImplSpecVersion, ApplicableScope, ChainStoredData};
 
 pub type UniqueTrackId = u32;
-
-/// Generic data that stored on-chain
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
-#[scale_info(skip_type_params(DataLimit))]
-#[codec(mel_bound(AccountId: MaxEncodedLen, Balance: MaxEncodedLen))]
-pub struct ChainStoredData<AccountId, Balance, DataLimit: Get<u32>> {
-	/// The depositor
-	pub depositor: AccountId,
-	/// The balance deposited for this data.
-	///
-	/// This pays for the data stored in this struct.
-	pub actual_deposit: Balance,
-	pub surplus_deposit: Balance,
-	/// General information concerning this collection. Limited in length by `StringLimit`. This
-	/// will generally be either a JSON dump or the hash of some JSON which can be found on a
-	/// hash-addressable global publication system such as IPFS.
-	pub data: BoundedVec<u8, DataLimit>,
-}
-
-#[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
-pub enum ApplicableScope {
-	/// Only the owner could create jobs.
-	#[default]
-	Owner,
-	/// Anyone could create jobs.
-	Public,
-	// TODO:
-	// /// Only a user in allow list could create jobs.
-	// AllowList,
-}
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct JobPolicy<PoolId, BlockNumber> {

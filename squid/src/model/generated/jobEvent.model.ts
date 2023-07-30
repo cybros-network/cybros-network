@@ -1,22 +1,25 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
-import {Task} from "./task.model"
-import {TaskEventKind} from "./_taskEventKind"
+import {Job} from "./job.model"
+import {JobEventKind} from "./_jobEventKind"
 
 @Entity_()
-export class TaskEvent {
-    constructor(props?: Partial<TaskEvent>) {
+export class JobEvent {
+    constructor(props?: Partial<JobEvent>) {
         Object.assign(this, props)
     }
 
     @PrimaryColumn_()
     id!: string
 
+    @Column_("int4", {nullable: false})
+    sequence!: number
+
     @Index_()
-    @ManyToOne_(() => Task, {nullable: true})
-    _task!: Task
+    @ManyToOne_(() => Job, {nullable: true})
+    refJob!: Job
 
     @Column_("varchar", {length: 10, nullable: false})
-    kind!: TaskEventKind
+    kind!: JobEventKind
 
     @Column_("jsonb", {nullable: true})
     payload!: unknown | undefined | null

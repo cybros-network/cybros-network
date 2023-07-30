@@ -1,6 +1,6 @@
 {
   "outDir": "src/types",
-  "specVersions": "https://squid-archive.cybros.network/graphql",
+  "specVersions": "./tmp/metadataVersions.jsonl",
   "events": [
     "OffchainComputingWorkers.WorkerRegistered",
     "OffchainComputingWorkers.WorkerDeregistered",

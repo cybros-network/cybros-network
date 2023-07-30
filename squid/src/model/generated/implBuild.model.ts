@@ -13,7 +13,7 @@ export class ImplBuild {
 
     @Index_()
     @ManyToOne_(() => Impl, {nullable: true})
-    _impl!: Impl
+    refImpl!: Impl
 
     @Column_("int4", {nullable: false})
     implId!: number
@@ -21,26 +21,29 @@ export class ImplBuild {
     @Column_("int4", {nullable: false})
     version!: number
 
-    @Column_("varchar", {length: 12, nullable: false})
-    status!: ImplBuildStatus
-
     @Column_("text", {nullable: true})
     magicBytes!: string | undefined | null
+
+    @Column_("varchar", {length: 12, nullable: false})
+    status!: ImplBuildStatus
 
     @Column_("int4", {nullable: false})
     onlineWorkersCount!: number
 
     @Column_("int4", {nullable: false})
-    tasksCount!: number
+    processingJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    successfulTasksCount!: number
+    successfulJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    failedTasksCount!: number
+    failedJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    erroredTasksCount!: number
+    erroredJobsCount!: number
+
+    @Column_("int4", {nullable: false})
+    panickyJobsCount!: number
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date

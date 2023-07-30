@@ -1,6 +1,6 @@
 export enum ImplBuildStatus {
     Released = "Released",
     Deprecated = "Deprecated",
-    Blocked = "Blocked",
+    Retired = "Retired",
     Deregistered = "Deregistered",
 }

@@ -3,8 +3,8 @@ import {Pool} from "./pool.model"
 import {ApplicableScope} from "./_applicableScope"
 
 @Entity_()
-export class TaskPolicy {
-    constructor(props?: Partial<TaskPolicy>) {
+export class JobPolicy {
+    constructor(props?: Partial<JobPolicy>) {
         Object.assign(this, props)
     }
 
@@ -16,13 +16,16 @@ export class TaskPolicy {
 
     @Index_()
     @ManyToOne_(() => Pool, {nullable: true})
-    _pool!: Pool
+    refPool!: Pool
+
+    @Column_("int4", {nullable: false})
+    poolId!: number
 
     @Column_("bool", {nullable: false})
-    availability!: boolean
+    enabled!: boolean
 
     @Column_("varchar", {length: 6, nullable: false})
-    creatingTaskScope!: ApplicableScope
+    applicableScope!: ApplicableScope
 
     @Column_("int4", {nullable: true})
     startBlock!: number | undefined | null

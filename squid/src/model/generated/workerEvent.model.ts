@@ -11,9 +11,12 @@ export class WorkerEvent {
     @PrimaryColumn_()
     id!: string
 
+    @Column_("int4", {nullable: false})
+    sequence!: number
+
     @Index_()
     @ManyToOne_(() => Worker, {nullable: true})
-    _worker!: Worker
+    refWorker!: Worker
 
     @Column_("varchar", {length: 20, nullable: false})
     kind!: WorkerEventKind

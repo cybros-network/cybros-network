@@ -2,8 +2,8 @@ import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, M
 import {Account} from "./account.model"
 import {Impl} from "./impl.model"
 import {PoolWorkers} from "./poolWorkers.model"
-import {TaskPolicy} from "./taskPolicy.model"
-import {Task} from "./task.model"
+import {JobPolicy} from "./jobPolicy.model"
+import {Job} from "./job.model"
 
 @Entity_()
 export class Pool {
@@ -19,20 +19,23 @@ export class Pool {
 
     @Index_()
     @ManyToOne_(() => Account, {nullable: true})
-    _owner!: Account
+    refOwner!: Account
 
     @Column_("text", {nullable: false})
     ownerAddress!: string
 
     @Index_()
     @ManyToOne_(() => Impl, {nullable: true})
-    _impl!: Impl
+    refImpl!: Impl
 
     @Column_("int4", {nullable: false})
     implId!: number
 
     @Column_("bool", {nullable: false})
-    creatingTaskAvailability!: boolean
+    createJobEnabled!: boolean
+
+    @Column_("bool", {nullable: false})
+    autoDestroyProcessedJobEnabled!: boolean
 
     @Column_("bytea", {nullable: true})
     metadata!: Uint8Array | undefined | null
@@ -44,22 +47,22 @@ export class Pool {
     onlineWorkersCount!: number
 
     @Column_("int4", {nullable: false})
-    pendingTasksCount!: number
+    pendingJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    processingTasksCount!: number
+    processingJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    createdTasksCount!: number
+    successfulJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    successfulTasksCount!: number
+    failedJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    failedTasksCount!: number
+    erroredJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    erroredTasksCount!: number
+    panickyJobsCount!: number
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date
@@ -70,12 +73,12 @@ export class Pool {
     @Column_("timestamp with time zone", {nullable: true})
     deletedAt!: Date | undefined | null
 
-    @OneToMany_(() => PoolWorkers, e => e._pool)
+    @OneToMany_(() => PoolWorkers, e => e.refPool)
     workers!: PoolWorkers[]
 
-    @OneToMany_(() => TaskPolicy, e => e._pool)
-    taskPolicies!: TaskPolicy[]
+    @OneToMany_(() => JobPolicy, e => e.refPool)
+    jobPolicies!: JobPolicy[]
 
-    @OneToMany_(() => Task, e => e._pool)
-    tasks!: Task[]
+    @OneToMany_(() => Job, e => e.refPool)
+    jobs!: Job[]
 }

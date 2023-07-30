@@ -13,14 +13,14 @@ export class PoolWorkers {
 
     @Index_()
     @ManyToOne_(() => Pool, {nullable: true})
-    _pool!: Pool
+    refPool!: Pool
 
     @Column_("int4", {nullable: false})
     poolId!: number
 
     @Index_()
     @ManyToOne_(() => Worker, {nullable: true})
-    _worker!: Worker
+    refWorker!: Worker
 
     @Column_("text", {nullable: false})
     workerAddress!: string

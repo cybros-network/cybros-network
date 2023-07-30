@@ -20,7 +20,7 @@ export class Impl {
 
     @Index_()
     @ManyToOne_(() => Account, {nullable: true})
-    _owner!: Account
+    refOwner!: Account
 
     @Column_("text", {nullable: false})
     ownerAddress!: string
@@ -35,22 +35,13 @@ export class Impl {
     metadata!: Uint8Array | undefined | null
 
     @Column_("int4", {nullable: false})
-    poolsCount!: number
-
-    @Column_("int4", {nullable: false})
-    tasksCount!: number
-
-    @Column_("int4", {nullable: false})
     onlineWorkersCount!: number
 
     @Column_("int4", {nullable: false})
-    successfulTasksCount!: number
+    poolsCount!: number
 
     @Column_("int4", {nullable: false})
-    failedTasksCount!: number
-
-    @Column_("int4", {nullable: false})
-    erroredTasksCount!: number
+    jobsCount!: number
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date
@@ -61,12 +52,12 @@ export class Impl {
     @Column_("timestamp with time zone", {nullable: true})
     deletedAt!: Date | undefined | null
 
-    @OneToMany_(() => ImplBuild, e => e._impl)
+    @OneToMany_(() => ImplBuild, e => e.refImpl)
     builds!: ImplBuild[]
 
-    @OneToMany_(() => Worker, e => e._impl)
+    @OneToMany_(() => Worker, e => e.refImpl)
     workers!: Worker[]
 
-    @OneToMany_(() => Pool, e => e._impl)
+    @OneToMany_(() => Pool, e => e.refImpl)
     pools!: Pool[]
 }

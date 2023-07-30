@@ -1,11 +1,11 @@
-import { type Context } from "../processor"
+import type { Context } from "../processor"
 import {
-    OffchainComputingTaskPolicyCreatedEvent as TaskPolicyCreatedEvent,
-    OffchainComputingTaskPolicyDestroyedEvent as TaskPolicyDestroyedEvent,
-    OffchainComputingTaskPolicyAvailabilityUpdatedEvent as TaskPolicyAvailabilityUpdatedEvent,
+    OffchainComputingJobPolicyCreatedEvent as JobPolicyCreatedEvent,
+    OffchainComputingJobPolicyDestroyedEvent as JobPolicyDestroyedEvent,
+    OffchainComputingJobPolicyEnablementUpdatedEvent as JobPolicyEnablementUpdatedEvent,
 } from "../types/events"
 import * as v100 from "../types/v100"
-import {ApplicableScope} from "../model";
+import { ApplicableScope } from "../model";
 import assert from "assert";
 
 function decodeScope(scope?: v100.ApplicableScope): ApplicableScope {
@@ -24,13 +24,13 @@ function decodeScope(scope?: v100.ApplicableScope): ApplicableScope {
     }
 }
 
-interface TaskPolicyChanges {
+interface JobPolicyChanges {
     readonly id: string
     readonly poolId: number
     readonly policyId: number
 
-    availability?: boolean
-    creatingTaskScope?: ApplicableScope
+    enabled?: boolean
+    applicableScope?: ApplicableScope
     startBlock?: number
     endBlock?: number
 
@@ -39,19 +39,20 @@ interface TaskPolicyChanges {
     deletedAt?: Date | null
 }
 
-export function preprocessTaskPoliciesEvents(ctx: Context): Map<string, TaskPolicyChanges> {
-    const changeSet= new Map<string, TaskPolicyChanges>();
+export function preprocessJobPoliciesEvents(ctx: Context): Map<string, JobPolicyChanges> {
+    const changeSet= new Map<string, JobPolicyChanges>();
 
     for (let block of ctx.blocks) {
+        assert(block.header.timestamp)
         const blockTime = new Date(block.header.timestamp);
 
-        for (let item of block.items) {
-            if (item.name == "OffchainComputing.TaskPolicyCreated") {
-                let e = new TaskPolicyCreatedEvent(ctx, item.event)
+        for (let event of block.events) {
+            if (event.name == "OffchainComputing.JobPolicyCreated") {
+                let e = new JobPolicyCreatedEvent(ctx, event)
                 let rec: {
                     poolId: number,
                     policyId: number,
-                    creatingTaskScope: v100.ApplicableScope,
+                    applicableScope: v100.ApplicableScope,
                     startBlock: (number | undefined),
                     endBlock: (number | undefined)
                 }
@@ -62,7 +63,7 @@ export function preprocessTaskPoliciesEvents(ctx: Context): Map<string, TaskPoli
                 }
 
                 const id = `${rec.poolId}-${rec.policyId}`
-                const changes: TaskPolicyChanges = changeSet.get(id) || {
+                const changes: JobPolicyChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
                     policyId: rec.policyId,
@@ -70,8 +71,8 @@ export function preprocessTaskPoliciesEvents(ctx: Context): Map<string, TaskPoli
                     updatedAt: blockTime
                 }
 
-                changes.availability = true
-                changes.creatingTaskScope = decodeScope(rec.creatingTaskScope)
+                changes.enabled = true
+                changes.applicableScope = decodeScope(rec.applicableScope)
                 changes.startBlock = rec.startBlock
                 changes.endBlock = rec.endBlock
 
@@ -79,8 +80,8 @@ export function preprocessTaskPoliciesEvents(ctx: Context): Map<string, TaskPoli
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.TaskPolicyDestroyed") {
-                let e = new TaskPolicyDestroyedEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputing.JobPolicyDestroyed") {
+                let e = new JobPolicyDestroyedEvent(ctx, event)
                 let rec: {poolId: number, policyId: number}
                 if (e.isV100) {
                     rec = e.asV100
@@ -89,7 +90,7 @@ export function preprocessTaskPoliciesEvents(ctx: Context): Map<string, TaskPoli
                 }
 
                 const id = `${rec.poolId}-${rec.policyId}`
-                const changes: TaskPolicyChanges = changeSet.get(id) || {
+                const changes: JobPolicyChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
                     policyId: rec.policyId,
@@ -97,14 +98,14 @@ export function preprocessTaskPoliciesEvents(ctx: Context): Map<string, TaskPoli
                     updatedAt: blockTime
                 }
 
-                changes.availability = false
+                changes.enabled = false
                 changes.deletedAt = blockTime
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.TaskPolicyAvailabilityUpdated") {
-                let e = new TaskPolicyAvailabilityUpdatedEvent(ctx, item.event)
-                let rec: {poolId: number, policyId: number, availability: boolean}
+            } else if (event.name == "OffchainComputing.JobPolicyEnablementUpdated") {
+                let e = new JobPolicyEnablementUpdatedEvent(ctx, event)
+                let rec: {poolId: number, policyId: number, enabled: boolean}
                 if (e.isV100) {
                     rec = e.asV100
                 } else {
@@ -112,7 +113,7 @@ export function preprocessTaskPoliciesEvents(ctx: Context): Map<string, TaskPoli
                 }
 
                 const id = `${rec.poolId}-${rec.policyId}`
-                const changes: TaskPolicyChanges = changeSet.get(id) || {
+                const changes: JobPolicyChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
                     policyId: rec.policyId,
@@ -121,7 +122,7 @@ export function preprocessTaskPoliciesEvents(ctx: Context): Map<string, TaskPoli
                 }
                 assert(!changes.deletedAt)
 
-                changes.availability = rec.availability
+                changes.enabled = rec.enabled
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)

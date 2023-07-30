@@ -1,13 +1,15 @@
-import { type Context } from "../processor"
+import type { Context } from "../processor"
 import {
     OffchainComputingWorkerSubscribedEvent as WorkerSubscribedEvent,
     OffchainComputingWorkerUnsubscribedEvent as WorkerUnsubscribedEvent,
 } from "../types/events"
 import { decodeSS58Address } from "../utils"
 import { WorkerEventKind } from "../model";
+import assert from "assert";
 
 interface WorkerEvent {
     readonly id: string
+    readonly sequence: number
 
     readonly kind: WorkerEventKind
     readonly payload?: any
@@ -34,12 +36,13 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
     const changeSet= new Map<string, PoolWorkerChanges>();
 
     for (let block of ctx.blocks) {
+        assert(block.header.timestamp)
         const blockNumber = block.header.height
         const blockTime = new Date(block.header.timestamp);
 
-        for (let item of block.items) {
-            if (item.name == "OffchainComputing.WorkerSubscribed") {
-                let e = new WorkerSubscribedEvent(ctx, item.event)
+        for (let event of block.events) {
+            if (event.name == "OffchainComputing.WorkerSubscribed") {
+                let e = new WorkerSubscribedEvent(ctx, event)
                 let rec: {worker: Uint8Array, poolId: number}
                 if (e.isV100) {
                     rec = e.asV100
@@ -48,7 +51,7 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                 }
 
                 const worker = decodeSS58Address(rec.worker)
-                const id = `${rec.poolId}-${rec.worker}`
+                const id = `${rec.poolId}-${worker}`
                 const changes: PoolWorkerChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
@@ -63,7 +66,8 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                 changes.updatedAt = blockTime
                 changes.poolWorkerCounterChange = 1
                 changes.workerEvents.push({
-                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.workerEvents.length}`,
+                    sequence: blockNumber * 100 + changes.workerEvents.length,
                     kind: WorkerEventKind.SubscribedPool,
                     payload: {poolId: rec.poolId},
                     blockNumber,
@@ -71,8 +75,8 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                 })
 
                 changeSet.set(id, changes)
-            } else if (item.name == "OffchainComputing.WorkerUnsubscribed") {
-                let e = new WorkerUnsubscribedEvent(ctx, item.event)
+            } else if (event.name == "OffchainComputing.WorkerUnsubscribed") {
+                let e = new WorkerUnsubscribedEvent(ctx, event)
                 let rec: {worker: Uint8Array, poolId: number}
                 if (e.isV100) {
                     rec = e.asV100
@@ -81,7 +85,7 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                 }
 
                 const worker = decodeSS58Address(rec.worker)
-                const id = `${rec.poolId}-${rec.worker}`
+                const id = `${rec.poolId}-${worker}`
                 const changes: PoolWorkerChanges = changeSet.get(id) || {
                     id,
                     poolId: rec.poolId,
@@ -96,7 +100,8 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                 changes.updatedAt = blockTime
                 changes.poolWorkerCounterChange = -1
                 changes.workerEvents.push({
-                    id: `${id}-${blockNumber}-${item.event.indexInBlock}`,
+                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.workerEvents.length}`,
+                    sequence: blockNumber * 100 + changes.workerEvents.length,
                     kind: WorkerEventKind.UnsubscribedPool,
                     payload: {poolId: rec.poolId},
                     blockNumber,

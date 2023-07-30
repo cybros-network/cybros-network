@@ -13,7 +13,7 @@ enum AttestationMethod {
 enum ImplBuildStatus {
   Released
   Deprecated
-  Blocked
+  Retired
   Deregistered
 }
 
@@ -31,22 +31,23 @@ enum OfflineReason {
   Forced
   Unresponsive
   AttestationExpired
-  ImplBuildBlocked
+  ImplBuildRetired
   InsufficientDepositFunds
   Other
 }
 
-enum TaskStatus {
+enum JobStatus {
   Pending
   Processing
   Processed
   Discarded
 }
 
-enum TaskResult {
+enum JobResult {
   Success
-  Failed
-  Errored
+  Fail
+  Error
+  Panic
 }
 
 type Account @entity {
@@ -55,18 +56,18 @@ type Account @entity {
 
   workersCount: Int!
   poolsCount: Int!
-  createdTasksCount: Int!
+  createdJobsCount: Int!
 
-  owningWorkers: [Worker!] @derivedFrom(field: "_owner")
-  owningPools: [Pool!] @derivedFrom(field: "_owner")
-  owningTasks: [Task!] @derivedFrom(field: "_owner")
+  owningWorkers: [Worker!] @derivedFrom(field: "refOwner")
+  owningPools: [Pool!] @derivedFrom(field: "refOwner")
+  beneficialJobs: [Job!] @derivedFrom(field: "refBeneficiary")
 }
 
 type Impl @entity {
   id: ID!
   implId: Int!
 
-  _owner: Account! @index
+  refOwner: Account! @index
   ownerAddress: String!
 
   attestationMethod: AttestationMethod!
@@ -74,39 +75,37 @@ type Impl @entity {
   metadata: Bytes
 
   # stats
-  poolsCount: Int!
-  tasksCount: Int!
   onlineWorkersCount: Int!
-  successfulTasksCount: Int!
-  failedTasksCount: Int!
-  erroredTasksCount: Int!
+  poolsCount: Int!
+  jobsCount: Int!
 
   # timestamps
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime
 
-  builds: [ImplBuild!] @derivedFrom(field: "_impl")
-  workers: [Worker!] @derivedFrom(field: "_impl")
-  pools: [Pool!] @derivedFrom(field: "_impl")
+  builds: [ImplBuild!] @derivedFrom(field: "refImpl")
+  workers: [Worker!] @derivedFrom(field: "refImpl")
+  pools: [Pool!] @derivedFrom(field: "refImpl")
 }
 
 type ImplBuild @entity {
   id: ID!
 
-  _impl: Impl! @index
+  refImpl: Impl! @index
   implId: Int!
 
   version: Int!
-  status: ImplBuildStatus!
   magicBytes: String
+  status: ImplBuildStatus!
 
   # stats
   onlineWorkersCount: Int!
-  tasksCount: Int!
-  successfulTasksCount: Int!
-  failedTasksCount: Int!
-  erroredTasksCount: Int!
+  processingJobsCount: Int!
+  successfulJobsCount: Int!
+  failedJobsCount: Int!
+  erroredJobsCount: Int!
+  panickyJobsCount: Int!
 
   # timestamps
   createdAt: DateTime!
@@ -116,14 +115,15 @@ type ImplBuild @entity {
 
 type Worker @entity {
   id: ID!
+  address: String! @index
 
-  _owner: Account! @index
+  refOwner: Account! @index
   ownerAddress: String!
 
-  _impl: Impl! @index
+  refImpl: Impl! @index
   implId: Int!
 
-  _implBuild: ImplBuild @index
+  refImplBuild: ImplBuild @index
   implBuildVersion: Int
 
   status: WorkerStatus! @index
@@ -139,21 +139,22 @@ type Worker @entity {
 
   # stats
   poolsCount: Int!
-  processingTasksCount: Int!
-  assignedTasksCount: Int!
-  successfulTasksCount: Int!
-  failedTasksCount: Int!
-  erroredTasksCount: Int!
+  pendingJobsCount: Int!
+  processingJobsCount: Int!
+  successfulJobsCount: Int!
+  failedJobsCount: Int!
+  erroredJobsCount: Int!
+  panickyJobsCount: Int!
 
   # timestamps
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime
 
-  events: [WorkerEvent!] @derivedFrom(field: "_worker")
+  events: [WorkerEvent!] @derivedFrom(field: "refWorker")
 
-  servingPools: [PoolWorkers!] @derivedFrom(field: "_worker")
-  assignedTasks: [Task!] @derivedFrom(field: "_assignee")
+  subscribedPools: [PoolWorkers!] @derivedFrom(field: "refWorker")
+  assignedJobs: [Job!] @derivedFrom(field: "refAssignee")
 }
 
 enum WorkerEventKind {
@@ -169,8 +170,9 @@ enum WorkerEventKind {
 
 type WorkerEvent @entity {
   id: ID!
+  sequence: Int!
 
-  _worker: Worker! @index
+  refWorker: Worker! @index
 
   kind: WorkerEventKind!
   payload: JSON
@@ -183,42 +185,43 @@ type Pool @entity {
   id: ID!
   poolId: Int!
 
-  _owner: Account! @index
+  refOwner: Account! @index
   ownerAddress: String!
 
-  _impl: Impl! @index
+  refImpl: Impl! @index
   implId: Int!
 
-  creatingTaskAvailability: Boolean!
+  createJobEnabled: Boolean!
+  autoDestroyProcessedJobEnabled: Boolean!
   metadata: Bytes
 
   # stats
   workersCount: Int!
   onlineWorkersCount: Int!
-  pendingTasksCount: Int!
-  processingTasksCount: Int!
-  createdTasksCount: Int!
-  successfulTasksCount: Int!
-  failedTasksCount: Int!
-  erroredTasksCount: Int!
+  pendingJobsCount: Int!
+  processingJobsCount: Int!
+  successfulJobsCount: Int!
+  failedJobsCount: Int!
+  erroredJobsCount: Int!
+  panickyJobsCount: Int!
 
   # timestamps
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime
 
-  workers: [PoolWorkers!] @derivedFrom(field: "_pool")
-  taskPolicies: [TaskPolicy!] @derivedFrom(field: "_pool")
-  tasks: [Task!] @derivedFrom(field: "_pool")
+  workers: [PoolWorkers!] @derivedFrom(field: "refPool")
+  jobPolicies: [JobPolicy!] @derivedFrom(field: "refPool")
+  jobs: [Job!] @derivedFrom(field: "refPool")
 }
 
 type PoolWorkers @entity {
   id: ID! # Useless, but required
 
-  _pool: Pool!
+  refPool: Pool!
   poolId: Int!
 
-  _worker: Worker!
+  refWorker: Worker!
   workerAddress: String!
 
   createdAt: DateTime!
@@ -226,14 +229,15 @@ type PoolWorkers @entity {
   deletedAt: DateTime
 }
 
-type TaskPolicy @entity {
+type JobPolicy @entity {
   id: ID!
   policyId: Int!
 
-  _pool: Pool! @index
+  refPool: Pool! @index
+  poolId: Int!
 
-  availability: Boolean!
-  creatingTaskScope: ApplicableScope!
+  enabled: Boolean!
+  applicableScope: ApplicableScope!
   startBlock: Int
   endBlock: Int
 
@@ -242,27 +246,31 @@ type TaskPolicy @entity {
   deletedAt: DateTime
 }
 
-type Task @entity {
+type Job @entity {
   id: ID!
-  taskId: Int!
+  jobId: Int! @index
+  uniqueTrackId: Int @index
 
-  _pool: Pool! @index
+  refPool: Pool! @index
   poolId: Int!
 
-  _policy: TaskPolicy!
+  refPolicy: JobPolicy! @index
   policyId: Int!
 
-  _owner: Account! @index
-  ownerAddress: String!
+  refDepositor: Account! @index
+  depositorAddress: String!
 
-  _assignee: Worker @index
+  refBeneficiary: Account! @index
+  beneficiaryAddress: String!
+
+  refAssignee: Worker @index
   assigneeAddress: String
 
-  _destroyer: Account
+  refDestroyer: Account
   destroyerAddress: String
 
-  status: TaskStatus! @index
-  result: TaskResult
+  status: JobStatus! @index
+  result: JobResult
 
   implSpecVersion: Int!
   input: Bytes
@@ -278,26 +286,29 @@ type Task @entity {
   updatedAt: DateTime!
   deletedAt: DateTime
 
-  events: [TaskEvent!] @derivedFrom(field: "_task")
+  events: [JobEvent!] @derivedFrom(field: "refJob")
 }
 
-enum TaskEventKind {
+enum JobEventKind {
   Created
   Assigned
+  Released
   Processing
   Discarded
   Success
   Fail
   Error
+  Panic
   Destroyed
 }
 
-type TaskEvent @entity {
+type JobEvent @entity {
   id: ID!
+  sequence: Int!
 
-  _task: Task! @index
+  refJob: Job! @index
 
-  kind: TaskEventKind!
+  kind: JobEventKind!
   payload: JSON
 
   blockNumber: Int!

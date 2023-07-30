@@ -1,20 +1,23 @@
 import assert from "assert"
 import { TypeormDatabase } from "@subsquid/typeorm-store"
-import { type Context, processor } from "./processor"
+import { processor } from "./processor"
 
 import {
     preprocessImplsEvents,
     preprocessImplBuildsEvents,
     preprocessWorkersEvents,
-    preprocessPoolsEvents, preprocessTaskPoliciesEvents, preprocessPoolWorkersEvents, preprocessTasksEvents,
+    preprocessPoolsEvents,
+    preprocessJobPoliciesEvents,
+    preprocessPoolWorkersEvents,
+    preprocessJobsEvents,
 } from "./processor_helpers"
 import {
     AccountsManager,
     ImplsManager,
     ImplBuildsManager,
     WorkersManager, WorkerEventsManager,
-    PoolsManager, TaskPoliciesManager, PoolWorkersManager,
-    TasksManager,
+    PoolsManager, JobPoliciesManager, PoolWorkersManager,
+    JobsManager, JobEventsManager,
 } from "./entity_managers"
 
 import { WorkerStatus, Pool, Worker, Impl, ImplBuild, Account } from "./model"
@@ -22,15 +25,15 @@ import { Equal, IsNull, In } from "typeorm"
 
 const database = new TypeormDatabase();
 
-processor.run(database, async (ctx: Context) => {
+processor.run(database, async (ctx) => {
     // Preprocess events
     const implsChangeSet = preprocessImplsEvents(ctx)
     const implBuildsChangeSet = preprocessImplBuildsEvents(ctx)
     const workersChangeSet = preprocessWorkersEvents(ctx)
     const poolsChangeSet = preprocessPoolsEvents(ctx)
-    const taskPoliciesChangeSet = preprocessTaskPoliciesEvents(ctx)
+    const jobPoliciesChangeSet = preprocessJobPoliciesEvents(ctx)
     const poolWorkersChangeSet = preprocessPoolWorkersEvents(ctx)
-    const tasksChangeSet = preprocessTasksEvents(ctx)
+    const jobsChangeSet = preprocessJobsEvents(ctx)
 
     // Initialize entity managers
     const accountsManager = new AccountsManager().init(ctx)
@@ -39,9 +42,10 @@ processor.run(database, async (ctx: Context) => {
     const workersManager = new WorkersManager().init(ctx)
     const workerEventsManager = new WorkerEventsManager().init(ctx)
     const poolsManager = new PoolsManager().init(ctx)
-    const taskPoliciesManager = new TaskPoliciesManager().init(ctx)
+    const jobPoliciesManager = new JobPoliciesManager().init(ctx)
     const poolWorkersManager = new PoolWorkersManager().init(ctx)
-    const tasksManager = new TasksManager().init(ctx)
+    const jobsManager = new JobsManager().init(ctx)
+    const jobEventsManager = new JobEventsManager().init(ctx)
 
     // Prefetch entities
 
@@ -61,9 +65,12 @@ processor.run(database, async (ctx: Context) => {
             accountsManager.addPrefetchItemId(changes.owner)
         }
     }
-    for (let [_id, changes] of tasksChangeSet) {
-        if (changes.owner) {
-            accountsManager.addPrefetchItemId(changes.owner)
+    for (let [_id, changes] of jobsChangeSet) {
+        if (changes.depositor) {
+            accountsManager.addPrefetchItemId(changes.depositor)
+        }
+        if (changes.beneficiary) {
+            accountsManager.addPrefetchItemId(changes.beneficiary)
         }
         if (changes.destroyer) {
             accountsManager.addPrefetchItemId(changes.destroyer)
@@ -108,7 +115,7 @@ processor.run(database, async (ctx: Context) => {
     for (let [_id, changes] of poolWorkersChangeSet) {
         workersManager.addPrefetchItemId(changes.worker)
     }
-    for (let [_id, changes] of tasksChangeSet) {
+    for (let [_id, changes] of jobsChangeSet) {
         if (changes.assignee) {
             workersManager.addPrefetchItemId(changes.assignee)
         }
@@ -119,7 +126,7 @@ processor.run(database, async (ctx: Context) => {
     for (let [id, _changes] of poolsChangeSet) {
         poolsManager.addPrefetchItemId(id)
     }
-    for (let [_id, changes] of taskPoliciesChangeSet) {
+    for (let [_id, changes] of jobPoliciesChangeSet) {
         if (changes.poolId) {
             poolsManager.addPrefetchItemId(changes.poolId.toString())
         }
@@ -127,24 +134,24 @@ processor.run(database, async (ctx: Context) => {
     for (let [_id, changes] of poolWorkersChangeSet) {
         poolsManager.addPrefetchItemId(changes.poolId.toString())
     }
-    for (let [_id, changes] of tasksChangeSet) {
+    for (let [_id, changes] of jobsChangeSet) {
         if (changes.poolId) {
             poolsManager.addPrefetchItemId(changes.poolId.toString())
         }
     }
     await poolsManager.prefetchEntities()
 
-    // Creating task policies
-    for (let [id, _changes] of taskPoliciesChangeSet) {
-        taskPoliciesManager.addPrefetchItemId(id)
+    // Creating job policies
+    for (let [id, _changes] of jobPoliciesChangeSet) {
+        jobPoliciesManager.addPrefetchItemId(id)
     }
-    for (let [_id, changes] of tasksChangeSet) {
+    for (let [_id, changes] of jobsChangeSet) {
         if (changes.policyId) {
             assert(changes.poolId)
-            taskPoliciesManager.addPrefetchItemId(`${changes.poolId}-${changes.policyId}`)
+            jobPoliciesManager.addPrefetchItemId(`${changes.poolId}-${changes.policyId}`)
         }
     }
-    await taskPoliciesManager.prefetchEntities()
+    await jobPoliciesManager.prefetchEntities()
 
     // Pool workers
     for (let [id, _changes] of poolWorkersChangeSet) {
@@ -153,10 +160,10 @@ processor.run(database, async (ctx: Context) => {
     await poolWorkersManager.prefetchEntities()
 
     // Tasks
-    for (let [id, _changes] of tasksChangeSet) {
-        tasksManager.addPrefetchItemId(id)
+    for (let [id, _changes] of jobsChangeSet) {
+        jobsManager.addPrefetchItemId(id)
     }
-    await tasksManager.prefetchEntities()
+    await jobsManager.prefetchEntities()
 
     // Process
 
@@ -169,9 +176,8 @@ processor.run(database, async (ctx: Context) => {
             }
             if (!impl.ownerAddress) {
                 assert(changes.owner)
-
                 impl.ownerAddress = changes.owner
-                impl._owner = await accountsManager.getOrCreate(changes.owner)
+                impl.refOwner = await accountsManager.getOrCreate(changes.owner)
             }
             if (changes.attestationMethod) {
                 impl.attestationMethod = changes.attestationMethod
@@ -199,13 +205,11 @@ processor.run(database, async (ctx: Context) => {
         await implBuildsManager.upsert(id, async (implBuild) => {
             if (!implBuild.implId) {
                 assert(changes.implId)
-
                 implBuild.implId = changes.implId
-                implBuild._impl = (await implsManager.get(changes.implId.toString()))!
+                implBuild.refImpl = (await implsManager.get(changes.implId.toString()))!
             }
             if (!implBuild.version) {
                 assert(changes.version)
-
                 implBuild.version = changes.version
             }
             implBuild.status = changes.status
@@ -226,19 +230,22 @@ processor.run(database, async (ctx: Context) => {
     // Process workers' changeset
     for (let [id, changes] of workersChangeSet) {
         await workersManager.upsert(id, async (worker) => {
+            if (!worker.address) {
+                assert(changes.address)
+                worker.address = changes.address
+            }
             if (changes.owner) {
                 worker.ownerAddress = changes.owner
-                worker._owner = await accountsManager.getOrCreate(changes.owner)
+                worker.refOwner = await accountsManager.getOrCreate(changes.owner)
             }
             if (changes.implId) {
                 worker.implId = changes.implId
-                worker._impl = (await implsManager.get(changes.implId.toString()))!
+                worker.refImpl = (await implsManager.get(changes.implId.toString()))!
             }
             if (changes.implBuildVersion !== undefined) {
                 assert(worker.implId)
-
                 worker.implBuildVersion = changes.implBuildVersion
-                worker._implBuild = (await implBuildsManager.get(`${worker.implId}-${changes.implBuildVersion}`))!
+                worker.refImplBuild = (await implBuildsManager.get(`${worker.implId}-${changes.implBuildVersion}`))!
             }
             if (changes.implSpecVersion !== undefined) {
                 worker.implSpecVersion = changes.implSpecVersion
@@ -261,7 +268,6 @@ processor.run(database, async (ctx: Context) => {
                 if (changes.status == WorkerStatus.Offline) {
                     assert(changes.offlineAt)
                     assert(changes.offlineReason)
-
                     worker.offlineAt = changes.offlineAt
                     worker.offlineReason = changes.offlineReason
                 } else {
@@ -280,8 +286,8 @@ processor.run(database, async (ctx: Context) => {
 
             for (let e of changes.events) {
                 await workerEventsManager.create(e.id, async (event) => {
-                    event._worker = worker
-
+                    event.sequence = e.sequence
+                    event.refWorker = worker
                     event.kind = e.kind
                     event.payload = e.payload
                     event.blockNumber = e.blockNumber
@@ -299,23 +305,23 @@ processor.run(database, async (ctx: Context) => {
         await poolsManager.upsert(id, async (pool) => {
             if (!pool.ownerAddress) {
                 assert(changes.owner)
-
                 pool.ownerAddress = changes.owner
-                pool._owner = await accountsManager.getOrCreate(changes.owner)
+                pool.refOwner = await accountsManager.getOrCreate(changes.owner)
             }
             if (!pool.poolId) {
                 assert(changes.poolId)
-
                 pool.poolId = changes.poolId
             }
             if (!pool.implId) {
                 assert(changes.implId)
-
                 pool.implId = changes.implId
-                pool._impl = (await implsManager.get(changes.implId.toString()))!
+                pool.refImpl = (await implsManager.get(changes.implId.toString()))!
             }
-            if (changes.creatingTaskAvailability) {
-                pool.creatingTaskAvailability = changes.creatingTaskAvailability
+            if (changes.createJobEnabled) {
+                pool.createJobEnabled = changes.createJobEnabled
+            }
+            if (changes.autoDestroyProcessedJobEnabled) {
+                pool.autoDestroyProcessedJobEnabled = changes.autoDestroyProcessedJobEnabled
             }
             if (changes.metadata !== undefined) {
                 pool.metadata = changes.metadata
@@ -332,52 +338,51 @@ processor.run(database, async (ctx: Context) => {
     await accountsManager.saveAll()
     await poolsManager.saveAll()
 
-    // Process create task policies' changeset
-    for (let [id, changes] of taskPoliciesChangeSet) {
-        await taskPoliciesManager.upsert(id, async (taskPolicy) => {
+    // Process create job policies' changeset
+    for (let [id, changes] of jobPoliciesChangeSet) {
+        await jobPoliciesManager.upsert(id, async (jobPolicy) => {
             if (changes.poolId) {
-                taskPolicy._pool = (await poolsManager.get(changes.poolId.toString()))!
+                jobPolicy.poolId = changes.poolId
+                jobPolicy.refPool = (await poolsManager.get(changes.poolId.toString()))!
             }
             if (changes.policyId) {
-                taskPolicy.policyId = changes.policyId
+                jobPolicy.policyId = changes.policyId
             }
-            if (changes.availability) {
-                taskPolicy.availability = changes.availability
+            if (changes.enabled) {
+                jobPolicy.enabled = changes.enabled
             }
-            if (changes.creatingTaskScope) {
-                taskPolicy.creatingTaskScope = changes.creatingTaskScope
+            if (changes.applicableScope) {
+                jobPolicy.applicableScope = changes.applicableScope
             }
             if (changes.startBlock) {
-                taskPolicy.startBlock = changes.startBlock
+                jobPolicy.startBlock = changes.startBlock
             }
             if (changes.endBlock) {
-                taskPolicy.endBlock = changes.endBlock
+                jobPolicy.endBlock = changes.endBlock
             }
             if (changes.createdAt) {
-                taskPolicy.createdAt = changes.createdAt
+                jobPolicy.createdAt = changes.createdAt
             }
             if (changes.deletedAt !== undefined) {
-                taskPolicy.deletedAt = changes.deletedAt
+                jobPolicy.deletedAt = changes.deletedAt
             }
-            taskPolicy.updatedAt = changes.updatedAt
+            jobPolicy.updatedAt = changes.updatedAt
         })
     }
-    await taskPoliciesManager.saveAll()
+    await jobPoliciesManager.saveAll()
 
     // Process pool workers' changeset
     for (let [id, changes] of poolWorkersChangeSet) {
         await poolWorkersManager.upsert(id, async (poolWorker) => {
-            if (!poolWorker._pool) {
+            if (!poolWorker.poolId) {
                 assert(changes.poolId)
-
                 poolWorker.poolId = changes.poolId
-                poolWorker._pool = (await poolsManager.get(changes.poolId.toString()))!
+                poolWorker.refPool = (await poolsManager.get(changes.poolId.toString()))!
             }
-            if (!poolWorker._worker) {
+            if (!poolWorker.workerAddress) {
                 assert(changes.worker)
-
                 poolWorker.workerAddress = changes.worker
-                poolWorker._worker = (await workersManager.get(changes.worker))!
+                poolWorker.refWorker = (await workersManager.get(changes.worker))!
             }
             if (!poolWorker.createdAt) {
                 poolWorker.createdAt = changes.createdAt
@@ -389,8 +394,8 @@ processor.run(database, async (ctx: Context) => {
 
             for (let e of changes.workerEvents) {
                 await workerEventsManager.create(e.id, async (event) => {
-                    event._worker = poolWorker._worker
-
+                    event.sequence = e.sequence
+                    event.refWorker = poolWorker.refWorker
                     event.kind = e.kind
                     event.payload = e.payload
                     event.blockNumber = e.blockNumber
@@ -402,85 +407,100 @@ processor.run(database, async (ctx: Context) => {
     await poolWorkersManager.saveAll()
     await workerEventsManager.saveAll()
 
-    // Process tasks' changeset
-    for (let [id, changes] of tasksChangeSet) {
-        await tasksManager.upsert(id, async (task) => {
-            if (!task.taskId) {
-                task.taskId = changes.taskId
+    // Process jobs' changeset
+    for (let [id, changes] of jobsChangeSet) {
+        await jobsManager.upsert(id, async (job) => {
+            if (!job.jobId) {
+                job.jobId = changes.jobId
             }
-            if (!task.poolId) {
+            if (!job.poolId) {
                 assert(changes.poolId)
-
-                task.poolId = changes.poolId
-                task._pool = (await poolsManager.get(changes.poolId.toString()))!
+                job.poolId = changes.poolId
+                job.refPool = (await poolsManager.get(changes.poolId.toString()))!
             }
-            if (!task.policyId) {
+            if (!job.policyId) {
                 assert(changes.policyId)
-                task.policyId = changes.policyId
-                task._policy = (await taskPoliciesManager.get(`${changes.poolId}-${changes.policyId}`))!
+                job.policyId = changes.policyId
+                job.refPolicy = (await jobPoliciesManager.get(`${changes.poolId}-${changes.policyId}`))!
             }
-            if (changes.owner) {
-                task.ownerAddress = changes.owner
-                task._owner = await accountsManager.getOrCreate(changes.owner)
+            if (changes.depositor) {
+                job.depositorAddress = changes.depositor
+                job.refDepositor = await accountsManager.getOrCreate(changes.depositor)
+            }
+            if (changes.beneficiary) {
+                job.beneficiaryAddress = changes.beneficiary
+                job.refBeneficiary = await accountsManager.getOrCreate(changes.beneficiary)
             }
             if (changes.assignee) {
-                task.assigneeAddress = changes.assignee
-                task._assignee = (await workersManager.get(changes.assignee))!
+                job.assigneeAddress = changes.assignee
+                job.refAssignee = (await workersManager.get(changes.assignee))!
             }
             if (changes.destroyer) {
-                task.destroyerAddress = changes.destroyer
-                task._destroyer = (await accountsManager.get(changes.destroyer))!
+                job.destroyerAddress = changes.destroyer
+                job.refDestroyer = (await accountsManager.get(changes.destroyer))!
             }
             if (changes.implSpecVersion) {
-                task.implSpecVersion = changes.implSpecVersion
+                job.implSpecVersion = changes.implSpecVersion
             }
             if (changes.status) {
-                task.status = changes.status
+                job.status = changes.status
             }
             if (changes.result) {
-                task.result = changes.result
+                job.result = changes.result
             }
             if (changes.input !== undefined) {
-                task.input = changes.input
+                job.input = changes.input
             }
             if (changes.output !== undefined) {
-                task.output = changes.output
+                job.output = changes.output
             }
             if (changes.proof !== undefined) {
-                task.proof = changes.proof
+                job.proof = changes.proof
             }
             if (changes.expiresAt) {
-                task.expiresAt = changes.expiresAt
+                job.expiresAt = changes.expiresAt
             }
             if (changes.assignedAt !== undefined) {
-                task.assignedAt = changes.assignedAt
+                job.assignedAt = changes.assignedAt
             }
             if (changes.processingAt) {
-                task.processingAt = changes.processingAt
+                job.processingAt = changes.processingAt
             }
             if (changes.endedAt) {
-                task.endedAt = changes.endedAt
+                job.endedAt = changes.endedAt
             }
             if (changes.createdAt) {
-                task.createdAt = changes.createdAt
+                job.createdAt = changes.createdAt
             }
             if (changes.deletedAt !== undefined) {
-                task.deletedAt = changes.deletedAt
+                job.deletedAt = changes.deletedAt
             }
-            task.updatedAt = changes.updatedAt
+            job.updatedAt = changes.updatedAt
+
+            for (let e of changes.events) {
+                await jobEventsManager.create(e.id, async (event) => {
+                    event.sequence = e.sequence
+                    event.refJob = job
+                    event.kind = e.kind
+                    event.payload = e.payload
+                    event.blockNumber = e.blockNumber
+                    event.blockTime = e.blockTime
+                })
+            }
         })
     }
     await accountsManager.saveAll()
-    await tasksManager.saveAll()
+    await jobsManager.saveAll()
+    await jobEventsManager.saveAll()
 
     // Update stats
 
     await ctx.store.find(Worker, {
         relations: {
-            servingPools: true,
+            subscribedPools: true,
         },
         where: {
-            servingPools: {
+          subscribedPools: {
                 deletedAt: IsNull(),
                 poolId: In(
                     Array.from(poolWorkersChangeSet.values())
@@ -489,7 +509,7 @@ processor.run(database, async (ctx: Context) => {
                 )
             }
         }
-    }).then(workers => workers.forEach(worker => workersManager.add(worker)))
+    }).then((workers: Worker[]) => workers.forEach(worker => workersManager.add(worker)))
     await ctx.store.find(Pool, {
         relations: {
             workers: true,
@@ -504,7 +524,7 @@ processor.run(database, async (ctx: Context) => {
                 )
             }
         }
-    }).then(pools => pools.forEach(pool => poolsManager.add(pool)))
+    }).then((pools: Pool[]) => pools.forEach(pool => poolsManager.add(pool)))
     for (let [_id, changes] of poolWorkersChangeSet) {
         if (changes.poolWorkerCounterChange == 0) {
             continue
@@ -529,25 +549,25 @@ processor.run(database, async (ctx: Context) => {
                     .map(changes => changes.id)
             )
         }
-    }).then(workers => workers.forEach(worker => workersManager.add(worker)))
+    }).then((workers: Worker[]) => workers.forEach(worker => workersManager.add(worker)))
     await ctx.store.find(Impl, {
         where: {
             id: In(
                 Array.from(workersManager.entitiesMap.values())
-                    .filter(worker => worker.implId)
-                    .map(worker => worker.implId)
+                    .filter(worker => worker.refImpl)
+                    .map(worker => worker.refImpl)
             )
         }
-    }).then(impls => impls.forEach(impl => implsManager.add(impl)))
+    }).then((impls: Impl[]) => impls.forEach(impl => implsManager.add(impl)))
     await ctx.store.find(ImplBuild, {
         where: {
             id: In(
                 Array.from(workersManager.entitiesMap.values())
-                    .filter(worker => worker.implId && worker.implBuildVersion)
+                    .filter(worker => worker.refImpl && worker.implBuildVersion)
                     .map(worker => `${worker.implId}-${worker.implBuildVersion}`)
             )
         }
-    }).then(implBuilds => implBuilds.forEach(implBuild => implBuildsManager.add(implBuild)))
+    }).then((implBuilds: ImplBuild[]) => implBuilds.forEach(implBuild => implBuildsManager.add(implBuild)))
     await ctx.store.find(Account, {
         where: {
             id: In(
@@ -555,7 +575,7 @@ processor.run(database, async (ctx: Context) => {
                     .map(worker => worker.ownerAddress)
             )
         }
-    }).then(accounts => accounts.forEach(account => accountsManager.add(account)))
+    }).then((accounts: Account[]) => accounts.forEach(account => accountsManager.add(account)))
     for (let [id, changes] of workersChangeSet) {
         const worker = await workersManager.get(id)
         assert(worker)
@@ -605,7 +625,8 @@ processor.run(database, async (ctx: Context) => {
     await workersManager.saveAll()
     await workerEventsManager.saveAll()
     await poolsManager.saveAll()
-    await taskPoliciesManager.saveAll()
+    await jobPoliciesManager.saveAll()
     await poolWorkersManager.saveAll()
-    await tasksManager.saveAll()
+    await jobsManager.saveAll()
+    await jobEventsManager.saveAll()
 })

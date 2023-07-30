@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToMany as OneToMany_} from "typeorm"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, Index as Index_, ManyToOne as ManyToOne_, OneToMany as OneToMany_} from "typeorm"
 import {Account} from "./account.model"
 import {Impl} from "./impl.model"
 import {ImplBuild} from "./implBuild.model"
@@ -7,7 +7,7 @@ import {AttestationMethod} from "./_attestationMethod"
 import {OfflineReason} from "./_offlineReason"
 import {WorkerEvent} from "./workerEvent.model"
 import {PoolWorkers} from "./poolWorkers.model"
-import {Task} from "./task.model"
+import {Job} from "./job.model"
 
 @Entity_()
 export class Worker {
@@ -19,22 +19,26 @@ export class Worker {
     id!: string
 
     @Index_()
+    @Column_("text", {nullable: false})
+    address!: string
+
+    @Index_()
     @ManyToOne_(() => Account, {nullable: true})
-    _owner!: Account
+    refOwner!: Account
 
     @Column_("text", {nullable: false})
     ownerAddress!: string
 
     @Index_()
     @ManyToOne_(() => Impl, {nullable: true})
-    _impl!: Impl
+    refImpl!: Impl
 
     @Column_("int4", {nullable: false})
     implId!: number
 
     @Index_()
     @ManyToOne_(() => ImplBuild, {nullable: true})
-    _implBuild!: ImplBuild | undefined | null
+    refImplBuild!: ImplBuild | undefined | null
 
     @Column_("int4", {nullable: true})
     implBuildVersion!: number | undefined | null
@@ -74,19 +78,22 @@ export class Worker {
     poolsCount!: number
 
     @Column_("int4", {nullable: false})
-    processingTasksCount!: number
+    pendingJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    assignedTasksCount!: number
+    processingJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    successfulTasksCount!: number
+    successfulJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    failedTasksCount!: number
+    failedJobsCount!: number
 
     @Column_("int4", {nullable: false})
-    erroredTasksCount!: number
+    erroredJobsCount!: number
+
+    @Column_("int4", {nullable: false})
+    panickyJobsCount!: number
 
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date
@@ -97,12 +104,12 @@ export class Worker {
     @Column_("timestamp with time zone", {nullable: true})
     deletedAt!: Date | undefined | null
 
-    @OneToMany_(() => WorkerEvent, e => e._worker)
+    @OneToMany_(() => WorkerEvent, e => e.refWorker)
     events!: WorkerEvent[]
 
-    @OneToMany_(() => PoolWorkers, e => e._worker)
-    servingPools!: PoolWorkers[]
+    @OneToMany_(() => PoolWorkers, e => e.refWorker)
+    subscribedPools!: PoolWorkers[]
 
-    @OneToMany_(() => Task, e => e._assignee)
-    assignedTasks!: Task[]
+    @OneToMany_(() => Job, e => e.refAssignee)
+    assignedJobs!: Job[]
 }
