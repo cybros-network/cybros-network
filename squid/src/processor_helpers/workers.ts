@@ -1,12 +1,12 @@
 import type { Context} from "../processor"
 import {
-    OffchainComputingWorkersWorkerAttestationRefreshedEvent as WorkerAttestationRefreshedEvent,
-    OffchainComputingWorkersWorkerDeregisteredEvent as WorkerDeregisteredEvent,
-    OffchainComputingWorkersWorkerHeartbeatReceivedEvent as WorkerHeartbeatReceivedEvent,
-    OffchainComputingWorkersWorkerOfflineEvent as WorkerOfflineEvent,
-    OffchainComputingWorkersWorkerOnlineEvent as WorkerOnlineEvent,
-    OffchainComputingWorkersWorkerRegisteredEvent as WorkerRegisteredEvent,
-    OffchainComputingWorkersWorkerRequestingOfflineEvent as WorkerRequestingOfflineEvent,
+    OffchainComputingInfraWorkerAttestationRefreshedEvent as WorkerAttestationRefreshedEvent,
+    OffchainComputingInfraWorkerDeregisteredEvent as WorkerDeregisteredEvent,
+    OffchainComputingInfraWorkerHeartbeatReceivedEvent as WorkerHeartbeatReceivedEvent,
+    OffchainComputingInfraWorkerOfflineEvent as WorkerOfflineEvent,
+    OffchainComputingInfraWorkerOnlineEvent as WorkerOnlineEvent,
+    OffchainComputingInfraWorkerRegisteredEvent as WorkerRegisteredEvent,
+    OffchainComputingInfraWorkerRequestingOfflineEvent as WorkerRequestingOfflineEvent,
 } from "../types/events"
 import * as v100 from "../types/v100"
 import { AttestationMethod, OfflineReason, WorkerEventKind, WorkerStatus } from "../model"
@@ -102,7 +102,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         const blockTime = new Date(block.header.timestamp);
 
         for (let event of block.events) {
-            if (event.name == "OffchainComputingWorkers.WorkerRegistered") {
+            if (event.name == "OffchainComputingInfra.WorkerRegistered") {
                 let e = new WorkerRegisteredEvent(ctx, event)
                 let rec: { worker: Uint8Array, owner: Uint8Array, implId: number }
                 if (e.isV100) {
@@ -142,7 +142,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 })
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputingWorkers.WorkerDeregistered") {
+            } else if (event.name == "OffchainComputingInfra.WorkerDeregistered") {
                 let e = new WorkerDeregisteredEvent(ctx, event)
                 let rec: { worker: Uint8Array, force: boolean }
                 if (e.isV100) {
@@ -188,7 +188,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 })
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputingWorkers.WorkerOnline") {
+            } else if (event.name == "OffchainComputingInfra.WorkerOnline") {
                 let e = new WorkerOnlineEvent(ctx, event)
                 let rec: {
                     worker: Uint8Array,
@@ -238,7 +238,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 })
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputingWorkers.WorkerRequestingOffline") {
+            } else if (event.name == "OffchainComputingInfra.WorkerRequestingOffline") {
                 let e = new WorkerRequestingOfflineEvent(ctx, event)
                 let rec: { worker: Uint8Array }
                 if (e.isV100) {
@@ -272,7 +272,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 })
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputingWorkers.WorkerOffline") {
+            } else if (event.name == "OffchainComputingInfra.WorkerOffline") {
                 let e = new WorkerOfflineEvent(ctx, event)
                 let rec: { worker: Uint8Array, reason: v100.OfflineReason }
                 if (e.isV100) {
@@ -318,7 +318,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 })
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputingWorkers.WorkerHeartbeatReceived") {
+            } else if (event.name == "OffchainComputingInfra.WorkerHeartbeatReceived") {
                 let e = new WorkerHeartbeatReceivedEvent(ctx, event)
                 let rec: { worker: Uint8Array, next: number, uptime: bigint }
                 if (e.isV100) {
@@ -345,7 +345,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputingWorkers.WorkerAttestationRefreshed") {
+            } else if (event.name == "OffchainComputingInfra.WorkerAttestationRefreshed") {
                 let e = new WorkerAttestationRefreshedEvent(ctx, event)
                 let rec: { worker: Uint8Array, expiresAt: (bigint | undefined) }
                 if (e.isV100) {

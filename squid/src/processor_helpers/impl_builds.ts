@@ -1,8 +1,8 @@
 import type { Context } from "../processor"
 import {
-    OffchainComputingWorkersImplBuildDeregisteredEvent as ImplBuildDeregisteredEvent,
-    OffchainComputingWorkersImplBuildRegisteredEvent as ImplBuildRegisteredEvent,
-    OffchainComputingWorkersImplBuildStatusUpdatedEvent as ImplBuildStatusUpdatedEvent,
+    OffchainComputingInfraImplBuildDeregisteredEvent as ImplBuildDeregisteredEvent,
+    OffchainComputingInfraImplBuildRegisteredEvent as ImplBuildRegisteredEvent,
+    OffchainComputingInfraImplBuildStatusUpdatedEvent as ImplBuildStatusUpdatedEvent,
 } from "../types/events"
 import * as v100 from "../types/v100"
 import { ImplBuildStatus } from "../model"
@@ -48,7 +48,7 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
         const blockTime = new Date(block.header.timestamp);
 
         for (let event of block.events) {
-            if (event.name == "OffchainComputingWorkers.ImplBuildRegistered") {
+            if (event.name == "OffchainComputingInfra.ImplBuildRegistered") {
                 let e = new ImplBuildRegisteredEvent(ctx, event)
                 let rec: {
                     implId: number,
@@ -78,7 +78,7 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputingWorkers.ImplBuildDeregistered") {
+            } else if (event.name == "OffchainComputingInfra.ImplBuildDeregistered") {
                 let e = new ImplBuildDeregisteredEvent(ctx, event)
                 let rec: { implId: number, implBuildVersion: number }
                 if (e.isV100) {
@@ -102,7 +102,7 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputingWorkers.ImplBuildStatusUpdated") {
+            } else if (event.name == "OffchainComputingInfra.ImplBuildStatusUpdated") {
                 let e = new ImplBuildStatusUpdatedEvent(ctx, event)
                 let rec: { implId: number, implBuildVersion: number, status: v100.ImplBuildStatus }
                 if (e.isV100) {

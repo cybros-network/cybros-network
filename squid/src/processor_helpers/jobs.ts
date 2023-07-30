@@ -1,11 +1,11 @@
 import type {Context} from "../processor"
 import {
-    OffchainComputingJobAssignedEvent as JobAssignedEvent,
-    OffchainComputingJobCreatedEvent as JobCreatedEvent,
-    OffchainComputingJobDestroyedEvent as JobDestroyedEvent,
-    OffchainComputingJobReleasedEvent as JobReleasedEvent,
-    OffchainComputingJobResultUpdatedEvent as JobResultUpdatedEvent,
-    OffchainComputingJobStatusUpdatedEvent as JobStatusUpdatedEvent,
+    OffchainComputingPoolJobAssignedEvent as JobAssignedEvent,
+    OffchainComputingPoolJobCreatedEvent as JobCreatedEvent,
+    OffchainComputingPoolJobDestroyedEvent as JobDestroyedEvent,
+    OffchainComputingPoolJobReleasedEvent as JobReleasedEvent,
+    OffchainComputingPoolJobResultUpdatedEvent as JobResultUpdatedEvent,
+    OffchainComputingPoolJobStatusUpdatedEvent as JobStatusUpdatedEvent,
 } from "../types/events"
 import * as v100 from "../types/v100";
 import {JobEventKind, JobResult, JobStatus} from "../model";
@@ -118,7 +118,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         const blockTime = new Date(block.header.timestamp);
 
         for (let event of block.events) {
-            if (event.name == "OffchainComputing.JobCreated") {
+            if (event.name == "OffchainComputingPool.JobCreated") {
                 let e = new JobCreatedEvent(ctx, event)
                 let rec: {
                     poolId: number,
@@ -168,7 +168,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
                 })
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.JobDestroyed") {
+            } else if (event.name == "OffchainComputingPool.JobDestroyed") {
                 let e = new JobDestroyedEvent(ctx, event)
                 let rec: {
                     poolId: number,
@@ -209,7 +209,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
                 })
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.JobAssigned") {
+            } else if (event.name == "OffchainComputingPool.JobAssigned") {
                 let e = new JobAssignedEvent(ctx, event)
                 let rec: { poolId: number, jobId: number, assignee: Uint8Array }
                 if (e.isV100) {
@@ -243,7 +243,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
                 })
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.JobReleased") {
+            } else if (event.name == "OffchainComputingPool.JobReleased") {
                 let e = new JobReleasedEvent(ctx, event)
                 let rec: { poolId: number, jobId: number }
                 if (e.isV100) {
@@ -276,7 +276,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
                 })
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.JobStatusUpdated") {
+            } else if (event.name == "OffchainComputingPool.JobStatusUpdated") {
                 let e = new JobStatusUpdatedEvent(ctx, event)
                 let rec: { poolId: number, jobId: number, status: v100.JobStatus }
                 if (e.isV100) {
@@ -315,7 +315,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
                 }
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.JobResultUpdated") {
+            } else if (event.name == "OffchainComputingPool.JobResultUpdated") {
                 let e = new JobResultUpdatedEvent(ctx, event)
                 let rec: {
                     poolId: number,

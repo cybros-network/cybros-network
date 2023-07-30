@@ -1,8 +1,8 @@
 import type { Context } from "../processor"
 import {
-    OffchainComputingJobPolicyCreatedEvent as JobPolicyCreatedEvent,
-    OffchainComputingJobPolicyDestroyedEvent as JobPolicyDestroyedEvent,
-    OffchainComputingJobPolicyEnablementUpdatedEvent as JobPolicyEnablementUpdatedEvent,
+    OffchainComputingPoolJobPolicyCreatedEvent as JobPolicyCreatedEvent,
+    OffchainComputingPoolJobPolicyDestroyedEvent as JobPolicyDestroyedEvent,
+    OffchainComputingPoolJobPolicyEnablementUpdatedEvent as JobPolicyEnablementUpdatedEvent,
 } from "../types/events"
 import * as v100 from "../types/v100"
 import { ApplicableScope } from "../model";
@@ -47,7 +47,7 @@ export function preprocessJobPoliciesEvents(ctx: Context): Map<string, JobPolicy
         const blockTime = new Date(block.header.timestamp);
 
         for (let event of block.events) {
-            if (event.name == "OffchainComputing.JobPolicyCreated") {
+            if (event.name == "OffchainComputingPool.JobPolicyCreated") {
                 let e = new JobPolicyCreatedEvent(ctx, event)
                 let rec: {
                     poolId: number,
@@ -80,7 +80,7 @@ export function preprocessJobPoliciesEvents(ctx: Context): Map<string, JobPolicy
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.JobPolicyDestroyed") {
+            } else if (event.name == "OffchainComputingPool.JobPolicyDestroyed") {
                 let e = new JobPolicyDestroyedEvent(ctx, event)
                 let rec: {poolId: number, policyId: number}
                 if (e.isV100) {
@@ -103,7 +103,7 @@ export function preprocessJobPoliciesEvents(ctx: Context): Map<string, JobPolicy
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.JobPolicyEnablementUpdated") {
+            } else if (event.name == "OffchainComputingPool.JobPolicyEnablementUpdated") {
                 let e = new JobPolicyEnablementUpdatedEvent(ctx, event)
                 let rec: {poolId: number, policyId: number, enabled: boolean}
                 if (e.isV100) {

@@ -61,47 +61,47 @@ https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/extrinsics
 #### Register an impl and an impl build
 
 Use Alice to send the extrinsic
-`offchainComputingWorkers.registerImpl(attestationMethod, deploymentPermission)`
+`offchainComputingInfra.registerImpl(attestationMethod, deploymentPermission)`
 - `attestationMethod` Choose `OptOut` means the Impl doesn't support attestation
 - `deploymentPermission` Can choose `Public` which means anyone could use the Impl to create pools
 
 Submit the extrinsic,
 then you should get the success event on the `Network -> Explorer` page:
-- `offchainComputingWorkers.ImplRegistered { implId: 101 }`
+- `offchainComputingInfra.ImplRegistered { implId: 101 }`
 
 Use Alice to send the extrinsic
-`offchainComputingWorkers.registerImplBuild(implId, version, magicBytes)`
+`offchainComputingInfra.registerImplBuild(implId, version, magicBytes)`
 - `implId` fill `101` (we got the `implId` from previous extrinsic)
 - `version` can fill `1` (it accepts any number larger than 0)
 - `magicBytes` keep `None` (It uses for TEE)
 
 Submit the extrinsic,
 then you should see the success event on the `Network -> Explorer` page:
-- `offchainComputingWorkers.ImplBuildRegistered`
+- `offchainComputingInfra.ImplBuildRegistered`
 
 #### Create a pool
 
 Use Alice to send the extrinsic
-`offchainComputing.createPool(implId, createJobEnabled, autoDestroyProcessedJobEnabled)`
+`offchainComputingPool.createPool(implId, createJobEnabled, autoDestroyProcessedJobEnabled)`
 - `implId` fill `101`
 - `createJobEnabled` choose `Yes` or the pool will not allow to create new job
 - `autoDestroyProcessedJobEnabled` can choose `Yes`
 
 Submit the extrinsic,
 then you should see the success event on the `Network -> Explorer` page:
-- `offchainComputing.PoolCreated { poolId: 101, ... }`
+- `offchainComputingPool.PoolCreated { poolId: 101, ... }`
 
 #### Create a job policy
 
 Use Alice to send the extrinsic
-`offchainComputing.createJobPolicy(poolId, applicableScope, startBlock, endBlock)`
+`offchainComputingPool.createJobPolicy(poolId, applicableScope, startBlock, endBlock)`
 - `poolId` fill `101` (we got the `poolId` from previous extrinsic)
 - `applicableScope` can choose `Public` which means anyone could use the policy
 - `startBlock` and `endBlock` can keep `None` which means the policy never expires
 
 Submit the extrinsic,
 then you should see the success event on the `Network -> Explorer` page:
-- `offchainComputing.JobPolicyCreated { policyId: 1, ... }`
+- `offchainComputingPool.JobPolicyCreated { policyId: 1, ... }`
 
 #### Start a worker
 
@@ -120,26 +120,26 @@ Worker address: 5CmLkeupoN7tSthSD6hFj9wHYc9RyMRAWb38uo5BD6LEViGw
 
 Wait for few seconds,
 then you should see events on the `Network -> Explorer` page:
-- `offchainComputingWorkers.WorkerRegistered`
-- `offchainComputingWorkers.WorkerOnline`
+- `offchainComputingInfra.WorkerRegistered`
+- `offchainComputingInfra.WorkerOnline`
 
 #### Add the worker to the pool
 
-Use Alice to send the extrinsic `offchainComputing.authorizeWorker(poolId, worker)`
+Use Alice to send the extrinsic `offchainComputingPool.authorizeWorker(poolId, worker)`
 - `poolId` fill `101`
 - `worker` fill `5CmLkeupoN7tSthSD6hFj9wHYc9RyMRAWb38uo5BD6LEViGw` (we got the address from the worker starting)
 
 Submit the extrinsic,
 then you should see the success event on the `Network -> Explorer` page:
-- `offchainComputing.WorkerAuthorized`
+- `offchainComputingPool.WorkerAuthorized`
 
 Wait for few seconds,
 then you should see the event:
-- `offchainComputing.WorkerSubscribed`
+- `offchainComputingPool.WorkerSubscribed`
 
 #### Create a job
 
-Send the extrinsic `offchainComputing.createJob(poolId, policyId, implSpecVersion, input, softExpiresIn)`
+Send the extrinsic `offchainComputingPool.createJob(poolId, policyId, implSpecVersion, input, softExpiresIn)`
 - `poolId` fill `101`
 - `policyId` fill `1`
 - `implSpecVersion` fill `1`
@@ -148,22 +148,22 @@ Send the extrinsic `offchainComputing.createJob(poolId, policyId, implSpecVersio
 
 Submit the extrinsic,
 then you should see the success event on the `Network -> Explorer` page:
-- `offchainComputing.JobCreated { jobId: 1, ... }`
+- `offchainComputingPool.JobCreated { jobId: 1, ... }`
 
 Keep watching, you should see these events：
-- `offchainComputing.JobAssigned`
-- `offchainComputing.JobStatusUpdated { status: Processing }`
-- `offchainComputing.JobResultUpdated { result: Sucess, output: "Hello World !!!", ... }`
-- `offchainComputing.JobStatusUpdated { status: Processed }`
+- `offchainComputingPool.JobAssigned`
+- `offchainComputingPool.JobStatusUpdated { status: Processing }`
+- `offchainComputingPool.JobResultUpdated { result: Sucess, output: "Hello World !!!", ... }`
+- `offchainComputingPool.JobStatusUpdated { status: Processed }`
 
 #### Destroy the processed job, releasing reserving tokens
 
 > You don't need to do this step if you set `autoDestroyProcessedJobEnabled: true` when creating the pool
 
-Send the extrinsic use the job's creator account `offchainComputing.destroyJob(poolId, jobId)`
+Send the extrinsic use the job's creator account `offchainComputingPool.destroyJob(poolId, jobId)`
 - `poolId` fill `101`
 - `jobId` fill `1`
 
 Submit the extrinsic,
 then you should see the success event on the `Network -> Explorer` page:
-- `offchainComputing.JobDestroyed { poolId: 101, jobId: 1 }`
+- `offchainComputingPool.JobDestroyed { poolId: 101, jobId: 1 }`

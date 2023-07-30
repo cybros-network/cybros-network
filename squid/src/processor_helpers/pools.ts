@@ -1,10 +1,10 @@
 import type { Context } from "../processor"
 import {
-    OffchainComputingPoolCreatedEvent as PoolCreatedEvent,
-    OffchainComputingPoolDestroyedEvent as PoolDestroyedEvent,
-    OffchainComputingPoolMetadataUpdatedEvent as PoolMetadataUpdatedEvent,
-    OffchainComputingPoolMetadataRemovedEvent as PoolMetadataRemovedEvent,
-    OffchainComputingPoolSettingsUpdatedEvent as PoolSettingsUpdatedEvent,
+    OffchainComputingPoolPoolCreatedEvent as PoolCreatedEvent,
+    OffchainComputingPoolPoolDestroyedEvent as PoolDestroyedEvent,
+    OffchainComputingPoolPoolMetadataUpdatedEvent as PoolMetadataUpdatedEvent,
+    OffchainComputingPoolPoolMetadataRemovedEvent as PoolMetadataRemovedEvent,
+    OffchainComputingPoolPoolSettingsUpdatedEvent as PoolSettingsUpdatedEvent,
 } from "../types/events"
 import { decodeSS58Address } from "../utils";
 import assert from "assert";
@@ -35,7 +35,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
         const blockTime = new Date(block.header.timestamp);
 
         for (let event of block.events) {
-            if (event.name == "OffchainComputing.PoolCreated") {
+            if (event.name == "OffchainComputingPool.PoolCreated") {
                 let e = new PoolCreatedEvent(ctx, event)
                 let rec: {
                     owner: Uint8Array,
@@ -70,7 +70,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.PoolDestroyed") {
+            } else if (event.name == "OffchainComputingPool.PoolDestroyed") {
                 let e = new PoolDestroyedEvent(ctx, event)
                 let rec: { poolId: number }
                 if (e.isV100) {
@@ -91,7 +91,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.PoolMetadataUpdated") {
+            } else if (event.name == "OffchainComputingPool.PoolMetadataUpdated") {
                 let e = new PoolMetadataUpdatedEvent(ctx, event)
                 let rec: { poolId: number, metadata: Uint8Array }
                 if (e.isV100) {
@@ -113,7 +113,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.PoolMetadataRemoved") {
+            } else if (event.name == "OffchainComputingPool.PoolMetadataRemoved") {
                 let e = new PoolMetadataRemovedEvent(ctx, event)
                 let rec: { poolId: number }
                 if (e.isV100) {
@@ -135,7 +135,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
                 changes.updatedAt = blockTime
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.PoolSettingsUpdated") {
+            } else if (event.name == "OffchainComputingPool.PoolSettingsUpdated") {
                 let e = new PoolSettingsUpdatedEvent(ctx, event)
                 let rec: {
                     poolId: number,

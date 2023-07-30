@@ -1,7 +1,7 @@
 import type { Context } from "../processor"
 import {
-    OffchainComputingWorkerSubscribedEvent as WorkerSubscribedEvent,
-    OffchainComputingWorkerUnsubscribedEvent as WorkerUnsubscribedEvent,
+    OffchainComputingPoolWorkerSubscribedEvent as WorkerSubscribedEvent,
+    OffchainComputingPoolWorkerUnsubscribedEvent as WorkerUnsubscribedEvent,
 } from "../types/events"
 import { decodeSS58Address } from "../utils"
 import { WorkerEventKind } from "../model";
@@ -41,7 +41,7 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
         const blockTime = new Date(block.header.timestamp);
 
         for (let event of block.events) {
-            if (event.name == "OffchainComputing.WorkerSubscribed") {
+            if (event.name == "OffchainComputingPool.WorkerSubscribed") {
                 let e = new WorkerSubscribedEvent(ctx, event)
                 let rec: {worker: Uint8Array, poolId: number}
                 if (e.isV100) {
@@ -75,7 +75,7 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                 })
 
                 changeSet.set(id, changes)
-            } else if (event.name == "OffchainComputing.WorkerUnsubscribed") {
+            } else if (event.name == "OffchainComputingPool.WorkerUnsubscribed") {
                 let e = new WorkerUnsubscribedEvent(ctx, event)
                 let rec: {worker: Uint8Array, poolId: number}
                 if (e.isV100) {

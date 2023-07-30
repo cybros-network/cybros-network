@@ -316,7 +316,7 @@ async function handleJob() {
     const jobOutput = out && out.length > 0 ? api.createType("JobOutput", out) : null;
 
     logger.info(`Sending "offchain_computing.submitJobResult()`);
-    const txPromise = api.tx.offchainComputing.submitJobResult(window.subscribePool, job.id, jobResult, jobOutput, null, null);
+    const txPromise = api.tx.offchainComputingPool.submitJobResult(window.subscribePool, job.id, jobResult, jobOutput, null, null);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -509,12 +509,12 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
   // Use the latest block instead of finalized one, so we don't delay handle any operation,
   // but confirm use finalized block
   const [workerInfo, flipOrFlop, inFlipSet, inFlopSet, { data: workerBalance }] = await Promise.all([
-    api.query.offchainComputingWorkers.workers(window.workerKeyPair.address).then((v) =>
+    api.query.offchainComputingInfra.workers(window.workerKeyPair.address).then((v) =>
       v === null || v === undefined ? null : v.toJSON()
     ),
-    api.query.offchainComputingWorkers.flipOrFlop().then(stage => stage.toString()),
-    api.query.offchainComputingWorkers.flipSet(window.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
-    api.query.offchainComputingWorkers.flopSet(window.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
+    api.query.offchainComputingInfra.flipOrFlop().then(stage => stage.toString()),
+    api.query.offchainComputingInfra.flipSet(window.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
+    api.query.offchainComputingInfra.flopSet(window.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
     api.query.system.account(window.workerKeyPair.address),
   ]);
 
@@ -529,7 +529,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     if (window.ownerKeyPair !== null) {
       const initialDeposit = numberToBalance(10000);
       logger.info(`Sending "offchain_computing_workers.registerWorker(worker, implId, initialDeposit)`);
-      const txPromise = api.tx.offchainComputingWorkers.registerWorker(window.workerKeyPair.address, implId, initialDeposit);
+      const txPromise = api.tx.offchainComputingInfra.registerWorker(window.workerKeyPair.address, implId, initialDeposit);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.ownerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -567,7 +567,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     const attestation = createAttestation(api, u8aToHex(payloadSig));
 
     logger.info(`Sending "offchain_computing_workers.online(payload, attestation)`);
-    const txPromise = api.tx.offchainComputingWorkers.online(payload, attestation);
+    const txPromise = api.tx.offchainComputingInfra.online(payload, attestation);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -591,7 +591,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     );
     if (shouldHeartBeat && window.locals.sentHeartbeatAt === undefined) {
       logger.info(`Sending "offchain_computing_workers.heartbeat()`);
-      const txPromise = api.tx.offchainComputingWorkers.heartbeat();
+      const txPromise = api.tx.offchainComputingInfra.heartbeat();
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -614,8 +614,8 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
 
     if (window.ownerKeyPair !== null) {
       const deposit = numberToBalance(workerBalanceThreshold);
-      logger.info(`Sending "offchainComputingWorkers.deposit('${window.workerKeyPair.address}', '${deposit}')"`);
-      const txPromise = api.tx.offchainComputingWorkers.deposit(window.workerKeyPair.address, deposit);
+      logger.info(`Sending "offchainComputingInfra.deposit('${window.workerKeyPair.address}', '${deposit}')"`);
+      const txPromise = api.tx.offchainComputingInfra.deposit(window.workerKeyPair.address, deposit);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.ownerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -640,8 +640,8 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
   }
 
   const [invited, subscribed] = await Promise.all([
-    api.query.offchainComputing.poolProvisionedWorkers(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
-    api.query.offchainComputing.workerSubscribedPools(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
+    api.query.offchainComputingPool.poolProvisionedWorkers(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
+    api.query.offchainComputingPool.workerSubscribedPools(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
   ]);
 
   if (!invited) {
@@ -654,8 +654,8 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
       return;
     }
 
-    logger.info(`Sending "offchainComputing.subscribePool(poolId)`);
-    const txPromise = api.tx.offchainComputing.subscribePool(window.subscribePool);
+    logger.info(`Sending "offchainComputingPool.subscribePool(poolId)`);
+    const txPromise = api.tx.offchainComputingPool.subscribePool(window.subscribePool);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
     const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
@@ -695,7 +695,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     window.locals.sentTakeJobAt = undefined;
 
     const jobs =
-      (await api.query.offchainComputing.jobs.entries(window.subscribePool))
+      (await api.query.offchainComputingPool.jobs.entries(window.subscribePool))
         .map(([_k, job]) => job.toJSON());
 
     const jobsOfMine = jobs
@@ -707,7 +707,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
       // console.log(job);
 
       if ((job && window.locals.currentJob === undefined) || window.locals.currentJob.id == job.id) {
-        const input = (await api.query.offchainComputing.jobInputs(window.subscribePool, job.id)).unwrapOr(null);
+        const input = (await api.query.offchainComputingPool.jobInputs(window.subscribePool, job.id)).unwrapOr(null);
         // console.log(input);
         job.input = input !== null ? u8aToHex(input.data) : "";
         job.rawInput = input;
@@ -720,12 +720,12 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     }
 
     let assignableJobsCount = jobs.filter((job: AnyJson) => job.status === JobStatus.Pending && job.assignee === null && job.implSpecVersion == implSpecVersion ).length
-    let myJobsCount = (await api.query.offchainComputing.counterForWorkerAssignedJobs(window.workerKeyPair.address)).toNumber()
+    let myJobsCount = (await api.query.offchainComputingPool.counterForWorkerAssignedJobs(window.workerKeyPair.address)).toNumber()
     if (assignableJobsCount > 0 && myJobsCount <= 1 && window.locals.sentTakeJobAt === undefined) {
       logger.info("taking a new job");
 
       logger.info(`Sending "offchain_computing.take_job(${window.subscribePool}, null, true, null)`);
-      const txPromise = api.tx.offchainComputing.takeJob(window.subscribePool, null, true, null);
+      const txPromise = api.tx.offchainComputingPool.takeJob(window.subscribePool, null, true, null);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
       const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
