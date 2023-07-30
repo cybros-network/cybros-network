@@ -133,7 +133,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.registerWorkerCounterChange = 1
                 changes.onlineWorkerCounterChange = 0
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.Registered,
                     payload: { implId: rec.implId },
@@ -179,7 +179,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.registerWorkerCounterChange -= 1
                 changes.onlineWorkerCounterChange -= rec.force ? 1 : 0
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.Deregistered,
                     payload: {force: rec.force},
@@ -230,7 +230,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
                 changes.onlineWorkerCounterChange += 1
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.Online,
                     blockNumber,
@@ -264,7 +264,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.updatedAt = blockTime
 
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.RequestingOffline,
                     blockNumber,
@@ -310,7 +310,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
                 changes.onlineWorkerCounterChange -= 1
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.Offline,
                     blockNumber,
@@ -372,7 +372,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
                 changes.updatedAt = blockTime
 
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: WorkerEventKind.AttestationRefreshed,
                     blockNumber,

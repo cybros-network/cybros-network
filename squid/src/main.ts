@@ -26,6 +26,7 @@ import { Equal, IsNull, In } from "typeorm"
 const database = new TypeormDatabase();
 
 processor.run(database, async (ctx) => {
+    console.log(ctx)
     // Preprocess events
     const implsChangeSet = preprocessImplsEvents(ctx)
     const implBuildsChangeSet = preprocessImplBuildsEvents(ctx)
@@ -179,7 +180,8 @@ processor.run(database, async (ctx) => {
                 impl.ownerAddress = changes.owner
                 impl.refOwner = await accountsManager.getOrCreate(changes.owner)
             }
-            if (changes.attestationMethod) {
+            if (!impl.attestationMethod) {
+                assert(changes.attestationMethod)
                 impl.attestationMethod = changes.attestationMethod
             }
             if (changes.deploymentScope) {
@@ -188,7 +190,8 @@ processor.run(database, async (ctx) => {
             if (changes.metadata !== undefined) {
                 impl.metadata = changes.metadata
             }
-            if (changes.createdAt) {
+            if (!impl.createdAt) {
+                assert(changes.createdAt)
                 impl.createdAt = changes.createdAt
             }
             if (changes.deletedAt !== undefined) {
@@ -216,8 +219,8 @@ processor.run(database, async (ctx) => {
             if (changes.magicBytes !== undefined) {
                 implBuild.magicBytes = changes.magicBytes
             }
-            if (changes.createdAt) {
-                implBuild.createdAt = changes.createdAt!
+            if (!implBuild.createdAt) {
+                implBuild.createdAt = changes.createdAt
             }
             if (changes.deletedAt !== undefined) {
                 implBuild.deletedAt = changes.deletedAt
@@ -234,23 +237,25 @@ processor.run(database, async (ctx) => {
                 assert(changes.address)
                 worker.address = changes.address
             }
-            if (changes.owner) {
+            if (!worker.ownerAddress) {
+                assert(changes.owner)
                 worker.ownerAddress = changes.owner
                 worker.refOwner = await accountsManager.getOrCreate(changes.owner)
             }
-            if (changes.implId) {
+            if (!worker.implId) {
+                assert(changes.implId)
                 worker.implId = changes.implId
                 worker.refImpl = (await implsManager.get(changes.implId.toString()))!
             }
-            if (changes.implBuildVersion !== undefined) {
+            if (changes.implBuildVersion) {
                 assert(worker.implId)
                 worker.implBuildVersion = changes.implBuildVersion
                 worker.refImplBuild = (await implBuildsManager.get(`${worker.implId}-${changes.implBuildVersion}`))!
             }
-            if (changes.implSpecVersion !== undefined) {
+            if (changes.implSpecVersion) {
                 worker.implSpecVersion = changes.implSpecVersion
             }
-            if (changes.attestationMethod !== undefined) {
+            if (changes.attestationMethod) {
                 worker.attestationMethod = changes.attestationMethod
             }
             if (changes.attestationExpiresAt !== undefined) {
@@ -276,6 +281,7 @@ processor.run(database, async (ctx) => {
                 }
             }
             if (!worker.createdAt) {
+                assert(changes.createdAt)
                 worker.createdAt = changes.createdAt
             }
             if (changes.deletedAt !== undefined) {
@@ -317,16 +323,17 @@ processor.run(database, async (ctx) => {
                 pool.implId = changes.implId
                 pool.refImpl = (await implsManager.get(changes.implId.toString()))!
             }
-            if (changes.createJobEnabled) {
+            if (changes.createJobEnabled !== undefined) {
                 pool.createJobEnabled = changes.createJobEnabled
             }
-            if (changes.autoDestroyProcessedJobEnabled) {
+            if (changes.autoDestroyProcessedJobEnabled !== undefined) {
                 pool.autoDestroyProcessedJobEnabled = changes.autoDestroyProcessedJobEnabled
             }
             if (changes.metadata !== undefined) {
                 pool.metadata = changes.metadata
             }
-            if (changes.createdAt) {
+            if (!pool.createdAt) {
+                assert(changes.createdAt)
                 pool.createdAt = changes.createdAt
             }
             if (changes.deletedAt !== undefined) {
@@ -341,26 +348,28 @@ processor.run(database, async (ctx) => {
     // Process create job policies' changeset
     for (let [id, changes] of jobPoliciesChangeSet) {
         await jobPoliciesManager.upsert(id, async (jobPolicy) => {
-            if (changes.poolId) {
+            if (!jobPolicy.poolId) {
+                assert(changes.poolId)
                 jobPolicy.poolId = changes.poolId
                 jobPolicy.refPool = (await poolsManager.get(changes.poolId.toString()))!
             }
-            if (changes.policyId) {
+            if (!jobPolicy.policyId) {
+                assert(changes.policyId)
                 jobPolicy.policyId = changes.policyId
             }
-            if (changes.enabled) {
+            if (changes.enabled !== undefined) {
                 jobPolicy.enabled = changes.enabled
             }
             if (changes.applicableScope) {
                 jobPolicy.applicableScope = changes.applicableScope
             }
-            if (changes.startBlock) {
+            if (changes.startBlock !== undefined) {
                 jobPolicy.startBlock = changes.startBlock
             }
-            if (changes.endBlock) {
+            if (changes.endBlock !== undefined) {
                 jobPolicy.endBlock = changes.endBlock
             }
-            if (changes.createdAt) {
+            if (!jobPolicy.createdAt) {
                 jobPolicy.createdAt = changes.createdAt
             }
             if (changes.deletedAt !== undefined) {
@@ -457,19 +466,20 @@ processor.run(database, async (ctx) => {
             if (changes.proof !== undefined) {
                 job.proof = changes.proof
             }
-            if (changes.expiresAt) {
+            if (changes.expiresAt !== undefined) {
                 job.expiresAt = changes.expiresAt
             }
             if (changes.assignedAt !== undefined) {
                 job.assignedAt = changes.assignedAt
             }
-            if (changes.processingAt) {
+            if (changes.processingAt !== undefined) {
                 job.processingAt = changes.processingAt
             }
-            if (changes.endedAt) {
+            if (changes.endedAt !== undefined) {
                 job.endedAt = changes.endedAt
             }
-            if (changes.createdAt) {
+            if (!job.createdAt) {
+                assert(changes.createdAt)
                 job.createdAt = changes.createdAt
             }
             if (changes.deletedAt !== undefined) {

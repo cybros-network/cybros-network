@@ -66,7 +66,7 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                 changes.updatedAt = blockTime
                 changes.poolWorkerCounterChange = 1
                 changes.workerEvents.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.workerEvents.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.workerEvents.length,
                     kind: WorkerEventKind.SubscribedPool,
                     payload: {poolId: rec.poolId},
@@ -100,7 +100,7 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
                 changes.updatedAt = blockTime
                 changes.poolWorkerCounterChange = -1
                 changes.workerEvents.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.workerEvents.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.workerEvents.length,
                     kind: WorkerEventKind.UnsubscribedPool,
                     payload: {poolId: rec.poolId},

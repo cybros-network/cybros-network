@@ -25,7 +25,6 @@ export const processor = new SubstrateBatchProcessor()
             args: true
         },
         event: {
-            extrinsicIndex: true,
             name: true,
             args: true
         }

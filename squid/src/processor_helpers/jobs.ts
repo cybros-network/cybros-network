@@ -160,7 +160,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
                 changes.updatedAt = blockTime
 
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: JobEventKind.Created,
                     blockNumber,
@@ -200,7 +200,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
                 changes.deletedAt = blockTime
 
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: JobEventKind.Destroyed,
                     payload: {force: rec.force},
@@ -234,7 +234,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
                 changes.updatedAt = blockTime
 
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: JobEventKind.Assigned,
                     payload: {assignee: changes.assignee},
@@ -268,7 +268,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
                 changes.updatedAt = blockTime
 
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: JobEventKind.Released,
                     blockNumber,
@@ -306,7 +306,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
                 if (changes.status == JobStatus.Processing) {
                     changes.events.push({
-                        id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                        id: `${id}-${blockNumber}-${event.index}`,
                         sequence: blockNumber * 100 + changes.events.length,
                         kind: JobEventKind.Processing,
                         blockNumber,
@@ -347,7 +347,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
                 changes.updatedAt = blockTime
 
                 changes.events.push({
-                    id: `${id}-${blockNumber}-${event.extrinsicIndex}-${changes.events.length}`,
+                    id: `${id}-${blockNumber}-${event.index}`,
                     sequence: blockNumber * 100 + changes.events.length,
                     kind: convertJobResultToEventKind(changes.result),
                     blockNumber,
