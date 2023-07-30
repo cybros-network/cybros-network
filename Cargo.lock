@@ -1333,8 +1333,8 @@ dependencies = [
  "pallet-grandpa",
  "pallet-insecure-randomness-collective-flip",
  "pallet-multisig",
- "pallet-offchain_computing",
- "pallet-offchain_computing_workers",
+ "pallet-offchain_computing-infra",
+ "pallet-offchain_computing-pool",
  "pallet-proxy",
  "pallet-sudo",
  "pallet-timestamp",
@@ -4292,7 +4292,7 @@ dependencies = [
  "log",
  "pallet-balances",
  "pallet-insecure-randomness-collective-flip",
- "pallet-offchain_computing_workers",
+ "pallet-offchain_computing-infra",
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
@@ -4355,39 +4355,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-offchain_computing"
-version = "0.0.1-dev"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "pallet-balances",
- "pallet-insecure-randomness-collective-flip",
- "pallet-offchain_computing-primitives",
- "pallet-offchain_computing_workers",
- "pallet-timestamp",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-offchain_computing-primitives"
-version = "0.0.1-dev"
-dependencies = [
- "frame-support",
- "pallet-offchain_computing_workers-primitives",
- "parity-scale-codec",
- "scale-info",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-offchain_computing_workers"
+name = "pallet-offchain_computing-infra"
 version = "0.0.1-dev"
 dependencies = [
  "chrono",
@@ -4398,7 +4366,7 @@ dependencies = [
  "log",
  "pallet-balances",
  "pallet-insecure-randomness-collective-flip",
- "pallet-offchain_computing_workers-primitives",
+ "pallet-offchain_computing-infra-primitives",
  "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
@@ -4409,10 +4377,42 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-offchain_computing_workers-primitives"
+name = "pallet-offchain_computing-infra-primitives"
 version = "0.0.1-dev"
 dependencies = [
  "frame-support",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-offchain_computing-pool"
+version = "0.0.1-dev"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-insecure-randomness-collective-flip",
+ "pallet-offchain_computing-infra",
+ "pallet-offchain_computing-pool-primitives",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-offchain_computing-pool-primitives"
+version = "0.0.1-dev"
+dependencies = [
+ "frame-support",
+ "pallet-offchain_computing-infra-primitives",
  "parity-scale-codec",
  "scale-info",
  "sp-std",

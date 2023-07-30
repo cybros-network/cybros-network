@@ -31,8 +31,8 @@ mod balances;
 mod transaction_payment;
 mod vesting;
 
-mod offchain_computing_workers;
-mod offchain_computing;
+mod offchain_computing_infra;
+mod offchain_computing_pool;
 
 mod sudo;
 

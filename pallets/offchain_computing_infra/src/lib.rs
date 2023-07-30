@@ -37,7 +37,7 @@ pub use traits::{OffchainWorkerLifecycleHooks, OffchainWorkerManageable};
 pub use weights::WeightInfo;
 
 /// The log target of this pallet.
-pub const LOG_TARGET: &str = "runtime::offchain_computing_workers";
+pub const LOG_TARGET: &str = "runtime::offchain_computing_infra";
 
 // Syntactic sugar for logging.
 #[macro_export]

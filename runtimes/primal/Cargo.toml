@@ -54,8 +54,8 @@ pallet-vesting = { git = "https://github.com/paritytech/substrate", branch = "ma
 
 pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
-pallet-offchain_computing_workers = { path = "../../pallets/offchain_computing_workers", default-features = false }
-pallet-offchain_computing = { path = "../../pallets/offchain_computing", default-features = false }
+pallet-offchain_computing-infra = { path = "../../pallets/offchain_computing_infra", default-features = false }
+pallet-offchain_computing-pool = { path = "../../pallets/offchain_computing_pool", default-features = false }
 
 # Local Dependencies
 runtime-primitives = { package = "cybros-runtime-primitives", path = "../../runtime-primitives", default-features = false }
@@ -102,8 +102,8 @@ std = [
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-vesting/std",
 	"pallet-sudo/std",
-	"pallet-offchain_computing_workers/std",
-	"pallet-offchain_computing/std",
+	"pallet-offchain_computing-infra/std",
+	"pallet-offchain_computing-pool/std",
 ]
 runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
@@ -119,8 +119,8 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-vesting/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
-	"pallet-offchain_computing_workers/runtime-benchmarks",
-	"pallet-offchain_computing/runtime-benchmarks",
+	"pallet-offchain_computing-infra/runtime-benchmarks",
+	"pallet-offchain_computing-pool/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-try-runtime/try-runtime",
@@ -138,6 +138,6 @@ try-runtime = [
 	"pallet-transaction-payment/try-runtime",
 	"pallet-vesting/try-runtime",
 	"pallet-sudo/try-runtime",
-	"pallet-offchain_computing_workers/try-runtime",
-	"pallet-offchain_computing/try-runtime",
+	"pallet-offchain_computing-infra/try-runtime",
+	"pallet-offchain_computing-pool/try-runtime",
 ]

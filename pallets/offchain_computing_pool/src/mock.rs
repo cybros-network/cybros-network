@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate as pallet_offchain_computing;
+use crate as pallet_offchain_computing_pool;
 
 use frame_support::{
 	assert_ok,
@@ -51,8 +51,8 @@ frame_support::construct_runtime!(
 		Balances: pallet_balances,
 		Timestamp: pallet_timestamp,
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
-		OffchainComputingWorkers: pallet_offchain_computing_workers,
-		OffchainComputing: pallet_offchain_computing,
+		OffchainComputingInfra: pallet_offchain_computing_infra,
+		OffchainComputingPool: pallet_offchain_computing_pool,
 	}
 );
 
@@ -107,7 +107,7 @@ impl pallet_timestamp::Config for Test {
 
 impl pallet_insecure_randomness_collective_flip::Config for Test {}
 
-impl pallet_offchain_computing_workers::Config for Test {
+impl pallet_offchain_computing_infra::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type UnixTime = Timestamp;
@@ -125,18 +125,18 @@ impl pallet_offchain_computing_workers::Config for Test {
 	type MaxWorkerUnresponsiveProtectionInBlocks = ConstU32<6>;
 	type DisallowOptOutAttestation = ConstBool<false>;
 	type WeightInfo = ();
-	type OffchainWorkerLifecycleHooks = ();
+	type OffchainWorkerLifecycleHooks = OffchainComputingPool;
 }
 
-impl pallet_offchain_computing::Config for Test {
+impl pallet_offchain_computing_pool::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
-	type OffchainWorkerManageable = OffchainComputingWorkers;
+	type OffchainWorkerManageable = OffchainComputingInfra;
 	type Currency = Balances;
 	type UnixTime = Timestamp;
 	type PoolId = u32;
 	type JobId = u32;
 	type PolicyId = u32;
-	type CreatePoolOrigin = frame_system::EnsureSigned<Self::AccountId>;
+	type CreatePoolOrigin = EnsureSigned<Self::AccountId>;
 	type CreatePoolDeposit = ConstU128<{ DOLLARS }>;
 	type DepositPerJob = ConstU128<{ DOLLARS }>;
 	type MetadataDepositBase = ConstU128<{ CENTS }>;

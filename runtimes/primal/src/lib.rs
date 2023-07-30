@@ -202,8 +202,8 @@ construct_runtime!(
 		Vesting: pallet_vesting = 62,
 
 		// The main stage
-		OffchainComputingWorkers: pallet_offchain_computing_workers = 100,
-		OffchainComputing: pallet_offchain_computing = 101,
+		OffchainComputingInfra: pallet_offchain_computing_infra = 100,
+		OffchainComputingPool: pallet_offchain_computing_pool = 101,
 
 		// Non-permanent
 		Sudo: pallet_sudo = 255,
@@ -455,6 +455,6 @@ mod benches {
 		[pallet_balances, Balances]
 		[pallet_vesting, Vesting]
 		[pallet_sudo, Sudo]
-		[pallet_offchain_computing_workers, OffchainComputingWorkers]
+		[pallet_offchain_computing_infra, OffchainComputingInfra]
 	);
 }

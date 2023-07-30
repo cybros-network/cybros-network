@@ -22,9 +22,9 @@ use frame_support::traits::{
 	ConstU32, ConstU64, ConstU128,
 };
 
-impl pallet_offchain_computing::Config for Runtime {
+impl pallet_offchain_computing_pool::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type OffchainWorkerManageable = OffchainComputingWorkers;
+	type OffchainWorkerManageable = OffchainComputingInfra;
 	type Currency = Balances;
 	type UnixTime = Timestamp;
 	type PoolId = u32;

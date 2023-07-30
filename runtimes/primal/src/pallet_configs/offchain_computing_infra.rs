@@ -20,7 +20,7 @@ use crate::*;
 use frame_system::EnsureSigned;
 use frame_support::traits::{ConstBool, ConstU128, ConstU32};
 
-impl pallet_offchain_computing_workers::Config for Runtime {
+impl pallet_offchain_computing_infra::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type UnixTime = Timestamp;
@@ -37,6 +37,6 @@ impl pallet_offchain_computing_workers::Config for Runtime {
 	type CollectingHeartbeatsDurationInBlocks = ConstU32<300>; // 30min * 60 / 6
 	type MaxWorkerUnresponsiveProtectionInBlocks = ConstU32<300>; // 30min * 60 / 6
 	type DisallowOptOutAttestation = ConstBool<false>;
-	type WeightInfo = pallet_offchain_computing_workers::weights::SubstrateWeight<Runtime>;
-	type OffchainWorkerLifecycleHooks = OffchainComputing;
+	type WeightInfo = pallet_offchain_computing_infra::weights::SubstrateWeight<Runtime>;
+	type OffchainWorkerLifecycleHooks = OffchainComputingPool;
 }

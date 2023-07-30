@@ -48,7 +48,7 @@ frame_support::construct_runtime!(
 		Balances: pallet_balances,
 		Timestamp: pallet_timestamp,
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
-		OffchainComputingWorkers: pallet_offchain_computing_workers,
+		OffchainComputingInfra: pallet_offchain_computing_infra,
 		FakeOffchainComputing: pallet_fake_offchain_computing,
 	}
 );
@@ -104,7 +104,7 @@ impl pallet_timestamp::Config for Test {
 
 impl pallet_insecure_randomness_collective_flip::Config for Test {}
 
-impl pallet_offchain_computing_workers::Config for Test {
+impl pallet_offchain_computing_infra::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type UnixTime = Timestamp;
@@ -131,7 +131,7 @@ parameter_types! {
 
 impl pallet_fake_offchain_computing::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
-	type OffchainWorkerManageable = OffchainComputingWorkers;
+	type OffchainWorkerManageable = OffchainComputingInfra;
 	type SlashingCardinal = SlashingCardinal;
 }
 

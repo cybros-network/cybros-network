@@ -22,7 +22,7 @@ frame-system = { git = "https://github.com/paritytech/substrate", branch = "mast
 
 pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
-pallet-offchain_computing_workers = { path = "../offchain_computing_workers", default-features = false }
+pallet-offchain_computing-infra = { path = "../offchain_computing_infra", default-features = false }
 
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
@@ -41,10 +41,10 @@ std = [
 	"frame-system/std",
 	"scale-info/std",
 	"pallet-insecure-randomness-collective-flip/std",
-	"pallet-offchain_computing_workers/std",
+	"pallet-offchain_computing-infra/std",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
 	"pallet-insecure-randomness-collective-flip/try-runtime",
-	"pallet-offchain_computing_workers/try-runtime",
+	"pallet-offchain_computing-infra/try-runtime",
 ]

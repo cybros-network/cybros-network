@@ -8,7 +8,7 @@ cd "$PROJECT_ROOT"
 echo "*** Run benchmark for pallet-computing_workers ***"
 
 ./target/production/cybros-node benchmark pallet \
-  --pallet=pallet_offchain_computing_workers \
+  --pallet=pallet_offchain_computing_infra \
   --extrinsic="*" \
   --chain=dev \
   --steps=50 \
@@ -18,6 +18,6 @@ echo "*** Run benchmark for pallet-computing_workers ***"
   --no-min-squares \
   --wasm-execution=compiled \
   --heap-pages=4096 \
-  --output=./pallets/offchain_computing_workers/src/weights.rs \
+  --output=./pallets/offchain_computing_infra/src/weights.rs \
   --template=./pallet-weight-template.hbs \
   --header ./AGPL3-HEADER

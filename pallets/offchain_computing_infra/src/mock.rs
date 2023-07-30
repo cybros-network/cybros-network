@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate as pallet_offchain_computing_workers;
+use crate as pallet_offchain_computing_infra;
 
 use frame_support::{
 	assert_ok,
@@ -50,7 +50,7 @@ frame_support::construct_runtime!(
 		Balances: pallet_balances,
 		Timestamp: pallet_timestamp,
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
-		OffchainComputingWorkers: pallet_offchain_computing_workers,
+		OffchainComputingInfra: pallet_offchain_computing_infra,
 	}
 );
 
@@ -105,7 +105,7 @@ impl pallet_timestamp::Config for Test {
 
 impl pallet_insecure_randomness_collective_flip::Config for Test {}
 
-impl pallet_offchain_computing_workers::Config for Test {
+impl pallet_offchain_computing_infra::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type UnixTime = Timestamp;

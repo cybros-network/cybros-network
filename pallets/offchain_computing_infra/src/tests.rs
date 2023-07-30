@@ -23,7 +23,7 @@ use frame_system::Account;
 #[allow(unused)]
 use primitives::*;
 #[allow(unused)]
-use crate::{mock::*, BalanceOf, Config, Error, Event as OffchainComputingWorkersEvent, Workers};
+use crate::{mock::*, BalanceOf, Config, Error, Event as OffchainComputingInfraEvent, Workers};
 
 #[allow(unused)]
 const ALICE: AccountId = 1;
@@ -37,25 +37,25 @@ const BOB_WORKER: AccountId = 4;
 type ImplId = u32;
 type WorkerInfo = primitives::WorkerInfo<<Test as frame_system::Config>::AccountId, BalanceOf<Test>, ImplId>;
 
-fn last_event() -> OffchainComputingWorkersEvent<Test> {
+fn last_event() -> OffchainComputingInfraEvent<Test> {
 	System::events()
 		.into_iter()
 		.map(|r| r.event)
-		.filter_map(|e| if let RuntimeEvent::OffchainComputingWorkers(inner) = e { Some(inner) } else { None })
+		.filter_map(|e| if let RuntimeEvent::OffchainComputingInfra(inner) = e { Some(inner) } else { None })
 		.last()
 		.expect("Must have an event")
 }
 
 fn mock_impl_and_build(owner: AccountId) -> (ImplId, ImplSpecVersion) {
 	assert_ok!(
-		OffchainComputingWorkers::register_impl(
+		OffchainComputingInfra::register_impl(
 			RuntimeOrigin::signed(owner),
 			AttestationMethod::OptOut,
 			ApplicableScope::Public
 		)
 	);
 
-	let OffchainComputingWorkersEvent::ImplRegistered {
+	let OffchainComputingInfraEvent::ImplRegistered {
 		owner: actual_owner, attestation_method: actual_attestation_method, impl_id, deployment_scope: actual_deployment_permission
 	} = last_event() else {
 		panic!("The last event must be `ImplRegistered`");
@@ -72,7 +72,7 @@ fn register_worker_for(owner: AccountId, worker: AccountId, impl_id: ImplId, ini
 	let owner_balance = Balances::free_balance(owner);
 
 	assert_ok!(
-		OffchainComputingWorkers::register_worker(
+		OffchainComputingInfra::register_worker(
 			RuntimeOrigin::signed(owner),
 			worker,
 			impl_id,
@@ -104,12 +104,12 @@ fn register_worker_works() {
 		register_worker_for(ALICE, ALICE_WORKER, impl_id, 101 * DOLLARS);
 
 		assert_noop!(
-			OffchainComputingWorkers::register_worker(RuntimeOrigin::signed(ALICE), ALICE_WORKER, impl_id, 11 * DOLLARS),
+			OffchainComputingInfra::register_worker(RuntimeOrigin::signed(ALICE), ALICE_WORKER, impl_id, 11 * DOLLARS),
 			Error::<Test>::InitialBalanceTooLow
 		);
 
 		assert_noop!(
-			OffchainComputingWorkers::register_worker(RuntimeOrigin::signed(ALICE), ALICE_WORKER, impl_id, 101 * DOLLARS),
+			OffchainComputingInfra::register_worker(RuntimeOrigin::signed(ALICE), ALICE_WORKER, impl_id, 101 * DOLLARS),
 			Error::<Test>::AlreadyRegistered
 		);
 	});
@@ -127,7 +127,7 @@ fn deregister_worker_works() {
 
 		run_to_block(2);
 
-		assert_ok!(OffchainComputingWorkers::deregister_worker(RuntimeOrigin::signed(ALICE), ALICE_WORKER));
+		assert_ok!(OffchainComputingInfra::deregister_worker(RuntimeOrigin::signed(ALICE), ALICE_WORKER));
 
 		assert_eq!(Balances::free_balance(ALICE), 200 * DOLLARS);
 		assert!(!Account::<Test>::contains_key(ALICE_WORKER));

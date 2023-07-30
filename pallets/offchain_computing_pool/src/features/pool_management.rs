@@ -23,7 +23,7 @@ use sp_runtime::{
 	Saturating
 };
 use sp_std::cmp::Ordering;
-use pallet_offchain_computing_workers::ApplicableScope;
+use pallet_offchain_computing_infra::ApplicableScope;
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_pool(

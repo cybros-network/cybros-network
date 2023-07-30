@@ -46,7 +46,7 @@ macro_rules! log {
 use frame_support::{
 	sp_runtime::Saturating,
 };
-use pallet_offchain_computing_workers::{
+use pallet_offchain_computing_infra::{
 	OffchainWorkerLifecycleHooks, OffchainWorkerManageable,
 	OfflineReason, OnlinePayload, VerifiedAttestation,
 };

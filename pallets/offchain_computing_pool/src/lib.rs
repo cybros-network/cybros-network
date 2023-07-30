@@ -55,7 +55,7 @@ use sp_runtime::{
 	SaturatedConversion,
 };
 
-use pallet_offchain_computing_workers::{
+use pallet_offchain_computing_infra::{
 	OfflineReason, OnlinePayload, VerifiedAttestation,
 	OffchainWorkerLifecycleHooks, OffchainWorkerManageable,
 	ImplSpecVersion

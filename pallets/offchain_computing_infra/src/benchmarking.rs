@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Benchmarking setup for pallet-offchain_computing_workers
+//! Benchmarking setup for pallet-offchain_computing_infra
 
 // Only enable this module for benchmarking.
 #![cfg(feature = "runtime-benchmarks")]
@@ -36,7 +36,7 @@ use frame_support::{
 };
 use primitives::{AttestationMethod, OnlinePayload};
 
-use crate::Pallet as OffchainComputingWorkers;
+use crate::Pallet as OffchainComputingInfra;
 use super::*;
 
 const DOLLARS: u128 = 1_000_000_000_000;
@@ -50,7 +50,7 @@ fn add_mock_impl<T: Config>(owner: &T::AccountId) -> T::ImplId {
 		).saturating_add(T::Currency::minimum_balance());
 	let _ = T::Currency::make_free_balance_be(&owner, owner_balance);
 
-	assert_ok!(OffchainComputingWorkers::<T>::register_impl(
+	assert_ok!(OffchainComputingInfra::<T>::register_impl(
 		RawOrigin::Signed(owner.clone()).into(),
 		AttestationMethod::OptOut,
 		ApplicableScope::Public
@@ -58,7 +58,7 @@ fn add_mock_impl<T: Config>(owner: &T::AccountId) -> T::ImplId {
 
 	let impl_info = Impls::<T>::iter_values().last().expect("Should have an impl");
 
-	assert_ok!(OffchainComputingWorkers::<T>::register_impl_build(
+	assert_ok!(OffchainComputingInfra::<T>::register_impl_build(
 		RawOrigin::Signed(owner.clone()).into(),
 		impl_info.id.clone(),
 		1u32,
@@ -93,7 +93,7 @@ fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::Accoun
 
 	let initial_deposit = reserved_deposit.saturating_add((11 * DOLLARS).saturated_into::<BalanceOf<T>>());
 
-	assert_ok!(OffchainComputingWorkers::<T>::register_worker(
+	assert_ok!(OffchainComputingInfra::<T>::register_worker(
 		RawOrigin::Signed(owner.clone()).into(),
 		T::Lookup::unlookup(worker.clone()),
 		impl_id,
@@ -110,7 +110,7 @@ fn add_mock_online_worker<T: Config>(worker_public: &sr25519::Public, owner: &T:
 
 	let (payload, attestation) = mock_online_payload_and_attestation::<T>(worker_public, impl_id);
 	assert_ok!(
-		OffchainComputingWorkers::<T>::online(
+		OffchainComputingInfra::<T>::online(
 			RawOrigin::Signed(worker.clone()).into(),
 			payload,
 			attestation
@@ -402,7 +402,7 @@ mod benchmarks {
 	// This line generates test cases for benchmarking, and could be run by:
 	//   `cargo test --features runtime-benchmarks`
 	impl_benchmark_test_suite! {
-		OffchainComputingWorkers,
+		OffchainComputingInfra,
 		crate::mock::new_test_ext(),
 		crate::mock::Test
 	}
