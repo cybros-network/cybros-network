@@ -14,14 +14,16 @@ rls*.log
 
 **/tmp
 **/.env
+**/.vitepress/cache
+**/.vitepress/dist
 
-/protocol_impl/data
-/protocol_impl/log
-/protocol_impl/main.js
+/tools/session_keys.json
 
 /squid/lib
 /squid/builds
 /squid/**Versions.json
 /squid/**Versions.jsonl
 
-/tools/session_keys.json
+/protocol_impl/data
+/protocol_impl/log
+/protocol_impl/main.js

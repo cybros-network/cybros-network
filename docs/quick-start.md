@@ -1,4 +1,8 @@
-How to
+---
+outline: deep
+---
+
+Quick start
 ====
 
 This doc will use the local development node and the `protocol_impl` as a sample.
