@@ -130,17 +130,13 @@ impl pallet_offchain_computing_infra::Config for Test {
 
 impl pallet_offchain_computing_pool::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
-	type OffchainWorkerManageable = OffchainComputingInfra;
-	type Currency = Balances;
-	type UnixTime = Timestamp;
 	type PoolId = u32;
 	type JobId = u32;
 	type PolicyId = u32;
 	type CreatePoolOrigin = EnsureSigned<Self::AccountId>;
 	type CreatePoolDeposit = ConstU128<{ DOLLARS }>;
 	type DepositPerJob = ConstU128<{ DOLLARS }>;
-	type MetadataDepositBase = ConstU128<{ CENTS }>;
-	type DepositPerByte = ConstU128<{ CENTS }>;
+	type PoolMetadataDepositBase = ConstU128<{ CENTS }>;
 	type MaxAssignedJobsPerWorker = ConstU32<8>;
 	type MaxSubscribedPoolsPerWorker = ConstU32<8>;
 	type MaxPoliciesPerPool = ConstU32<3>;

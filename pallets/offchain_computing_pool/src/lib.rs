@@ -29,7 +29,7 @@ pub use pallet::*;
 pub use primitives::*;
 
 /// The log target of this pallet.
-pub const LOG_TARGET: &str = "runtime::offchain_computing";
+pub const LOG_TARGET: &str = "runtime::offchain_computing-pool";
 
 // Syntactic sugar for logging.
 #[macro_export]
@@ -43,29 +43,25 @@ macro_rules! log {
 }
 
 use frame_support::{
-	traits::{Currency, ReservableCurrency, UnixTime, Incrementable},
+	traits::{ReservableCurrency, UnixTime, Incrementable},
 	transactional,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::{
 	traits::{
 		AtLeast32BitUnsigned, StaticLookup,
-		// IdentifyAccount, Verify,
 	},
 	SaturatedConversion,
 };
 
 use pallet_offchain_computing_infra::{
+	BalanceOf, AccountIdLookupOf,
 	OfflineReason, OnlinePayload, VerifiedAttestation,
-	OffchainWorkerLifecycleHooks, OffchainWorkerManageable,
+	OffchainWorkerLifecycleHooks,
 	ImplSpecVersion
 };
 
-pub(crate) type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
-pub(crate) type BalanceOf<T> =
-	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-pub(crate) type ImplIdOf<T> =
-	<<T as Config>::OffchainWorkerManageable as OffchainWorkerManageable<<T as frame_system::Config>::AccountId>>::ImplId;
+pub(crate) type PalletInfra<T> = pallet_offchain_computing_infra::Pallet<T>;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -83,15 +79,9 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_offchain_computing_infra::Config {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent> + TryInto<Event<Self>>;
-
-		type OffchainWorkerManageable: OffchainWorkerManageable<Self::AccountId>;
-
-		type Currency: ReservableCurrency<Self::AccountId>;
-
-		type UnixTime: UnixTime;
 
 		/// Identifier for the jobs' pool.
 		type PoolId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + Incrementable;
@@ -116,11 +106,7 @@ pub mod pallet {
 
 		/// The basic amount of funds that must be reserved when adding metadata to your item.
 		#[pallet::constant]
-		type MetadataDepositBase: Get<BalanceOf<Self>>;
-
-		/// The additional funds that must be reserved for the number of bytes store in input and output.
-		#[pallet::constant]
-		type DepositPerByte: Get<BalanceOf<Self>>;
+		type PoolMetadataDepositBase: Get<BalanceOf<Self>>;
 
 		/// The limit of jobs a worker could be assigned
 		#[pallet::constant]
@@ -188,7 +174,7 @@ pub mod pallet {
 		PoolCreated {
 			owner: T::AccountId,
 			pool_id: T::PoolId,
-			impl_id: ImplIdOf<T>,
+			impl_id: T::ImplId,
 			create_job_enabled: bool,
 			auto_destroy_processed_job_enabled: bool
 		},
@@ -292,7 +278,7 @@ pub mod pallet {
 		_,
 		Blake2_128Concat,
 		T::PoolId,
-		PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 	>;
 
 	/// Metadata of a pool.
@@ -508,7 +494,7 @@ pub mod pallet {
 		#[pallet::weight({0})]
 		pub fn create_pool(
 			origin: OriginFor<T>,
-			impl_id: ImplIdOf<T>,
+			impl_id: T::ImplId,
 			create_job_enabled: bool,
 			auto_destroy_processed_job_enabled: bool
 		) -> DispatchResult {
@@ -694,7 +680,7 @@ pub mod pallet {
 			let worker = T::Lookup::lookup(worker)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
-			let worker_info = T::OffchainWorkerManageable::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
+			let worker_info = PalletInfra::<T>::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 
 			let pool_owner = pool_info.owner.clone();
 			let worker_owner = worker_info.owner;
@@ -980,7 +966,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		pub(crate) fn ensure_pool_owner(
 			who: &T::AccountId,
-			pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>
+			pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>
 		) -> DispatchResult {
 			ensure!(
 				who == &pool_info.owner,
@@ -1068,8 +1054,8 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> OffchainWorkerLifecycleHooks<T::AccountId, ImplIdOf<T>> for Pallet<T> {
-		fn can_online(_worker: &T::AccountId, _payload: &OnlinePayload<ImplIdOf<T>>, _verified_attestation: &VerifiedAttestation) -> DispatchResult {
+	impl<T: Config> OffchainWorkerLifecycleHooks<T::AccountId, T::ImplId> for Pallet<T> {
+		fn can_online(_worker: &T::AccountId, _payload: &OnlinePayload<T::ImplId>, _verified_attestation: &VerifiedAttestation) -> DispatchResult {
 			Ok(())
 		}
 
@@ -1108,7 +1094,7 @@ pub mod pallet {
 			CounterForWorkerAssignedJobs::<T>::insert(worker, 0);
 		}
 
-		fn after_refresh_attestation(_worker: &T::AccountId, _payload: &OnlinePayload<ImplIdOf<T>>, _verified_attestation: &VerifiedAttestation) {
+		fn after_refresh_attestation(_worker: &T::AccountId, _payload: &OnlinePayload<T::ImplId>, _verified_attestation: &VerifiedAttestation) {
 			// Nothing to do
 		}
 

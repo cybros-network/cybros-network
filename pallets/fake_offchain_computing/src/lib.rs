@@ -47,17 +47,12 @@ use frame_support::{
 	sp_runtime::Saturating,
 };
 use pallet_offchain_computing_infra::{
-	OffchainWorkerLifecycleHooks, OffchainWorkerManageable,
+	BalanceOf,
+	OffchainWorkerLifecycleHooks,
 	OfflineReason, OnlinePayload, VerifiedAttestation,
 };
 
-// pub(crate) type BalanceOf<T> =
-// 	<<T as Config>::Currency as OffchainWorkerManageable<<T as frame_system::Config>::AccountId, BlockNumberFor<T>>::Balance;
-
-pub(crate) type BalanceOf<T> =
-	<<T as Config>::OffchainWorkerManageable as OffchainWorkerManageable<<T as frame_system::Config>::AccountId>>::Balance;
-pub(crate) type ImplIdOf<T> =
-	<<T as Config>::OffchainWorkerManageable as OffchainWorkerManageable<<T as frame_system::Config>::AccountId>>::ImplId;
+pub(crate) type PalletInfra<T> = pallet_offchain_computing_infra::Pallet<T>;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -74,11 +69,9 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_offchain_computing_infra::Config {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
-		type OffchainWorkerManageable: OffchainWorkerManageable<Self::AccountId>;
 
 		#[pallet::constant]
 		type SlashingCardinal: Get<BalanceOf<Self>>;
@@ -146,7 +139,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		fn ensure_owner_or_root(origin: OriginFor<T>, worker: &T::AccountId) -> DispatchResult {
 			let who = ensure_signed_or_root(origin)?;
-			if let Some(worker_info) = T::OffchainWorkerManageable::worker_info(worker) {
+			if let Some(worker_info) = PalletInfra::<T>::worker_info(worker) {
 				if let Some(owner) = who {
 					ensure!(owner == worker_info.owner, Error::<T>::NotTheOwner)
 				}
@@ -158,8 +151,8 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> OffchainWorkerLifecycleHooks<T::AccountId, ImplIdOf<T>> for Pallet<T> {
-		fn can_online(worker: &T::AccountId, _payload: &OnlinePayload<ImplIdOf<T>>, _verified_attestation: &VerifiedAttestation) -> DispatchResult {
+	impl<T: Config> OffchainWorkerLifecycleHooks<T::AccountId, T::ImplId> for Pallet<T> {
+		fn can_online(worker: &T::AccountId, _payload: &OnlinePayload<T::ImplId>, _verified_attestation: &VerifiedAttestation) -> DispatchResult {
 			log!(info, "can_online: {:?}", worker);
 
 			ensure!(!<BlockedWorkers<T>>::contains_key(worker), Error::<T>::Blocked);
@@ -194,7 +187,7 @@ pub mod pallet {
 			}
 
 			if reason != OfflineReason::Graceful {
-				T::OffchainWorkerManageable::slash_worker(
+				PalletInfra::<T>::slash_worker(
 					worker,
 					T::SlashingCardinal::get().saturating_mul(10u32.into()),
 				);
@@ -203,7 +196,7 @@ pub mod pallet {
 			<RunningWorkers<T>>::remove(worker);
 		}
 
-		fn after_refresh_attestation(worker: &T::AccountId, _payload: &OnlinePayload<ImplIdOf<T>>, _verified_attestation: &VerifiedAttestation) {
+		fn after_refresh_attestation(worker: &T::AccountId, _payload: &OnlinePayload<T::ImplId>, _verified_attestation: &VerifiedAttestation) {
 			log!(info, "after_refresh_attestation: {:?}", worker);
 		}
 

@@ -27,7 +27,7 @@ use sp_runtime::{
 impl<T: Config> Pallet<T> {
 	#[allow(clippy::too_many_arguments)]
 	pub(crate) fn do_create_job(
-		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		policy_info: JobPolicy<T::PolicyId, BlockNumberFor<T>>,
 		job_id: T::JobId,
 		unique_track_id: Option<UniqueTrackId>,

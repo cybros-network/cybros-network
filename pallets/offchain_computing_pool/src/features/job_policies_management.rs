@@ -22,7 +22,7 @@ use frame_system::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_job_policy(
-		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		policy_id: T::PolicyId,
 		applicable_scope: ApplicableScope,
 		start_block: Option<BlockNumberFor<T>>,
@@ -52,7 +52,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn do_destroy_job_policy(
-		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		policy_id: T::PolicyId,
 	) -> DispatchResult {
 		ensure!(

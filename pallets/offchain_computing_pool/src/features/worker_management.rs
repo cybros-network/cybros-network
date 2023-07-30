@@ -21,7 +21,7 @@ use frame_support::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_provision_worker(
-		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		worker: T::AccountId
 	) -> DispatchResult {
 		ensure!(
@@ -29,7 +29,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::WorkerAlreadyAdded
 		);
 
-		let worker_info = T::OffchainWorkerManageable::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
+		let worker_info = PalletInfra::<T>::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		ensure!(
 			worker_info.impl_id == pool_info.impl_id.clone(),
 			Error::<T>::ImplMismatched
@@ -46,7 +46,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn do_revoke_worker(
-		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		worker: T::AccountId,
 	) -> DispatchResult {
 		ensure!(

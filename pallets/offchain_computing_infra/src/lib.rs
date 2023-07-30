@@ -33,11 +33,11 @@ mod benchmarking;
 
 pub use pallet::*;
 pub use primitives::*;
-pub use traits::{OffchainWorkerLifecycleHooks, OffchainWorkerManageable};
+pub use traits::OffchainWorkerLifecycleHooks;
 pub use weights::WeightInfo;
 
 /// The log target of this pallet.
-pub const LOG_TARGET: &str = "runtime::offchain_computing_infra";
+pub const LOG_TARGET: &str = "runtime::offchain_computing-infra";
 
 // Syntactic sugar for logging.
 #[macro_export]
@@ -68,10 +68,10 @@ use frame_support::{
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 
-pub(crate) type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
-pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-pub(crate) type PositiveImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::PositiveImbalance;
-pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
+pub type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub type PositiveImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::PositiveImbalance;
+pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
 #[frame_support::pallet]
 mod pallet {
@@ -833,40 +833,32 @@ impl<T: Config> Pallet<T> {
 
 		current_flip_flop_started_at + (duration + random_delay).into()
 	}
-}
 
-impl<T: Config> OffchainWorkerManageable<T::AccountId> for Pallet<T> {
-	type ImplId = T::ImplId;
-	type Currency = T::Currency;
-	type Balance = BalanceOf<T>;
-	type PositiveImbalance = PositiveImbalanceOf<T>;
-	type NegativeImbalance = NegativeImbalanceOf<T>;
-
-	fn impl_info(impl_id: &Self::ImplId) -> Option<ImplInfo<Self::ImplId, T::AccountId, Self::Balance>> {
+	pub fn impl_info(impl_id: &T::ImplId) -> Option<ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>> {
 		Impls::<T>::get(impl_id)
 	}
 
-	fn impl_exists(impl_id: &Self::ImplId) -> bool {
+	pub fn impl_exists(impl_id: &T::ImplId) -> bool {
 		Impls::<T>::contains_key(impl_id)
 	}
 
-	fn worker_info(worker: &T::AccountId) -> Option<WorkerInfo<T::AccountId, Self::Balance, Self::ImplId>> {
+	pub fn worker_info(worker: &T::AccountId) -> Option<WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>> {
 		Workers::<T>::get(worker)
 	}
 
-	fn worker_exists(worker: &T::AccountId) -> bool {
+	pub fn worker_exists(worker: &T::AccountId) -> bool {
 		Workers::<T>::contains_key(worker)
 	}
 
-	fn reward_worker(worker: &T::AccountId, source: &T::AccountId, value: Self::Balance) -> DispatchResult {
+	pub fn reward_worker(worker: &T::AccountId, source: &T::AccountId, value: BalanceOf<T>) -> DispatchResult {
 		<T as Config>::Currency::transfer(source, worker, value, ExistenceRequirement::KeepAlive)
 	}
 
-	fn slash_worker(worker: &T::AccountId, value: Self::Balance) -> (Self::NegativeImbalance, Self::Balance) {
+	pub fn slash_worker(worker: &T::AccountId, value: BalanceOf<T>) -> (NegativeImbalanceOf<T>, BalanceOf<T>) {
 		<T as Config>::Currency::slash(worker, value)
 	}
 
-	fn offline_worker(worker: &T::AccountId, reason: OfflineReason) -> DispatchResult {
+	pub fn offline_worker(worker: &T::AccountId, reason: OfflineReason) -> DispatchResult {
 		let mut worker_info = Workers::<T>::get(worker).ok_or(Error::<T>::WorkerNotFound)?;
 		ensure!(
 			matches!(worker_info.status, WorkerStatus::Online | WorkerStatus::RequestingOffline),

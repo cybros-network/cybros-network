@@ -131,7 +131,6 @@ parameter_types! {
 
 impl pallet_fake_offchain_computing::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
-	type OffchainWorkerManageable = OffchainComputingInfra;
 	type SlashingCardinal = SlashingCardinal;
 }
 

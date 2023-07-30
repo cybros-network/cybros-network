@@ -29,13 +29,13 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_pool(
 		owner: T::AccountId,
 		pool_id: T::PoolId,
-		impl_id: ImplIdOf<T>,
+		impl_id: T::ImplId,
 		create_job_enabled: bool,
 		auto_destroy_processed_job_enabled: bool
 	) -> DispatchResult {
 		ensure!(!Pools::<T>::contains_key(&pool_id), Error::<T>::PoolIdTaken);
 
-		let impl_info = T::OffchainWorkerManageable::impl_info(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
+		let impl_info = PalletInfra::<T>::impl_info(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
 		ensure!(
 			match impl_info.deployment_scope {
 				ApplicableScope::Owner => {
@@ -50,7 +50,7 @@ impl<T: Config> Pallet<T> {
 
 		T::Currency::reserve(&owner, T::CreatePoolDeposit::get())?;
 
-		let pool_info = PoolInfo::<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>> {
+		let pool_info = PoolInfo::<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId> {
 			id: pool_id.clone(),
 			owner: owner.clone(),
 			owner_deposit: T::CreatePoolDeposit::get(),
@@ -96,14 +96,14 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn do_update_pool_metadata(
-		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		new_metadata: BoundedVec<u8, T::PoolMetadataLimit>
 	) -> DispatchResult {
 		let pool_id = pool_info.id;
 		PoolMetadata::<T>::try_mutate_exists(&pool_id.clone(), |metadata_entry| {
 			let deposit = T::DepositPerByte::get()
 				.saturating_mul(((new_metadata.len()) as u32).into())
-				.saturating_add(T::MetadataDepositBase::get());
+				.saturating_add(T::PoolMetadataDepositBase::get());
 
 			let old_deposit = metadata_entry.take().map_or(Zero::zero(), |m| m.actual_deposit);
 			match deposit.cmp(&old_deposit) {
@@ -129,7 +129,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn do_remove_pool_metadata(
-		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>
 	) -> DispatchResult {
 		let Some(metadata_entry) = PoolMetadata::<T>::get(&pool_info.id) else {
 			return Ok(())
@@ -143,7 +143,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn do_update_pool_settings(
-		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, ImplIdOf<T>>,
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		min_impl_spec_version: ImplSpecVersion,
 		max_impl_spec_version: ImplSpecVersion,
 		create_job_enabled: bool,

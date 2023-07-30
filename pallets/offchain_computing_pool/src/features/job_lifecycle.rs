@@ -33,7 +33,7 @@ impl<T: Config> Pallet<T> {
 		expires_in: u64,
 	) -> DispatchResult {
 		Self::ensure_subscribed_worker(&pool_id, &worker)?;
-		let worker_info = T::OffchainWorkerManageable::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
+		let worker_info = PalletInfra::<T>::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		let worker_impl_spec_version = worker_info.impl_spec_version.ok_or(Error::<T>::InternalError)?;
 
 		let current_assigned_jobs_count = CounterForWorkerAssignedJobs::<T>::get(&worker);
