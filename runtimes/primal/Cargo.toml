@@ -127,6 +127,7 @@ try-runtime = [
 	"frame-executive/try-runtime",
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
+	"sp-runtime/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-insecure-randomness-collective-flip/try-runtime",
 	"pallet-aura/try-runtime",
