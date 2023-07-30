@@ -26,7 +26,6 @@ import { Equal, IsNull, In } from "typeorm"
 const database = new TypeormDatabase();
 
 processor.run(database, async (ctx) => {
-    console.log(ctx)
     // Preprocess events
     const implsChangeSet = preprocessImplsEvents(ctx)
     const implBuildsChangeSet = preprocessImplBuildsEvents(ctx)
