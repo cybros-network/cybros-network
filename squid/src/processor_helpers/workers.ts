@@ -103,7 +103,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
         for (let event of block.events) {
             if (event.name == "OffchainComputingInfra.WorkerRegistered") {
-                let e = new WorkerRegisteredEvent(ctx, event)
+                let e = new WorkerRegisteredEvent(event)
                 let rec: { worker: Uint8Array, owner: Uint8Array, implId: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -143,7 +143,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.WorkerDeregistered") {
-                let e = new WorkerDeregisteredEvent(ctx, event)
+                let e = new WorkerDeregisteredEvent(event)
                 let rec: { worker: Uint8Array, force: boolean }
                 if (e.isV100) {
                     rec = e.asV100
@@ -189,7 +189,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.WorkerOnline") {
-                let e = new WorkerOnlineEvent(ctx, event)
+                let e = new WorkerOnlineEvent(event)
                 let rec: {
                     worker: Uint8Array,
                     implSpecVersion: number,
@@ -239,7 +239,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.WorkerRequestingOffline") {
-                let e = new WorkerRequestingOfflineEvent(ctx, event)
+                let e = new WorkerRequestingOfflineEvent(event)
                 let rec: { worker: Uint8Array }
                 if (e.isV100) {
                     rec = e.asV100
@@ -273,7 +273,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.WorkerOffline") {
-                let e = new WorkerOfflineEvent(ctx, event)
+                let e = new WorkerOfflineEvent(event)
                 let rec: { worker: Uint8Array, reason: v100.OfflineReason }
                 if (e.isV100) {
                     rec = e.asV100
@@ -319,7 +319,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.WorkerHeartbeatReceived") {
-                let e = new WorkerHeartbeatReceivedEvent(ctx, event)
+                let e = new WorkerHeartbeatReceivedEvent(event)
                 let rec: { worker: Uint8Array, next: number, uptime: bigint }
                 if (e.isV100) {
                     rec = e.asV100
@@ -346,7 +346,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.WorkerAttestationRefreshed") {
-                let e = new WorkerAttestationRefreshedEvent(ctx, event)
+                let e = new WorkerAttestationRefreshedEvent(event)
                 let rec: { worker: Uint8Array, expiresAt: (bigint | undefined) }
                 if (e.isV100) {
                     rec = e.asV100

@@ -65,7 +65,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
 
         for (let event of block.events) {
             if (event.name == "OffchainComputingInfra.ImplRegistered") {
-                let e = new ImplRegisteredEvent(ctx, event)
+                let e = new ImplRegisteredEvent(event)
                 let rec: {
                     implId: number,
                     owner: Uint8Array,
@@ -95,7 +95,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.ImplDeregistered") {
-                let e = new ImplDeregisteredEvent(ctx, event)
+                let e = new ImplDeregisteredEvent(event)
                 let rec: { implId: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -115,7 +115,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
 
                 changeSet.set(id, changes)
             } if (event.name == "OffchainComputingInfra.ImplDeploymentScopeUpdated") {
-                let e = new ImplDeploymentScopeUpdatedEvent(ctx, event)
+                let e = new ImplDeploymentScopeUpdatedEvent(event)
                 let rec: {
                     implId: number, scope: v100.ApplicableScope
                 }
@@ -139,7 +139,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.ImplMetadataUpdated") {
-                let e = new ImplMetadataUpdatedEvent(ctx, event)
+                let e = new ImplMetadataUpdatedEvent(event)
                 let rec: { implId: number, metadata: Uint8Array }
                 if (e.isV100) {
                     rec = e.asV100
@@ -161,7 +161,7 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.ImplMetadataRemoved") {
-                let e = new ImplMetadataRemovedEvent(ctx, event)
+                let e = new ImplMetadataRemovedEvent(event)
                 let rec: { implId: number }
                 if (e.isV100) {
                     rec = e.asV100

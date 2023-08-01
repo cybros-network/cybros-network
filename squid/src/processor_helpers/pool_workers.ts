@@ -42,7 +42,7 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
 
         for (let event of block.events) {
             if (event.name == "OffchainComputingPool.WorkerSubscribed") {
-                let e = new WorkerSubscribedEvent(ctx, event)
+                let e = new WorkerSubscribedEvent(event)
                 let rec: {worker: Uint8Array, poolId: number}
                 if (e.isV100) {
                     rec = e.asV100
@@ -76,7 +76,7 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.WorkerUnsubscribed") {
-                let e = new WorkerUnsubscribedEvent(ctx, event)
+                let e = new WorkerUnsubscribedEvent(event)
                 let rec: {worker: Uint8Array, poolId: number}
                 if (e.isV100) {
                     rec = e.asV100

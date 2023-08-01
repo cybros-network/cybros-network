@@ -36,7 +36,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
 
         for (let event of block.events) {
             if (event.name == "OffchainComputingPool.PoolCreated") {
-                let e = new PoolCreatedEvent(ctx, event)
+                let e = new PoolCreatedEvent(event)
                 let rec: {
                     owner: Uint8Array,
                     poolId: number,
@@ -71,7 +71,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.PoolDestroyed") {
-                let e = new PoolDestroyedEvent(ctx, event)
+                let e = new PoolDestroyedEvent(event)
                 let rec: { poolId: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -92,7 +92,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.PoolMetadataUpdated") {
-                let e = new PoolMetadataUpdatedEvent(ctx, event)
+                let e = new PoolMetadataUpdatedEvent(event)
                 let rec: { poolId: number, metadata: Uint8Array }
                 if (e.isV100) {
                     rec = e.asV100
@@ -114,7 +114,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.PoolMetadataRemoved") {
-                let e = new PoolMetadataRemovedEvent(ctx, event)
+                let e = new PoolMetadataRemovedEvent(event)
                 let rec: { poolId: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -136,7 +136,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.PoolSettingsUpdated") {
-                let e = new PoolSettingsUpdatedEvent(ctx, event)
+                let e = new PoolSettingsUpdatedEvent(event)
                 let rec: {
                     poolId: number,
                     minImplSpecVersion: number,

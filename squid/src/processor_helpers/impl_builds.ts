@@ -49,7 +49,7 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
 
         for (let event of block.events) {
             if (event.name == "OffchainComputingInfra.ImplBuildRegistered") {
-                let e = new ImplBuildRegisteredEvent(ctx, event)
+                let e = new ImplBuildRegisteredEvent(event)
                 let rec: {
                     implId: number,
                     implBuildVersion: number,
@@ -79,7 +79,7 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.ImplBuildDeregistered") {
-                let e = new ImplBuildDeregisteredEvent(ctx, event)
+                let e = new ImplBuildDeregisteredEvent(event)
                 let rec: { implId: number, implBuildVersion: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -103,7 +103,7 @@ export function preprocessImplBuildsEvents(ctx: Context): Map<string, ImplBuildC
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingInfra.ImplBuildStatusUpdated") {
-                let e = new ImplBuildStatusUpdatedEvent(ctx, event)
+                let e = new ImplBuildStatusUpdatedEvent(event)
                 let rec: { implId: number, implBuildVersion: number, status: v100.ImplBuildStatus }
                 if (e.isV100) {
                     rec = e.asV100

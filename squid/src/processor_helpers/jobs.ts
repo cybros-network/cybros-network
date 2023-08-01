@@ -119,7 +119,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
         for (let event of block.events) {
             if (event.name == "OffchainComputingPool.JobCreated") {
-                let e = new JobCreatedEvent(ctx, event)
+                let e = new JobCreatedEvent(event)
                 let rec: {
                     poolId: number,
                     jobId: number,
@@ -169,7 +169,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.JobDestroyed") {
-                let e = new JobDestroyedEvent(ctx, event)
+                let e = new JobDestroyedEvent(event)
                 let rec: {
                     poolId: number,
                     jobId: number,
@@ -210,7 +210,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.JobAssigned") {
-                let e = new JobAssignedEvent(ctx, event)
+                let e = new JobAssignedEvent(event)
                 let rec: { poolId: number, jobId: number, assignee: Uint8Array }
                 if (e.isV100) {
                     rec = e.asV100
@@ -244,7 +244,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.JobReleased") {
-                let e = new JobReleasedEvent(ctx, event)
+                let e = new JobReleasedEvent(event)
                 let rec: { poolId: number, jobId: number }
                 if (e.isV100) {
                     rec = e.asV100
@@ -277,7 +277,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.JobStatusUpdated") {
-                let e = new JobStatusUpdatedEvent(ctx, event)
+                let e = new JobStatusUpdatedEvent(event)
                 let rec: { poolId: number, jobId: number, status: v100.JobStatus }
                 if (e.isV100) {
                     rec = e.asV100
@@ -316,7 +316,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.JobResultUpdated") {
-                let e = new JobResultUpdatedEvent(ctx, event)
+                let e = new JobResultUpdatedEvent(event)
                 let rec: {
                     poolId: number,
                     jobId: number,

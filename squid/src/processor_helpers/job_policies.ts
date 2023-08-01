@@ -48,7 +48,7 @@ export function preprocessJobPoliciesEvents(ctx: Context): Map<string, JobPolicy
 
         for (let event of block.events) {
             if (event.name == "OffchainComputingPool.JobPolicyCreated") {
-                let e = new JobPolicyCreatedEvent(ctx, event)
+                let e = new JobPolicyCreatedEvent(event)
                 let rec: {
                     poolId: number,
                     policyId: number,
@@ -81,7 +81,7 @@ export function preprocessJobPoliciesEvents(ctx: Context): Map<string, JobPolicy
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.JobPolicyDestroyed") {
-                let e = new JobPolicyDestroyedEvent(ctx, event)
+                let e = new JobPolicyDestroyedEvent(event)
                 let rec: {poolId: number, policyId: number}
                 if (e.isV100) {
                     rec = e.asV100
@@ -104,7 +104,7 @@ export function preprocessJobPoliciesEvents(ctx: Context): Map<string, JobPolicy
 
                 changeSet.set(id, changes)
             } else if (event.name == "OffchainComputingPool.JobPolicyEnablementUpdated") {
-                let e = new JobPolicyEnablementUpdatedEvent(ctx, event)
+                let e = new JobPolicyEnablementUpdatedEvent(event)
                 let rec: {poolId: number, policyId: number, enabled: boolean}
                 if (e.isV100) {
                     rec = e.asV100
