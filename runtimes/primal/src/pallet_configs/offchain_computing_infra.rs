@@ -22,6 +22,7 @@ use frame_support::traits::{ConstBool, ConstU128, ConstU32};
 
 impl pallet_offchain_computing_infra::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type Currency = Balances;
 	type UnixTime = Timestamp;
 	type Randomness = RandomnessCollectiveFlip;
@@ -30,7 +31,7 @@ impl pallet_offchain_computing_infra::Config for Runtime {
 	type RegisterWorkerDeposit = ConstU128<{ 100 * UNITS }>;
 	type RegisterImplDeposit = ConstU128<{ 100 * UNITS }>;
 	type ImplMetadataDepositBase = ConstU128<{ UNITS }>;
-	type DepositPerByte = ConstU128<{ CENTS }>;
+	type ImplMetadataDepositPerByte = ConstU128<{ CENTS }>;
 	type ImplMetadataLimit = ConstU32<2048>; // 2KiB
 	type MaxImplBuilds = ConstU32<8>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<100>;

@@ -31,8 +31,8 @@ sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
-pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master" }
 pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "master" }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "master" }
 pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 [features]

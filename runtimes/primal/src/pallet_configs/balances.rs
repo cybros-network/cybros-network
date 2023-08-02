@@ -29,10 +29,10 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
 	type AccountStore = System;
 	type ReserveIdentifier = [u8; 8];
-	type RuntimeHoldReason = ();
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type FreezeIdentifier = ();
 	type MaxLocks = ConstU32<50>;
 	type MaxReserves = ();
-	type MaxHolds = ();
+	type MaxHolds = ConstU32<8>;
 	type MaxFreezes = ();
 }

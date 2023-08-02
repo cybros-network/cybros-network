@@ -61,17 +61,25 @@ use sp_std::prelude::*;
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	ensure,
-	traits::{
-		Currency, ExistenceRequirement, Get, Randomness, ReservableCurrency, UnixTime, Incrementable
-	},
+	traits::{Get, Randomness, UnixTime, Incrementable},
 	transactional,
 };
-use frame_system::pallet_prelude::BlockNumberFor;
+
+pub(crate) use frame_support::traits::{
+	fungible::{
+		Inspect as InspectFungible,
+		Mutate as MutateFungible,
+		InspectHold as InspectHoldFungible,
+		MutateHold as MutateHoldFungible,
+		BalancedHold as BalancedHoldFungible,
+		Credit,
+	},
+	tokens::{Preservation, Precision, Fortitude},
+};
+pub(crate) use frame_system::pallet_prelude::BlockNumberFor;
 
 pub type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
-pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-pub type PositiveImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::PositiveImbalance;
-pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
+pub type BalanceOf<T> = <<T as Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[frame_support::pallet]
 mod pallet {
@@ -94,8 +102,15 @@ mod pallet {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent> + TryInto<Event<Self>>;
 
+		/// Overarching hold reason.
+		type RuntimeHoldReason: From<HoldReason>;
+
 		/// The system's currency for payment.
-		type Currency: ReservableCurrency<Self::AccountId>;
+		type Currency: InspectFungible<Self::AccountId>
+			+ MutateFungible<Self::AccountId>
+			+ InspectHoldFungible<Self::AccountId>
+			+ MutateHoldFungible<Self::AccountId, Reason = Self::RuntimeHoldReason>
+			+ BalancedHoldFungible<Self::AccountId>;
 
 		/// Time used for verify attestation
 		type UnixTime: UnixTime;
@@ -123,7 +138,7 @@ mod pallet {
 
 		/// The additional funds that must be reserved for the number of bytes store in input and output.
 		#[pallet::constant]
-		type DepositPerByte: Get<BalanceOf<Self>>;
+		type ImplMetadataDepositPerByte: Get<BalanceOf<Self>>;
 
 		/// The maximum length of implementation's metadata stored on-chain.
 		#[pallet::constant]
@@ -154,6 +169,13 @@ mod pallet {
 
 		/// A handler for manging worker slashing
 		type OffchainWorkerLifecycleHooks: OffchainWorkerLifecycleHooks<Self::AccountId, Self::ImplId>;
+	}
+
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		ImplRegistrationReserve,
+		WorkerRegistrationReserve,
+		ImplMetadataStorageReserve,
 	}
 
 	/// Storage for computing_workers.
@@ -455,7 +477,7 @@ mod pallet {
 			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 			Self::ensure_owner(&who, &worker_info)?;
 
-			<T as Config>::Currency::transfer(&who, &worker, value, ExistenceRequirement::KeepAlive)?;
+			<T as Config>::Currency::transfer(&who, &worker, value, Preservation::Preserve)?;
 			Ok(())
 		}
 
@@ -469,7 +491,7 @@ mod pallet {
 			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 			Self::ensure_owner(&who, &worker_info)?;
 
-			<T as Config>::Currency::transfer(&worker, &who, value, ExistenceRequirement::KeepAlive)?;
+			<T as Config>::Currency::transfer(&worker, &who, value, Preservation::Preserve)?;
 			Ok(())
 		}
 
@@ -850,12 +872,12 @@ impl<T: Config> Pallet<T> {
 		Workers::<T>::contains_key(worker)
 	}
 
-	pub fn reward_worker(worker: &T::AccountId, source: &T::AccountId, value: BalanceOf<T>) -> DispatchResult {
-		<T as Config>::Currency::transfer(source, worker, value, ExistenceRequirement::KeepAlive)
+	pub fn reward_worker(worker: &T::AccountId, source: &T::AccountId, value: BalanceOf<T>) -> Result<BalanceOf<T>, DispatchError> {
+		<T as Config>::Currency::transfer(source, worker, value, Preservation::Preserve)
 	}
 
-	pub fn slash_worker(worker: &T::AccountId, value: BalanceOf<T>) -> (NegativeImbalanceOf<T>, BalanceOf<T>) {
-		<T as Config>::Currency::slash(worker, value)
+	pub fn slash_worker(worker: &T::AccountId, value: BalanceOf<T>) -> (Credit<T::AccountId, T::Currency>, BalanceOf<T>) {
+		<T as Config>::Currency::slash(&HoldReason::WorkerRegistrationReserve.into(), worker, value)
 	}
 
 	pub fn offline_worker(worker: &T::AccountId, reason: OfflineReason) -> DispatchResult {

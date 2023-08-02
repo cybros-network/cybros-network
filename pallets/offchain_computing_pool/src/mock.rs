@@ -90,11 +90,11 @@ impl pallet_balances::Config for Test {
 	type ExistentialDeposit = ConstU128<{ CENTS }>;
 	type AccountStore = System;
 	type ReserveIdentifier = [u8; 8];
-	type RuntimeHoldReason = ();
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type FreezeIdentifier = ();
 	type MaxLocks = ();
 	type MaxReserves = ();
-	type MaxHolds = ();
+	type MaxHolds = ConstU32<8>;
 	type MaxFreezes = ();
 }
 
@@ -109,6 +109,7 @@ impl pallet_insecure_randomness_collective_flip::Config for Test {}
 
 impl pallet_offchain_computing_infra::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type Currency = Balances;
 	type UnixTime = Timestamp;
 	type Randomness = RandomnessCollectiveFlip;
@@ -117,7 +118,7 @@ impl pallet_offchain_computing_infra::Config for Test {
 	type RegisterWorkerDeposit = ConstU128<{ 100 * DOLLARS }>;
 	type RegisterImplDeposit = ConstU128<{ DOLLARS }>;
 	type ImplMetadataDepositBase = ConstU128<{ DOLLARS }>;
-	type DepositPerByte = ConstU128<{ CENTS }>;
+	type ImplMetadataDepositPerByte = ConstU128<{ CENTS }>;
 	type ImplMetadataLimit = ConstU32<50>;
 	type MaxImplBuilds = ConstU32<4>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<3>;
@@ -130,13 +131,17 @@ impl pallet_offchain_computing_infra::Config for Test {
 
 impl pallet_offchain_computing_pool::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type Currency = Balances;
 	type PoolId = u32;
 	type JobId = u32;
 	type PolicyId = u32;
 	type CreatePoolOrigin = EnsureSigned<Self::AccountId>;
-	type CreatePoolDeposit = ConstU128<{ DOLLARS }>;
-	type DepositPerJob = ConstU128<{ DOLLARS }>;
+	type PoolCreationDeposit = ConstU128<{ DOLLARS }>;
+	type JobCreationDeposit = ConstU128<{ DOLLARS }>;
+	type JobStorageDepositPerByte = ConstU128<{ CENTS }>;
 	type PoolMetadataDepositBase = ConstU128<{ CENTS }>;
+	type PoolMetadataDepositPerByte = ();
 	type MaxAssignedJobsPerWorker = ConstU32<8>;
 	type MaxSubscribedPoolsPerWorker = ConstU32<8>;
 	type MaxPoliciesPerPool = ConstU32<3>;

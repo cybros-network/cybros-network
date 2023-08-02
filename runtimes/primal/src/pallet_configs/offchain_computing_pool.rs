@@ -24,13 +24,17 @@ use frame_support::traits::{
 
 impl pallet_offchain_computing_pool::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type Currency = Balances;
 	type PoolId = u32;
 	type JobId = u32;
 	type PolicyId = u32;
 	type CreatePoolOrigin = EnsureSigned<Self::AccountId>;
-	type CreatePoolDeposit = ConstU128<{ UNITS }>;
-	type DepositPerJob = ConstU128<{ UNITS }>;
+	type PoolCreationDeposit = ConstU128<{ UNITS }>;
+	type JobCreationDeposit = ConstU128<{ UNITS }>;
+	type JobStorageDepositPerByte = ConstU128<{ CENTS }>;
 	type PoolMetadataDepositBase = ConstU128<{ CENTS }>;
+	type PoolMetadataDepositPerByte = ConstU128<{ CENTS }>;
 	type MaxAssignedJobsPerWorker = ConstU32<8>;
 	type MaxSubscribedPoolsPerWorker = ConstU32<8>;
 	type MaxPoliciesPerPool = ConstU32<8>;

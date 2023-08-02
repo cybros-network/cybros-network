@@ -146,10 +146,14 @@ impl<T: Config> Pallet<T> {
 		job.ended_at = Some(now);
 
 		if let Some(output_data) = output_data.clone() {
-			let deposit = T::DepositPerByte::get()
+			let deposit = T::JobStorageDepositPerByte::get()
 				.saturating_mul(((output_data.len()) as u32).into());
 			let depositor = job.assignee.clone().ok_or(Error::<T>::NoPermission)?;
-			T::Currency::reserve(&depositor, deposit)?;
+			<T as Config>::Currency::hold(
+				&HoldReason::JobStorageReserve.into(),
+				&depositor,
+				deposit
+			)?;
 
 			let output_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::OutputLimit> {
 				depositor,
@@ -160,10 +164,14 @@ impl<T: Config> Pallet<T> {
 			JobOutputs::<T>::insert(&pool_id, &job_id, output_entry);
 		}
 		if let Some(proof_data) = proof_data.clone() {
-			let deposit = T::DepositPerByte::get()
+			let deposit = T::JobStorageDepositPerByte::get()
 				.saturating_mul(((proof_data.len()) as u32).into());
 			let depositor = job.assignee.clone().ok_or(Error::<T>::NoPermission)?;
-			T::Currency::reserve(&depositor, deposit)?;
+			<T as Config>::Currency::hold(
+				&HoldReason::JobStorageReserve.into(),
+				&depositor,
+				deposit
+			)?;
 
 			let proof_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::ProofLimit> {
 				depositor,

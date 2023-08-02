@@ -87,11 +87,11 @@ impl pallet_balances::Config for Test {
 	type ExistentialDeposit = ConstU128<{ CENTS }>;
 	type AccountStore = System;
 	type ReserveIdentifier = [u8; 8];
-	type RuntimeHoldReason = ();
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type FreezeIdentifier = ();
 	type MaxLocks = ();
 	type MaxReserves = ();
-	type MaxHolds = ();
+	type MaxHolds = ConstU32<2>;
 	type MaxFreezes = ();
 }
 
@@ -107,6 +107,7 @@ impl pallet_insecure_randomness_collective_flip::Config for Test {}
 impl pallet_offchain_computing_infra::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type UnixTime = Timestamp;
 	type Randomness = RandomnessCollectiveFlip;
 	type ImplId = u32;
@@ -114,7 +115,7 @@ impl pallet_offchain_computing_infra::Config for Test {
 	type RegisterWorkerDeposit = ConstU128<{ 100 * DOLLARS }>;
 	type RegisterImplDeposit = ConstU128<{ DOLLARS }>;
 	type ImplMetadataDepositBase = ConstU128<{ DOLLARS }>;
-	type DepositPerByte = ConstU128<{ CENTS }>;
+	type ImplMetadataDepositPerByte = ConstU128<{ CENTS }>;
 	type ImplMetadataLimit = ConstU32<50>;
 	type MaxImplBuilds = ConstU32<4>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<3>;

@@ -19,8 +19,8 @@
 use crate as pallet_offchain_computing_infra;
 
 use frame_support::{
-	assert_ok,
 	traits::{
+		fungible::Mutate,
 		OnFinalize, OnInitialize,
 	},
 };
@@ -88,11 +88,11 @@ impl pallet_balances::Config for Test {
 	type ExistentialDeposit = ConstU128<{ CENTS }>;
 	type AccountStore = System;
 	type ReserveIdentifier = [u8; 8];
-	type RuntimeHoldReason = ();
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type FreezeIdentifier = ();
 	type MaxLocks = ();
 	type MaxReserves = ();
-	type MaxHolds = ();
+	type MaxHolds = ConstU32<2>;
 	type MaxFreezes = ();
 }
 
@@ -108,6 +108,7 @@ impl pallet_insecure_randomness_collective_flip::Config for Test {}
 impl pallet_offchain_computing_infra::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type UnixTime = Timestamp;
 	type Randomness = RandomnessCollectiveFlip;
 	type ImplId = u32;
@@ -115,7 +116,7 @@ impl pallet_offchain_computing_infra::Config for Test {
 	type RegisterWorkerDeposit = ConstU128<{ 100 * DOLLARS }>;
 	type RegisterImplDeposit = ConstU128<{ DOLLARS }>;
 	type ImplMetadataDepositBase = ConstU128<{ DOLLARS }>;
-	type DepositPerByte = ConstU128<{ CENTS }>;
+	type ImplMetadataDepositPerByte = ConstU128<{ CENTS }>;
 	type ImplMetadataLimit = ConstU32<50>;
 	type MaxImplBuilds = ConstU32<4>;
 	type HandleUnresponsivePerBlockLimit = ConstU32<3>;
@@ -159,12 +160,12 @@ pub(crate) fn take_events() -> Vec<RuntimeEvent> {
 
 #[allow(unused)]
 pub(crate) fn set_balance(who: AccountId, new_free: Balance) {
-	assert_ok!(
-		Balances::force_set_balance(
-			RuntimeOrigin::root(),
-			who,
-			new_free
-		)
+	<Test as crate::Config>::Currency::set_balance(
+		&who,
+		new_free
 	);
-	assert_eq!(Balances::free_balance(who), new_free);
+	assert_eq!(
+		<Test as crate::Config>::Currency::free_balance(who),
+		new_free
+	);
 }

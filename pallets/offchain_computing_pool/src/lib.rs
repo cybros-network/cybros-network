@@ -43,10 +43,9 @@ macro_rules! log {
 }
 
 use frame_support::{
-	traits::{ReservableCurrency, UnixTime, Incrementable},
+	traits::{UnixTime, Incrementable},
 	transactional,
 };
-use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::{
 	traits::{
 		AtLeast32BitUnsigned, StaticLookup,
@@ -54,14 +53,26 @@ use sp_runtime::{
 	SaturatedConversion,
 };
 
-use pallet_offchain_computing_infra::{
-	BalanceOf, AccountIdLookupOf,
+pub(crate) use frame_support::traits::{
+	fungible::{
+		Inspect as InspectFungible,
+		Mutate as MutateFungible,
+		InspectHold as InspectHoldFungible,
+		MutateHold as MutateHoldFungible,
+	},
+	tokens::Precision,
+};
+pub(crate) use frame_system::pallet_prelude::BlockNumberFor;
+pub(crate) use pallet_offchain_computing_infra::{
 	OfflineReason, OnlinePayload, VerifiedAttestation,
 	OffchainWorkerLifecycleHooks,
 	ImplSpecVersion
 };
 
 pub(crate) type PalletInfra<T> = pallet_offchain_computing_infra::Pallet<T>;
+
+pub type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
+pub type BalanceOf<T> = <<T as Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -83,6 +94,15 @@ pub mod pallet {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent> + TryInto<Event<Self>>;
 
+		/// Overarching hold reason.
+		type RuntimeHoldReason: From<HoldReason>;
+
+		/// The system's currency for payment.
+		type Currency: InspectFungible<Self::AccountId>
+			+ MutateFungible<Self::AccountId>
+			+ InspectHoldFungible<Self::AccountId>
+			+ MutateHoldFungible<Self::AccountId, Reason = <Self as Config>::RuntimeHoldReason>;
+
 		/// Identifier for the jobs' pool.
 		type PoolId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + Incrementable;
 
@@ -98,15 +118,22 @@ pub mod pallet {
 
 		/// The basic amount of funds that must be reserved for pool.
 		#[pallet::constant]
-		type CreatePoolDeposit: Get<BalanceOf<Self>>;
+		type PoolCreationDeposit: Get<BalanceOf<Self>>;
 
 		/// The basic amount of funds that must be reserved for a job.
 		#[pallet::constant]
-		type DepositPerJob: Get<BalanceOf<Self>>;
+		type JobCreationDeposit: Get<BalanceOf<Self>>;
+
+		/// The basic amount of funds that must be reserved when adding metadata to your item.
+		#[pallet::constant]
+		type JobStorageDepositPerByte: Get<BalanceOf<Self>>;
 
 		/// The basic amount of funds that must be reserved when adding metadata to your item.
 		#[pallet::constant]
 		type PoolMetadataDepositBase: Get<BalanceOf<Self>>;
+
+		#[pallet::constant]
+		type PoolMetadataDepositPerByte: Get<BalanceOf<Self>>;
 
 		/// The limit of jobs a worker could be assigned
 		#[pallet::constant]
@@ -270,6 +297,14 @@ pub mod pallet {
 		JobAlreadyAssigned,
 		UnsupportedImplSpecVersion,
 		InvalidImplSpecVersionRange,
+	}
+
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		PoolCreationReserve,
+		PoolMetadataStorageReserve,
+		JobDepositorReserve,
+		JobStorageReserve,
 	}
 
 	/// Pools info.

@@ -30,7 +30,7 @@ impl<T: Config> Pallet<T> {
 		ensure!(!Impls::<T>::contains_key(&impl_id), Error::<T>::ImplIdTaken);
 
 		let deposit = T::RegisterImplDeposit::get();
-		T::Currency::reserve(&owner, deposit)?;
+		T::Currency::hold(&HoldReason::ImplRegistrationReserve.into(), &owner, deposit)?;
 
 		let impl_info = ImplInfo::<T::ImplId, T::AccountId, BalanceOf<T>> {
 			id: impl_id.clone(),
@@ -62,7 +62,12 @@ impl<T: Config> Pallet<T> {
 		ensure!(impl_info.workers_count == 0, Error::<T>::ImplStillInUse);
 
 		if let Some(metadata_entry) = ImplMetadata::<T>::take(&impl_id) {
-			T::Currency::unreserve(&metadata_entry.depositor, metadata_entry.actual_deposit);
+			T::Currency::release(
+				&HoldReason::ImplMetadataStorageReserve.into(),
+				&metadata_entry.depositor,
+				metadata_entry.actual_deposit,
+				Precision::BestEffort,
+			)?;
 		}
 
 		let _ = ImplBuilds::<T>::clear_prefix(&impl_id, T::MaxImplBuilds::get(), None);
@@ -71,7 +76,12 @@ impl<T: Config> Pallet<T> {
 		Impls::<T>::remove(&impl_id);
 		AccountOwningImpls::<T>::remove(&impl_info.owner, impl_id.clone());
 
-		T::Currency::unreserve(&impl_info.owner, impl_info.owner_deposit);
+		T::Currency::release(
+			&HoldReason::ImplRegistrationReserve.into(),
+			&impl_info.owner,
+			impl_info.owner_deposit,
+			Precision::BestEffort
+		)?;
 
 		Self::deposit_event(Event::ImplDeregistered { impl_id });
 		Ok(())
@@ -83,17 +93,26 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		let impl_id = impl_info.id.clone();
 		ImplMetadata::<T>::try_mutate_exists(&impl_id, |metadata_entry| {
-			let deposit = T::DepositPerByte::get()
+			let deposit = T::ImplMetadataDepositPerByte::get()
 				.saturating_mul(((new_metadata.len()) as u32).into())
 				.saturating_add(T::ImplMetadataDepositBase::get());
 
 			let old_deposit = metadata_entry.take().map_or(Zero::zero(), |m| m.actual_deposit);
 			match deposit.cmp(&old_deposit) {
 				Ordering::Greater => {
-					T::Currency::reserve(&impl_info.owner, deposit - old_deposit)?;
+					T::Currency::hold(
+						&HoldReason::ImplMetadataStorageReserve.into(),
+						&impl_info.owner,
+						deposit - old_deposit
+					)?;
 				},
 				Ordering::Less => {
-					T::Currency::unreserve(&impl_info.owner, old_deposit - deposit);
+					T::Currency::release(
+						&HoldReason::ImplMetadataStorageReserve.into(),
+						&impl_info.owner,
+						old_deposit - deposit,
+						Precision::BestEffort
+					)?;
 				},
 				_ => {}
 			};
@@ -121,7 +140,12 @@ impl<T: Config> Pallet<T> {
 
 		ImplMetadata::<T>::remove(&impl_info.id);
 
-		T::Currency::unreserve(&impl_info.owner, metadata_entry.actual_deposit);
+		T::Currency::release(
+			&HoldReason::ImplMetadataStorageReserve.into(),
+			&impl_info.owner,
+			metadata_entry.actual_deposit,
+			Precision::BestEffort
+		)?;
 
 		Self::deposit_event(Event::ImplMetadataRemoved { impl_id: impl_info.id.clone() });
 		Ok(())

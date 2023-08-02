@@ -50,12 +50,20 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(!Jobs::<T>::contains_key(&pool_info.id, &job_id), Error::<T>::JobIdTaken);
 
-		let input_deposit = T::DepositPerByte::get()
-			.saturating_mul(((input_data.as_ref().map(|x| x.len()).unwrap_or_default()) as u32).into());
-		let job_deposit = T::DepositPerJob::get();
+		let job_deposit = T::JobCreationDeposit::get();
+		<T as Config>::Currency::hold(
+			&HoldReason::JobDepositorReserve.into(),
+			&depositor,
+			job_deposit
+		)?;
 
-		let total_deposit = input_deposit.saturating_add(job_deposit);
-		T::Currency::reserve(&depositor, total_deposit)?;
+		let input_deposit = T::JobStorageDepositPerByte::get()
+			.saturating_mul(((input_data.as_ref().map(|x| x.len()).unwrap_or_default()) as u32).into());
+		<T as Config>::Currency::hold(
+			&HoldReason::JobStorageReserve.into(),
+			&depositor,
+			input_deposit
+		)?;
 
 		let expires_at = now + expires_in;
 		let job = JobInfo::<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>> {
@@ -158,18 +166,38 @@ impl<T: Config> Pallet<T> {
 		let job_id = job.id;
 		let unique_track_id = job.unique_track_id;
 
-		T::Currency::unreserve(&job.depositor, job.deposit);
+		<T as Config>::Currency::release(
+			&HoldReason::JobDepositorReserve.into(),
+			&job.depositor,
+			job.deposit,
+			Precision::BestEffort
+		)?;
 		if let Some(input_entry) = JobInputs::<T>::take(&pool_id, &job_id) {
 			let deposit = input_entry.actual_deposit.saturating_add(input_entry.surplus_deposit);
-			T::Currency::unreserve(&input_entry.depositor, deposit);
+			<T as Config>::Currency::release(
+				&HoldReason::JobStorageReserve.into(),
+				&input_entry.depositor,
+				deposit,
+				Precision::BestEffort
+			)?;
 		}
 		if let Some(output_entry) = JobOutputs::<T>::take(&pool_id, &job_id) {
 			let deposit = output_entry.actual_deposit.saturating_add(output_entry.surplus_deposit);
-			T::Currency::unreserve(&output_entry.depositor, deposit);
+			<T as Config>::Currency::release(
+				&HoldReason::JobStorageReserve.into(),
+				&output_entry.depositor,
+				deposit,
+				Precision::BestEffort
+			)?;
 		}
 		if let Some(proof_entry) = JobProofs::<T>::take(&pool_id, &job_id) {
 			let deposit = proof_entry.actual_deposit.saturating_add(proof_entry.surplus_deposit);
-			T::Currency::unreserve(&proof_entry.depositor, deposit);
+			<T as Config>::Currency::release(
+				&HoldReason::JobStorageReserve.into(),
+				&proof_entry.depositor,
+				deposit,
+				Precision::BestEffort
+			)?;
 		}
 
 		if let Some(unique_track_id) = unique_track_id {

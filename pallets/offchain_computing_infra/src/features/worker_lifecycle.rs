@@ -79,13 +79,17 @@ impl<T: Config> Pallet<T> {
 		}
 
 		// Check reserved money
-		let deposit = <T as Config>::Currency::reserved_balance(&worker);
+		let deposit = T::Currency::balance_on_hold(&HoldReason::WorkerRegistrationReserve.into(), &worker);
 		if deposit < worker_info.deposit {
 			// Try add reserved from free
-			let free = <T as Config>::Currency::free_balance(&worker);
+			let free = T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite);
 			let should_add_deposit = worker_info.deposit.saturating_sub(deposit);
 			ensure!(free >= should_add_deposit, Error::<T>::InsufficientDeposit);
-			<T as Config>::Currency::reserve(&worker, should_add_deposit)?;
+			T::Currency::hold(
+				&HoldReason::WorkerRegistrationReserve.into(),
+				&worker,
+				should_add_deposit
+			)?;
 		}
 
 		let verified_attestation = Self::verify_attestation(&attestation)?;
@@ -262,7 +266,7 @@ impl<T: Config> Pallet<T> {
 		}
 
 		// Check the worker's reserved money
-		if <T as Config>::Currency::reserved_balance(&worker) < T::RegisterWorkerDeposit::get() {
+		if T::Currency::balance_on_hold(&HoldReason::WorkerRegistrationReserve.into(), &worker) < T::RegisterWorkerDeposit::get() {
 			Self::set_worker_offline(&worker, OfflineReason::InsufficientDepositFunds);
 
 			return Ok(())

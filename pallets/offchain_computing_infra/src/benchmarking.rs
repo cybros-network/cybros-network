@@ -26,14 +26,18 @@ use frame_system::{
 	pallet_prelude::BlockNumberFor,
 	Account, RawOrigin,
 };
-
 use frame_support::{
-	sp_runtime::{
-		app_crypto::{sr25519, KeyTypeId, RuntimePublic},
-		SaturatedConversion, Saturating
+	traits::{
+		fungible::Mutate,
+		tokens::Fortitude,
 	},
 	assert_ok, fail,
 };
+use sp_runtime::{
+	app_crypto::{sr25519, KeyTypeId, RuntimePublic},
+	SaturatedConversion, Saturating,
+};
+
 use primitives::{AttestationMethod, OnlinePayload};
 
 use crate::Pallet as OffchainComputingInfra;
@@ -48,7 +52,10 @@ fn add_mock_impl<T: Config>(owner: &T::AccountId) -> T::ImplId {
 		reserved_deposit.saturating_add(
 			(11 * DOLLARS).saturated_into::<BalanceOf<T>>()
 		).saturating_add(T::Currency::minimum_balance());
-	let _ = T::Currency::make_free_balance_be(&owner, owner_balance);
+	T::Currency::set_balance(
+		&owner,
+		owner_balance
+	);
 
 	assert_ok!(OffchainComputingInfra::<T>::register_impl(
 		RawOrigin::Signed(owner.clone()).into(),
@@ -89,7 +96,10 @@ fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::Accoun
 	let reserved_deposit = T::RegisterWorkerDeposit::get();
 
 	let owner_balance = reserved_deposit.saturating_add((100 * DOLLARS).saturated_into::<BalanceOf<T>>());
-	let _ = T::Currency::make_free_balance_be(&owner, owner_balance);
+	T::Currency::set_balance(
+		&owner,
+		owner_balance
+	);
 
 	let initial_deposit = reserved_deposit.saturating_add((11 * DOLLARS).saturated_into::<BalanceOf<T>>());
 
@@ -135,7 +145,10 @@ mod benchmarks {
 
 		let initial_balance = T::RegisterWorkerDeposit::get().saturating_add((1 * DOLLARS).saturated_into::<BalanceOf<T>>());
 		let balance = initial_balance.saturating_add((100 * DOLLARS).saturated_into::<BalanceOf<T>>());
-		let _ = T::Currency::make_free_balance_be(&owner, balance);
+		T::Currency::set_balance(
+			&owner,
+			balance
+		);
 
 		#[extrinsic_call]
 		_(
@@ -147,7 +160,7 @@ mod benchmarks {
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.owner, owner);
-		assert_eq!(T::Currency::reserved_balance(&worker), T::RegisterWorkerDeposit::get());
+		assert_eq!(T::Currency::balance_on_hold(&HoldReason::WorkerRegistrationReserve.into(), &worker), T::RegisterWorkerDeposit::get());
 		assert_eq!(worker_info.status, WorkerStatus::Registered);
 
 		Ok(())
@@ -179,7 +192,7 @@ mod benchmarks {
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id);
 
-		let worker_balance = T::Currency::free_balance(&worker);
+		let worker_balance = T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite);
 		let amount = (10 * DOLLARS).saturated_into::<BalanceOf<T>>();
 
 		#[extrinsic_call]
@@ -190,7 +203,7 @@ mod benchmarks {
 		);
 
 		assert_eq!(
-			T::Currency::free_balance(&worker),
+			T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite),
 			worker_balance.saturating_add(amount)
 		);
 
@@ -204,7 +217,7 @@ mod benchmarks {
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id);
 
-		let worker_balance = T::Currency::free_balance(&worker);
+		let worker_balance = T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite);
 		let amount = (10 * DOLLARS).saturated_into::<BalanceOf<T>>();
 
 		#[extrinsic_call]
@@ -215,7 +228,7 @@ mod benchmarks {
 		);
 
 		assert_eq!(
-			T::Currency::free_balance(&worker),
+			T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite),
 			worker_balance.saturating_sub(amount)
 		);
 

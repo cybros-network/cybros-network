@@ -30,7 +30,7 @@ impl<T: Config> Pallet<T> {
 
 		let deposit = T::RegisterWorkerDeposit::get();
 		ensure!(
-			initial_balance.saturating_add(T::Currency::free_balance(&worker)) > deposit.saturating_add(T::Currency::minimum_balance()),
+			initial_balance.saturating_add(T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite)) > deposit.saturating_add(T::Currency::minimum_balance()),
 			Error::<T>::InitialBalanceTooLow
 		);
 
@@ -56,9 +56,13 @@ impl<T: Config> Pallet<T> {
 			uptime: None,
 		};
 
-		<T as Config>::Currency::transfer(&owner, &worker, initial_balance, ExistenceRequirement::KeepAlive)?;
+		T::Currency::transfer(&owner, &worker, initial_balance, Preservation::Preserve)?;
 		if !deposit.is_zero() {
-			<T as Config>::Currency::reserve(&worker, deposit)?;
+			T::Currency::hold(
+				&HoldReason::WorkerRegistrationReserve.into(),
+				&worker,
+				deposit
+			)?;
 		}
 
 		Workers::<T>::insert(&worker, worker_info);
@@ -86,13 +90,18 @@ impl<T: Config> Pallet<T> {
 		let deposit = worker_info.deposit;
 		if !deposit.is_zero() {
 			// The upper limit is the actual reserved, so it is OK
-			<T as Config>::Currency::unreserve(&worker, deposit);
+			T::Currency::release(
+				&HoldReason::WorkerRegistrationReserve.into(),
+				&worker,
+				deposit,
+				Precision::BestEffort
+			)?;
 		}
-		<T as Config>::Currency::transfer(
+		T::Currency::transfer(
 			&worker,
 			&owner,
-			<T as Config>::Currency::free_balance(&worker),
-			ExistenceRequirement::AllowDeath,
+			T::Currency::reducible_balance(&worker, Preservation::Expendable, Fortitude::Polite),
+			Preservation::Expendable,
 		)?;
 
 		let mut impl_info = Impls::<T>::get(&worker_info.impl_id).ok_or(Error::<T>::ImplNotFound)?;

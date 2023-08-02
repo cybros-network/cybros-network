@@ -187,7 +187,7 @@ pub mod pallet {
 			}
 
 			if reason != OfflineReason::Graceful {
-				PalletInfra::<T>::slash_worker(
+				let _ = PalletInfra::<T>::slash_worker(
 					worker,
 					T::SlashingCardinal::get().saturating_mul(10u32.into()),
 				);

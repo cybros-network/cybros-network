@@ -48,12 +48,16 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::NoPermission
 		);
 
-		T::Currency::reserve(&owner, T::CreatePoolDeposit::get())?;
+		<T as Config>::Currency::hold(
+			&HoldReason::PoolCreationReserve.into(),
+			&owner,
+			T::PoolCreationDeposit::get()
+		)?;
 
 		let pool_info = PoolInfo::<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId> {
 			id: pool_id.clone(),
 			owner: owner.clone(),
-			owner_deposit: T::CreatePoolDeposit::get(),
+			owner_deposit: T::PoolCreationDeposit::get(),
 			impl_id: impl_id.clone(),
 			create_job_enabled,
 			auto_destroy_processed_job_enabled,
@@ -81,7 +85,12 @@ impl<T: Config> Pallet<T> {
 		ensure!(pool_info.workers_count == 0, Error::<T>::PoolNotEmpty);
 
 		if let Some(metadata_entry) = PoolMetadata::<T>::take(&pool_id) {
-			T::Currency::unreserve(&pool_info.owner, metadata_entry.actual_deposit);
+			<T as Config>::Currency::release(
+				&HoldReason::PoolMetadataStorageReserve.into(),
+				&pool_info.owner,
+				metadata_entry.actual_deposit,
+				Precision::BestEffort
+			)?;
 		}
 
 		let _ = JobPolicies::<T>::clear_prefix(&pool_id, pool_info.job_policies_count, None);
@@ -89,7 +98,12 @@ impl<T: Config> Pallet<T> {
 		Pools::<T>::remove(&pool_id);
 		AccountOwningPools::<T>::remove(&pool_info.owner, &pool_id);
 
-		T::Currency::unreserve(&pool_info.owner, pool_info.owner_deposit);
+		<T as Config>::Currency::release(
+			&HoldReason::PoolCreationReserve.into(),
+			&pool_info.owner,
+			pool_info.owner_deposit,
+			Precision::BestEffort
+		)?;
 
 		Self::deposit_event(Event::PoolDestroyed { pool_id });
 		Ok(())
@@ -101,17 +115,26 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		let pool_id = pool_info.id;
 		PoolMetadata::<T>::try_mutate_exists(&pool_id.clone(), |metadata_entry| {
-			let deposit = T::DepositPerByte::get()
+			let deposit = T::JobStorageDepositPerByte::get()
 				.saturating_mul(((new_metadata.len()) as u32).into())
 				.saturating_add(T::PoolMetadataDepositBase::get());
 
 			let old_deposit = metadata_entry.take().map_or(Zero::zero(), |m| m.actual_deposit);
 			match deposit.cmp(&old_deposit) {
 				Ordering::Greater => {
-					T::Currency::reserve(&pool_info.owner, deposit - old_deposit)?;
+					<T as Config>::Currency::hold(
+						&HoldReason::PoolMetadataStorageReserve.into(),
+						&pool_info.owner,
+						deposit - old_deposit
+					)?;
 				},
 				Ordering::Less => {
-					T::Currency::unreserve(&pool_info.owner, old_deposit - deposit);
+					<T as Config>::Currency::release(
+						&HoldReason::PoolMetadataStorageReserve.into(),
+						&pool_info.owner,
+						deposit - old_deposit,
+						Precision::BestEffort
+					)?;
 				},
 				_ => {}
 			};
@@ -136,7 +159,12 @@ impl<T: Config> Pallet<T> {
 		};
 
 		PoolMetadata::<T>::remove(&pool_info.id);
-		T::Currency::unreserve(&pool_info.owner, metadata_entry.actual_deposit);
+		<T as Config>::Currency::release(
+			&HoldReason::PoolMetadataStorageReserve.into(),
+			&pool_info.owner,
+			metadata_entry.actual_deposit,
+			Precision::BestEffort
+		)?;
 
 		Self::deposit_event(Event::PoolMetadataRemoved { pool_id: pool_info.id });
 		Ok(())
