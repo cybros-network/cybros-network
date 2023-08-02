@@ -835,6 +835,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[allow(clippy::too_many_arguments)]
 		#[transactional]
 		#[pallet::call_index(12)]
 		#[pallet::weight({0})]
