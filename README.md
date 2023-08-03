@@ -145,7 +145,7 @@ We plan to develop a decentralized FaaS-like platform for decentralized job exec
 - It will be an Implementation, just like others.
 - The developer experience should be similar to Smart Contracts.
 - It should support TEE to ensure its confidentiality.
-- It should support ZK to help developers make proof of jobs' results.
+- It should support ZK to help developers make proof of jobs' results without leaking privacy data.
 - It should have an economic incentive layer for workers.
 
 ## Project Structure
