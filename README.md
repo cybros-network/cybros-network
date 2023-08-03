@@ -63,7 +63,7 @@ which defines the pricing to create a job, how to share profit
 between the pool and the worker, etc.
 It is read-only and can only delete once created.
 
-## Technical abstract
+## Technical abstraction
 
 ### Implementation
 
@@ -208,4 +208,4 @@ Third-party vendors (`/vendors`) released under their own licenses.
 Docs (`/docs`) released under [Creative Commons](https://creativecommons.org/licenses/by/3.0/).
 
 The prototyping protocol implementation (`/protocol_impl`), the Subsquid project (`/squid`),
-and all other utilities are licensed under [MIT License](./MIT-LICENSE).
+and all other utilities licensed under [MIT License](./MIT-LICENSE).
