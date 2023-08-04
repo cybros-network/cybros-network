@@ -142,3 +142,4 @@ try-runtime = [
 	"pallet-offchain_computing-infra/try-runtime",
 	"pallet-offchain_computing-pool/try-runtime",
 ]
+experimental = ["pallet-aura/experimental"]
