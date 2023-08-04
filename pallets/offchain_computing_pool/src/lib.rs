@@ -309,7 +309,7 @@ pub mod pallet {
 
 	/// Pools info.
 	#[pallet::storage]
-	pub type Pools<T: Config> = StorageMap<
+	pub type Pools<T: Config> = CountedStorageMap<
 		_,
 		Blake2_128Concat,
 		T::PoolId,
