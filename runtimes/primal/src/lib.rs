@@ -42,9 +42,7 @@ use sp_version::RuntimeVersion;
 
 use frame_support::{
 	construct_runtime,
-	traits::{
-		Contains, InstanceFilter, WithdrawReasons
-	},
+	traits::{Contains, InstanceFilter, WithdrawReasons},
 	weights::Weight,
 	RuntimeDebug,
 };
@@ -53,7 +51,7 @@ use pallet_grandpa::AuthorityId as GrandpaId;
 use pallet_transaction_payment::Multiplier;
 
 use runtime_primitives::constants::{
-	currency::{deposit, EXISTENTIAL_DEPOSIT, UNITS, CENTS},
+	currency::{deposit, CENTS, EXISTENTIAL_DEPOSIT, UNITS},
 	time::SLOT_DURATION,
 	weight::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO},
 };
@@ -68,11 +66,11 @@ pub use sp_runtime::{Perbill, Permill};
 pub use runtime_primitives::{
 	constants,
 	opaque::{self, Header},
-	types::{AccountId, Lookup, Balance, BlockNumber, Hash, Hashing, Nonce, Moment, Signature},
+	types::{AccountId, Balance, BlockNumber, Hash, Hashing, Lookup, Moment, Nonce, Signature},
 };
 
-mod pallet_configs;
 mod migrations;
+mod pallet_configs;
 #[cfg(test)]
 mod test;
 
@@ -124,7 +122,8 @@ pub type SignedExtra = (
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+pub type UncheckedExtrinsic =
+	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 /// The payload being signed in transactions.
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
@@ -148,7 +147,19 @@ impl Contains<RuntimeCall> for BaseCallFilter {
 }
 
 /// The type used to represent the kinds of proxying allowed.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(
+	Copy,
+	Clone,
+	Eq,
+	PartialEq,
+	Ord,
+	PartialOrd,
+	Encode,
+	Decode,
+	RuntimeDebug,
+	MaxEncodedLen,
+	TypeInfo,
+)]
 pub enum ProxyType {
 	Any,
 	NonTransfer,
@@ -164,7 +175,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 			ProxyType::Any => true,
 			ProxyType::NonTransfer => !matches!(
 				c,
-				RuntimeCall::Balances(..) | RuntimeCall::Vesting(pallet_vesting::Call::vested_transfer { .. })
+				RuntimeCall::Balances(..) |
+					RuntimeCall::Vesting(pallet_vesting::Call::vested_transfer { .. })
 			),
 		}
 	}

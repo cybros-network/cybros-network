@@ -57,9 +57,13 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for RemarkBuilder {
 
 	fn build(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
 		let acc = Sr25519Keyring::Bob.pair();
-		let extrinsic: OpaqueExtrinsic =
-			create_benchmark_extrinsic(self.client.as_ref(), acc, SystemCall::remark { remark: vec![] }.into(), nonce)
-				.into();
+		let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
+			self.client.as_ref(),
+			acc,
+			SystemCall::remark { remark: vec![] }.into(),
+			nonce,
+		)
+		.into();
 
 		Ok(extrinsic)
 	}
@@ -95,7 +99,8 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for TransferKeepAliveBuilder {
 		let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
 			self.client.as_ref(),
 			acc,
-			BalancesCall::transfer_keep_alive { dest: self.dest.clone().into(), value: self.value }.into(),
+			BalancesCall::transfer_keep_alive { dest: self.dest.clone().into(), value: self.value }
+				.into(),
 			nonce,
 		)
 		.into();
@@ -146,7 +151,7 @@ pub fn create_benchmark_extrinsic(
 			best_hash,
 			(),
 			(),
-			()
+			(),
 		),
 	);
 	let signature = raw_payload.using_encoded(|e| sender.sign(e));

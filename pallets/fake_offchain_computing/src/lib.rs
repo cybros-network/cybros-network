@@ -43,13 +43,9 @@ macro_rules! log {
 	};
 }
 
-use frame_support::{
-	sp_runtime::Saturating,
-};
+use frame_support::sp_runtime::Saturating;
 use pallet_offchain_computing_infra::{
-	BalanceOf,
-	OffchainWorkerLifecycleHooks,
-	OfflineReason, OnlinePayload, VerifiedAttestation,
+	BalanceOf, OffchainWorkerLifecycleHooks, OfflineReason, OnlinePayload, VerifiedAttestation,
 };
 
 pub(crate) type PalletInfra<T> = pallet_offchain_computing_infra::Pallet<T>;
@@ -152,7 +148,11 @@ pub mod pallet {
 	}
 
 	impl<T: Config> OffchainWorkerLifecycleHooks<T::AccountId, T::ImplId> for Pallet<T> {
-		fn can_online(worker: &T::AccountId, _payload: &OnlinePayload<T::ImplId>, _verified_attestation: &VerifiedAttestation) -> DispatchResult {
+		fn can_online(
+			worker: &T::AccountId,
+			_payload: &OnlinePayload<T::ImplId>,
+			_verified_attestation: &VerifiedAttestation,
+		) -> DispatchResult {
 			log!(info, "can_online: {:?}", worker);
 
 			ensure!(!<BlockedWorkers<T>>::contains_key(worker), Error::<T>::Blocked);
@@ -196,7 +196,11 @@ pub mod pallet {
 			<RunningWorkers<T>>::remove(worker);
 		}
 
-		fn after_refresh_attestation(worker: &T::AccountId, _payload: &OnlinePayload<T::ImplId>, _verified_attestation: &VerifiedAttestation) {
+		fn after_refresh_attestation(
+			worker: &T::AccountId,
+			_payload: &OnlinePayload<T::ImplId>,
+			_verified_attestation: &VerifiedAttestation,
+		) {
 			log!(info, "after_refresh_attestation: {:?}", worker);
 		}
 

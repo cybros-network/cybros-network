@@ -54,7 +54,7 @@ impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
 pub(crate) type FullClient = sc_service::TFullClient<
 	Block,
 	primal_runtime::RuntimeApi,
-	NativeElseWasmExecutor<ExecutorDispatch>
+	NativeElseWasmExecutor<ExecutorDispatch>,
 >;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
@@ -223,8 +223,8 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 				enable_http_requests: true,
 				custom_extensions: |_| vec![],
 			})
-				.run(client.clone(), task_manager.spawn_handle())
-				.boxed(),
+			.run(client.clone(), task_manager.spawn_handle())
+			.boxed(),
 		);
 	}
 

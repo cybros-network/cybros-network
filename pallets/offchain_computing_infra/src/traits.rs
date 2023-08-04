@@ -24,7 +24,11 @@ use primitives::{OfflineReason, OnlinePayload, VerifiedAttestation};
 pub trait OffchainWorkerLifecycleHooks<AccountId, ImplId> {
 	/// A hook for checking the worker whether can online,
 	/// can use for add extra conditions check, if returns error, the worker will not be online
-	fn can_online(worker: &AccountId, payload: &OnlinePayload<ImplId>, verified_attestation: &VerifiedAttestation) -> DispatchResult;
+	fn can_online(
+		worker: &AccountId,
+		payload: &OnlinePayload<ImplId>,
+		verified_attestation: &VerifiedAttestation,
+	) -> DispatchResult;
 
 	/// A hook after the worker transited to online status,
 	/// can use for add additional business logic, e.g. assign job, reserve more money
@@ -45,7 +49,11 @@ pub trait OffchainWorkerLifecycleHooks<AccountId, ImplId> {
 
 	/// A hook after the worker update its attestation,
 	/// Can use for if interest in payload's custom field
-	fn after_refresh_attestation(worker: &AccountId, payload: &OnlinePayload<ImplId>, verified_attestation: &VerifiedAttestation);
+	fn after_refresh_attestation(
+		worker: &AccountId,
+		payload: &OnlinePayload<ImplId>,
+		verified_attestation: &VerifiedAttestation,
+	);
 
 	/// A hook after the worker transited to requesting offline status,
 	/// can use for add additional business logic, e.g. stop assigning job
@@ -61,7 +69,11 @@ pub trait OffchainWorkerLifecycleHooks<AccountId, ImplId> {
 }
 
 impl<AccountId, ImplId> OffchainWorkerLifecycleHooks<AccountId, ImplId> for () {
-	fn can_online(_: &AccountId, _: &OnlinePayload<ImplId>, _: &VerifiedAttestation) -> DispatchResult {
+	fn can_online(
+		_: &AccountId,
+		_: &OnlinePayload<ImplId>,
+		_: &VerifiedAttestation,
+	) -> DispatchResult {
 		Ok(())
 	}
 
@@ -81,7 +93,11 @@ impl<AccountId, ImplId> OffchainWorkerLifecycleHooks<AccountId, ImplId> for () {
 		// Do nothing
 	}
 
-	fn after_refresh_attestation(_: &AccountId, _: &OnlinePayload<ImplId>, _: &VerifiedAttestation) {
+	fn after_refresh_attestation(
+		_: &AccountId,
+		_: &OnlinePayload<ImplId>,
+		_: &VerifiedAttestation,
+	) {
 		// Do nothing
 	}
 

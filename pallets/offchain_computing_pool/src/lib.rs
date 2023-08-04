@@ -43,36 +43,32 @@ macro_rules! log {
 }
 
 use frame_support::{
-	traits::{UnixTime, Incrementable},
+	traits::{Incrementable, UnixTime},
 	transactional,
 };
 use sp_runtime::{
-	traits::{
-		AtLeast32BitUnsigned, StaticLookup,
-	},
+	traits::{AtLeast32BitUnsigned, StaticLookup},
 	SaturatedConversion,
 };
 
 pub(crate) use frame_support::traits::{
 	fungible::{
-		Inspect as InspectFungible,
-		Mutate as MutateFungible,
-		InspectHold as InspectHoldFungible,
+		Inspect as InspectFungible, InspectHold as InspectHoldFungible, Mutate as MutateFungible,
 		MutateHold as MutateHoldFungible,
 	},
 	tokens::Precision,
 };
 pub(crate) use frame_system::pallet_prelude::BlockNumberFor;
 pub(crate) use pallet_offchain_computing_infra::{
-	OfflineReason, OnlinePayload, VerifiedAttestation,
-	OffchainWorkerLifecycleHooks,
-	ImplSpecVersion
+	ImplSpecVersion, OffchainWorkerLifecycleHooks, OfflineReason, OnlinePayload,
+	VerifiedAttestation,
 };
 
 pub(crate) type PalletInfra<T> = pallet_offchain_computing_infra::Pallet<T>;
 
 pub type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
-pub type BalanceOf<T> = <<T as Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> =
+	<<T as Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -92,7 +88,9 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_offchain_computing_infra::Config {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent> + TryInto<Event<Self>>;
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
+			+ TryInto<Event<Self>>;
 
 		/// Overarching hold reason.
 		type RuntimeHoldReason: From<HoldReason>;
@@ -104,13 +102,28 @@ pub mod pallet {
 			+ MutateHoldFungible<Self::AccountId, Reason = <Self as Config>::RuntimeHoldReason>;
 
 		/// Identifier for the jobs' pool.
-		type PoolId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + Incrementable;
+		type PoolId: Member
+			+ Parameter
+			+ MaxEncodedLen
+			+ Display
+			+ AtLeast32BitUnsigned
+			+ Incrementable;
 
 		/// The type used to identify a job within a pool.
-		type JobId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + Incrementable;
+		type JobId: Member
+			+ Parameter
+			+ MaxEncodedLen
+			+ Display
+			+ AtLeast32BitUnsigned
+			+ Incrementable;
 
 		/// The type used to identify a policy within a pool.
-		type PolicyId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + Incrementable;
+		type PolicyId: Member
+			+ Parameter
+			+ MaxEncodedLen
+			+ Display
+			+ AtLeast32BitUnsigned
+			+ Incrementable;
 
 		/// Standard collection creation is only allowed if the origin attempting it and the
 		/// collection are in this set.
@@ -203,31 +216,57 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			impl_id: T::ImplId,
 			create_job_enabled: bool,
-			auto_destroy_processed_job_enabled: bool
+			auto_destroy_processed_job_enabled: bool,
 		},
-		PoolDestroyed { pool_id: T::PoolId },
-		PoolMetadataUpdated { pool_id: T::PoolId, metadata: BoundedVec<u8, T::PoolMetadataLimit> },
-		PoolMetadataRemoved { pool_id: T::PoolId },
+		PoolDestroyed {
+			pool_id: T::PoolId,
+		},
+		PoolMetadataUpdated {
+			pool_id: T::PoolId,
+			metadata: BoundedVec<u8, T::PoolMetadataLimit>,
+		},
+		PoolMetadataRemoved {
+			pool_id: T::PoolId,
+		},
 		PoolSettingsUpdated {
 			pool_id: T::PoolId,
 			min_impl_spec_version: ImplSpecVersion,
 			max_impl_spec_version: ImplSpecVersion,
 			create_job_enabled: bool,
-			auto_destroy_processed_job_enabled: bool
+			auto_destroy_processed_job_enabled: bool,
 		},
 		JobPolicyCreated {
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
 			applicable_scope: ApplicableScope,
 			start_block: Option<BlockNumberFor<T>>,
-			end_block: Option<BlockNumberFor<T>>
+			end_block: Option<BlockNumberFor<T>>,
 		},
-		JobPolicyDestroyed { pool_id: T::PoolId, policy_id: T::PolicyId },
-		JobPolicyEnablementUpdated { pool_id: T::PoolId, policy_id: T::PolicyId, enabled: bool },
-		WorkerProvisioned { pool_id: T::PoolId, worker: T::AccountId },
-		WorkerRevoked { pool_id: T::PoolId, worker: T::AccountId },
-		WorkerSubscribed { worker: T::AccountId, pool_id: T::PoolId },
-		WorkerUnsubscribed { worker: T::AccountId, pool_id: T::PoolId },
+		JobPolicyDestroyed {
+			pool_id: T::PoolId,
+			policy_id: T::PolicyId,
+		},
+		JobPolicyEnablementUpdated {
+			pool_id: T::PoolId,
+			policy_id: T::PolicyId,
+			enabled: bool,
+		},
+		WorkerProvisioned {
+			pool_id: T::PoolId,
+			worker: T::AccountId,
+		},
+		WorkerRevoked {
+			pool_id: T::PoolId,
+			worker: T::AccountId,
+		},
+		WorkerSubscribed {
+			worker: T::AccountId,
+			pool_id: T::PoolId,
+		},
+		WorkerUnsubscribed {
+			worker: T::AccountId,
+			pool_id: T::PoolId,
+		},
 		JobCreated {
 			pool_id: T::PoolId,
 			job_id: T::JobId,
@@ -237,24 +276,35 @@ pub mod pallet {
 			beneficiary: T::AccountId,
 			impl_spec_version: ImplSpecVersion,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
-			expires_in: u64
+			expires_in: u64,
 		},
 		JobDestroyed {
 			pool_id: T::PoolId,
 			job_id: T::JobId,
 			unique_track_id: Option<UniqueTrackId>,
 			destroyer: T::AccountId,
-			force: bool
+			force: bool,
 		},
-		JobAssigned { pool_id: T::PoolId, job_id: T::JobId, assignee: T::AccountId },
-		JobReleased { pool_id: T::PoolId, job_id: T::JobId },
-		JobStatusUpdated { pool_id: T::PoolId, job_id: T::JobId, status: JobStatus },
+		JobAssigned {
+			pool_id: T::PoolId,
+			job_id: T::JobId,
+			assignee: T::AccountId,
+		},
+		JobReleased {
+			pool_id: T::PoolId,
+			job_id: T::JobId,
+		},
+		JobStatusUpdated {
+			pool_id: T::PoolId,
+			job_id: T::JobId,
+			status: JobStatus,
+		},
 		JobResultUpdated {
 			pool_id: T::PoolId,
 			job_id: T::JobId,
 			result: JobResult,
 			output: Option<BoundedVec<u8, T::OutputLimit>>,
-			proof: Option<BoundedVec<u8, T::ProofLimit>>
+			proof: Option<BoundedVec<u8, T::ProofLimit>>,
 		},
 	}
 
@@ -425,24 +475,14 @@ pub mod pallet {
 	/// Stores the `JobId` that is going to be used for the next job.
 	/// This gets incremented whenever a new job is created.
 	#[pallet::storage]
-	pub type NextJobPolicyId<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		T::PoolId,
-		T::PolicyId,
-		OptionQuery,
-	>;
+	pub type NextJobPolicyId<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::PoolId, T::PolicyId, OptionQuery>;
 
 	/// Stores the `JobId` that is going to be used for the next job.
 	/// This gets incremented whenever a new job is created.
 	#[pallet::storage]
-	pub type NextJobId<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		T::PoolId,
-		T::JobId,
-		OptionQuery,
-	>;
+	pub type NextJobId<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::PoolId, T::JobId, OptionQuery>;
 
 	/// The pools owned by any given account; set out this way so that pools owned by
 	/// a single account can be enumerated.
@@ -496,31 +536,16 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	pub type CounterForWorkerAddedPools<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		T::AccountId,
-		u32,
-		ValueQuery
-	>;
+	pub type CounterForWorkerAddedPools<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
 
 	#[pallet::storage]
-	pub type CounterForWorkerSubscribedPools<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		T::AccountId,
-		u32,
-		ValueQuery
-	>;
+	pub type CounterForWorkerSubscribedPools<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
 
 	#[pallet::storage]
-	pub type CounterForWorkerAssignedJobs<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		T::AccountId,
-		u32,
-		ValueQuery
-	>;
+	pub type CounterForWorkerAssignedJobs<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -531,7 +556,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
 			create_job_enabled: bool,
-			auto_destroy_processed_job_enabled: bool
+			auto_destroy_processed_job_enabled: bool,
 		) -> DispatchResult {
 			let owner = T::CreatePoolOrigin::ensure_origin(origin)?;
 			let pool_id = NextPoolId::<T>::get().unwrap_or(101u32.into());
@@ -541,7 +566,7 @@ pub mod pallet {
 				pool_id.clone(),
 				impl_id,
 				create_job_enabled,
-				auto_destroy_processed_job_enabled
+				auto_destroy_processed_job_enabled,
 			)?;
 
 			let next_id = pool_id.increment();
@@ -553,10 +578,7 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(1)]
 		#[pallet::weight({0})]
-		pub fn destroy_pool(
-			origin: OriginFor<T>,
-			pool_id: T::PoolId
-		) -> DispatchResult {
+		pub fn destroy_pool(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			Self::do_destroy_pool(who, pool_id)
@@ -603,7 +625,7 @@ pub mod pallet {
 				min_impl_spec_version,
 				max_impl_spec_version,
 				create_job_enabled,
-				auto_destroy_processed_job_enabled
+				auto_destroy_processed_job_enabled,
 			)
 		}
 
@@ -615,7 +637,7 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			applicable_scope: ApplicableScope,
 			start_block: Option<BlockNumberFor<T>>,
-			end_block: Option<BlockNumberFor<T>>
+			end_block: Option<BlockNumberFor<T>>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -633,7 +655,7 @@ pub mod pallet {
 				policy_id.clone(),
 				applicable_scope,
 				start_block,
-				end_block
+				end_block,
 			)?;
 
 			let next_id = policy_id.increment();
@@ -655,10 +677,7 @@ pub mod pallet {
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_destroy_job_policy(
-				pool_info,
-				policy_id
-			)
+			Self::do_destroy_job_policy(pool_info, policy_id)
 		}
 
 		#[transactional]
@@ -668,18 +687,14 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
-			enabled: bool
+			enabled: bool,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			Self::ensure_pool_owner(&who, &pool_info)?;
 
-			Self::do_update_job_policy_enablement(
-				pool_id,
-				policy_id,
-				enabled
-			)
+			Self::do_update_job_policy_enablement(pool_id, policy_id, enabled)
 		}
 
 		#[transactional]
@@ -697,10 +712,7 @@ pub mod pallet {
 
 			let worker = T::Lookup::lookup(worker.clone())?;
 
-			Self::do_provision_worker(
-				pool_info,
-				worker
-			)
+			Self::do_provision_worker(pool_info, worker)
 		}
 
 		#[transactional]
@@ -715,49 +727,32 @@ pub mod pallet {
 			let worker = T::Lookup::lookup(worker)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
-			let worker_info = PalletInfra::<T>::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
+			let worker_info =
+				PalletInfra::<T>::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 
 			let pool_owner = pool_info.owner.clone();
 			let worker_owner = worker_info.owner;
-			ensure!(
-				pool_owner == who || worker_owner == who,
-				Error::<T>::NoPermission
-			);
+			ensure!(pool_owner == who || worker_owner == who, Error::<T>::NoPermission);
 
-			Self::do_revoke_worker(
-				pool_info,
-				worker
-			)
+			Self::do_revoke_worker(pool_info, worker)
 		}
 
 		#[transactional]
 		#[pallet::call_index(9)]
 		#[pallet::weight({0})]
-		pub fn subscribe_pool(
-			origin: OriginFor<T>,
-			pool_id: T::PoolId
-		) -> DispatchResult {
+		pub fn subscribe_pool(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_subscribe_pool(
-				who,
-				pool_id
-			)
+			Self::do_subscribe_pool(who, pool_id)
 		}
 
 		#[transactional]
 		#[pallet::call_index(10)]
 		#[pallet::weight({0})]
-		pub fn unsubscribe_pool(
-			origin: OriginFor<T>,
-			pool_id: T::PoolId
-		) -> DispatchResult {
+		pub fn unsubscribe_pool(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_unsubscribe_pool(
-				who,
-				pool_id
-			)
+			Self::do_unsubscribe_pool(who, pool_id)
 		}
 
 		#[transactional]
@@ -776,10 +771,7 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
-			ensure!(
-				pool_info.create_job_enabled,
-				Error::<T>::PoolCreateNewJobUnavailable
-			);
+			ensure!(pool_info.create_job_enabled, Error::<T>::PoolCreateNewJobUnavailable);
 			ensure!(
 				pool_info.jobs_count <= T::MaxJobsPerPool::get(),
 				Error::<T>::TasksPerPoolLimitExceeded
@@ -792,26 +784,21 @@ pub mod pallet {
 				);
 			}
 
-			let policy = JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
-			ensure!(
-				policy.enabled,
-				Error::<T>::JobPolicyUnavailable
-			);
+			let policy =
+				JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
+			ensure!(policy.enabled, Error::<T>::JobPolicyUnavailable);
 			let current_block = frame_system::Pallet::<T>::block_number();
 			if let Some(start_block) = policy.start_block {
-				ensure!(current_block >= start_block , Error::<T>::JobPolicyNotApplicable);
+				ensure!(current_block >= start_block, Error::<T>::JobPolicyNotApplicable);
 			}
 			if let Some(end_block) = policy.end_block {
 				ensure!(current_block <= end_block, Error::<T>::JobPolicyNotApplicable);
 			}
 			match policy.applicable_scope {
 				ApplicableScope::Owner => {
-					ensure!(
-						pool_info.owner == who,
-						Error::<T>::JobPolicyNotApplicable
-					)
+					ensure!(pool_info.owner == who, Error::<T>::JobPolicyNotApplicable)
 				},
-				ApplicableScope::Public => {}
+				ApplicableScope::Public => {},
 			};
 
 			let job_id = NextJobId::<T>::get(&pool_id).unwrap_or(1u32.into());
@@ -826,7 +813,7 @@ pub mod pallet {
 				impl_spec_version,
 				input,
 				now,
-				soft_expires_in
+				soft_expires_in,
 			)?;
 
 			let next_id = job_id.increment();
@@ -853,10 +840,7 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
-			ensure!(
-				pool_info.create_job_enabled,
-				Error::<T>::PoolCreateNewJobUnavailable
-			);
+			ensure!(pool_info.create_job_enabled, Error::<T>::PoolCreateNewJobUnavailable);
 			ensure!(
 				pool_info.jobs_count <= T::MaxJobsPerPool::get(),
 				Error::<T>::TasksPerPoolLimitExceeded
@@ -869,26 +853,21 @@ pub mod pallet {
 				);
 			}
 
-			let policy = JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
-			ensure!(
-				policy.enabled,
-				Error::<T>::JobPolicyUnavailable
-			);
+			let policy =
+				JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
+			ensure!(policy.enabled, Error::<T>::JobPolicyUnavailable);
 			let current_block = frame_system::Pallet::<T>::block_number();
 			if let Some(start_block) = policy.start_block {
-				ensure!(current_block >= start_block , Error::<T>::JobPolicyNotApplicable);
+				ensure!(current_block >= start_block, Error::<T>::JobPolicyNotApplicable);
 			}
 			if let Some(end_block) = policy.end_block {
 				ensure!(current_block <= end_block, Error::<T>::JobPolicyNotApplicable);
 			}
 			match policy.applicable_scope {
 				ApplicableScope::Owner => {
-					ensure!(
-						pool_info.owner == beneficiary,
-						Error::<T>::JobPolicyNotApplicable
-					)
+					ensure!(pool_info.owner == beneficiary, Error::<T>::JobPolicyNotApplicable)
 				},
-				ApplicableScope::Public => {}
+				ApplicableScope::Public => {},
 			};
 
 			let job_id = NextJobId::<T>::get(&pool_id).unwrap_or(1u32.into());
@@ -903,7 +882,7 @@ pub mod pallet {
 				impl_spec_version,
 				input,
 				now,
-				soft_expires_in
+				soft_expires_in,
 			)?;
 
 			let next_id = job_id.increment();
@@ -922,12 +901,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_destroy_job(
-				who,
-				pool_id,
-				job_id,
-				false
-			)
+			Self::do_destroy_job(who, pool_id, job_id, false)
 		}
 
 		#[transactional]
@@ -941,12 +915,7 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
-			Self::do_destroy_expired_job(
-				pool_id,
-				job_id,
-				who,
-				now
-			)
+			Self::do_destroy_expired_job(pool_id, job_id, who, now)
 		}
 
 		#[transactional]
@@ -972,7 +941,7 @@ pub mod pallet {
 		pub fn release_job(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
-			job_id: T::JobId
+			job_id: T::JobId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -989,7 +958,7 @@ pub mod pallet {
 			result: JobResult,
 			output: Option<BoundedVec<u8, T::OutputLimit>>,
 			proof: Option<BoundedVec<u8, T::ProofLimit>>,
-			soft_expires_in: Option<u64>
+			soft_expires_in: Option<u64>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -1002,37 +971,28 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		pub(crate) fn ensure_pool_owner(
 			who: &T::AccountId,
-			pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>
+			pool_info: &PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		) -> DispatchResult {
-			ensure!(
-				who == &pool_info.owner,
-				Error::<T>::NoPermission
-			);
+			ensure!(who == &pool_info.owner, Error::<T>::NoPermission);
 
 			Ok(())
 		}
 
 		pub(crate) fn ensure_job_beneficiary_or_depositor(
 			who: &T::AccountId,
-			job: &JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>
+			job: &JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 		) -> DispatchResult {
-			ensure!(
-				who == &job.beneficiary || who == &job.depositor,
-				Error::<T>::NoPermission
-			);
+			ensure!(who == &job.beneficiary || who == &job.depositor, Error::<T>::NoPermission);
 
 			Ok(())
 		}
 
 		pub(crate) fn ensure_job_expired(
 			job: &JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
-			now: u64
+			now: u64,
 		) -> DispatchResult {
 			// TODO: need deadline
-			ensure!(
-				job.expires_at < now,
-				Error::<T>::JobStillValid
-			);
+			ensure!(job.expires_at < now, Error::<T>::JobStillValid);
 
 			Ok(())
 		}
@@ -1081,17 +1041,18 @@ pub mod pallet {
 		) -> DispatchResult {
 			let assignee = job.assignee.clone().ok_or(Error::<T>::NoPermission)?;
 
-			ensure!(
-				&assignee == worker,
-				Error::<T>::NoPermission
-			);
+			ensure!(&assignee == worker, Error::<T>::NoPermission);
 
 			Ok(())
 		}
 	}
 
 	impl<T: Config> OffchainWorkerLifecycleHooks<T::AccountId, T::ImplId> for Pallet<T> {
-		fn can_online(_worker: &T::AccountId, _payload: &OnlinePayload<T::ImplId>, _verified_attestation: &VerifiedAttestation) -> DispatchResult {
+		fn can_online(
+			_worker: &T::AccountId,
+			_payload: &OnlinePayload<T::ImplId>,
+			_verified_attestation: &VerifiedAttestation,
+		) -> DispatchResult {
 			Ok(())
 		}
 
@@ -1113,24 +1074,39 @@ pub mod pallet {
 			}
 
 			for pool_id in WorkerSubscribedPools::<T>::iter_key_prefix(worker) {
-				for job_id in WorkerAssignedJobs::<T>::iter_key_prefix((worker.clone(), pool_id.clone())) {
-					let _: Result<(), DispatchError> = Jobs::<T>::try_mutate_exists(&pool_id, &job_id, |job| -> Result<(), DispatchError> {
-						if let Some(job) = job.as_mut() {
-							job.status = JobStatus::Discarded;
-							job.ended_at = Some(T::UnixTime::now().as_secs().saturated_into::<u64>());
+				for job_id in
+					WorkerAssignedJobs::<T>::iter_key_prefix((worker.clone(), pool_id.clone()))
+				{
+					let _: Result<(), DispatchError> = Jobs::<T>::try_mutate_exists(
+						&pool_id,
+						&job_id,
+						|job| -> Result<(), DispatchError> {
+							if let Some(job) = job.as_mut() {
+								job.status = JobStatus::Discarded;
+								job.ended_at =
+									Some(T::UnixTime::now().as_secs().saturated_into::<u64>());
 
-							Self::deposit_event(Event::JobStatusUpdated { pool_id: pool_id.clone(), job_id: job_id.clone(), status: JobStatus::Discarded });
-						}
+								Self::deposit_event(Event::JobStatusUpdated {
+									pool_id: pool_id.clone(),
+									job_id: job_id.clone(),
+									status: JobStatus::Discarded,
+								});
+							}
 
-						Ok(())
-					});
+							Ok(())
+						},
+					);
 				}
 			}
 
 			CounterForWorkerAssignedJobs::<T>::insert(worker, 0);
 		}
 
-		fn after_refresh_attestation(_worker: &T::AccountId, _payload: &OnlinePayload<T::ImplId>, _verified_attestation: &VerifiedAttestation) {
+		fn after_refresh_attestation(
+			_worker: &T::AccountId,
+			_payload: &OnlinePayload<T::ImplId>,
+			_verified_attestation: &VerifiedAttestation,
+		) {
 			// Nothing to do
 		}
 
@@ -1148,8 +1124,13 @@ pub mod pallet {
 				return
 			}
 
-			let _ = WorkerSubscribedPools::<T>::clear_prefix(worker, T::MaxSubscribedPoolsPerWorker::get(), None);
-			let _ = PoolProvisionedWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
+			let _ = WorkerSubscribedPools::<T>::clear_prefix(
+				worker,
+				T::MaxSubscribedPoolsPerWorker::get(),
+				None,
+			);
+			let _ =
+				PoolProvisionedWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
 			CounterForWorkerSubscribedPools::<T>::remove(worker);
 			CounterForWorkerAddedPools::<T>::remove(worker);
 		}

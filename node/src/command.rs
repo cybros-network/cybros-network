@@ -62,7 +62,8 @@ impl SubstrateCli for Cli {
 			"" => Err("Must specify a chain spec".into()),
 			"dev" => Ok(Box::new(chain_spec::development()?)),
 			"local" => Ok(Box::new(chain_spec::local()?)),
-			path => Ok(Box::new(chain_spec::ChainSpec::from_json_file(std::path::PathBuf::from(path))?)),
+			path =>
+				Ok(Box::new(chain_spec::ChainSpec::from_json_file(std::path::PathBuf::from(path))?)),
 		}
 	}
 }
@@ -80,7 +81,8 @@ pub fn run() -> sc_cli::Result<()> {
 		Some(Subcommand::CheckBlock(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
 			runner.async_run(|config| {
-				let PartialComponents { client, task_manager, import_queue, .. } = service::new_partial(&config)?;
+				let PartialComponents { client, task_manager, import_queue, .. } =
+					service::new_partial(&config)?;
 				Ok((cmd.run(client, import_queue), task_manager))
 			})
 		},
@@ -101,7 +103,8 @@ pub fn run() -> sc_cli::Result<()> {
 		Some(Subcommand::ImportBlocks(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
 			runner.async_run(|config| {
-				let PartialComponents { client, task_manager, import_queue, .. } = service::new_partial(&config)?;
+				let PartialComponents { client, task_manager, import_queue, .. } =
+					service::new_partial(&config)?;
 				Ok((cmd.run(client, import_queue), task_manager))
 			})
 		},
@@ -112,7 +115,8 @@ pub fn run() -> sc_cli::Result<()> {
 		Some(Subcommand::Revert(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
 			runner.async_run(|config| {
-				let PartialComponents { client, task_manager, backend, .. } = service::new_partial(&config)?;
+				let PartialComponents { client, task_manager, backend, .. } =
+					service::new_partial(&config)?;
 				let aux_revert = Box::new(|client, _, blocks| {
 					sc_consensus_grandpa::revert(client, blocks)?;
 					Ok(())
@@ -129,9 +133,11 @@ pub fn run() -> sc_cli::Result<()> {
 				match cmd {
 					BenchmarkCmd::Pallet(cmd) => {
 						if !cfg!(feature = "runtime-benchmarks") {
-							return Err("Runtime benchmarking wasn't enabled when building the node. \
+							return Err(
+								"Runtime benchmarking wasn't enabled when building the node. \
 							You can enable it with `--features runtime-benchmarks`."
-								.into())
+									.into(),
+							)
 						}
 
 						cmd.run::<Block, ()>(config)
@@ -141,11 +147,14 @@ pub fn run() -> sc_cli::Result<()> {
 						cmd.run(client)
 					},
 					#[cfg(not(feature = "runtime-benchmarks"))]
-					BenchmarkCmd::Storage(_) =>
-						Err("Storage benchmarking can be enabled with `--features runtime-benchmarks`.".into()),
+					BenchmarkCmd::Storage(_) => Err(
+						"Storage benchmarking can be enabled with `--features runtime-benchmarks`."
+							.into(),
+					),
 					#[cfg(feature = "runtime-benchmarks")]
 					BenchmarkCmd::Storage(cmd) => {
-						let PartialComponents { client, backend, .. } = service::new_partial(&config)?;
+						let PartialComponents { client, backend, .. } =
+							service::new_partial(&config)?;
 						let db = backend.expose_db();
 						let storage = backend.expose_storage();
 
@@ -155,7 +164,13 @@ pub fn run() -> sc_cli::Result<()> {
 						let PartialComponents { client, .. } = service::new_partial(&config)?;
 						let ext_builder = RemarkBuilder::new(client.clone());
 
-						cmd.run(config, client, inherent_benchmark_data()?, Vec::new(), &ext_builder)
+						cmd.run(
+							config,
+							client,
+							inherent_benchmark_data()?,
+							Vec::new(),
+							&ext_builder,
+						)
 					},
 					BenchmarkCmd::Extrinsic(cmd) => {
 						let PartialComponents { client, .. } = service::new_partial(&config)?;
@@ -171,7 +186,8 @@ pub fn run() -> sc_cli::Result<()> {
 
 						cmd.run(client, inherent_benchmark_data()?, Vec::new(), &ext_factory)
 					},
-					BenchmarkCmd::Machine(cmd) => cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()),
+					BenchmarkCmd::Machine(cmd) =>
+						cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()),
 				}
 			})
 		},
@@ -208,8 +224,9 @@ pub fn run() -> sc_cli::Result<()> {
 		},
 		None => {
 			let runner = cli.create_runner(&cli.run)?;
-			runner
-				.run_node_until_exit(|config| async move { service::new_full(config).map_err(sc_cli::Error::Service) })
+			runner.run_node_until_exit(|config| async move {
+				service::new_full(config).map_err(sc_cli::Error::Service)
+			})
 		},
 	}
 }

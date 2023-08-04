@@ -18,8 +18,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod traits;
 mod features;
+mod traits;
 pub mod weights;
 
 #[cfg(test)]
@@ -50,36 +50,34 @@ macro_rules! log {
 	};
 }
 
+use frame_support::{
+	dispatch::{DispatchError, DispatchResult},
+	ensure,
+	traits::{Get, Incrementable, Randomness, UnixTime},
+	transactional,
+};
 use scale_codec::{Decode, Encode};
 use sp_core::{sr25519, H256};
 use sp_io::crypto::sr25519_verify;
 use sp_runtime::{
-	traits::{Zero, StaticLookup},
-	SaturatedConversion, Saturating
+	traits::{StaticLookup, Zero},
+	SaturatedConversion, Saturating,
 };
 use sp_std::prelude::*;
-use frame_support::{
-	dispatch::{DispatchError, DispatchResult},
-	ensure,
-	traits::{Get, Randomness, UnixTime, Incrementable},
-	transactional,
-};
 
 pub(crate) use frame_support::traits::{
 	fungible::{
-		Inspect as InspectFungible,
-		Mutate as MutateFungible,
-		InspectHold as InspectHoldFungible,
+		BalancedHold as BalancedHoldFungible, Credit, Inspect as InspectFungible,
+		InspectHold as InspectHoldFungible, Mutate as MutateFungible,
 		MutateHold as MutateHoldFungible,
-		BalancedHold as BalancedHoldFungible,
-		Credit,
 	},
-	tokens::{Preservation, Precision, Fortitude},
+	tokens::{Fortitude, Precision, Preservation},
 };
 pub(crate) use frame_system::pallet_prelude::BlockNumberFor;
 
 pub type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
-pub type BalanceOf<T> = <<T as Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> =
+	<<T as Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[frame_support::pallet]
 mod pallet {
@@ -100,7 +98,9 @@ mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent> + TryInto<Event<Self>>;
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
+			+ TryInto<Event<Self>>;
 
 		/// Overarching hold reason.
 		type RuntimeHoldReason: From<HoldReason>;
@@ -119,7 +119,12 @@ mod pallet {
 		type Randomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
 
 		/// Identifier for the protocol implementation.
-		type ImplId: Member + Parameter + MaxEncodedLen + Display + AtLeast32BitUnsigned + Incrementable;
+		type ImplId: Member
+			+ Parameter
+			+ MaxEncodedLen
+			+ Display
+			+ AtLeast32BitUnsigned
+			+ Incrementable;
 
 		/// Who can register implementation
 		type RegisterImplOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
@@ -136,7 +141,8 @@ mod pallet {
 		#[pallet::constant]
 		type ImplMetadataDepositBase: Get<BalanceOf<Self>>;
 
-		/// The additional funds that must be reserved for the number of bytes store in input and output.
+		/// The additional funds that must be reserved for the number of bytes store in input and
+		/// output.
 		#[pallet::constant]
 		type ImplMetadataDepositPerByte: Get<BalanceOf<Self>>;
 
@@ -168,7 +174,10 @@ mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// A handler for manging worker slashing
-		type OffchainWorkerLifecycleHooks: OffchainWorkerLifecycleHooks<Self::AccountId, Self::ImplId>;
+		type OffchainWorkerLifecycleHooks: OffchainWorkerLifecycleHooks<
+			Self::AccountId,
+			Self::ImplId,
+		>;
 	}
 
 	#[pallet::composite_enum]
@@ -180,11 +189,21 @@ mod pallet {
 
 	/// Storage for computing_workers.
 	#[pallet::storage]
-	pub(crate) type Workers<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::AccountId, WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>>;
+	pub(crate) type Workers<T: Config> = CountedStorageMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>,
+	>;
 
 	/// Storage for implementations.
 	#[pallet::storage]
-	pub(crate) type Impls<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::ImplId, ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>>;
+	pub(crate) type Impls<T: Config> = CountedStorageMap<
+		_,
+		Blake2_128Concat,
+		T::ImplId,
+		ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
+	>;
 
 	/// Metadata of an implementation.
 	#[pallet::storage]
@@ -198,25 +217,28 @@ mod pallet {
 
 	/// Storage for worker's implementations' hashes.
 	#[pallet::storage]
-	pub(crate) type ImplBuilds<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, T::ImplId, Blake2_128Concat, ImplBuildVersion, ImplBuildInfo>;
-
-	#[pallet::storage]
-	pub type CounterForImplBuilds<T: Config> = StorageMap<
+	pub(crate) type ImplBuilds<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::ImplId,
-		u32,
-		ValueQuery
+		Blake2_128Concat,
+		ImplBuildVersion,
+		ImplBuildInfo,
 	>;
+
+	#[pallet::storage]
+	pub type CounterForImplBuilds<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::ImplId, u32, ValueQuery>;
 
 	/// Storage for flip set, this is for online checking
 	#[pallet::storage]
-	pub(crate) type FlipSet<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>>;
+	pub(crate) type FlipSet<T: Config> =
+		CountedStorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>>;
 
 	/// Storage for flop set, this is for online checking
 	#[pallet::storage]
-	pub(crate) type FlopSet<T: Config> = CountedStorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>>;
+	pub(crate) type FlopSet<T: Config> =
+		CountedStorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>>;
 
 	/// Storage for stage of flip-flop, this is used for online checking
 	#[pallet::storage]
@@ -224,7 +246,8 @@ mod pallet {
 
 	/// Storage for stage of flip-flop, this is used for online checking
 	#[pallet::storage]
-	pub(crate) type CurrentFlipFlopStartedAt<T: Config> = StorageValue<_, BlockNumberFor<T>, ValueQuery>;
+	pub(crate) type CurrentFlipFlopStartedAt<T: Config> =
+		StorageValue<_, BlockNumberFor<T>, ValueQuery>;
 
 	/// Stores the `ImplId` that is going to be used for the next implementation.
 	/// This gets incremented whenever a new impl is created.
@@ -257,9 +280,16 @@ mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// The worker registered successfully
-		WorkerRegistered { worker: T::AccountId, owner: T::AccountId, impl_id: T::ImplId },
+		WorkerRegistered {
+			worker: T::AccountId,
+			owner: T::AccountId,
+			impl_id: T::ImplId,
+		},
 		/// The worker registered successfully
-		WorkerDeregistered { worker: T::AccountId, force: bool },
+		WorkerDeregistered {
+			worker: T::AccountId,
+			force: bool,
+		},
 		/// The worker is online
 		WorkerOnline {
 			worker: T::AccountId,
@@ -269,30 +299,65 @@ mod pallet {
 			attestation_expires_at: Option<u64>,
 			next_heartbeat: BlockNumberFor<T>,
 		},
-		WorkerUnresponsive { worker: T::AccountId },
+		WorkerUnresponsive {
+			worker: T::AccountId,
+		},
 		/// The worker is requesting offline
-		WorkerRequestingOffline { worker: T::AccountId },
+		WorkerRequestingOffline {
+			worker: T::AccountId,
+		},
 		/// The worker is offline
-		WorkerOffline { worker: T::AccountId, reason: OfflineReason },
+		WorkerOffline {
+			worker: T::AccountId,
+			reason: OfflineReason,
+		},
 		/// The worker send heartbeat successfully
-		WorkerHeartbeatReceived { worker: T::AccountId, next: BlockNumberFor<T>, uptime: u64 },
+		WorkerHeartbeatReceived {
+			worker: T::AccountId,
+			next: BlockNumberFor<T>,
+			uptime: u64,
+		},
 		/// The worker refresh its attestation successfully
-		WorkerAttestationRefreshed { worker: T::AccountId, expires_at: Option<u64> },
+		WorkerAttestationRefreshed {
+			worker: T::AccountId,
+			expires_at: Option<u64>,
+		},
 		ImplRegistered {
 			impl_id: T::ImplId,
 			owner: T::AccountId,
 			attestation_method: AttestationMethod,
-			deployment_scope: ApplicableScope
+			deployment_scope: ApplicableScope,
 		},
-		ImplDeregistered { impl_id: T::ImplId },
-		ImplDeploymentScopeUpdated { impl_id: T::ImplId, scope: ApplicableScope },
-		ImplMetadataUpdated { impl_id: T::ImplId, metadata: BoundedVec<u8, T::ImplMetadataLimit> },
-		ImplMetadataRemoved { impl_id: T::ImplId },
+		ImplDeregistered {
+			impl_id: T::ImplId,
+		},
+		ImplDeploymentScopeUpdated {
+			impl_id: T::ImplId,
+			scope: ApplicableScope,
+		},
+		ImplMetadataUpdated {
+			impl_id: T::ImplId,
+			metadata: BoundedVec<u8, T::ImplMetadataLimit>,
+		},
+		ImplMetadataRemoved {
+			impl_id: T::ImplId,
+		},
 		/// Update worker's implementation permission successfully
-		ImplBuildRegistered { impl_id: T::ImplId, impl_build_version: ImplBuildVersion, magic_bytes: Option<ImplBuildMagicBytes> },
+		ImplBuildRegistered {
+			impl_id: T::ImplId,
+			impl_build_version: ImplBuildVersion,
+			magic_bytes: Option<ImplBuildMagicBytes>,
+		},
 		/// Remove worker's implementation permission successfully
-		ImplBuildDeregistered { impl_id: T::ImplId, impl_build_version: ImplBuildVersion },
-		ImplBuildStatusUpdated { impl_id: T::ImplId, impl_build_version: ImplBuildVersion, status: ImplBuildStatus },
+		ImplBuildDeregistered {
+			impl_id: T::ImplId,
+			impl_build_version: ImplBuildVersion,
+		},
+		ImplBuildStatusUpdated {
+			impl_id: T::ImplId,
+			impl_build_version: ImplBuildVersion,
+			status: ImplBuildStatus,
+		},
 	}
 
 	// Errors inform users that something went wrong.
@@ -364,7 +429,9 @@ mod pallet {
 
 			let mut flip_or_flop = FlipOrFlop::<T>::get();
 			let current_flip_flop_started_at = CurrentFlipFlopStartedAt::<T>::get();
-			if n == current_flip_flop_started_at + T::CollectingHeartbeatsDurationInBlocks::get().into() {
+			if n == current_flip_flop_started_at +
+				T::CollectingHeartbeatsDurationInBlocks::get().into()
+			{
 				match flip_or_flop {
 					FlipFlopStage::Flip => {
 						flip_or_flop = FlipFlopStage::FlipToFlop;
@@ -381,7 +448,8 @@ mod pallet {
 			}
 			match flip_or_flop {
 				FlipFlopStage::FlipToFlop => {
-					let iter = FlipSet::<T>::iter_keys().take(T::HandleUnresponsivePerBlockLimit::get() as usize);
+					let iter = FlipSet::<T>::iter_keys()
+						.take(T::HandleUnresponsivePerBlockLimit::get() as usize);
 					let total_count = FlipSet::<T>::count();
 
 					let mut i: u64 = 0;
@@ -401,7 +469,8 @@ mod pallet {
 					}
 				},
 				FlipFlopStage::FlopToFlip => {
-					let iter = FlopSet::<T>::iter_keys().take(T::HandleUnresponsivePerBlockLimit::get() as usize);
+					let iter = FlopSet::<T>::iter_keys()
+						.take(T::HandleUnresponsivePerBlockLimit::get() as usize);
 					let total_count = FlopSet::<T>::count();
 
 					let mut i: u64 = 0;
@@ -450,7 +519,7 @@ mod pallet {
 			origin: OriginFor<T>,
 			worker: AccountIdLookupOf<T>,
 			impl_id: T::ImplId,
-			initial_deposit: BalanceOf<T>
+			initial_deposit: BalanceOf<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
@@ -461,7 +530,10 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(1)]
 		#[pallet::weight(T::WeightInfo::deregister_worker())]
-		pub fn deregister_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>) -> DispatchResult {
+		pub fn deregister_worker(
+			origin: OriginFor<T>,
+			worker: AccountIdLookupOf<T>,
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
 			Self::do_deregister_worker(who, worker)
@@ -471,7 +543,11 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(2)]
 		#[pallet::weight(T::WeightInfo::transfer_to_worker())]
-		pub fn transfer_to_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
+		pub fn transfer_to_worker(
+			origin: OriginFor<T>,
+			worker: AccountIdLookupOf<T>,
+			value: BalanceOf<T>,
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
 			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
@@ -485,7 +561,11 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(3)]
 		#[pallet::weight(T::WeightInfo::withdraw_from_worker())]
-		pub fn withdraw_from_worker(origin: OriginFor<T>, worker: AccountIdLookupOf<T>, value: BalanceOf<T>) -> DispatchResult {
+		pub fn withdraw_from_worker(
+			origin: OriginFor<T>,
+			worker: AccountIdLookupOf<T>,
+			value: BalanceOf<T>,
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
 			let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
@@ -521,7 +601,10 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(6)]
 		#[pallet::weight(T::WeightInfo::request_offline_for())]
-		pub fn request_offline_for(origin: OriginFor<T>, worker: AccountIdLookupOf<T>) -> DispatchResult {
+		pub fn request_offline_for(
+			origin: OriginFor<T>,
+			worker: AccountIdLookupOf<T>,
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
 			Self::do_request_offline(worker, Some(who))
@@ -540,7 +623,10 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(8)]
 		#[pallet::weight(T::WeightInfo::force_offline_for())]
-		pub fn force_offline_for(origin: OriginFor<T>, worker: AccountIdLookupOf<T>) -> DispatchResult {
+		pub fn force_offline_for(
+			origin: OriginFor<T>,
+			worker: AccountIdLookupOf<T>,
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let worker = T::Lookup::lookup(worker)?;
 			Self::do_force_offline(worker, Some(who))
@@ -582,7 +668,7 @@ mod pallet {
 				impl_id.clone(),
 				owner,
 				attestation_method,
-				deployment_permission
+				deployment_permission,
 			)?;
 
 			let next_impl_id = impl_id.increment();
@@ -594,16 +680,10 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(12)]
 		#[pallet::weight({0})]
-		pub fn deregister_impl(
-			origin: OriginFor<T>,
-			impl_id: T::ImplId
-		) -> DispatchResult {
+		pub fn deregister_impl(origin: OriginFor<T>, impl_id: T::ImplId) -> DispatchResult {
 			let who = T::RegisterImplOrigin::ensure_origin(origin)?;
 
-			Self::do_deregister_impl(
-				who,
-				impl_id
-			)
+			Self::do_deregister_impl(who, impl_id)
 		}
 
 		#[transactional]
@@ -667,7 +747,7 @@ mod pallet {
 		pub fn deregister_impl_build(
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
-			version: ImplBuildVersion
+			version: ImplBuildVersion,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -684,7 +764,7 @@ mod pallet {
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
 			version: ImplBuildVersion,
-			status: ImplBuildStatus
+			status: ImplBuildStatus,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -759,7 +839,9 @@ impl<T: Config> Pallet<T> {
 		Self::set_worker_unresponsive(worker);
 	}
 
-	pub(crate) fn verify_attestation(attestation: &Attestation) -> Result<VerifiedAttestation, DispatchError> {
+	pub(crate) fn verify_attestation(
+		attestation: &Attestation,
+	) -> Result<VerifiedAttestation, DispatchError> {
 		let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 		let verified = attestation.verify(now);
 		match verified {
@@ -774,9 +856,7 @@ impl<T: Config> Pallet<T> {
 		payload: &OnlinePayload<T::ImplId>,
 		verified_attestation: &VerifiedAttestation,
 	) -> DispatchResult {
-		let Some(attestation_payload) = verified_attestation.payload() else {
-			return Ok(())
-		};
+		let Some(attestation_payload) = verified_attestation.payload() else { return Ok(()) };
 
 		let encode_worker = T::AccountId::encode(worker);
 		let h256_worker = H256::from_slice(&encode_worker);
@@ -796,29 +876,35 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn ensure_owner(who: &T::AccountId, worker_info: &WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>) -> DispatchResult {
+	pub(crate) fn ensure_owner(
+		who: &T::AccountId,
+		worker_info: &WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>,
+	) -> DispatchResult {
 		ensure!(*who == worker_info.owner, Error::<T>::NotTheOwner);
 		Ok(())
 	}
 
-	pub(crate) fn ensure_worker(who: &T::AccountId, worker_info: &WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>) -> DispatchResult {
+	pub(crate) fn ensure_worker(
+		who: &T::AccountId,
+		worker_info: &WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>,
+	) -> DispatchResult {
 		ensure!(*who == worker_info.account, Error::<T>::NotTheWorker);
 		Ok(())
 	}
 
 	pub(crate) fn ensure_impl_owner(
 		who: &T::AccountId,
-		impl_info: &ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>
+		impl_info: &ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
 	) -> DispatchResult {
-		ensure!(
-				who == &impl_info.owner,
-				Error::<T>::NoPermission
-			);
+		ensure!(who == &impl_info.owner, Error::<T>::NoPermission);
 
 		Ok(())
 	}
 
-	pub(crate) fn ensure_attestation_method(attestation: &Attestation, worker_info: &WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>) -> DispatchResult {
+	pub(crate) fn ensure_attestation_method(
+		attestation: &Attestation,
+		worker_info: &WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>,
+	) -> DispatchResult {
 		let Some(worker_attestation_method) = worker_info.attestation_method.clone() else {
 			return Err(Error::<T>::InternalError.into())
 		};
@@ -841,8 +927,8 @@ impl<T: Config> Pallet<T> {
 	/// https://github.com/paritytech/substrate/issues/8311
 	pub(crate) fn generate_random_number(seed: u32) -> u32 {
 		let (random_seed, _) = T::Randomness::random(&(b"computing_workers", seed).encode());
-		let random_number =
-			<u32>::decode(&mut random_seed.as_ref()).expect("secure hashes should always be bigger than u32; qed");
+		let random_number = <u32>::decode(&mut random_seed.as_ref())
+			.expect("secure hashes should always be bigger than u32; qed");
 		// log!(info, "Random number: {}", random_number);
 
 		random_number
@@ -856,7 +942,9 @@ impl<T: Config> Pallet<T> {
 		current_flip_flop_started_at + (duration + random_delay).into()
 	}
 
-	pub fn impl_info(impl_id: &T::ImplId) -> Option<ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>> {
+	pub fn impl_info(
+		impl_id: &T::ImplId,
+	) -> Option<ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>> {
 		Impls::<T>::get(impl_id)
 	}
 
@@ -864,7 +952,9 @@ impl<T: Config> Pallet<T> {
 		Impls::<T>::contains_key(impl_id)
 	}
 
-	pub fn worker_info(worker: &T::AccountId) -> Option<WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>> {
+	pub fn worker_info(
+		worker: &T::AccountId,
+	) -> Option<WorkerInfo<T::AccountId, BalanceOf<T>, T::ImplId>> {
 		Workers::<T>::get(worker)
 	}
 
@@ -872,11 +962,18 @@ impl<T: Config> Pallet<T> {
 		Workers::<T>::contains_key(worker)
 	}
 
-	pub fn reward_worker(worker: &T::AccountId, source: &T::AccountId, value: BalanceOf<T>) -> Result<BalanceOf<T>, DispatchError> {
+	pub fn reward_worker(
+		worker: &T::AccountId,
+		source: &T::AccountId,
+		value: BalanceOf<T>,
+	) -> Result<BalanceOf<T>, DispatchError> {
 		<T as Config>::Currency::transfer(source, worker, value, Preservation::Preserve)
 	}
 
-	pub fn slash_worker(worker: &T::AccountId, value: BalanceOf<T>) -> (Credit<T::AccountId, T::Currency>, BalanceOf<T>) {
+	pub fn slash_worker(
+		worker: &T::AccountId,
+		value: BalanceOf<T>,
+	) -> (Credit<T::AccountId, T::Currency>, BalanceOf<T>) {
 		<T as Config>::Currency::slash(&HoldReason::WorkerRegistrationReserve.into(), worker, value)
 	}
 

@@ -19,10 +19,7 @@
 use crate::*;
 use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
-use sp_runtime::{
-	traits::Zero,
-	Saturating,
-};
+use sp_runtime::{traits::Zero, Saturating};
 
 impl<T: Config> Pallet<T> {
 	#[allow(clippy::too_many_arguments)]
@@ -40,7 +37,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		ensure!(
 			impl_spec_version >= pool_info.min_impl_spec_version &&
-			impl_spec_version <= pool_info.max_impl_spec_version,
+				impl_spec_version <= pool_info.max_impl_spec_version,
 			Error::<T>::UnsupportedImplSpecVersion
 		);
 
@@ -54,15 +51,16 @@ impl<T: Config> Pallet<T> {
 		<T as Config>::Currency::hold(
 			&HoldReason::JobDepositorReserve.into(),
 			&depositor,
-			job_deposit
+			job_deposit,
 		)?;
 
-		let input_deposit = T::JobStorageDepositPerByte::get()
-			.saturating_mul(((input_data.as_ref().map(|x| x.len()).unwrap_or_default()) as u32).into());
+		let input_deposit = T::JobStorageDepositPerByte::get().saturating_mul(
+			((input_data.as_ref().map(|x| x.len()).unwrap_or_default()) as u32).into(),
+		);
 		<T as Config>::Currency::hold(
 			&HoldReason::JobStorageReserve.into(),
 			&depositor,
-			input_deposit
+			input_deposit,
 		)?;
 
 		let expires_at = now + expires_in;
@@ -107,7 +105,10 @@ impl<T: Config> Pallet<T> {
 		JobPolicies::<T>::insert(&pool_info.id, &policy_info.id, new_policy_info);
 
 		AssignableJobs::<T>::insert((pool_info.id.clone(), impl_spec_version, job_id.clone()), ());
-		AccountBeneficialJobs::<T>::insert((beneficiary.clone(), pool_info.id.clone(), job_id.clone()), ());
+		AccountBeneficialJobs::<T>::insert(
+			(beneficiary.clone(), pool_info.id.clone(), job_id.clone()),
+			(),
+		);
 
 		Self::deposit_event(Event::JobCreated {
 			pool_id: pool_info.id,
@@ -118,7 +119,7 @@ impl<T: Config> Pallet<T> {
 			beneficiary,
 			impl_spec_version,
 			input: input_data,
-			expires_in
+			expires_in,
 		});
 		Ok(())
 	}
@@ -127,7 +128,7 @@ impl<T: Config> Pallet<T> {
 		who: T::AccountId,
 		pool_id: T::PoolId,
 		job_id: T::JobId,
-		force: bool
+		force: bool,
 	) -> DispatchResult {
 		let job = Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)?;
 
@@ -147,7 +148,7 @@ impl<T: Config> Pallet<T> {
 		pool_id: T::PoolId,
 		job_id: T::JobId,
 		destroyer: T::AccountId,
-		now: u64
+		now: u64,
 	) -> DispatchResult {
 		let job = Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)?;
 		Self::ensure_job_expired(&job, now)?;
@@ -161,7 +162,7 @@ impl<T: Config> Pallet<T> {
 		pool_id: T::PoolId,
 		job: JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 		destroyer: T::AccountId,
-		force: bool
+		force: bool,
 	) -> DispatchResult {
 		let job_id = job.id;
 		let unique_track_id = job.unique_track_id;
@@ -170,7 +171,7 @@ impl<T: Config> Pallet<T> {
 			&HoldReason::JobDepositorReserve.into(),
 			&job.depositor,
 			job.deposit,
-			Precision::BestEffort
+			Precision::BestEffort,
 		)?;
 		if let Some(input_entry) = JobInputs::<T>::take(&pool_id, &job_id) {
 			let deposit = input_entry.actual_deposit.saturating_add(input_entry.surplus_deposit);
@@ -178,7 +179,7 @@ impl<T: Config> Pallet<T> {
 				&HoldReason::JobStorageReserve.into(),
 				&input_entry.depositor,
 				deposit,
-				Precision::BestEffort
+				Precision::BestEffort,
 			)?;
 		}
 		if let Some(output_entry) = JobOutputs::<T>::take(&pool_id, &job_id) {
@@ -187,7 +188,7 @@ impl<T: Config> Pallet<T> {
 				&HoldReason::JobStorageReserve.into(),
 				&output_entry.depositor,
 				deposit,
-				Precision::BestEffort
+				Precision::BestEffort,
 			)?;
 		}
 		if let Some(proof_entry) = JobProofs::<T>::take(&pool_id, &job_id) {
@@ -196,7 +197,7 @@ impl<T: Config> Pallet<T> {
 				&HoldReason::JobStorageReserve.into(),
 				&proof_entry.depositor,
 				deposit,
-				Precision::BestEffort
+				Precision::BestEffort,
 			)?;
 		}
 
@@ -207,38 +208,53 @@ impl<T: Config> Pallet<T> {
 		Jobs::<T>::remove(&pool_id, &job_id);
 
 		Pools::<T>::try_mutate_exists(&pool_id, |pool_info| -> Result<(), DispatchError> {
-			let Some(pool_info) = pool_info else {
-				return Err(Error::<T>::PoolNotFound.into())
-			};
+			let Some(pool_info) = pool_info else { return Err(Error::<T>::PoolNotFound.into()) };
 
 			pool_info.jobs_count -= 1;
 
 			Ok(())
 		})?;
 
-		JobPolicies::<T>::try_mutate_exists(&pool_id, &job.policy_id, |policy_info| -> Result<(), DispatchError> {
-			let Some(policy_info) = policy_info else {
-				return Err(Error::<T>::PoolNotFound.into())
-			};
+		JobPolicies::<T>::try_mutate_exists(
+			&pool_id,
+			&job.policy_id,
+			|policy_info| -> Result<(), DispatchError> {
+				let Some(policy_info) = policy_info else {
+					return Err(Error::<T>::PoolNotFound.into())
+				};
 
-			policy_info.jobs_count -= 1;
+				policy_info.jobs_count -= 1;
 
-			Ok(())
-		})?;
+				Ok(())
+			},
+		)?;
 
 		if job.status == JobStatus::Pending {
 			AssignableJobs::<T>::remove((pool_id.clone(), job.impl_spec_version, job_id.clone()));
 		} else if job.status == JobStatus::Processing || job.status == JobStatus::Discarded {
 			if let Some(worker) = &job.assignee {
-				CounterForWorkerAssignedJobs::<T>::try_mutate(worker, |counter| -> Result<(), DispatchError> {
-					*counter -= 1;
-					Ok(())
-				})?;
+				CounterForWorkerAssignedJobs::<T>::try_mutate(
+					worker,
+					|counter| -> Result<(), DispatchError> {
+						*counter -= 1;
+						Ok(())
+					},
+				)?;
 			}
 		}
-		AccountBeneficialJobs::<T>::remove((job.beneficiary.clone(), pool_id.clone(), job_id.clone()));
+		AccountBeneficialJobs::<T>::remove((
+			job.beneficiary.clone(),
+			pool_id.clone(),
+			job_id.clone(),
+		));
 
-		Self::deposit_event(Event::JobDestroyed { pool_id, job_id, unique_track_id, destroyer, force });
+		Self::deposit_event(Event::JobDestroyed {
+			pool_id,
+			job_id,
+			unique_track_id,
+			destroyer,
+			force,
+		});
 		Ok(())
 	}
 }

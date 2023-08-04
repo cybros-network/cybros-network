@@ -21,14 +21,13 @@
 #[cfg(feature = "std")]
 use std::fmt;
 
+use frame_support::{
+	traits::{ConstU32, Get},
+	BoundedVec, RuntimeDebug,
+};
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::prelude::*;
-use frame_support::{
-	traits::{ConstU32, Get},
-	BoundedVec,
-	RuntimeDebug,
-};
 
 pub type ImplBuildVersion = u32;
 pub type ImplBuildMagicBytes = BoundedVec<u8, ConstU32<64>>;
@@ -117,8 +116,9 @@ pub struct OnlinePayload<ImplId> {
 }
 
 /// Worker's status
-#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen, RuntimeDebug)]
-#[derive(Default)]
+#[derive(
+	Copy, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen, RuntimeDebug, Default,
+)]
 pub enum WorkerStatus {
 	/// Initial status for a new registered worker.
 	#[default]
@@ -140,8 +140,6 @@ pub enum WorkerStatus {
 	/// and `Online` (when force by user or be slashed) and `Unresponsive`
 	Offline,
 }
-
-
 
 #[cfg(feature = "std")]
 impl fmt::Display for WorkerStatus {
@@ -189,8 +187,9 @@ pub struct WorkerInfo<AccountId, Balance, ImplId> {
 	pub uptime: Option<u64>,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug)]
-#[derive(Default)]
+#[derive(
+	Copy, Clone, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug, Default,
+)]
 pub enum FlipFlopStage {
 	#[default]
 	Flip,

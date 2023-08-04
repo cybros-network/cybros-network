@@ -24,11 +24,11 @@
 pub use constants::*;
 
 pub mod types {
+	use sp_core::H256;
 	use sp_runtime::{
-		traits::{IdentifyAccount, Verify, AccountIdLookup, BlakeTwo256},
+		traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, Verify},
 		MultiSignature,
 	};
-	use sp_core::H256;
 
 	/// An index to a block.
 	/// 32-bits will allow for 136 years of blocks assuming 1 block per second.
@@ -121,8 +121,8 @@ pub mod constants {
 		pub const MILLI_SECS_PER_BLOCK: Moment = 6000;
 		pub const SECS_PER_BLOCK: Moment = MILLI_SECS_PER_BLOCK / 1000;
 
-		// NOTE: Currently it is not possible to change the slot duration after the chain has started.
-		//       Attempting to do so will brick block production.
+		// NOTE: Currently it is not possible to change the slot duration after the chain has
+		// started.       Attempting to do so will brick block production.
 		pub const SLOT_DURATION: Moment = MILLI_SECS_PER_BLOCK;
 
 		// These time units are defined in number of blocks.
@@ -141,7 +141,9 @@ pub mod constants {
 		/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
 		/// by  Operational  extrinsics.
 		pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-		/// We allow for 2 seconds of compute with a 6 second average block time, with maximum proof size.
-		pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(WEIGHT_REF_TIME_PER_SECOND.saturating_mul(2), u64::MAX);
+		/// We allow for 2 seconds of compute with a 6 second average block time, with maximum proof
+		/// size.
+		pub const MAXIMUM_BLOCK_WEIGHT: Weight =
+			Weight::from_parts(WEIGHT_REF_TIME_PER_SECOND.saturating_mul(2), u64::MAX);
 	}
 }

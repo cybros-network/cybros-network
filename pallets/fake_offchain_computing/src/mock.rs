@@ -168,13 +168,11 @@ pub(crate) fn take_events() -> Vec<RuntimeEvent> {
 
 #[allow(unused)]
 pub(crate) fn set_balance(who: AccountId, new_free: Balance, new_reserved: Balance) {
-	assert_ok!(
-		Balances::force_set_balance(
-			RuntimeOrigin::root(),
-			who,
-			new_free.saturating_add(new_reserved)
-		)
-	);
+	assert_ok!(Balances::force_set_balance(
+		RuntimeOrigin::root(),
+		who,
+		new_free.saturating_add(new_reserved)
+	));
 	assert_eq!(Balances::free_balance(who), new_free);
 	assert_eq!(Balances::reserved_balance(who), new_reserved);
 }

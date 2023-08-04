@@ -17,10 +17,8 @@
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::*;
+use frame_support::traits::{ConstU128, ConstU32, ConstU64};
 use frame_system::EnsureSigned;
-use frame_support::traits::{
-	ConstU32, ConstU64, ConstU128,
-};
 
 impl pallet_offchain_computing_pool::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;

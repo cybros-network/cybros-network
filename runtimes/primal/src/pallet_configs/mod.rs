@@ -16,9 +16,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
+mod insecure_randomness_collective_flip;
 mod system;
 mod timestamp;
-mod insecure_randomness_collective_flip;
 
 mod aura;
 mod grandpa;

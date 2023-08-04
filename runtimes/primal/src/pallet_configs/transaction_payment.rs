@@ -17,7 +17,7 @@
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::*;
-use frame_support::{parameter_types, weights::IdentityFee, traits::ConstU8};
+use frame_support::{parameter_types, traits::ConstU8, weights::IdentityFee};
 use pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter};
 
 parameter_types! {

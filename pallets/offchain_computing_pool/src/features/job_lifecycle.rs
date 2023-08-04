@@ -18,10 +18,7 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
-use sp_runtime::{
-	traits::Zero,
-	Saturating
-};
+use sp_runtime::{traits::Zero, Saturating};
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_assign_job(
@@ -33,8 +30,10 @@ impl<T: Config> Pallet<T> {
 		expires_in: u64,
 	) -> DispatchResult {
 		Self::ensure_subscribed_worker(&pool_id, &worker)?;
-		let worker_info = PalletInfra::<T>::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
-		let worker_impl_spec_version = worker_info.impl_spec_version.ok_or(Error::<T>::InternalError)?;
+		let worker_info =
+			PalletInfra::<T>::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
+		let worker_impl_spec_version =
+			worker_info.impl_spec_version.ok_or(Error::<T>::InternalError)?;
 
 		let current_assigned_jobs_count = CounterForWorkerAssignedJobs::<T>::get(&worker);
 		ensure!(
@@ -48,28 +47,20 @@ impl<T: Config> Pallet<T> {
 				break 'block Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)
 			}
 
-			let job_id = AssignableJobs::<T>::iter_key_prefix(
-			(
-					pool_id.clone(),
-					worker_impl_spec_version
-				)
-			).next().ok_or(Error::<T>::NoAssignableJob)?;
+			let job_id =
+				AssignableJobs::<T>::iter_key_prefix((pool_id.clone(), worker_impl_spec_version))
+					.next()
+					.ok_or(Error::<T>::NoAssignableJob)?;
 			Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)
 		}?;
-		ensure!(
-			worker_impl_spec_version == job.impl_spec_version,
-			Error::<T>::ImplMismatched
-		);
+		ensure!(worker_impl_spec_version == job.impl_spec_version, Error::<T>::ImplMismatched);
 		AssignableJobs::<T>::remove((pool_id.clone(), job.impl_spec_version, job.id.clone()));
 
 		// It is possible to get a expired job, but actually it is a soft expiring
 		// Comment this because current `expires_at` actually a soft expiring
 		// Self::ensure_job_not_expired(&job, now)?;
 
-		ensure!(
-			job.assignee.is_none(),
-			Error::<T>::JobAlreadyAssigned
-		);
+		ensure!(job.assignee.is_none(), Error::<T>::JobAlreadyAssigned);
 		job.assignee = Some(worker.clone());
 		job.assigned_at = Some(now);
 
@@ -84,9 +75,17 @@ impl<T: Config> Pallet<T> {
 		CounterForWorkerAssignedJobs::<T>::insert(&worker, current_assigned_jobs_count + 1);
 		Jobs::<T>::insert(&pool_id, &job_id, job);
 
-		Self::deposit_event(Event::JobAssigned { pool_id: pool_id.clone(), job_id: job_id.clone(), assignee: worker });
+		Self::deposit_event(Event::JobAssigned {
+			pool_id: pool_id.clone(),
+			job_id: job_id.clone(),
+			assignee: worker,
+		});
 		if processing {
-			Self::deposit_event(Event::JobStatusUpdated { pool_id, job_id, status: JobStatus::Processing });
+			Self::deposit_event(Event::JobStatusUpdated {
+				pool_id,
+				job_id,
+				status: JobStatus::Processing,
+			});
 		}
 		Ok(())
 	}
@@ -108,10 +107,13 @@ impl<T: Config> Pallet<T> {
 		job.assignee = None;
 		job.assigned_at = None;
 
-		CounterForWorkerAssignedJobs::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
-			*counter -= 1;
-			Ok(())
-		})?;
+		CounterForWorkerAssignedJobs::<T>::try_mutate(
+			&worker,
+			|counter| -> Result<(), DispatchError> {
+				*counter -= 1;
+				Ok(())
+			},
+		)?;
 		AssignableJobs::<T>::insert((pool_id.clone(), job.impl_spec_version, job_id.clone()), ());
 
 		Jobs::<T>::insert(&pool_id, &job_id, job);
@@ -152,7 +154,7 @@ impl<T: Config> Pallet<T> {
 			<T as Config>::Currency::hold(
 				&HoldReason::JobStorageReserve.into(),
 				&depositor,
-				deposit
+				deposit,
 			)?;
 
 			let output_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::OutputLimit> {
@@ -170,7 +172,7 @@ impl<T: Config> Pallet<T> {
 			<T as Config>::Currency::hold(
 				&HoldReason::JobStorageReserve.into(),
 				&depositor,
-				deposit
+				deposit,
 			)?;
 
 			let proof_entry = ChainStoredData::<T::AccountId, BalanceOf<T>, T::ProofLimit> {
@@ -182,13 +184,26 @@ impl<T: Config> Pallet<T> {
 			JobProofs::<T>::insert(&pool_id, &job_id, proof_entry);
 		}
 
-		CounterForWorkerAssignedJobs::<T>::try_mutate(&worker, |counter| -> Result<(), DispatchError> {
-			*counter -= 1;
-			Ok(())
-		})?;
+		CounterForWorkerAssignedJobs::<T>::try_mutate(
+			&worker,
+			|counter| -> Result<(), DispatchError> {
+				*counter -= 1;
+				Ok(())
+			},
+		)?;
 
-		Self::deposit_event(Event::JobResultUpdated { pool_id: pool_id.clone(), job_id: job_id.clone(), result, output: output_data, proof: proof_data });
-		Self::deposit_event(Event::JobStatusUpdated { pool_id: pool_id.clone(), job_id: job_id.clone(), status: JobStatus::Processed });
+		Self::deposit_event(Event::JobResultUpdated {
+			pool_id: pool_id.clone(),
+			job_id: job_id.clone(),
+			result,
+			output: output_data,
+			proof: proof_data,
+		});
+		Self::deposit_event(Event::JobStatusUpdated {
+			pool_id: pool_id.clone(),
+			job_id: job_id.clone(),
+			status: JobStatus::Processed,
+		});
 
 		let pool_info = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolNotFound)?;
 		if pool_info.auto_destroy_processed_job_enabled {

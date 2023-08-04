@@ -18,12 +18,12 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use frame_support::RuntimeDebug;
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::prelude::*;
-use frame_support::RuntimeDebug;
 
-pub use base_primitives::{ImplSpecVersion, ApplicableScope, ChainStoredData};
+pub use base_primitives::{ApplicableScope, ChainStoredData, ImplSpecVersion};
 
 pub type UniqueTrackId = u32;
 
@@ -44,8 +44,9 @@ pub struct JobPolicy<PoolId, BlockNumber> {
 	pub jobs_count: u32,
 }
 
-// TODO: Rates strategy (bound to JobPolicy), e.g. Pay a constant or by duration of processing fee for each job, pay to worker or the owner
-// TODO: WorkerPolicy: How to slashing, max processing duration, and etc.
+// TODO: Rates strategy (bound to JobPolicy), e.g. Pay a constant or by duration of processing fee
+// for each job, pay to worker or the owner TODO: WorkerPolicy: How to slashing, max processing
+// duration, and etc.
 
 /// Information about a pool.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -93,13 +94,16 @@ pub enum JobResult {
 	Success,
 	/// Ending status, the worker processed the item and report failed
 	Fail,
-	/// Ending status, the error occurred when processing the job, the error not relates to the worker itself
+	/// Ending status, the error occurred when processing the job, the error not relates to the
+	/// worker itself
 	Error,
-	/// Ending status, the error occurred when processing the job, the error relates to the worker itself
+	/// Ending status, the error occurred when processing the job, the error relates to the worker
+	/// itself
 	Panic,
 }
 
-// TODO: Idea: JobType: info will copy to Job, advanceable, creatable, minimum_deposit (more than actual will save to surplus_deposit)
+// TODO: Idea: JobType: info will copy to Job, advanceable, creatable, minimum_deposit (more than
+// actual will save to surplus_deposit)
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct JobInfo<JobId, PolicyId, AccountId, Balance> {

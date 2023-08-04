@@ -16,16 +16,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::str::FromStr;
 use primal_runtime::{
-	AccountId,
-	AuraConfig, BalancesConfig, RuntimeGenesisConfig, GrandpaConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	AccountId, AuraConfig, BalancesConfig, GrandpaConfig, RuntimeGenesisConfig, SudoConfig,
+	SystemConfig, WASM_BINARY,
 };
 use sc_chain_spec::Properties;
 use sc_service::ChainType;
+use serde::Deserialize;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
-use serde::Deserialize;
+use std::str::FromStr;
 
 /// The struct for JSON format genesis config
 ///
@@ -83,7 +83,7 @@ pub fn development() -> Result<ChainSpec, String> {
 		"Cybros Primal development",
 		"cybros_primal_dev",
 		ChainType::Development,
-		genesis_profile
+		genesis_profile,
 	)
 }
 
@@ -94,12 +94,7 @@ pub fn local() -> Result<ChainSpec, String> {
 	let genesis_profile: GenesisConfigProfile =
 		serde_json::from_slice(genesis_profile_in_bytes).expect("Bad chain profile");
 
-	chain_spec_for(
-		"Cybros Primal local",
-		"cybros_primal_local",
-		ChainType::Local,
-		genesis_profile
-	)
+	chain_spec_for("Cybros Primal local", "cybros_primal_local", ChainType::Local, genesis_profile)
 }
 
 fn chain_spec_for(
@@ -110,35 +105,34 @@ fn chain_spec_for(
 ) -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
-	Ok(
-		ChainSpec::from_genesis(
-			name,
-			id,
-			chain_type,
-			move || {
-				let genesis_profile = genesis_profile.clone();
-				genesis_config(
-					wasm_binary,
-					// Initial PoA authorities
-					genesis_profile.initial_authorities,
-					// Sudo account
-					genesis_profile.root_key,
-					// Pre-funded accounts
-					genesis_profile.endowed_accounts
-						.into_iter()
-						.map(|(k, amount)| (k, u128::from_str(&amount).expect("Bad amount")))
-						.collect(),
-					true
-				)
-			},
-			vec![],
-			None,
-			None,
-			None,
-			chain_properties(),
-			None,
-		)
-	)
+	Ok(ChainSpec::from_genesis(
+		name,
+		id,
+		chain_type,
+		move || {
+			let genesis_profile = genesis_profile.clone();
+			genesis_config(
+				wasm_binary,
+				// Initial PoA authorities
+				genesis_profile.initial_authorities,
+				// Sudo account
+				genesis_profile.root_key,
+				// Pre-funded accounts
+				genesis_profile
+					.endowed_accounts
+					.into_iter()
+					.map(|(k, amount)| (k, u128::from_str(&amount).expect("Bad amount")))
+					.collect(),
+				true,
+			)
+		},
+		vec![],
+		None,
+		None,
+		None,
+		chain_properties(),
+		None,
+	))
 }
 
 /// Configure initial storage state for FRAME modules.
@@ -156,9 +150,7 @@ fn genesis_config(
 			.chain(&[root_key.clone()])
 			.cloned()
 			.all(|account| {
-				endowed_accounts
-					.iter()
-					.any(|(endowed, _)| account == endowed.clone())
+				endowed_accounts.iter().any(|(endowed, _)| account == endowed.clone())
 			}),
 		"All the genesis accounts must be endowed; qed."
 	);
@@ -170,20 +162,16 @@ fn genesis_config(
 			..Default::default()
 		},
 		aura: AuraConfig {
-			authorities: initial_authorities.iter().map(|x| (x.1.clone())).collect()
+			authorities: initial_authorities.iter().map(|x| (x.1.clone())).collect(),
 		},
 		grandpa: GrandpaConfig {
 			authorities: initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect(),
 			..Default::default()
 		},
-		balances: BalancesConfig {
-			balances: endowed_accounts,
-		},
+		balances: BalancesConfig { balances: endowed_accounts },
 		transaction_payment: Default::default(),
 		vesting: Default::default(),
-		sudo: SudoConfig {
-			key: Some(root_key),
-		},
+		sudo: SudoConfig { key: Some(root_key) },
 	}
 }
 

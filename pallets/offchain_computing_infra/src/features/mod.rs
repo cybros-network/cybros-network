@@ -16,6 +16,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod worker_management;
-pub mod worker_lifecycle;
 pub mod impl_management;
+pub mod worker_lifecycle;
+pub mod worker_management;

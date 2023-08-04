@@ -180,7 +180,6 @@ pub(crate) fn run_to_block(n: u64) {
 	}
 }
 
-
 #[allow(unused)]
 pub(crate) fn take_events() -> Vec<RuntimeEvent> {
 	let events = System::events().into_iter().map(|i| i.event).collect::<Vec<_>>();
@@ -190,13 +189,11 @@ pub(crate) fn take_events() -> Vec<RuntimeEvent> {
 
 #[allow(unused)]
 pub(crate) fn set_balance(who: AccountId, new_free: Balance, new_reserved: Balance) {
-	assert_ok!(
-		Balances::force_set_balance(
-			RuntimeOrigin::root(),
-			who.clone(),
-			new_free.saturating_add(new_reserved)
-		)
-	);
+	assert_ok!(Balances::force_set_balance(
+		RuntimeOrigin::root(),
+		who.clone(),
+		new_free.saturating_add(new_reserved)
+	));
 	assert_eq!(Balances::free_balance(&who), new_free);
 	assert_eq!(Balances::reserved_balance(&who), new_reserved);
 }

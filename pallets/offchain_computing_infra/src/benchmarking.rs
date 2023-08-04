@@ -21,18 +21,12 @@
 // Only enable this module for benchmarking.
 #![cfg(feature = "runtime-benchmarks")]
 
-use frame_benchmarking::{v2::*, account, impl_benchmark_test_suite, whitelisted_caller};
-use frame_system::{
-	pallet_prelude::BlockNumberFor,
-	Account, RawOrigin,
-};
+use frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, whitelisted_caller};
 use frame_support::{
-	traits::{
-		fungible::Mutate,
-		tokens::Fortitude,
-	},
 	assert_ok, fail,
+	traits::{fungible::Mutate, tokens::Fortitude},
 };
+use frame_system::{pallet_prelude::BlockNumberFor, Account, RawOrigin};
 use sp_runtime::{
 	app_crypto::{sr25519, KeyTypeId, RuntimePublic},
 	SaturatedConversion, Saturating,
@@ -40,22 +34,18 @@ use sp_runtime::{
 
 use primitives::{AttestationMethod, OnlinePayload};
 
-use crate::Pallet as OffchainComputingInfra;
 use super::*;
+use crate::Pallet as OffchainComputingInfra;
 
 const DOLLARS: u128 = 1_000_000_000_000;
 const WORKER_KEY_TYPE: KeyTypeId = KeyTypeId(*b"work");
 
 fn add_mock_impl<T: Config>(owner: &T::AccountId) -> T::ImplId {
 	let reserved_deposit = T::RegisterImplDeposit::get();
-	let owner_balance =
-		reserved_deposit.saturating_add(
-			(11 * DOLLARS).saturated_into::<BalanceOf<T>>()
-		).saturating_add(T::Currency::minimum_balance());
-	T::Currency::set_balance(
-		&owner,
-		owner_balance
-	);
+	let owner_balance = reserved_deposit
+		.saturating_add((11 * DOLLARS).saturated_into::<BalanceOf<T>>())
+		.saturating_add(T::Currency::minimum_balance());
+	T::Currency::set_balance(&owner, owner_balance);
 
 	assert_ok!(OffchainComputingInfra::<T>::register_impl(
 		RawOrigin::Signed(owner.clone()).into(),
@@ -77,13 +67,13 @@ fn add_mock_impl<T: Config>(owner: &T::AccountId) -> T::ImplId {
 
 fn mock_online_payload_and_attestation<T: Config>(
 	_worker_public: &sr25519::Public,
-	impl_id: T::ImplId
+	impl_id: T::ImplId,
 ) -> (OnlinePayload<T::ImplId>, Attestation) {
 	let payload = OnlinePayload::<T::ImplId> {
 		impl_id: impl_id.clone(),
 		impl_spec_version: 1,
 		impl_build_version: 1,
-		impl_build_magic_bytes: Default::default()
+		impl_build_magic_bytes: Default::default(),
 	};
 
 	let attestation = Attestation::OptOut;
@@ -91,17 +81,20 @@ fn mock_online_payload_and_attestation<T: Config>(
 	(payload, attestation)
 }
 
-fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::AccountId, impl_id: T::ImplId) -> T::AccountId {
+fn add_mock_worker<T: Config>(
+	worker_public: &sr25519::Public,
+	owner: &T::AccountId,
+	impl_id: T::ImplId,
+) -> T::AccountId {
 	let worker = T::AccountId::decode(&mut worker_public.encode().as_slice()).unwrap();
 	let reserved_deposit = T::RegisterWorkerDeposit::get();
 
-	let owner_balance = reserved_deposit.saturating_add((100 * DOLLARS).saturated_into::<BalanceOf<T>>());
-	T::Currency::set_balance(
-		&owner,
-		owner_balance
-	);
+	let owner_balance =
+		reserved_deposit.saturating_add((100 * DOLLARS).saturated_into::<BalanceOf<T>>());
+	T::Currency::set_balance(&owner, owner_balance);
 
-	let initial_deposit = reserved_deposit.saturating_add((11 * DOLLARS).saturated_into::<BalanceOf<T>>());
+	let initial_deposit =
+		reserved_deposit.saturating_add((11 * DOLLARS).saturated_into::<BalanceOf<T>>());
 
 	assert_ok!(OffchainComputingInfra::<T>::register_worker(
 		RawOrigin::Signed(owner.clone()).into(),
@@ -114,18 +107,20 @@ fn add_mock_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::Accoun
 	worker
 }
 
-fn add_mock_online_worker<T: Config>(worker_public: &sr25519::Public, owner: &T::AccountId, impl_id: Option<T::ImplId>) -> T::AccountId {
+fn add_mock_online_worker<T: Config>(
+	worker_public: &sr25519::Public,
+	owner: &T::AccountId,
+	impl_id: Option<T::ImplId>,
+) -> T::AccountId {
 	let impl_id = impl_id.unwrap_or_else(|| add_mock_impl::<T>(owner));
 	let worker = add_mock_worker::<T>(worker_public, owner, impl_id.clone());
 
 	let (payload, attestation) = mock_online_payload_and_attestation::<T>(worker_public, impl_id);
-	assert_ok!(
-		OffchainComputingInfra::<T>::online(
-			RawOrigin::Signed(worker.clone()).into(),
-			payload,
-			attestation
-		)
-	);
+	assert_ok!(OffchainComputingInfra::<T>::online(
+		RawOrigin::Signed(worker.clone()).into(),
+		payload,
+		attestation
+	));
 
 	let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 	assert_eq!(worker_info.attestation_method, Some(AttestationMethod::OptOut));
@@ -143,24 +138,26 @@ mod benchmarks {
 		let impl_id = add_mock_impl::<T>(&owner);
 		let worker = account::<T::AccountId>("worker", 0, 0);
 
-		let initial_balance = T::RegisterWorkerDeposit::get().saturating_add((1 * DOLLARS).saturated_into::<BalanceOf<T>>());
-		let balance = initial_balance.saturating_add((100 * DOLLARS).saturated_into::<BalanceOf<T>>());
-		T::Currency::set_balance(
-			&owner,
-			balance
-		);
+		let initial_balance = T::RegisterWorkerDeposit::get()
+			.saturating_add((1 * DOLLARS).saturated_into::<BalanceOf<T>>());
+		let balance =
+			initial_balance.saturating_add((100 * DOLLARS).saturated_into::<BalanceOf<T>>());
+		T::Currency::set_balance(&owner, balance);
 
 		#[extrinsic_call]
 		_(
 			RawOrigin::Signed(owner.clone()),
 			T::Lookup::unlookup(worker.clone()),
 			impl_id,
-			initial_balance
+			initial_balance,
 		);
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.owner, owner);
-		assert_eq!(T::Currency::balance_on_hold(&HoldReason::WorkerRegistrationReserve.into(), &worker), T::RegisterWorkerDeposit::get());
+		assert_eq!(
+			T::Currency::balance_on_hold(&HoldReason::WorkerRegistrationReserve.into(), &worker),
+			T::RegisterWorkerDeposit::get()
+		);
 		assert_eq!(worker_info.status, WorkerStatus::Registered);
 
 		Ok(())
@@ -174,10 +171,7 @@ mod benchmarks {
 		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id);
 
 		#[extrinsic_call]
-		_(
-			RawOrigin::Signed(owner.clone()),
-			T::Lookup::unlookup(worker.clone())
-		);
+		_(RawOrigin::Signed(owner.clone()), T::Lookup::unlookup(worker.clone()));
 
 		assert_eq!(Workers::<T>::contains_key(&worker), false);
 		assert_eq!(Account::<T>::contains_key(&worker), false);
@@ -192,15 +186,12 @@ mod benchmarks {
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id);
 
-		let worker_balance = T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite);
+		let worker_balance =
+			T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite);
 		let amount = (10 * DOLLARS).saturated_into::<BalanceOf<T>>();
 
 		#[extrinsic_call]
-		_(
-			RawOrigin::Signed(owner.clone()),
-			T::Lookup::unlookup(worker.clone()),
-			amount
-		);
+		_(RawOrigin::Signed(owner.clone()), T::Lookup::unlookup(worker.clone()), amount);
 
 		assert_eq!(
 			T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite),
@@ -217,15 +208,12 @@ mod benchmarks {
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id);
 
-		let worker_balance = T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite);
+		let worker_balance =
+			T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite);
 		let amount = (10 * DOLLARS).saturated_into::<BalanceOf<T>>();
 
 		#[extrinsic_call]
-		_(
-			RawOrigin::Signed(owner.clone()),
-			T::Lookup::unlookup(worker.clone()),
-			amount
-		);
+		_(RawOrigin::Signed(owner.clone()), T::Lookup::unlookup(worker.clone()), amount);
 
 		assert_eq!(
 			T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite),
@@ -241,14 +229,11 @@ mod benchmarks {
 		let impl_id = add_mock_impl::<T>(&owner);
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_worker::<T>(&worker_public, &owner, impl_id.clone());
-		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public, impl_id);
+		let (payload, attestation) =
+			mock_online_payload_and_attestation::<T>(&worker_public, impl_id);
 
 		#[extrinsic_call]
-		_(
-			RawOrigin::Signed(worker.clone()),
-			payload,
-			attestation
-		);
+		_(RawOrigin::Signed(worker.clone()), payload, attestation);
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::OptOut));
@@ -263,14 +248,13 @@ mod benchmarks {
 		let impl_id = add_mock_impl::<T>(&owner);
 		let worker_public = sr25519::Public::generate_pair(WORKER_KEY_TYPE, None);
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner, Some(impl_id.clone()));
-		let (payload, attestation) = mock_online_payload_and_attestation::<T>(&worker_public, impl_id);
+		let (payload, attestation) =
+			mock_online_payload_and_attestation::<T>(&worker_public, impl_id);
 		let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 
 		// Hack here
 		Workers::<T>::try_mutate(&worker, |worker_info| {
-			let Some(worker_info) = worker_info else {
-				return Err("must not null")
-			};
+			let Some(worker_info) = worker_info else { return Err("must not null") };
 
 			worker_info.attestation_expires_at = Some(now + 100);
 			worker_info.attested_at = Some(now - 100);
@@ -279,11 +263,7 @@ mod benchmarks {
 		})?;
 
 		#[extrinsic_call]
-		_(
-			RawOrigin::Signed(worker.clone()),
-			payload,
-			attestation
-		);
+		_(RawOrigin::Signed(worker.clone()), payload, attestation);
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.attestation_method, Some(AttestationMethod::OptOut));
@@ -301,9 +281,7 @@ mod benchmarks {
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner, None);
 
 		#[extrinsic_call]
-		_(
-			RawOrigin::Signed(worker.clone())
-		);
+		_(RawOrigin::Signed(worker.clone()));
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
@@ -320,10 +298,7 @@ mod benchmarks {
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner, None);
 
 		#[extrinsic_call]
-		_(
-			RawOrigin::Signed(owner.clone()),
-			T::Lookup::unlookup(worker.clone())
-		);
+		_(RawOrigin::Signed(owner.clone()), T::Lookup::unlookup(worker.clone()));
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
@@ -338,9 +313,7 @@ mod benchmarks {
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner, None);
 
 		#[extrinsic_call]
-		_(
-			RawOrigin::Signed(worker.clone())
-		);
+		_(RawOrigin::Signed(worker.clone()));
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
@@ -355,10 +328,7 @@ mod benchmarks {
 		let worker = add_mock_online_worker::<T>(&worker_public, &owner, None);
 
 		#[extrinsic_call]
-		_(
-			RawOrigin::Signed(owner.clone()),
-			T::Lookup::unlookup(worker.clone())
-		);
+		_(RawOrigin::Signed(owner.clone()), T::Lookup::unlookup(worker.clone()));
 
 		let worker_info = Workers::<T>::get(&worker).expect("WorkerInfo should has value");
 		assert_eq!(worker_info.status, WorkerStatus::Offline);
@@ -386,13 +356,11 @@ mod benchmarks {
 				FlipSet::<T>::insert(&worker, BlockNumberFor::<T>::zero());
 				FlipOrFlop::<T>::set(FlipFlopStage::Flip);
 			},
-			_ => fail!("Other stages is unexpected")
+			_ => fail!("Other stages is unexpected"),
 		};
 
 		#[extrinsic_call]
-		_(
-			RawOrigin::Signed(worker.clone())
-		);
+		_(RawOrigin::Signed(worker.clone()));
 
 		let stage = FlipOrFlop::<T>::get();
 		match stage {
@@ -404,7 +372,7 @@ mod benchmarks {
 				assert_eq!(FlipSet::<T>::contains_key(&worker), true);
 				assert_eq!(FlopSet::<T>::contains_key(&worker), false);
 			},
-			_ => fail!("Other stages is unexpected")
+			_ => fail!("Other stages is unexpected"),
 		};
 
 		Ok(())

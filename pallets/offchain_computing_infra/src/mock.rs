@@ -18,12 +18,7 @@
 
 use crate as pallet_offchain_computing_infra;
 
-use frame_support::{
-	traits::{
-		fungible::Mutate,
-		OnFinalize, OnInitialize,
-	},
-};
+use frame_support::traits::{fungible::Mutate, OnFinalize, OnInitialize};
 use frame_system::EnsureSigned;
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
@@ -160,12 +155,6 @@ pub(crate) fn take_events() -> Vec<RuntimeEvent> {
 
 #[allow(unused)]
 pub(crate) fn set_balance(who: AccountId, new_free: Balance) {
-	<Test as crate::Config>::Currency::set_balance(
-		&who,
-		new_free
-	);
-	assert_eq!(
-		<Test as crate::Config>::Currency::free_balance(who),
-		new_free
-	);
+	<Test as crate::Config>::Currency::set_balance(&who, new_free);
+	assert_eq!(<Test as crate::Config>::Currency::free_balance(who), new_free);
 }

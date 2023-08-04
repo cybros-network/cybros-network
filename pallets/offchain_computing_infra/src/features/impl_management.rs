@@ -44,19 +44,16 @@ impl<T: Config> Pallet<T> {
 		Impls::<T>::insert(&impl_id, impl_info);
 		AccountOwningImpls::<T>::insert(&owner, &impl_id, ());
 
-		Self::deposit_event(
-			Event::ImplRegistered {
-				owner, attestation_method, impl_id,
-				deployment_scope: deployment_permission
-			}
-		);
+		Self::deposit_event(Event::ImplRegistered {
+			owner,
+			attestation_method,
+			impl_id,
+			deployment_scope: deployment_permission,
+		});
 		Ok(())
 	}
 
-	pub fn do_deregister_impl(
-		who: T::AccountId,
-		impl_id: T::ImplId
-	) -> DispatchResult {
+	pub fn do_deregister_impl(who: T::AccountId, impl_id: T::ImplId) -> DispatchResult {
 		let impl_info = Impls::<T>::get(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
 		Self::ensure_impl_owner(&who, &impl_info)?;
 		ensure!(impl_info.workers_count == 0, Error::<T>::ImplStillInUse);
@@ -80,7 +77,7 @@ impl<T: Config> Pallet<T> {
 			&HoldReason::ImplRegistrationReserve.into(),
 			&impl_info.owner,
 			impl_info.owner_deposit,
-			Precision::BestEffort
+			Precision::BestEffort,
 		)?;
 
 		Self::deposit_event(Event::ImplDeregistered { impl_id });
@@ -89,7 +86,7 @@ impl<T: Config> Pallet<T> {
 
 	pub(crate) fn do_update_impl_metadata(
 		impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
-		new_metadata: BoundedVec<u8, T::ImplMetadataLimit>
+		new_metadata: BoundedVec<u8, T::ImplMetadataLimit>,
 	) -> DispatchResult {
 		let impl_id = impl_info.id.clone();
 		ImplMetadata::<T>::try_mutate_exists(&impl_id, |metadata_entry| {
@@ -103,7 +100,7 @@ impl<T: Config> Pallet<T> {
 					T::Currency::hold(
 						&HoldReason::ImplMetadataStorageReserve.into(),
 						&impl_info.owner,
-						deposit - old_deposit
+						deposit - old_deposit,
 					)?;
 				},
 				Ordering::Less => {
@@ -111,22 +108,23 @@ impl<T: Config> Pallet<T> {
 						&HoldReason::ImplMetadataStorageReserve.into(),
 						&impl_info.owner,
 						old_deposit - deposit,
-						Precision::BestEffort
+						Precision::BestEffort,
 					)?;
 				},
-				_ => {}
+				_ => {},
 			};
 
 			*metadata_entry = Some(ChainStoredData {
 				depositor: impl_info.owner.clone(),
 				actual_deposit: deposit,
 				surplus_deposit: Zero::zero(),
-				data: new_metadata.clone()
+				data: new_metadata.clone(),
 			});
 
-			Self::deposit_event(
-				Event::ImplMetadataUpdated { impl_id: impl_id.clone(), metadata: new_metadata.clone() }
-			);
+			Self::deposit_event(Event::ImplMetadataUpdated {
+				impl_id: impl_id.clone(),
+				metadata: new_metadata.clone(),
+			});
 			Ok(())
 		})
 	}
@@ -134,9 +132,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_remove_impl_metadata(
 		impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
 	) -> DispatchResult {
-		let Some(metadata_entry) = ImplMetadata::<T>::get(&impl_info.id) else {
-			return Ok(())
-		};
+		let Some(metadata_entry) = ImplMetadata::<T>::get(&impl_info.id) else { return Ok(()) };
 
 		ImplMetadata::<T>::remove(&impl_info.id);
 
@@ -144,7 +140,7 @@ impl<T: Config> Pallet<T> {
 			&HoldReason::ImplMetadataStorageReserve.into(),
 			&impl_info.owner,
 			metadata_entry.actual_deposit,
-			Precision::BestEffort
+			Precision::BestEffort,
 		)?;
 
 		Self::deposit_event(Event::ImplMetadataRemoved { impl_id: impl_info.id.clone() });
@@ -160,14 +156,17 @@ impl<T: Config> Pallet<T> {
 		impl_info.deployment_scope = deployment_permission.clone();
 		Impls::<T>::insert(&impl_id, impl_info);
 
-		Self::deposit_event(Event::<T>::ImplDeploymentScopeUpdated { impl_id, scope: deployment_permission });
+		Self::deposit_event(Event::<T>::ImplDeploymentScopeUpdated {
+			impl_id,
+			scope: deployment_permission,
+		});
 		Ok(())
 	}
 
 	pub(crate) fn do_register_impl_build(
 		impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
 		impl_build_version: ImplBuildVersion,
-		magic_bytes: Option<ImplBuildMagicBytes>
+		magic_bytes: Option<ImplBuildMagicBytes>,
 	) -> DispatchResult {
 		let impl_id = impl_info.id.clone();
 		ensure!(
@@ -176,10 +175,7 @@ impl<T: Config> Pallet<T> {
 		);
 
 		CounterForImplBuilds::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
-			ensure!(
-				counter <= &mut T::MaxImplBuilds::get(),
-				Error::<T>::ImplBuildsLimitExceeded
-			);
+			ensure!(counter <= &mut T::MaxImplBuilds::get(), Error::<T>::ImplBuildsLimitExceeded);
 
 			*counter += 1;
 			Ok(())
@@ -194,7 +190,11 @@ impl<T: Config> Pallet<T> {
 
 		ImplBuilds::<T>::insert(&impl_id, impl_build_version, impl_build_info);
 
-		Self::deposit_event(Event::<T>::ImplBuildRegistered { impl_id, impl_build_version, magic_bytes });
+		Self::deposit_event(Event::<T>::ImplBuildRegistered {
+			impl_id,
+			impl_build_version,
+			magic_bytes,
+		});
 
 		Ok(())
 	}
@@ -204,11 +204,9 @@ impl<T: Config> Pallet<T> {
 		impl_build_version: ImplBuildVersion,
 	) -> DispatchResult {
 		let impl_id = impl_info.id.clone();
-		let impl_build_info = ImplBuilds::<T>::get(&impl_id, impl_build_version).ok_or(Error::<T>::ImplBuildNotFound)?;
-		ensure!(
-			impl_build_info.workers_count == 0,
-			Error::<T>::ImplBuildStillInUse
-		);
+		let impl_build_info = ImplBuilds::<T>::get(&impl_id, impl_build_version)
+			.ok_or(Error::<T>::ImplBuildNotFound)?;
+		ensure!(impl_build_info.workers_count == 0, Error::<T>::ImplBuildStillInUse);
 
 		ImplBuilds::<T>::remove(&impl_id, impl_build_version);
 		CounterForImplBuilds::<T>::try_mutate(&impl_id, |counter| -> Result<(), DispatchError> {
@@ -224,19 +222,27 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_update_impl_build_status(
 		impl_id: T::ImplId,
 		impl_build_version: ImplBuildVersion,
-		status: ImplBuildStatus
+		status: ImplBuildStatus,
 	) -> DispatchResult {
-		ImplBuilds::<T>::try_mutate(&impl_id, impl_build_version, |impl_build_info| -> Result<(), DispatchError> {
-			let Some(info) = impl_build_info.as_mut() else {
-				return Err(Error::<T>::ImplBuildNotFound.into())
-			};
+		ImplBuilds::<T>::try_mutate(
+			&impl_id,
+			impl_build_version,
+			|impl_build_info| -> Result<(), DispatchError> {
+				let Some(info) = impl_build_info.as_mut() else {
+					return Err(Error::<T>::ImplBuildNotFound.into())
+				};
 
-			info.status = status;
+				info.status = status;
 
-			Ok(())
-		})?;
+				Ok(())
+			},
+		)?;
 
-		Self::deposit_event(Event::<T>::ImplBuildStatusUpdated { impl_id, impl_build_version, status });
+		Self::deposit_event(Event::<T>::ImplBuildStatusUpdated {
+			impl_id,
+			impl_build_version,
+			status,
+		});
 
 		Ok(())
 	}

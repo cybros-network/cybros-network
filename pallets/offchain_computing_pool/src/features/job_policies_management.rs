@@ -26,7 +26,7 @@ impl<T: Config> Pallet<T> {
 		policy_id: T::PolicyId,
 		applicable_scope: ApplicableScope,
 		start_block: Option<BlockNumberFor<T>>,
-		end_block: Option<BlockNumberFor<T>>
+		end_block: Option<BlockNumberFor<T>>,
 	) -> DispatchResult {
 		ensure!(
 			!JobPolicies::<T>::contains_key(&pool_info.id, &policy_id),
@@ -47,7 +47,13 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.job_policies_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		Self::deposit_event(Event::JobPolicyCreated { pool_id: pool_info.id, policy_id, applicable_scope, start_block, end_block });
+		Self::deposit_event(Event::JobPolicyCreated {
+			pool_id: pool_info.id,
+			policy_id,
+			applicable_scope,
+			start_block,
+			end_block,
+		});
 		Ok(())
 	}
 
@@ -60,11 +66,9 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::JobPolicyNotFound
 		);
 
-		let policy = JobPolicies::<T>::get(&pool_info.id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
-		ensure!(
-			policy.jobs_count == 0,
-			Error::<T>::JobPolicyStillInUse
-		);
+		let policy = JobPolicies::<T>::get(&pool_info.id, &policy_id)
+			.ok_or(Error::<T>::JobPolicyNotFound)?;
+		ensure!(policy.jobs_count == 0, Error::<T>::JobPolicyStillInUse);
 
 		JobPolicies::<T>::remove(&pool_info.id, &policy_id);
 
@@ -79,14 +83,15 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_update_job_policy_enablement(
 		pool_id: T::PoolId,
 		policy_id: T::PolicyId,
-		enabled: bool
+		enabled: bool,
 	) -> DispatchResult {
 		ensure!(
 			JobPolicies::<T>::contains_key(&pool_id, &policy_id),
 			Error::<T>::JobPolicyNotFound
 		);
 
-		let mut policy = JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
+		let mut policy =
+			JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
 		policy.enabled = enabled;
 		JobPolicies::<T>::insert(&pool_id, &policy_id, policy.clone());
 

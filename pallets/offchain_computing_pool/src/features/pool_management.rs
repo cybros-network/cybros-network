@@ -18,12 +18,9 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
-use sp_runtime::{
-	traits::Zero,
-	Saturating
-};
-use sp_std::cmp::Ordering;
 use pallet_offchain_computing_infra::ApplicableScope;
+use sp_runtime::{traits::Zero, Saturating};
+use sp_std::cmp::Ordering;
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_pool(
@@ -31,7 +28,7 @@ impl<T: Config> Pallet<T> {
 		pool_id: T::PoolId,
 		impl_id: T::ImplId,
 		create_job_enabled: bool,
-		auto_destroy_processed_job_enabled: bool
+		auto_destroy_processed_job_enabled: bool,
 	) -> DispatchResult {
 		ensure!(!Pools::<T>::contains_key(&pool_id), Error::<T>::PoolIdTaken);
 
@@ -43,7 +40,7 @@ impl<T: Config> Pallet<T> {
 				},
 				ApplicableScope::Public => {
 					true
-				}
+				},
 			},
 			Error::<T>::NoPermission
 		);
@@ -51,7 +48,7 @@ impl<T: Config> Pallet<T> {
 		<T as Config>::Currency::hold(
 			&HoldReason::PoolCreationReserve.into(),
 			&owner,
-			T::PoolCreationDeposit::get()
+			T::PoolCreationDeposit::get(),
 		)?;
 
 		let pool_info = PoolInfo::<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId> {
@@ -71,14 +68,17 @@ impl<T: Config> Pallet<T> {
 		Pools::<T>::insert(&pool_id, pool_info);
 		AccountOwningPools::<T>::insert(&owner, &pool_id, ());
 
-		Self::deposit_event(Event::PoolCreated { owner, pool_id, impl_id, create_job_enabled, auto_destroy_processed_job_enabled });
+		Self::deposit_event(Event::PoolCreated {
+			owner,
+			pool_id,
+			impl_id,
+			create_job_enabled,
+			auto_destroy_processed_job_enabled,
+		});
 		Ok(())
 	}
 
-	pub(crate) fn do_destroy_pool(
-		who: T::AccountId,
-		pool_id: T::PoolId,
-	) -> DispatchResult {
+	pub(crate) fn do_destroy_pool(who: T::AccountId, pool_id: T::PoolId) -> DispatchResult {
 		let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 		Self::ensure_pool_owner(&who, &pool_info)?;
 		ensure!(pool_info.jobs_count == 0, Error::<T>::PoolNotEmpty);
@@ -89,7 +89,7 @@ impl<T: Config> Pallet<T> {
 				&HoldReason::PoolMetadataStorageReserve.into(),
 				&pool_info.owner,
 				metadata_entry.actual_deposit,
-				Precision::BestEffort
+				Precision::BestEffort,
 			)?;
 		}
 
@@ -102,7 +102,7 @@ impl<T: Config> Pallet<T> {
 			&HoldReason::PoolCreationReserve.into(),
 			&pool_info.owner,
 			pool_info.owner_deposit,
-			Precision::BestEffort
+			Precision::BestEffort,
 		)?;
 
 		Self::deposit_event(Event::PoolDestroyed { pool_id });
@@ -111,7 +111,7 @@ impl<T: Config> Pallet<T> {
 
 	pub(crate) fn do_update_pool_metadata(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
-		new_metadata: BoundedVec<u8, T::PoolMetadataLimit>
+		new_metadata: BoundedVec<u8, T::PoolMetadataLimit>,
 	) -> DispatchResult {
 		let pool_id = pool_info.id;
 		PoolMetadata::<T>::try_mutate_exists(&pool_id.clone(), |metadata_entry| {
@@ -125,7 +125,7 @@ impl<T: Config> Pallet<T> {
 					<T as Config>::Currency::hold(
 						&HoldReason::PoolMetadataStorageReserve.into(),
 						&pool_info.owner,
-						deposit - old_deposit
+						deposit - old_deposit,
 					)?;
 				},
 				Ordering::Less => {
@@ -133,37 +133,38 @@ impl<T: Config> Pallet<T> {
 						&HoldReason::PoolMetadataStorageReserve.into(),
 						&pool_info.owner,
 						deposit - old_deposit,
-						Precision::BestEffort
+						Precision::BestEffort,
 					)?;
 				},
-				_ => {}
+				_ => {},
 			};
 
 			*metadata_entry = Some(ChainStoredData {
 				depositor: pool_info.owner.clone(),
 				actual_deposit: deposit,
 				surplus_deposit: Zero::zero(),
-				data: new_metadata.clone()
+				data: new_metadata.clone(),
 			});
 
-			Self::deposit_event(Event::PoolMetadataUpdated { pool_id, metadata: new_metadata.clone() });
+			Self::deposit_event(Event::PoolMetadataUpdated {
+				pool_id,
+				metadata: new_metadata.clone(),
+			});
 			Ok(())
 		})
 	}
 
 	pub(crate) fn do_remove_pool_metadata(
-		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>
+		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 	) -> DispatchResult {
-		let Some(metadata_entry) = PoolMetadata::<T>::get(&pool_info.id) else {
-			return Ok(())
-		};
+		let Some(metadata_entry) = PoolMetadata::<T>::get(&pool_info.id) else { return Ok(()) };
 
 		PoolMetadata::<T>::remove(&pool_info.id);
 		<T as Config>::Currency::release(
 			&HoldReason::PoolMetadataStorageReserve.into(),
 			&pool_info.owner,
 			metadata_entry.actual_deposit,
-			Precision::BestEffort
+			Precision::BestEffort,
 		)?;
 
 		Self::deposit_event(Event::PoolMetadataRemoved { pool_id: pool_info.id });
@@ -190,14 +191,13 @@ impl<T: Config> Pallet<T> {
 
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		Self::deposit_event(
-			Event::PoolSettingsUpdated {
-				pool_id: pool_info.id,
-				min_impl_spec_version,
-				max_impl_spec_version,
-				create_job_enabled,
-				auto_destroy_processed_job_enabled
-			});
+		Self::deposit_event(Event::PoolSettingsUpdated {
+			pool_id: pool_info.id,
+			min_impl_spec_version,
+			max_impl_spec_version,
+			create_job_enabled,
+			auto_destroy_processed_job_enabled,
+		});
 		Ok(())
 	}
 }

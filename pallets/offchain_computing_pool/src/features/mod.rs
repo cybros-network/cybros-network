@@ -16,8 +16,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod pool_management;
-pub mod job_policies_management;
-pub mod worker_management;
-pub mod job_management;
 pub mod job_lifecycle;
+pub mod job_management;
+pub mod job_policies_management;
+pub mod pool_management;
+pub mod worker_management;

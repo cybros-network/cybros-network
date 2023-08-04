@@ -32,8 +32,9 @@ impl<T: Config> Pallet<T> {
 	/// 2 Update worker's info, persists to storage
 	/// 3 Set flip-flop
 	pub fn do_online(
-		worker: T::AccountId, payload: OnlinePayload<T::ImplId>,
-		attestation: Attestation
+		worker: T::AccountId,
+		payload: OnlinePayload<T::ImplId>,
+		attestation: Attestation,
 	) -> DispatchResult {
 		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
@@ -52,21 +53,20 @@ impl<T: Config> Pallet<T> {
 			);
 		}
 
-		ensure!(
-			worker_info.impl_id == payload.impl_id,
-			Error::<T>::ImplMismatched
-		);
+		ensure!(worker_info.impl_id == payload.impl_id, Error::<T>::ImplMismatched);
 
 		if current_status == WorkerStatus::Unresponsive {
 			ensure!(
 				worker_info.impl_id == payload.impl_id &&
-				worker_info.impl_spec_version == Some(payload.impl_spec_version) &&
-				worker_info.impl_build_version == Some(payload.impl_build_version),
+					worker_info.impl_spec_version == Some(payload.impl_spec_version) &&
+					worker_info.impl_build_version == Some(payload.impl_build_version),
 				Error::<T>::ImplBuildChanged
 			);
 		}
 
-		let mut impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, payload.impl_build_version).ok_or(Error::<T>::ImplBuildNotFound)?;
+		let mut impl_build_info =
+			ImplBuilds::<T>::get(&worker_info.impl_id, payload.impl_build_version)
+				.ok_or(Error::<T>::ImplBuildNotFound)?;
 		ensure!(
 			impl_build_info.status == ImplBuildStatus::Released,
 			Error::<T>::ImplBuildRestricted
@@ -79,16 +79,18 @@ impl<T: Config> Pallet<T> {
 		}
 
 		// Check reserved money
-		let deposit = T::Currency::balance_on_hold(&HoldReason::WorkerRegistrationReserve.into(), &worker);
+		let deposit =
+			T::Currency::balance_on_hold(&HoldReason::WorkerRegistrationReserve.into(), &worker);
 		if deposit < worker_info.deposit {
 			// Try add reserved from free
-			let free = T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite);
+			let free =
+				T::Currency::reducible_balance(&worker, Preservation::Preserve, Fortitude::Polite);
 			let should_add_deposit = worker_info.deposit.saturating_sub(deposit);
 			ensure!(free >= should_add_deposit, Error::<T>::InsufficientDeposit);
 			T::Currency::hold(
 				&HoldReason::WorkerRegistrationReserve.into(),
 				&worker,
-				should_add_deposit
+				should_add_deposit,
 			)?;
 		}
 
@@ -140,15 +142,12 @@ impl<T: Config> Pallet<T> {
 		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
 
-		ensure!(
-			worker_info.attestation_expires_at.is_some(),
-			Error::<T>::AttestationNeverExpire
-		);
+		ensure!(worker_info.attestation_expires_at.is_some(), Error::<T>::AttestationNeverExpire);
 
 		ensure!(
 			worker_info.impl_id == payload.impl_id &&
-			worker_info.impl_spec_version == Some(payload.impl_spec_version) &&
-			worker_info.impl_build_version == Some(payload.impl_build_version),
+				worker_info.impl_spec_version == Some(payload.impl_spec_version) &&
+				worker_info.impl_build_version == Some(payload.impl_build_version),
 			Error::<T>::ImplBuildChanged
 		);
 		// Should we validate the impl here?
@@ -161,9 +160,16 @@ impl<T: Config> Pallet<T> {
 		worker_info.attested_at = Some(T::UnixTime::now().as_secs().saturated_into::<u64>());
 		Workers::<T>::insert(&worker, worker_info.clone());
 
-		Self::deposit_event(Event::<T>::WorkerAttestationRefreshed { worker: worker.clone(), expires_at: verified_attestation.expires_at() });
+		Self::deposit_event(Event::<T>::WorkerAttestationRefreshed {
+			worker: worker.clone(),
+			expires_at: verified_attestation.expires_at(),
+		});
 
-		T::OffchainWorkerLifecycleHooks::after_refresh_attestation(&worker, &payload, &verified_attestation);
+		T::OffchainWorkerLifecycleHooks::after_refresh_attestation(
+			&worker,
+			&payload,
+			&verified_attestation,
+		);
 
 		Ok(())
 	}
@@ -171,7 +177,7 @@ impl<T: Config> Pallet<T> {
 	/// Transit worker to `Offline` status
 	pub(crate) fn do_request_offline(
 		worker: T::AccountId,
-		owner: Option<T::AccountId>
+		owner: Option<T::AccountId>,
 	) -> DispatchResult {
 		let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
@@ -216,7 +222,7 @@ impl<T: Config> Pallet<T> {
 
 	pub(crate) fn do_force_offline(
 		worker: T::AccountId,
-		owner: Option<T::AccountId>
+		owner: Option<T::AccountId>,
 	) -> DispatchResult {
 		let worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
@@ -235,9 +241,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_heartbeat(
-		worker: T::AccountId
-	) -> DispatchResult {
+	pub(crate) fn do_heartbeat(worker: T::AccountId) -> DispatchResult {
 		let mut worker_info = Workers::<T>::get(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		Self::ensure_worker(&worker, &worker_info)?;
 		ensure!(
@@ -266,7 +270,9 @@ impl<T: Config> Pallet<T> {
 		}
 
 		// Check the worker's reserved money
-		if T::Currency::balance_on_hold(&HoldReason::WorkerRegistrationReserve.into(), &worker) < T::RegisterWorkerDeposit::get() {
+		if T::Currency::balance_on_hold(&HoldReason::WorkerRegistrationReserve.into(), &worker) <
+			T::RegisterWorkerDeposit::get()
+		{
 			Self::set_worker_offline(&worker, OfflineReason::InsufficientDepositFunds);
 
 			return Ok(())
@@ -275,8 +281,12 @@ impl<T: Config> Pallet<T> {
 		let Some(impl_build_version) = worker_info.impl_build_version else {
 			return Err(Error::<T>::InternalError.into())
 		};
-		let impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, impl_build_version).ok_or(Error::<T>::InternalError)?;
-		let valid_impl_build = matches!(impl_build_info.status, ImplBuildStatus::Released | ImplBuildStatus::Deprecated);
+		let impl_build_info = ImplBuilds::<T>::get(&worker_info.impl_id, impl_build_version)
+			.ok_or(Error::<T>::InternalError)?;
+		let valid_impl_build = matches!(
+			impl_build_info.status,
+			ImplBuildStatus::Released | ImplBuildStatus::Deprecated
+		);
 
 		if !valid_impl_build {
 			Self::set_worker_offline(&worker, OfflineReason::ImplBuildRetired);
@@ -319,7 +329,11 @@ impl<T: Config> Pallet<T> {
 		worker_info.last_sent_heartbeat_at = Some(now);
 		Workers::<T>::insert(&worker, worker_info.clone());
 
-		Self::deposit_event(Event::<T>::WorkerHeartbeatReceived { worker, next: next_heartbeat, uptime });
+		Self::deposit_event(Event::<T>::WorkerHeartbeatReceived {
+			worker,
+			next: next_heartbeat,
+			uptime,
+		});
 
 		Ok(())
 	}

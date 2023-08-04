@@ -17,8 +17,8 @@
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::*;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use frame_support::traits::{ConstBool, ConstU32};
+use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;

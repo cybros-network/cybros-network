@@ -22,18 +22,16 @@ use frame_support::pallet_prelude::*;
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_provision_worker(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
-		worker: T::AccountId
+		worker: T::AccountId,
 	) -> DispatchResult {
 		ensure!(
 			!PoolProvisionedWorkers::<T>::contains_key(&worker, &pool_info.id),
 			Error::<T>::WorkerAlreadyAdded
 		);
 
-		let worker_info = PalletInfra::<T>::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
-		ensure!(
-			worker_info.impl_id == pool_info.impl_id.clone(),
-			Error::<T>::ImplMismatched
-		);
+		let worker_info =
+			PalletInfra::<T>::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
+		ensure!(worker_info.impl_id == pool_info.impl_id.clone(), Error::<T>::ImplMismatched);
 
 		PoolProvisionedWorkers::<T>::insert(&worker, &pool_info.id, ());
 
@@ -41,7 +39,10 @@ impl<T: Config> Pallet<T> {
 		new_pool_info.workers_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		Self::deposit_event(Event::WorkerProvisioned { pool_id: pool_info.id, worker: worker.clone() });
+		Self::deposit_event(Event::WorkerProvisioned {
+			pool_id: pool_info.id,
+			worker: worker.clone(),
+		});
 		Ok(())
 	}
 
@@ -57,7 +58,10 @@ impl<T: Config> Pallet<T> {
 		if WorkerSubscribedPools::<T>::contains_key(&worker, &pool_info.id) {
 			WorkerSubscribedPools::<T>::remove(&worker, &pool_info.id);
 
-			Self::deposit_event(Event::WorkerUnsubscribed { worker: worker.clone(), pool_id: pool_info.id.clone() });
+			Self::deposit_event(Event::WorkerUnsubscribed {
+				worker: worker.clone(),
+				pool_id: pool_info.id.clone(),
+			});
 		}
 
 		PoolProvisionedWorkers::<T>::remove(&worker, &pool_info.id);
@@ -70,10 +74,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_subscribe_pool(
-		worker: T::AccountId,
-		pool_id: T::PoolId
-	) -> DispatchResult {
+	pub(crate) fn do_subscribe_pool(worker: T::AccountId, pool_id: T::PoolId) -> DispatchResult {
 		ensure!(
 			PoolProvisionedWorkers::<T>::contains_key(&worker, &pool_id),
 			Error::<T>::WorkerNotInThePool
@@ -96,10 +97,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_unsubscribe_pool(
-		worker: T::AccountId,
-		pool_id: T::PoolId
-	) -> DispatchResult {
+	pub(crate) fn do_unsubscribe_pool(worker: T::AccountId, pool_id: T::PoolId) -> DispatchResult {
 		ensure!(
 			WorkerSubscribedPools::<T>::contains_key(&worker, &pool_id),
 			Error::<T>::WorkerNotSubscribeThePool
