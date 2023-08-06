@@ -60,7 +60,7 @@ pub(crate) use frame_support::traits::{
 };
 pub(crate) use frame_system::pallet_prelude::BlockNumberFor;
 pub(crate) use pallet_offchain_computing_infra::{
-	ImplSpecVersion, OffchainWorkerLifecycleHooks, OfflineReason, OnlinePayload,
+	OffchainWorkerLifecycleHooks, OfflineReason, OnlinePayload,
 	VerifiedAttestation,
 };
 
