@@ -210,6 +210,11 @@ const parsedArgs = parsePrompt(
   }
 );
 
+if (!isProd) {
+    logger.debug(parsedArgs)
+    logger.debug(parsedData)
+}
+
 const prompt = parsedArgs._1 ? parsedArgs._1.toString().trim() : "";
 if (prompt.length === 0) {
   renderAndExit(Result.Error, "PROMPT_IS_BLANK");

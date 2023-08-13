@@ -692,6 +692,9 @@ export function parse<
       } else if (/^(true|false)$/.test(next)) {
         setArg(key, next === "true", arg);
         i++;
+      } else if (!isNaN(Number(next))) {
+        setArg(key, Number(next), arg);
+        i++;
       } else {
         setArg(key, get(flags.strings, key) ? "" : true, arg);
       }

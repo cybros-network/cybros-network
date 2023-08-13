@@ -283,7 +283,7 @@ async function handleJob() {
   copySync(jobExecutorPath, jobWorkPath, { overwrite: true })
 
   // Run the job
-  console.log(job.input);
+  console.log(`Input: ${job.input}`);
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
