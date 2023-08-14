@@ -76,14 +76,14 @@ export class Job {
     @Column_("int4", {nullable: false})
     implSpecVersion!: number
 
-    @Column_("bytea", {nullable: true})
-    input!: Uint8Array | undefined | null
+    @Column_("text", {nullable: true})
+    input!: string | undefined | null
 
-    @Column_("bytea", {nullable: true})
-    output!: Uint8Array | undefined | null
+    @Column_("text", {nullable: true})
+    output!: string | undefined | null
 
-    @Column_("bytea", {nullable: true})
-    proof!: Uint8Array | undefined | null
+    @Column_("text", {nullable: true})
+    proof!: string | undefined | null
 
     @Column_("timestamp with time zone", {nullable: false})
     expiresAt!: Date

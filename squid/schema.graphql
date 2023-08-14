@@ -273,9 +273,9 @@ type Job @entity {
   result: JobResult
 
   implSpecVersion: Int!
-  input: Bytes
-  output: Bytes
-  proof: Bytes
+  input: String
+  output: String
+  proof: String
 
   # timestamps
   expiresAt: DateTime!
