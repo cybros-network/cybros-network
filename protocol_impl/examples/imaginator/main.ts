@@ -515,7 +515,10 @@ try {
   renderAndExit(Result.Error, "ARWEAVE_UPLOAD_ERROR");
 }
 
-renderAndExit(Result.Success, uploadedMetadataUrl);
+renderAndExit(Result.Success, {
+  metadataUrl: uploadedMetadataUrl,
+  imageUrl: uploadedImageUrl,
+});
 
 // // Currently Deno lacking crypto support that Areweave needed, so just left the code here
 // import Arweave from "npm:arweave";
