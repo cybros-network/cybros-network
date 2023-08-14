@@ -14,8 +14,10 @@ import {encryptMessage, decryptMessage} from "./message_utils.ts"
 import {Akord, Auth} from "npm:@akord/akord-js";
 import {AkordWallet} from "npm:@akord/crypto";
 
+const specVersion = 1;
+
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));
-const isProd = Deno.env.get("DEBUG") !== "1"
+const isProd = Deno.env.get("DEBUG") !== "1";
 const env = loadEnvSync();
 
 enum Result {
@@ -27,7 +29,8 @@ enum Result {
 
 function renderResult(encode: boolean, result: Result, data?: unknown) {
   const output = JSON.stringify({
-    result: result,
+    specVersion,
+    result,
     e2e: false,
     data: data ?? null,
   });
@@ -42,6 +45,7 @@ function renderResultWithE2E(
   data?: unknown
 ) {
   const output = JSON.stringify({
+    specVersion,
     result,
     e2e: true,
     senderPublicKey: u8aToHex(e2eKeyPair.publicKey),
