@@ -435,6 +435,9 @@ processor.run(database, async (ctx) => {
         job.policyId = changes.policyId
         job.refPolicy = (await jobPoliciesManager.get(`${changes.poolId}-${changes.policyId}`))!
       }
+      if (changes.uniqueTrackId) {
+        job.uniqueTrackId = changes.uniqueTrackId
+      }
       if (changes.depositor) {
         job.depositorAddress = changes.depositor
         job.refDepositor = await accountsManager.getOrCreate(changes.depositor)
