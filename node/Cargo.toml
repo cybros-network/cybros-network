@@ -83,12 +83,3 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"primal-runtime/runtime-benchmarks",
 ]
-# Enable features that allow the runtime to be tried and debugged. Name might be subject to change
-# in the near future.
-try-runtime = [
-	"try-runtime-cli/try-runtime",
-	"frame-system/try-runtime",
-	"sp-runtime/try-runtime",
-	"pallet-transaction-payment/try-runtime",
-	"primal-runtime/try-runtime",
-]
