@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "Cybros Network",
-  description: "The Wiki site of Cybros Network",
+  description: "The Wiki site for Cybros Network",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
