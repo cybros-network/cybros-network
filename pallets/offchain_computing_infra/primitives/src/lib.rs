@@ -21,13 +21,12 @@
 #[cfg(feature = "std")]
 use std::fmt;
 
-use frame_support::{
-	traits::{ConstU32, Get},
-	BoundedVec, RuntimeDebug,
-};
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_std::prelude::*;
+use sp_core::{
+	bounded::{BoundedVec, ConstU32, Get},
+	RuntimeDebug,
+};
 
 pub type ImplBuildVersion = u32;
 pub type ImplBuildMagicBytes = BoundedVec<u8, ConstU32<64>>;

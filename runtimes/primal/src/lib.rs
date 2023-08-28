@@ -28,7 +28,7 @@ use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata, RuntimeDebug};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{Block as BlockT, NumberFor, One},
@@ -44,7 +44,6 @@ use frame_support::{
 	construct_runtime,
 	traits::{Contains, InstanceFilter, WithdrawReasons},
 	weights::Weight,
-	RuntimeDebug,
 };
 
 use pallet_grandpa::AuthorityId as GrandpaId;

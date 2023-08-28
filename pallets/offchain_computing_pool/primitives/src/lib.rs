@@ -18,10 +18,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::RuntimeDebug;
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_std::prelude::*;
+use sp_core::RuntimeDebug;
 
 pub use base_primitives::{ApplicableScope, ChainStoredData, ImplSpecVersion};
 
