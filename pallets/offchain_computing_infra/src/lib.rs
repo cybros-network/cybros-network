@@ -51,7 +51,7 @@ macro_rules! log {
 }
 
 use frame_support::{
-	dispatch::{DispatchError, DispatchResult},
+	dispatch::DispatchResult,
 	ensure,
 	traits::{Get, Incrementable, Randomness, UnixTime},
 	transactional,
@@ -60,6 +60,7 @@ use scale_codec::{Decode, Encode};
 use sp_core::{sr25519, H256};
 use sp_io::crypto::sr25519_verify;
 use sp_runtime::{
+	DispatchError,
 	traits::{StaticLookup, Zero},
 	SaturatedConversion, Saturating,
 };
