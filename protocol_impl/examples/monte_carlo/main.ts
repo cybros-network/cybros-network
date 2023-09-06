@@ -2,7 +2,6 @@ import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
 import {loadSync as loadEnvSync} from "https://deno.land/std/dotenv/mod.ts";
 import {decode as decodeBase64} from 'https://deno.land/std/encoding/base64.ts';
-import {crypto, toHashString} from "https://deno.land/std/crypto/mod.ts"
 
 import type {HexString} from "https://deno.land/x/polkadot/util/types.ts";
 import type {Keypair} from "https://deno.land/x/polkadot/util-crypto/types.ts";
@@ -237,13 +236,13 @@ if (enableHr) {
     renderAndExit(Result.Error, "DENOISING_STRENGTH_TOO_LARGE");
   }
 }
-const hrScale = parsedData["hr_fix_steps"] ? Number(parsedData["hr_fix_steps"]) : 2;
+const hrUpscale = parsedData["hr_fix_upscale"] ? Number(parsedData["hr_fix_upscale"]) : 2;
 if (enableHr) {
-  if (parsedData["hr_fix_steps"] && hrScale.toString() !== parsedData["hr_fix_steps"].toString()) {
+  if (parsedData["hr_fix_upscale"] && hrUpscale.toString() !== parsedData["hr_fix_upscale"].toString()) {
     renderAndExit(Result.Error, "HR_SCALE_INVALID");
-  } else if (hrScale < 1) {
+  } else if (hrUpscale < 1) {
     renderAndExit(Result.Error, "HR_SCALE_TOO_SMALL");
-  } else if (hrScale > 4) {
+  } else if (hrUpscale > 4) {
     renderAndExit(Result.Error, "HR_SCALE_TOO_LARGE");
   }
 }
@@ -378,7 +377,7 @@ try {
 
   if (enableHr) {
     Object.assign(requestPayload, {
-      hr_scale: hrScale,
+      hr_scale: hrUpscale,
       hr_upscaler: hrUpscaler,
       hr_second_pass_steps: hrSecondPassSteps,
       denoising_strength: hrDenoisingStrength,
