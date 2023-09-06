@@ -226,7 +226,7 @@ const restoreFaces = parsedData["restore_faces"] ?? false;
 const tiling = parsedData["tiling"] ?? false;
 
 const enableHr = parsedData["hr_fix"] ?? false;
-const hrUpscaler = parsedData["hr_upscaler"] ?? "None";
+const hrUpscaler = parsedData["hr_fix_upscaler_name"] ?? "None";
 const hrDenoisingStrength = parsedData["hr_fix_denoising"] ? Number(parsedData["hr_fix_denoising"]) : 0.7;
 if (enableHr) {
   if (parsedData["hr_fix_denoising"] && hrDenoisingStrength.toString() !== parsedData["hr_fix_denoising"].toString()) {
@@ -337,7 +337,6 @@ try {
 // Call txt2img
 let image: Uint8Array;
 let responsePayload: string;
-let responsePayloadHash: string;
 try {
   const requestPayload: {
     "override_settings": unknown,
@@ -386,6 +385,10 @@ try {
     });
   }
 
+  if (!isProd) {
+    logger.debug(requestPayload)
+  }
+
   const resp = await fetch(`${env.SD_API_BASE}/txt2img`, {
     method: "POST",
     headers: {
@@ -394,7 +397,6 @@ try {
     body: JSON.stringify(requestPayload),
   });
   responsePayload = await resp.text();
-  responsePayloadHash = toHashString(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(responsePayload)));
   const parsedResponsePayload = JSON.parse(responsePayload);
   if (parsedResponsePayload.error) {
     renderAndExit(Result.Error, "SD_API_ERROR_OR_BAD_PROMPT");
