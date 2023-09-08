@@ -24,6 +24,10 @@ You can learn more about "job" from Wikipedia
   - Help to build a computing power supply chain for developers.
 - Easy to interact with other blockchain systems.
 
+## How it works
+
+![How Cybros works](docs/assets/how_cybros_works.png)
+
 ## Concepts
 
 ### Job
