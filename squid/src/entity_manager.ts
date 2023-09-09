@@ -86,18 +86,29 @@ export class EntitiesManager<Entity extends EntityWithId> {
   }
 
   /**
+   * Get entity by ID from local cache.
+   *
+   * @param id
+   */
+  getFromLocalCache(
+    id: string
+  ): Entity | null {
+    return this.entitiesMap.get(id) || null;
+  }
+
+  /**
    * Get entity by ID either from local cache or DB, if it's not existing in
    * local cache ("entitiesMap").
    *
-   * @param id: string
-   * @param relations?: FindOptionsRelations<Entity>
+   * @param id
+   * @param relations
    */
   async get(
     id: string,
     relations?: FindOptionsRelations<Entity>
   ): Promise<Entity | null> {
     if (!this.context) throw new Error('context is not defined');
-    let entity = this.entitiesMap.get(id) || null;
+    let entity = this.getFromLocalCache(id);
 
     if (!entity) {
       const requestParams = {

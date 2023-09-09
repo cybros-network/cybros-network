@@ -4,6 +4,7 @@ import {
   OffchainComputingInfraWorkerDeregisteredEventV100 as WorkerDeregisteredEventV100,
   OffchainComputingInfraWorkerHeartbeatReceivedEventV100 as WorkerHeartbeatReceivedEventV100,
   OffchainComputingInfraWorkerOfflineEventV100 as WorkerOfflineEventV100,
+  OffchainComputingInfraWorkerUnresponsiveEventV100 as WorkerUnresponsiveEventV100,
   OffchainComputingInfraWorkerOnlineEventV100 as WorkerOnlineEventV100,
   OffchainComputingInfraWorkerRegisteredEventV100 as WorkerRegisteredEventV100,
   OffchainComputingInfraWorkerRequestingOfflineEventV100 as WorkerRequestingOfflineEventV100,
@@ -230,6 +231,40 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.events.length,
           kind: WorkerEventKind.Online,
+          blockNumber,
+          blockTime,
+        })
+
+        changeSet.set(id, changes)
+      } else if (event.name == "OffchainComputingInfra.WorkerUnresponsive") {
+        let rec: { worker: string }
+        if (WorkerUnresponsiveEventV100.is(event)) {
+          rec = WorkerUnresponsiveEventV100.decode(event)
+        } else {
+          throw new Error('Unsupported spec')
+        }
+
+        const address = decodeSS58Address(hexToU8a(rec.worker))
+        const id = address
+        const changes: WorkerChanges = changeSet.get(id) || {
+          id,
+          address,
+          createdAt: blockTime,
+          updatedAt: blockTime,
+          registerWorkerCounterChange: 0,
+          onlineWorkerCounterChange: 0,
+          events: []
+        }
+        assert(!changes.deletedAt)
+
+        changes.status = WorkerStatus.Unresponsive
+        changes.updatedAt = blockTime
+
+        changes.onlineWorkerCounterChange -= 1
+        changes.events.push({
+          id: `${id}-${blockNumber}-${event.index}`,
+          sequence: blockNumber * 100 + changes.events.length,
+          kind: WorkerEventKind.Unresponsive,
           blockNumber,
           blockTime,
         })

@@ -287,7 +287,7 @@ processor.run(database, async (ctx) => {
         assert(changes.createdAt)
         worker.createdAt = changes.createdAt
       }
-      if (changes.deletedAt !== undefined) {
+      if (changes.deletedAt) {
         worker.status = WorkerStatus.Deregistered
         worker.deletedAt = changes.deletedAt
       }
@@ -549,10 +549,16 @@ processor.run(database, async (ctx) => {
     const worker = await workersManager.get(changes.worker)
     assert(worker)
     worker.poolsCount += changes.poolWorkerCounterChange
+    workersManager.add(worker)
 
     const pool = await poolsManager.get(changes.poolId.toString())
     assert(pool)
     pool.workersCount += changes.poolWorkerCounterChange
+    if (worker.status === "Online") {
+      pool.onlineWorkersCount += changes.poolWorkerCounterChange
+    }
+
+    poolsManager.add(pool)
   }
   await poolsManager.saveAll()
   await workersManager.saveAll()
@@ -565,7 +571,9 @@ processor.run(database, async (ctx) => {
           .map(changes => changes.id)
       )
     }
-  }).then((workers: Worker[]) => workers.forEach(worker => workersManager.add(worker)))
+  }).then((workers: Worker[]) => workers.forEach(worker => {
+    workersManager.add(worker)
+  }))
   await ctx.store.find(Impl, {
     where: {
       id: In(
@@ -634,7 +642,7 @@ processor.run(database, async (ctx) => {
     }
   }
 
-  // // Save
+  // Save
   await accountsManager.saveAll()
   await implsManager.saveAll()
   await implBuildsManager.saveAll()
