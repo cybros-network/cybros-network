@@ -1,15 +1,15 @@
 import type {Context} from "../processor"
 import {
-  OffchainComputingPoolJobAssignedEvent as JobAssignedEvent,
-  OffchainComputingPoolJobCreatedEvent as JobCreatedEvent,
-  OffchainComputingPoolJobDestroyedEvent as JobDestroyedEvent,
-  OffchainComputingPoolJobReleasedEvent as JobReleasedEvent,
-  OffchainComputingPoolJobResultUpdatedEvent as JobResultUpdatedEvent,
-  OffchainComputingPoolJobStatusUpdatedEvent as JobStatusUpdatedEvent,
+  OffchainComputingPoolJobAssignedEventV100 as JobAssignedEventV100,
+  OffchainComputingPoolJobCreatedEventV100 as JobCreatedEventV100,
+  OffchainComputingPoolJobDestroyedEventV100 as JobDestroyedEventV100,
+  OffchainComputingPoolJobReleasedEventV100 as JobReleasedEventV100,
+  OffchainComputingPoolJobResultUpdatedEventV100 as JobResultUpdatedEventV100,
+  OffchainComputingPoolJobStatusUpdatedEventV100 as JobStatusUpdatedEventV100,
 } from "../types/events"
 import * as v100 from "../types/v100";
 import {JobEventKind, JobResult, JobStatus} from "../model";
-import {decodeSS58Address, u8aToHex, u8aToString} from "../utils"
+import {decodeSS58Address, hexToString, hexToU8a} from "../utils"
 import assert from "assert";
 
 function decodeJobStatus(jobStatus?: v100.JobStatus): JobStatus {
@@ -119,20 +119,19 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
     for (let event of block.events) {
       if (event.name == "OffchainComputingPool.JobCreated") {
-        let e = new JobCreatedEvent(event)
         let rec: {
           poolId: number,
           jobId: number,
-          uniqueTrackId: (number | undefined),
           policyId: number,
-          depositor: Uint8Array,
-          beneficiary: Uint8Array,
+          depositor: string,
+          beneficiary: string,
           implSpecVersion: number,
-          input: (Uint8Array | undefined),
+          input?: string,
+          uniqueTrackId?: number,
           expiresIn: bigint
         }
-        if (e.isV100) {
-          rec = e.asV100
+        if (JobCreatedEventV100.is(event)) {
+          rec = JobCreatedEventV100.decode(event)
         } else {
           throw new Error("Unsupported spec")
         }
@@ -149,8 +148,8 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
         changes.uniqueTrackId = rec.uniqueTrackId
         changes.policyId = rec.policyId
-        changes.depositor = decodeSS58Address(rec.depositor)
-        changes.beneficiary = decodeSS58Address(rec.beneficiary)
+        changes.depositor = decodeSS58Address(hexToU8a(rec.depositor))
+        changes.beneficiary = decodeSS58Address(hexToU8a(rec.beneficiary))
         changes.status = JobStatus.Pending
         changes.implSpecVersion = rec.implSpecVersion
         changes.input = (() => {
@@ -159,10 +158,10 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           }
 
           try {
-            return JSON.parse(u8aToString(rec.input))
+            return JSON.parse(hexToString(rec.input))
           } catch (_e) {}
 
-          return u8aToHex(rec.input)
+          return rec.input
         })()
         changes.expiresAt = new Date(block.header.timestamp + Number(rec.expiresIn) * 1000)
 
@@ -179,16 +178,15 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingPool.JobDestroyed") {
-        let e = new JobDestroyedEvent(event)
         let rec: {
           poolId: number,
           jobId: number,
-          uniqueTrackId: (number | undefined),
-          destroyer: Uint8Array,
+          uniqueTrackId?: number,
+          destroyer: string,
           force: boolean
         }
-        if (e.isV100) {
-          rec = e.asV100
+        if (JobDestroyedEventV100.is(event)) {
+          rec = JobDestroyedEventV100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -205,7 +203,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         assert(!changes.deletedAt)
 
         changes.uniqueTrackId = rec.uniqueTrackId
-        changes.destroyer = decodeSS58Address(rec.destroyer)
+        changes.destroyer = decodeSS58Address(hexToU8a(rec.destroyer))
         changes.updatedAt = blockTime
         changes.deletedAt = blockTime
 
@@ -220,10 +218,9 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingPool.JobAssigned") {
-        let e = new JobAssignedEvent(event)
-        let rec: { poolId: number, jobId: number, assignee: Uint8Array }
-        if (e.isV100) {
-          rec = e.asV100
+        let rec: { poolId: number, jobId: number, assignee: string }
+        if (JobAssignedEventV100.is(event)) {
+          rec = JobAssignedEventV100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -239,7 +236,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         }
         assert(!changes.deletedAt)
 
-        changes.assignee = decodeSS58Address(rec.assignee)
+        changes.assignee = decodeSS58Address(hexToU8a(rec.assignee))
         changes.assignedAt = blockTime
         changes.updatedAt = blockTime
 
@@ -254,10 +251,9 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingPool.JobReleased") {
-        let e = new JobReleasedEvent(event)
         let rec: { poolId: number, jobId: number }
-        if (e.isV100) {
-          rec = e.asV100
+        if (JobReleasedEventV100.is(event)) {
+          rec = JobReleasedEventV100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -287,10 +283,9 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingPool.JobStatusUpdated") {
-        let e = new JobStatusUpdatedEvent(event)
         let rec: { poolId: number, jobId: number, status: v100.JobStatus }
-        if (e.isV100) {
-          rec = e.asV100
+        if (JobStatusUpdatedEventV100.is(event)) {
+          rec = JobStatusUpdatedEventV100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -326,16 +321,15 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
 
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingPool.JobResultUpdated") {
-        let e = new JobResultUpdatedEvent(event)
         let rec: {
           poolId: number,
           jobId: number,
           result: v100.JobResult,
-          output: (Uint8Array | undefined),
-          proof: (Uint8Array | undefined)
+          output?: string,
+          proof?: string
         }
-        if (e.isV100) {
-          rec = e.asV100
+        if (JobResultUpdatedEventV100.is(event)) {
+          rec = JobResultUpdatedEventV100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -358,10 +352,10 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           }
 
           try {
-            return JSON.parse(u8aToString(rec.output))
+            return JSON.parse(hexToString(rec.output))
           } catch (_e) {}
 
-          return u8aToHex(rec.output)
+          return rec.output
         })()
         changes.proof = (() => {
           if (rec.proof === undefined) {
@@ -369,10 +363,10 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           }
 
           try {
-            return JSON.parse(u8aToString(rec.proof))
+            return JSON.parse(hexToString(rec.proof))
           } catch (_e) {}
 
-          return u8aToHex(rec.proof)
+          return rec.proof
         })()
         changes.updatedAt = blockTime
 

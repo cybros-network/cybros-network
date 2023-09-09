@@ -1,51 +1,83 @@
-import type {Result, Option} from './support'
+import {sts, Result, Option, Bytes} from './support'
 
-export type ImplBuildStatus = ImplBuildStatus_Released | ImplBuildStatus_Deprecated | ImplBuildStatus_Retired
+export const JobStatus: sts.Type<JobStatus> = sts.closedEnum(() => {
+    return  {
+        Discarded: sts.unit(),
+        Pending: sts.unit(),
+        Processed: sts.unit(),
+        Processing: sts.unit(),
+    }
+})
 
-export interface ImplBuildStatus_Released {
-    __kind: 'Released'
+export type JobStatus = JobStatus_Discarded | JobStatus_Pending | JobStatus_Processed | JobStatus_Processing
+
+export interface JobStatus_Discarded {
+    __kind: 'Discarded'
 }
 
-export interface ImplBuildStatus_Deprecated {
-    __kind: 'Deprecated'
+export interface JobStatus_Pending {
+    __kind: 'Pending'
 }
 
-export interface ImplBuildStatus_Retired {
-    __kind: 'Retired'
+export interface JobStatus_Processed {
+    __kind: 'Processed'
 }
 
-export type ApplicableScope = ApplicableScope_Owner | ApplicableScope_Public
-
-export interface ApplicableScope_Owner {
-    __kind: 'Owner'
+export interface JobStatus_Processing {
+    __kind: 'Processing'
 }
 
-export interface ApplicableScope_Public {
-    __kind: 'Public'
+export const JobResult: sts.Type<JobResult> = sts.closedEnum(() => {
+    return  {
+        Error: sts.unit(),
+        Fail: sts.unit(),
+        Panic: sts.unit(),
+        Success: sts.unit(),
+    }
+})
+
+export type JobResult = JobResult_Error | JobResult_Fail | JobResult_Panic | JobResult_Success
+
+export interface JobResult_Error {
+    __kind: 'Error'
 }
 
-export type AttestationMethod = AttestationMethod_OptOut
-
-export interface AttestationMethod_OptOut {
-    __kind: 'OptOut'
+export interface JobResult_Fail {
+    __kind: 'Fail'
 }
 
-export type OfflineReason = OfflineReason_Graceful | OfflineReason_Forced | OfflineReason_Unresponsive | OfflineReason_AttestationExpired | OfflineReason_ImplBuildRetired | OfflineReason_InsufficientDepositFunds | OfflineReason_Other
+export interface JobResult_Panic {
+    __kind: 'Panic'
+}
 
-export interface OfflineReason_Graceful {
-    __kind: 'Graceful'
+export interface JobResult_Success {
+    __kind: 'Success'
+}
+
+export const OfflineReason: sts.Type<OfflineReason> = sts.closedEnum(() => {
+    return  {
+        AttestationExpired: sts.unit(),
+        Forced: sts.unit(),
+        Graceful: sts.unit(),
+        ImplBuildRetired: sts.unit(),
+        InsufficientDepositFunds: sts.unit(),
+        Other: sts.unit(),
+        Unresponsive: sts.unit(),
+    }
+})
+
+export type OfflineReason = OfflineReason_AttestationExpired | OfflineReason_Forced | OfflineReason_Graceful | OfflineReason_ImplBuildRetired | OfflineReason_InsufficientDepositFunds | OfflineReason_Other | OfflineReason_Unresponsive
+
+export interface OfflineReason_AttestationExpired {
+    __kind: 'AttestationExpired'
 }
 
 export interface OfflineReason_Forced {
     __kind: 'Forced'
 }
 
-export interface OfflineReason_Unresponsive {
-    __kind: 'Unresponsive'
-}
-
-export interface OfflineReason_AttestationExpired {
-    __kind: 'AttestationExpired'
+export interface OfflineReason_Graceful {
+    __kind: 'Graceful'
 }
 
 export interface OfflineReason_ImplBuildRetired {
@@ -60,38 +92,57 @@ export interface OfflineReason_Other {
     __kind: 'Other'
 }
 
-export type JobResult = JobResult_Success | JobResult_Fail | JobResult_Error | JobResult_Panic
-
-export interface JobResult_Success {
-    __kind: 'Success'
+export interface OfflineReason_Unresponsive {
+    __kind: 'Unresponsive'
 }
 
-export interface JobResult_Fail {
-    __kind: 'Fail'
+export const AttestationMethod: sts.Type<AttestationMethod> = sts.closedEnum(() => {
+    return  {
+        OptOut: sts.unit(),
+    }
+})
+
+export type AttestationMethod = AttestationMethod_OptOut
+
+export interface AttestationMethod_OptOut {
+    __kind: 'OptOut'
 }
 
-export interface JobResult_Error {
-    __kind: 'Error'
+export const ApplicableScope: sts.Type<ApplicableScope> = sts.closedEnum(() => {
+    return  {
+        Owner: sts.unit(),
+        Public: sts.unit(),
+    }
+})
+
+export type ApplicableScope = ApplicableScope_Owner | ApplicableScope_Public
+
+export interface ApplicableScope_Owner {
+    __kind: 'Owner'
 }
 
-export interface JobResult_Panic {
-    __kind: 'Panic'
+export interface ApplicableScope_Public {
+    __kind: 'Public'
 }
 
-export type JobStatus = JobStatus_Pending | JobStatus_Processing | JobStatus_Processed | JobStatus_Discarded
+export const ImplBuildStatus: sts.Type<ImplBuildStatus> = sts.closedEnum(() => {
+    return  {
+        Deprecated: sts.unit(),
+        Released: sts.unit(),
+        Retired: sts.unit(),
+    }
+})
 
-export interface JobStatus_Pending {
-    __kind: 'Pending'
+export type ImplBuildStatus = ImplBuildStatus_Deprecated | ImplBuildStatus_Released | ImplBuildStatus_Retired
+
+export interface ImplBuildStatus_Deprecated {
+    __kind: 'Deprecated'
 }
 
-export interface JobStatus_Processing {
-    __kind: 'Processing'
+export interface ImplBuildStatus_Released {
+    __kind: 'Released'
 }
 
-export interface JobStatus_Processed {
-    __kind: 'Processed'
-}
-
-export interface JobStatus_Discarded {
-    __kind: 'Discarded'
+export interface ImplBuildStatus_Retired {
+    __kind: 'Retired'
 }

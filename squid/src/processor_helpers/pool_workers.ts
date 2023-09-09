@@ -1,9 +1,9 @@
 import type {Context} from "../processor"
 import {
-  OffchainComputingPoolWorkerSubscribedEvent as WorkerSubscribedEvent,
-  OffchainComputingPoolWorkerUnsubscribedEvent as WorkerUnsubscribedEvent,
+  OffchainComputingPoolWorkerSubscribedEventV100 as WorkerSubscribedEventV100,
+  OffchainComputingPoolWorkerUnsubscribedEventV100 as WorkerUnsubscribedEventV100,
 } from "../types/events"
-import {decodeSS58Address} from "../utils"
+import {decodeSS58Address, hexToU8a} from "../utils"
 import {WorkerEventKind} from "../model";
 import assert from "assert";
 
@@ -42,15 +42,14 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
 
     for (let event of block.events) {
       if (event.name == "OffchainComputingPool.WorkerSubscribed") {
-        let e = new WorkerSubscribedEvent(event)
-        let rec: { worker: Uint8Array, poolId: number }
-        if (e.isV100) {
-          rec = e.asV100
+        let rec: { worker: string, poolId: number }
+        if (WorkerSubscribedEventV100.is(event)) {
+          rec = WorkerSubscribedEventV100.decode(event)
         } else {
           throw new Error("Unsupported spec")
         }
 
-        const worker = decodeSS58Address(rec.worker)
+        const worker = decodeSS58Address(hexToU8a(rec.worker))
         const id = `${rec.poolId}-${worker}`
         const changes: PoolWorkerChanges = changeSet.get(id) || {
           id,
@@ -76,15 +75,14 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
 
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingPool.WorkerUnsubscribed") {
-        let e = new WorkerUnsubscribedEvent(event)
-        let rec: { worker: Uint8Array, poolId: number }
-        if (e.isV100) {
-          rec = e.asV100
+        let rec: { worker: string, poolId: number }
+        if (WorkerUnsubscribedEventV100.is(event)) {
+          rec = WorkerUnsubscribedEventV100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
 
-        const worker = decodeSS58Address(rec.worker)
+        const worker = decodeSS58Address(hexToU8a(rec.worker))
         const id = `${rec.poolId}-${worker}`
         const changes: PoolWorkerChanges = changeSet.get(id) || {
           id,

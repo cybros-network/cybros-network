@@ -3,8 +3,8 @@ FROM docker.io/library/node:lts-alpine
 # Prevent problems on MacOS Apple Silicon chip
 RUN apk add --no-cache python3 make g++ git
 
-ARG GIT_REPO='https://github.com/paritytech/polkadot-testnet-faucet.git'
-ARG GIT_TAG='main'
+ARG GIT_REPO="https://github.com/paritytech/polkadot-testnet-faucet.git"
+ARG GIT_TAG="v3.1.4"
 RUN git clone --depth 1 --recurse-submodules --shallow-submodules -j 8 -b ${GIT_TAG} ${GIT_REPO} /backend
 
 WORKDIR /backend
@@ -22,4 +22,4 @@ ENV SMF_BACKEND_FAUCET_ACCOUNT_MNEMONIC="BackendFaucetAccountMnemonicNotSet"
 ENV SMF_BACKEND_DRIP_AMOUNT="100"
 ENV SMF_BACKEND_FAUCET_BALANCE_CAP="10000"
 
-CMD yarn start:backend
+CMD yarn migrations:run && yarn start

@@ -1,8 +1,8 @@
 import type {Context} from "../processor"
 import {
-  OffchainComputingPoolJobPolicyCreatedEvent as JobPolicyCreatedEvent,
-  OffchainComputingPoolJobPolicyDestroyedEvent as JobPolicyDestroyedEvent,
-  OffchainComputingPoolJobPolicyEnablementUpdatedEvent as JobPolicyEnablementUpdatedEvent,
+  OffchainComputingPoolJobPolicyCreatedEventV100 as JobPolicyCreatedEventV100,
+  OffchainComputingPoolJobPolicyDestroyedEventV100 as JobPolicyDestroyedEventV100,
+  OffchainComputingPoolJobPolicyEnablementUpdatedEventV100 as JobPolicyEnablementUpdatedEventV100,
 } from "../types/events"
 import * as v100 from "../types/v100"
 import {ApplicableScope} from "../model";
@@ -48,16 +48,15 @@ export function preprocessJobPoliciesEvents(ctx: Context): Map<string, JobPolicy
 
     for (let event of block.events) {
       if (event.name == "OffchainComputingPool.JobPolicyCreated") {
-        let e = new JobPolicyCreatedEvent(event)
         let rec: {
           poolId: number,
           policyId: number,
           applicableScope: v100.ApplicableScope,
-          startBlock: (number | undefined),
-          endBlock: (number | undefined)
+          startBlock?: number,
+          endBlock?: number
         }
-        if (e.isV100) {
-          rec = e.asV100
+        if (JobPolicyCreatedEventV100.is(event)) {
+          rec = JobPolicyCreatedEventV100.decode(event)
         } else {
           throw new Error("Unsupported spec")
         }
@@ -81,10 +80,9 @@ export function preprocessJobPoliciesEvents(ctx: Context): Map<string, JobPolicy
 
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingPool.JobPolicyDestroyed") {
-        let e = new JobPolicyDestroyedEvent(event)
         let rec: { poolId: number, policyId: number }
-        if (e.isV100) {
-          rec = e.asV100
+        if (JobPolicyDestroyedEventV100.is(event)) {
+          rec = JobPolicyDestroyedEventV100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -104,10 +102,9 @@ export function preprocessJobPoliciesEvents(ctx: Context): Map<string, JobPolicy
 
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingPool.JobPolicyEnablementUpdated") {
-        let e = new JobPolicyEnablementUpdatedEvent(event)
         let rec: { poolId: number, policyId: number, enabled: boolean }
-        if (e.isV100) {
-          rec = e.asV100
+        if (JobPolicyEnablementUpdatedEventV100.is(event)) {
+          rec = JobPolicyEnablementUpdatedEventV100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
