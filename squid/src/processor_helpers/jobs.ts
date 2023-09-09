@@ -82,7 +82,7 @@ interface JobChanges {
   readonly id: string
   readonly jobId: number
 
-  uniqueTrackId?: number
+  uniqueTrackId?: string
   poolId?: number
   policyId?: number
   depositor?: string
@@ -127,7 +127,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           beneficiary: string,
           implSpecVersion: number,
           input?: string,
-          uniqueTrackId?: number,
+          uniqueTrackId?: string,
           expiresIn: bigint
         }
         if (JobCreatedEventV100.is(event)) {
@@ -181,7 +181,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         let rec: {
           poolId: number,
           jobId: number,
-          uniqueTrackId?: number,
+          uniqueTrackId?: string,
           destroyer: string,
           force: boolean
         }

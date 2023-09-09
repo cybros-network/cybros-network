@@ -250,7 +250,7 @@ type JobPolicy @entity {
 type Job @entity {
   id: ID!
   jobId: Int! @index
-  uniqueTrackId: Int @index
+  uniqueTrackId: String @index
 
   refPool: Pool! @index
   poolId: Int!

@@ -777,7 +777,7 @@ pub mod pallet {
 				Error::<T>::TasksPerPoolLimitExceeded
 			);
 
-			if let Some(unique_track_id) = unique_track_id {
+			if let Some(unique_track_id) = unique_track_id.clone() {
 				ensure!(
 					!IndexedJobs::<T>::contains_key(&pool_id, unique_track_id),
 					Error::<T>::UniqueTrackIdNotUnique
@@ -846,7 +846,7 @@ pub mod pallet {
 				Error::<T>::TasksPerPoolLimitExceeded
 			);
 
-			if let Some(unique_track_id) = unique_track_id {
+			if let Some(unique_track_id) = unique_track_id.clone() {
 				ensure!(
 					!IndexedJobs::<T>::contains_key(&pool_id, unique_track_id),
 					Error::<T>::UniqueTrackIdNotUnique

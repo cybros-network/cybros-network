@@ -21,8 +21,8 @@ export class Job {
     jobId!: number
 
     @Index_()
-    @Column_("int4", {nullable: true})
-    uniqueTrackId!: number | undefined | null
+    @Column_("text", {nullable: true})
+    uniqueTrackId!: string | undefined | null
 
     @Index_()
     @ManyToOne_(() => Pool, {nullable: true})

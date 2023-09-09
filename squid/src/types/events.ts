@@ -158,7 +158,7 @@ export const OffchainComputingPoolJobCreatedEventV100 = new EventType(
     sts.struct({
         poolId: sts.number(),
         jobId: sts.number(),
-        uniqueTrackId: sts.option(() => sts.number()),
+        uniqueTrackId: sts.option(() => sts.bytes()),
         policyId: sts.number(),
         depositor: sts.bytes(),
         beneficiary: sts.bytes(),
@@ -172,7 +172,7 @@ export const OffchainComputingPoolJobDestroyedEventV100 = new EventType(
     sts.struct({
         poolId: sts.number(),
         jobId: sts.number(),
-        uniqueTrackId: sts.option(() => sts.number()),
+        uniqueTrackId: sts.option(() => sts.bytes()),
         destroyer: sts.bytes(),
         force: sts.boolean(),
     })

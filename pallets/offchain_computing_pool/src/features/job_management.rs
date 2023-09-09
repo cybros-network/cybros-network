@@ -66,7 +66,7 @@ impl<T: Config> Pallet<T> {
 		let expires_at = now + expires_in;
 		let job = JobInfo::<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>> {
 			id: job_id.clone(),
-			unique_track_id,
+			unique_track_id: unique_track_id.clone(),
 			policy_id: policy_info.id.clone(),
 			depositor: depositor.clone(),
 			deposit: job_deposit,
@@ -82,7 +82,7 @@ impl<T: Config> Pallet<T> {
 			ended_at: None,
 		};
 		Jobs::<T>::insert(&pool_info.id, &job_id, job);
-		if let Some(unique_track_id) = unique_track_id {
+		if let Some(unique_track_id) = unique_track_id.clone() {
 			IndexedJobs::<T>::insert(&pool_info.id, unique_track_id, job_id.clone())
 		}
 
@@ -201,7 +201,7 @@ impl<T: Config> Pallet<T> {
 			)?;
 		}
 
-		if let Some(unique_track_id) = unique_track_id {
+		if let Some(unique_track_id) = unique_track_id.clone() {
 			IndexedJobs::<T>::remove(&pool_id, unique_track_id);
 		}
 		Jobs::<T>::remove(&pool_id, &job_id);

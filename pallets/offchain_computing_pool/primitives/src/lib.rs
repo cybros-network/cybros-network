@@ -20,11 +20,11 @@
 
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_core::RuntimeDebug;
+use sp_core::{bounded::BoundedVec, ConstU32, RuntimeDebug};
 
 pub use base_primitives::{ApplicableScope, ChainStoredData, ImplSpecVersion};
 
-pub type UniqueTrackId = u32;
+pub type UniqueTrackId = BoundedVec<u8, ConstU32<16>>;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct JobPolicy<PoolId, BlockNumber> {
