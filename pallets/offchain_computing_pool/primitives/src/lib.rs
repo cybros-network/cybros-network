@@ -22,9 +22,20 @@ use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::{bounded::BoundedVec, ConstU32, RuntimeDebug};
 
-pub use base_primitives::{ApplicableScope, ChainStoredData, ImplSpecVersion};
+pub use base_primitives::*;
 
 pub type UniqueTrackId = BoundedVec<u8, ConstU32<16>>;
+
+#[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
+pub enum ApplicableScope {
+	/// Only the owner could use the implementations.
+	#[default]
+	Owner,
+	/// Anyone could use.
+	Public,
+	/// Require the user in the allow list.
+	AllowList,
+}
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct JobPolicy<PoolId, BlockNumber> {
@@ -47,6 +58,12 @@ pub struct JobPolicy<PoolId, BlockNumber> {
 // for each job, pay to worker or the owner TODO: WorkerPolicy: How to slashing, max processing
 // duration, and etc.
 
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum JobScheduler {
+	/// The pool need schedule jobs manually
+	External,
+}
+
 /// Information about a pool.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct PoolInfo<PoolId, AccountId, Balance, ImplId> {
@@ -59,6 +76,8 @@ pub struct PoolInfo<PoolId, AccountId, Balance, ImplId> {
 	pub owner_deposit: Balance,
 	/// The implementation id
 	pub impl_id: ImplId,
+	/// How to schedule jobs
+	pub job_scheduler: JobScheduler,
 	/// Allow to create new job
 	pub create_job_enabled: bool,
 	/// Auto destroy processed job

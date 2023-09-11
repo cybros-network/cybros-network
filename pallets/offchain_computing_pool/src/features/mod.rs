@@ -18,6 +18,6 @@
 
 pub mod job_lifecycle;
 pub mod job_management;
-pub mod job_policies_management;
+pub mod job_policy_management;
 pub mod pool_management;
 pub mod worker_management;

@@ -40,7 +40,6 @@ impl<T: Config> Pallet<T> {
 		Self::ensure_worker(&worker, &worker_info)?;
 
 		let current_status = worker_info.status;
-
 		match current_status {
 			WorkerStatus::Registered | WorkerStatus::Unresponsive | WorkerStatus::Offline => {},
 			_ => return Err(Error::<T>::WrongStatus.into()),

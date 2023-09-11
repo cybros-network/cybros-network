@@ -1,13 +1,12 @@
 import type {Context} from "../processor"
 import {
-  OffchainComputingInfraImplDeploymentScopeUpdatedEventV100 as ImplDeploymentScopeUpdatedEventV100,
   OffchainComputingInfraImplDeregisteredEventV100 as ImplDeregisteredEventV100,
   OffchainComputingInfraImplMetadataRemovedEventV100 as ImplMetadataRemovedEventV100,
   OffchainComputingInfraImplMetadataUpdatedEventV100 as ImplMetadataUpdatedEventV100,
   OffchainComputingInfraImplRegisteredEventV100 as ImplRegisteredEventV100,
 } from "../types/events"
 import * as v100 from "../types/v100"
-import {ApplicableScope, AttestationMethod} from "../model"
+import {AttestationMethod} from "../model"
 import {decodeSS58Address, hexToU8a} from "../utils"
 import assert from "assert";
 
@@ -25,22 +24,6 @@ function decodeAttestationMethod(attestationMethod?: v100.AttestationMethod): At
   }
 }
 
-function decodeScope(scope?: v100.ApplicableScope): ApplicableScope {
-  if (!scope) {
-    throw new Error("Unexpected undefined scope")
-  }
-
-  const kind = scope.__kind
-  switch (kind) {
-    case "Owner":
-      return ApplicableScope.Owner
-    case "Public":
-      return ApplicableScope.Public
-    default:
-      throw new Error(`Unrecognized scope ${kind}`)
-  }
-}
-
 interface ImplChanges {
   readonly id: string
   readonly implId: number
@@ -48,7 +31,6 @@ interface ImplChanges {
   owner?: string
 
   attestationMethod?: AttestationMethod
-  deploymentScope?: ApplicableScope
   metadata?: Uint8Array | null
 
   createdAt: Date
@@ -69,7 +51,6 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
           implId: number,
           owner: string,
           attestationMethod: v100.AttestationMethod,
-          deploymentScope: v100.ApplicableScope
         }
         if (ImplRegisteredEventV100.is(event)) {
           rec = ImplRegisteredEventV100.decode(event)
@@ -87,7 +68,6 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
 
         changes.owner = decodeSS58Address(hexToU8a(rec.owner))
         changes.attestationMethod = decodeAttestationMethod(rec.attestationMethod)
-        changes.deploymentScope = decodeScope(rec.deploymentScope)
 
         changes.deletedAt = null
         changes.updatedAt = blockTime
@@ -110,30 +90,6 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
         }
         changes.updatedAt = blockTime
         changes.deletedAt = blockTime
-
-        changeSet.set(id, changes)
-      }
-      if (event.name == "OffchainComputingInfra.ImplDeploymentScopeUpdated") {
-        let rec: {
-          implId: number, scope: v100.ApplicableScope
-        }
-        if (ImplDeploymentScopeUpdatedEventV100.is(event)) {
-          rec = ImplDeploymentScopeUpdatedEventV100.decode(event)
-        } else {
-          throw new Error('Unsupported spec')
-        }
-
-        const id = rec.implId.toString()
-        let changes: ImplChanges = changeSet.get(id) || {
-          id,
-          implId: rec.implId,
-          createdAt: blockTime,
-          updatedAt: blockTime
-        }
-        assert(!changes.deletedAt)
-
-        changes.deploymentScope = decodeScope(rec.scope)
-        changes.updatedAt = blockTime
 
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingInfra.ImplMetadataUpdated") {

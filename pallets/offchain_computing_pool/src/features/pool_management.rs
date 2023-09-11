@@ -18,7 +18,6 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
-use pallet_offchain_computing_infra::ApplicableScope;
 use sp_runtime::{traits::Zero, Saturating};
 use sp_std::cmp::Ordering;
 
@@ -27,22 +26,14 @@ impl<T: Config> Pallet<T> {
 		owner: T::AccountId,
 		pool_id: T::PoolId,
 		impl_id: T::ImplId,
+		job_scheduler: JobScheduler,
 		create_job_enabled: bool,
 		auto_destroy_processed_job_enabled: bool,
 	) -> DispatchResult {
 		ensure!(!Pools::<T>::contains_key(&pool_id), Error::<T>::PoolIdTaken);
-
-		let impl_info = PalletInfra::<T>::impl_info(&impl_id).ok_or(Error::<T>::ImplNotFound)?;
 		ensure!(
-			match impl_info.deployment_scope {
-				ApplicableScope::Owner => {
-					impl_info.owner == owner
-				},
-				ApplicableScope::Public => {
-					true
-				},
-			},
-			Error::<T>::NoPermission
+			PalletInfra::<T>::impl_exists(&impl_id),
+			Error::<T>::ImplNotFound
 		);
 
 		<T as Config>::Currency::hold(
@@ -56,6 +47,7 @@ impl<T: Config> Pallet<T> {
 			owner: owner.clone(),
 			owner_deposit: T::PoolCreationDeposit::get(),
 			impl_id: impl_id.clone(),
+			job_scheduler: job_scheduler.clone(),
 			create_job_enabled,
 			auto_destroy_processed_job_enabled,
 			min_impl_spec_version: 1,
@@ -72,6 +64,7 @@ impl<T: Config> Pallet<T> {
 			owner,
 			pool_id,
 			impl_id,
+			job_scheduler,
 			create_job_enabled,
 			auto_destroy_processed_job_enabled,
 		});
@@ -175,6 +168,7 @@ impl<T: Config> Pallet<T> {
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		min_impl_spec_version: ImplSpecVersion,
 		max_impl_spec_version: ImplSpecVersion,
+		job_scheduler: JobScheduler,
 		create_job_enabled: bool,
 		auto_destroy_processed_job_enabled: bool,
 	) -> DispatchResult {
@@ -186,6 +180,7 @@ impl<T: Config> Pallet<T> {
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.min_impl_spec_version = min_impl_spec_version;
 		new_pool_info.max_impl_spec_version = max_impl_spec_version;
+		new_pool_info.job_scheduler = job_scheduler.clone();
 		new_pool_info.create_job_enabled = create_job_enabled;
 		new_pool_info.auto_destroy_processed_job_enabled = auto_destroy_processed_job_enabled;
 
@@ -195,6 +190,7 @@ impl<T: Config> Pallet<T> {
 			pool_id: pool_info.id,
 			min_impl_spec_version,
 			max_impl_spec_version,
+			job_scheduler,
 			create_job_enabled,
 			auto_destroy_processed_job_enabled,
 		});

@@ -4,10 +4,15 @@
 enum ApplicableScope {
   Owner
   Public
+  AllowList
 }
 
 enum AttestationMethod {
   OptOut
+}
+
+enum JobScheduler {
+  External
 }
 
 enum ImplBuildStatus {
@@ -71,7 +76,6 @@ type Impl @entity {
   ownerAddress: String!
 
   attestationMethod: AttestationMethod!
-  deploymentScope: ApplicableScope!
   metadata: Bytes
 
   # stats
@@ -192,6 +196,7 @@ type Pool @entity {
   refImpl: Impl! @index
   implId: Int!
 
+  jobScheduler: JobScheduler!
   createJobEnabled: Boolean!
   autoDestroyProcessedJobEnabled: Boolean!
   metadata: Bytes

@@ -1,5 +1,17 @@
 import {sts, Result, Option, Bytes} from './support'
 
+export const JobScheduler: sts.Type<JobScheduler> = sts.closedEnum(() => {
+    return  {
+        External: sts.unit(),
+    }
+})
+
+export type JobScheduler = JobScheduler_External
+
+export interface JobScheduler_External {
+    __kind: 'External'
+}
+
 export const JobStatus: sts.Type<JobStatus> = sts.closedEnum(() => {
     return  {
         Discarded: sts.unit(),
@@ -54,6 +66,28 @@ export interface JobResult_Success {
     __kind: 'Success'
 }
 
+export const ApplicableScope: sts.Type<ApplicableScope> = sts.closedEnum(() => {
+    return  {
+        AllowList: sts.unit(),
+        Owner: sts.unit(),
+        Public: sts.unit(),
+    }
+})
+
+export type ApplicableScope = ApplicableScope_AllowList | ApplicableScope_Owner | ApplicableScope_Public
+
+export interface ApplicableScope_AllowList {
+    __kind: 'AllowList'
+}
+
+export interface ApplicableScope_Owner {
+    __kind: 'Owner'
+}
+
+export interface ApplicableScope_Public {
+    __kind: 'Public'
+}
+
 export const OfflineReason: sts.Type<OfflineReason> = sts.closedEnum(() => {
     return  {
         AttestationExpired: sts.unit(),
@@ -106,23 +140,6 @@ export type AttestationMethod = AttestationMethod_OptOut
 
 export interface AttestationMethod_OptOut {
     __kind: 'OptOut'
-}
-
-export const ApplicableScope: sts.Type<ApplicableScope> = sts.closedEnum(() => {
-    return  {
-        Owner: sts.unit(),
-        Public: sts.unit(),
-    }
-})
-
-export type ApplicableScope = ApplicableScope_Owner | ApplicableScope_Public
-
-export interface ApplicableScope_Owner {
-    __kind: 'Owner'
-}
-
-export interface ApplicableScope_Public {
-    __kind: 'Public'
 }
 
 export const ImplBuildStatus: sts.Type<ImplBuildStatus> = sts.closedEnum(() => {

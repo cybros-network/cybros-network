@@ -61,11 +61,6 @@ impl<T: Config> Pallet<T> {
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		policy_id: T::PolicyId,
 	) -> DispatchResult {
-		ensure!(
-			JobPolicies::<T>::contains_key(&pool_info.id, &policy_id),
-			Error::<T>::JobPolicyNotFound
-		);
-
 		let policy = JobPolicies::<T>::get(&pool_info.id, &policy_id)
 			.ok_or(Error::<T>::JobPolicyNotFound)?;
 		ensure!(policy.jobs_count == 0, Error::<T>::JobPolicyStillInUse);
@@ -85,17 +80,53 @@ impl<T: Config> Pallet<T> {
 		policy_id: T::PolicyId,
 		enabled: bool,
 	) -> DispatchResult {
-		ensure!(
-			JobPolicies::<T>::contains_key(&pool_id, &policy_id),
-			Error::<T>::JobPolicyNotFound
-		);
-
 		let mut policy =
 			JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
 		policy.enabled = enabled;
 		JobPolicies::<T>::insert(&pool_id, &policy_id, policy.clone());
 
 		Self::deposit_event(Event::JobPolicyEnablementUpdated { pool_id, policy_id, enabled });
+		Ok(())
+	}
+
+	pub(crate) fn do_authorize_account(
+		pool_id: T::PoolId,
+		policy_id: T::PolicyId,
+		account: T::AccountId,
+	) -> DispatchResult {
+		let policy =
+			JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
+		ensure!(
+			policy.applicable_scope == ApplicableScope::AllowList,
+			Error::<T>::JobPolicyScopeNotAllowList
+		);
+
+		JobPolicyAuthorizedAccounts::<T>::insert(
+			(pool_id.clone(), policy_id.clone(), account.clone()),
+			(),
+		);
+
+		Self::deposit_event(Event::AccountAuthorized { pool_id, policy_id, account });
+		Ok(())
+	}
+
+	pub(crate) fn do_revoke_account(
+		pool_id: T::PoolId,
+		policy_id: T::PolicyId,
+		account: T::AccountId,
+	) -> DispatchResult {
+		let policy =
+			JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
+		ensure!(
+			policy.applicable_scope == ApplicableScope::AllowList,
+			Error::<T>::JobPolicyScopeNotAllowList
+		);
+
+		JobPolicyAuthorizedAccounts::<T>::remove(
+			(pool_id.clone(), policy_id.clone(), account.clone())
+		);
+
+		Self::deposit_event(Event::AccountRevoked { pool_id, policy_id, account });
 		Ok(())
 	}
 }

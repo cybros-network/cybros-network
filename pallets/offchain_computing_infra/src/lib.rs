@@ -327,14 +327,9 @@ mod pallet {
 			impl_id: T::ImplId,
 			owner: T::AccountId,
 			attestation_method: AttestationMethod,
-			deployment_scope: ApplicableScope,
 		},
 		ImplDeregistered {
 			impl_id: T::ImplId,
-		},
-		ImplDeploymentScopeUpdated {
-			impl_id: T::ImplId,
-			scope: ApplicableScope,
 		},
 		ImplMetadataUpdated {
 			impl_id: T::ImplId,
@@ -660,7 +655,6 @@ mod pallet {
 		pub fn register_impl(
 			origin: OriginFor<T>,
 			attestation_method: AttestationMethod,
-			deployment_permission: ApplicableScope,
 		) -> DispatchResult {
 			let owner = T::RegisterImplOrigin::ensure_origin(origin)?;
 			let impl_id = NextImplId::<T>::get().unwrap_or(101u32.into());
@@ -669,7 +663,6 @@ mod pallet {
 				impl_id.clone(),
 				owner,
 				attestation_method,
-				deployment_permission,
 			)?;
 
 			let next_impl_id = impl_id.increment();
@@ -712,22 +705,6 @@ mod pallet {
 		#[transactional]
 		#[pallet::call_index(14)]
 		#[pallet::weight({0})]
-		pub fn update_impl_deployment_permission(
-			origin: OriginFor<T>,
-			impl_id: T::ImplId,
-			deployment_permission: ApplicableScope,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			let impl_info = Impls::<T>::get(impl_id).ok_or(Error::<T>::ImplNotFound)?;
-			Self::ensure_impl_owner(&who, &impl_info)?;
-
-			Self::do_update_impl_deployment_permission(impl_info, deployment_permission)
-		}
-
-		#[transactional]
-		#[pallet::call_index(15)]
-		#[pallet::weight({0})]
 		pub fn register_impl_build(
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
@@ -743,7 +720,7 @@ mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(16)]
+		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
 		pub fn deregister_impl_build(
 			origin: OriginFor<T>,
@@ -759,7 +736,7 @@ mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(17)]
+		#[pallet::call_index(16)]
 		#[pallet::weight({0})]
 		pub fn update_impl_build_status(
 			origin: OriginFor<T>,

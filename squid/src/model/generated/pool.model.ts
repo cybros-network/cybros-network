@@ -1,6 +1,7 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToMany as OneToMany_} from "typeorm"
 import {Account} from "./account.model"
 import {Impl} from "./impl.model"
+import {JobScheduler} from "./_jobScheduler"
 import {PoolWorkers} from "./poolWorkers.model"
 import {JobPolicy} from "./jobPolicy.model"
 import {Job} from "./job.model"
@@ -30,6 +31,9 @@ export class Pool {
 
     @Column_("int4", {nullable: false})
     implId!: number
+
+    @Column_("varchar", {length: 8, nullable: false})
+    jobScheduler!: JobScheduler
 
     @Column_("bool", {nullable: false})
     createJobEnabled!: boolean

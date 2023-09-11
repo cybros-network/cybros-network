@@ -50,7 +50,6 @@ fn add_mock_impl<T: Config>(owner: &T::AccountId) -> T::ImplId {
 	assert_ok!(OffchainComputingInfra::<T>::register_impl(
 		RawOrigin::Signed(owner.clone()).into(),
 		AttestationMethod::OptOut,
-		ApplicableScope::Public
 	));
 
 	let impl_info = Impls::<T>::iter_values().last().expect("Should have an impl");

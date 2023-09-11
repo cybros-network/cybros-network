@@ -197,18 +197,6 @@ pub enum FlipFlopStage {
 	FlopToFlip,
 }
 
-#[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
-pub enum ApplicableScope {
-	/// Only the owner could use the implementations.
-	#[default]
-	Owner,
-	/// Anyone could use the implementations.
-	Public,
-	// TODO:
-	// /// Only a user in allow list could create tasks.
-	// AllowList,
-}
-
 /// Information about an implementation.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct ImplInfo<ImplId, AccountId, Balance> {
@@ -221,8 +209,6 @@ pub struct ImplInfo<ImplId, AccountId, Balance> {
 	pub owner_deposit: Balance,
 	/// The implementation must specify use which attestation method,
 	pub attestation_method: AttestationMethod,
-	/// Who can use the implementation
-	pub deployment_scope: ApplicableScope,
 	/// The total number of outstanding workers running this implementation.
 	pub workers_count: u32,
 }

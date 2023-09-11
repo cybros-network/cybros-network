@@ -25,7 +25,6 @@ impl<T: Config> Pallet<T> {
 		impl_id: T::ImplId,
 		owner: T::AccountId,
 		attestation_method: AttestationMethod,
-		deployment_permission: ApplicableScope,
 	) -> DispatchResult {
 		ensure!(!Impls::<T>::contains_key(&impl_id), Error::<T>::ImplIdTaken);
 
@@ -37,7 +36,6 @@ impl<T: Config> Pallet<T> {
 			owner: owner.clone(),
 			owner_deposit: deposit,
 			attestation_method: attestation_method.clone(),
-			deployment_scope: deployment_permission.clone(),
 			workers_count: 0,
 		};
 
@@ -48,7 +46,6 @@ impl<T: Config> Pallet<T> {
 			owner,
 			attestation_method,
 			impl_id,
-			deployment_scope: deployment_permission,
 		});
 		Ok(())
 	}
@@ -144,22 +141,6 @@ impl<T: Config> Pallet<T> {
 		)?;
 
 		Self::deposit_event(Event::ImplMetadataRemoved { impl_id: impl_info.id.clone() });
-		Ok(())
-	}
-
-	pub(crate) fn do_update_impl_deployment_permission(
-		mut impl_info: ImplInfo<T::ImplId, T::AccountId, BalanceOf<T>>,
-		deployment_permission: ApplicableScope,
-	) -> DispatchResult {
-		let impl_id = impl_info.id.clone();
-
-		impl_info.deployment_scope = deployment_permission.clone();
-		Impls::<T>::insert(&impl_id, impl_info);
-
-		Self::deposit_event(Event::<T>::ImplDeploymentScopeUpdated {
-			impl_id,
-			scope: deployment_permission,
-		});
 		Ok(())
 	}
 

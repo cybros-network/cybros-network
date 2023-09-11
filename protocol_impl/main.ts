@@ -640,7 +640,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
   }
 
   const [invited, subscribed] = await Promise.all([
-    api.query.offchainComputingPool.poolProvisionedWorkers(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
+    api.query.offchainComputingPool.poolAuthorizedWorkers(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
     api.query.offchainComputingPool.workerSubscribedPools(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
   ]);
 

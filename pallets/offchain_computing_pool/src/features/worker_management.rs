@@ -20,26 +20,26 @@ use crate::*;
 use frame_support::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn do_provision_worker(
+	pub(crate) fn do_authorize_worker(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
 		worker: T::AccountId,
 	) -> DispatchResult {
 		ensure!(
-			!PoolProvisionedWorkers::<T>::contains_key(&worker, &pool_info.id),
-			Error::<T>::WorkerAlreadyAdded
+			!PoolAuthorizedWorkers::<T>::contains_key(&worker, &pool_info.id),
+			Error::<T>::WorkerAlreadyAuthorized
 		);
 
 		let worker_info =
 			PalletInfra::<T>::worker_info(&worker).ok_or(Error::<T>::WorkerNotFound)?;
 		ensure!(worker_info.impl_id == pool_info.impl_id.clone(), Error::<T>::ImplMismatched);
 
-		PoolProvisionedWorkers::<T>::insert(&worker, &pool_info.id, ());
+		PoolAuthorizedWorkers::<T>::insert(&worker, &pool_info.id, ());
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.workers_count += 1;
 		Pools::<T>::insert(&pool_info.id, new_pool_info);
 
-		Self::deposit_event(Event::WorkerProvisioned {
+		Self::deposit_event(Event::WorkerAuthorized {
 			pool_id: pool_info.id,
 			worker: worker.clone(),
 		});
@@ -51,7 +51,7 @@ impl<T: Config> Pallet<T> {
 		worker: T::AccountId,
 	) -> DispatchResult {
 		ensure!(
-			PoolProvisionedWorkers::<T>::contains_key(&worker, &pool_info.id),
+			PoolAuthorizedWorkers::<T>::contains_key(&worker, &pool_info.id),
 			Error::<T>::WorkerNotFound
 		);
 
@@ -64,7 +64,7 @@ impl<T: Config> Pallet<T> {
 			});
 		}
 
-		PoolProvisionedWorkers::<T>::remove(&worker, &pool_info.id);
+		PoolAuthorizedWorkers::<T>::remove(&worker, &pool_info.id);
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.workers_count -= 1;
@@ -76,7 +76,7 @@ impl<T: Config> Pallet<T> {
 
 	pub(crate) fn do_subscribe_pool(worker: T::AccountId, pool_id: T::PoolId) -> DispatchResult {
 		ensure!(
-			PoolProvisionedWorkers::<T>::contains_key(&worker, &pool_id),
+			PoolAuthorizedWorkers::<T>::contains_key(&worker, &pool_id),
 			Error::<T>::WorkerNotInThePool
 		);
 		ensure!(

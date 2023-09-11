@@ -24,7 +24,7 @@ export class JobPolicy {
     @Column_("bool", {nullable: false})
     enabled!: boolean
 
-    @Column_("varchar", {length: 6, nullable: false})
+    @Column_("varchar", {length: 9, nullable: false})
     applicableScope!: ApplicableScope
 
     @Column_("int4", {nullable: true})

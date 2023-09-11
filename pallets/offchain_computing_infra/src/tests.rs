@@ -57,14 +57,12 @@ fn mock_impl_and_build(owner: AccountId) -> (ImplId, ImplSpecVersion) {
 	assert_ok!(OffchainComputingInfra::register_impl(
 		RuntimeOrigin::signed(owner),
 		AttestationMethod::OptOut,
-		ApplicableScope::Public
 	));
 
 	let OffchainComputingInfraEvent::ImplRegistered {
 		owner: actual_owner,
 		attestation_method: actual_attestation_method,
 		impl_id,
-		deployment_scope: actual_deployment_permission,
 	} = last_event()
 	else {
 		panic!("The last event must be `ImplRegistered`");
@@ -72,7 +70,6 @@ fn mock_impl_and_build(owner: AccountId) -> (ImplId, ImplSpecVersion) {
 
 	assert_eq!(actual_owner, owner);
 	assert_eq!(actual_attestation_method, AttestationMethod::OptOut);
-	assert_eq!(actual_deployment_permission, ApplicableScope::Public);
 
 	(impl_id, 1)
 }

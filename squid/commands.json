@@ -73,6 +73,13 @@
       ],
       "hidden": true
     },
+    "metadata:dump": {
+      "description": "dump tmp/metadataVersions.jsonl from chain RPC",
+      "cmd": [
+        "squid-substrate-metadata-explorer",
+        "--out=./tmp/metadataVersions.jsonl"
+      ]
+    },
     "codegen": {
       "description": "Generate TypeORM entities from the schema file",
       "cmd": [

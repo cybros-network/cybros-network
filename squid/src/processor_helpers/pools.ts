@@ -8,6 +8,23 @@ import {
 } from "../types/events"
 import {decodeSS58Address, hexToString, hexToU8a} from "../utils";
 import assert from "assert";
+import * as v100 from "../types/v100";
+import {JobScheduler} from "../model";
+
+function decodeJobScheduler(scheduler?: v100.JobScheduler): JobScheduler {
+  if (!scheduler) {
+    throw new Error("Unexpected undefined scheduler")
+  }
+
+  const kind = scheduler.__kind
+  switch (kind) {
+    case "External":
+      return JobScheduler.External
+    default:
+      throw new Error(`Unrecognized scope ${kind}`)
+  }
+}
+
 
 interface PoolChanges {
   readonly id: string
@@ -18,6 +35,7 @@ interface PoolChanges {
 
   minImplSpecVersion?: number,
   maxImplSpecVersion?: number,
+  jobScheduler?: JobScheduler,
   createJobEnabled?: boolean
   autoDestroyProcessedJobEnabled?: boolean
   metadata?: Uint8Array | null
@@ -40,6 +58,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
           owner: string,
           poolId: number,
           implId: number,
+          jobScheduler: v100.JobScheduler,
           createJobEnabled: boolean,
           autoDestroyProcessedJobEnabled: boolean
         }
@@ -61,6 +80,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
         changes.implId = rec.poolId
         changes.minImplSpecVersion = 1
         changes.maxImplSpecVersion = 1
+        changes.jobScheduler = decodeJobScheduler(rec.jobScheduler)
         changes.createJobEnabled = rec.createJobEnabled
         changes.autoDestroyProcessedJobEnabled = rec.autoDestroyProcessedJobEnabled
         changes.metadata = null

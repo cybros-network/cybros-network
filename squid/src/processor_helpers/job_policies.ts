@@ -19,6 +19,8 @@ function decodeScope(scope?: v100.ApplicableScope): ApplicableScope {
       return ApplicableScope.Owner
     case "Public":
       return ApplicableScope.Public
+    case "AllowList":
+      return ApplicableScope.AllowList
     default:
       throw new Error(`Unrecognized scope ${kind}`)
   }

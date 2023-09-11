@@ -30,13 +30,6 @@ export const OffchainComputingInfraImplBuildStatusUpdatedEventV100 = new EventTy
     })
 )
 
-export const OffchainComputingInfraImplDeploymentScopeUpdatedEventV100 = new EventType(
-    sts.struct({
-        implId: sts.number(),
-        scope: v100.ApplicableScope,
-    })
-)
-
 export const OffchainComputingInfraImplDeregisteredEventV100 = new EventType(
     sts.struct({
         implId: sts.number(),
@@ -61,7 +54,6 @@ export const OffchainComputingInfraImplRegisteredEventV100 = new EventType(
         implId: sts.number(),
         owner: sts.bytes(),
         attestationMethod: v100.AttestationMethod,
-        deploymentScope: v100.ApplicableScope,
     })
 )
 
@@ -143,6 +135,22 @@ export const OffchainComputingInfraWorkerRequestingOfflineEventV100 = new EventT
 export const OffchainComputingInfraWorkerUnresponsiveEventV100 = new EventType(
     sts.struct({
         worker: sts.bytes(),
+    })
+)
+
+export const OffchainComputingPoolAccountAuthorizedEventV100 = new EventType(
+    sts.struct({
+        poolId: sts.number(),
+        policyId: sts.number(),
+        account: sts.bytes(),
+    })
+)
+
+export const OffchainComputingPoolAccountRevokedEventV100 = new EventType(
+    sts.struct({
+        poolId: sts.number(),
+        policyId: sts.number(),
+        account: sts.bytes(),
     })
 )
 
@@ -233,6 +241,7 @@ export const OffchainComputingPoolPoolCreatedEventV100 = new EventType(
         owner: sts.bytes(),
         poolId: sts.number(),
         implId: sts.number(),
+        jobScheduler: v100.JobScheduler,
         createJobEnabled: sts.boolean(),
         autoDestroyProcessedJobEnabled: sts.boolean(),
     })
@@ -262,12 +271,13 @@ export const OffchainComputingPoolPoolSettingsUpdatedEventV100 = new EventType(
         poolId: sts.number(),
         minImplSpecVersion: sts.number(),
         maxImplSpecVersion: sts.number(),
+        jobScheduler: v100.JobScheduler,
         createJobEnabled: sts.boolean(),
         autoDestroyProcessedJobEnabled: sts.boolean(),
     })
 )
 
-export const OffchainComputingPoolWorkerProvisionedEventV100 = new EventType(
+export const OffchainComputingPoolWorkerAuthorizedEventV100 = new EventType(
     sts.struct({
         poolId: sts.number(),
         worker: sts.bytes(),

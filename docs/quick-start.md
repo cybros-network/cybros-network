@@ -65,9 +65,8 @@ https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/extrinsics
 #### Register an impl and an impl build
 
 Use Alice to send the extrinsic
-`offchainComputingInfra.registerImpl(attestationMethod, deploymentPermission)`
+`offchainComputingInfra.registerImpl(attestationMethod)`
 - `attestationMethod` Choose `OptOut` means the Impl doesn't support attestation
-- `deploymentPermission` Can choose `Public` which means anyone could use the Impl to create pools
 
 Submit the extrinsic,
 then you should get the success event on the `Network -> Explorer` page:

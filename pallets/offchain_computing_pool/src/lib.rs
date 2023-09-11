@@ -59,10 +59,7 @@ pub(crate) use frame_support::traits::{
 	tokens::Precision,
 };
 pub(crate) use frame_system::pallet_prelude::BlockNumberFor;
-pub(crate) use pallet_offchain_computing_infra::{
-	OffchainWorkerLifecycleHooks, OfflineReason, OnlinePayload,
-	VerifiedAttestation,
-};
+pub(crate) use pallet_offchain_computing_infra::OffchainWorkerLifecycleHooks;
 
 pub(crate) type PalletInfra<T> = pallet_offchain_computing_infra::Pallet<T>;
 
@@ -215,6 +212,7 @@ pub mod pallet {
 			owner: T::AccountId,
 			pool_id: T::PoolId,
 			impl_id: T::ImplId,
+			job_scheduler: JobScheduler,
 			create_job_enabled: bool,
 			auto_destroy_processed_job_enabled: bool,
 		},
@@ -232,6 +230,7 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			min_impl_spec_version: ImplSpecVersion,
 			max_impl_spec_version: ImplSpecVersion,
+			job_scheduler: JobScheduler,
 			create_job_enabled: bool,
 			auto_destroy_processed_job_enabled: bool,
 		},
@@ -242,6 +241,16 @@ pub mod pallet {
 			start_block: Option<BlockNumberFor<T>>,
 			end_block: Option<BlockNumberFor<T>>,
 		},
+		AccountAuthorized {
+			pool_id: T::PoolId,
+			policy_id: T::PolicyId,
+			account: T::AccountId,
+		},
+		AccountRevoked {
+			pool_id: T::PoolId,
+			policy_id: T::PolicyId,
+			account: T::AccountId,
+		},
 		JobPolicyDestroyed {
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
@@ -251,7 +260,7 @@ pub mod pallet {
 			policy_id: T::PolicyId,
 			enabled: bool,
 		},
-		WorkerProvisioned {
+		WorkerAuthorized {
 			pool_id: T::PoolId,
 			worker: T::AccountId,
 		},
@@ -322,6 +331,7 @@ pub mod pallet {
 		WorkerNotSubscribeThePool,
 		PoolNotFound,
 		PoolCreateNewJobUnavailable,
+		JobPolicyScopeNotAllowList,
 		JobPoliciesPerPoolLimitExceeded,
 		JobPolicyNotApplicable,
 		JobPolicyUnavailable,
@@ -329,7 +339,7 @@ pub mod pallet {
 		JobPolicyStillInUse,
 		ExpiresInTooSmall,
 		ExpiresInTooLarge,
-		WorkerAlreadyAdded,
+		WorkerAlreadyAuthorized,
 		WorkerAlreadySubscribed,
 		WorkerSubscribedPoolsLimitExceeded,
 		ImplMismatched,
@@ -376,7 +386,7 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	/// Jobs info.
+	/// Jobs policies
 	#[pallet::storage]
 	pub type JobPolicies<T: Config> = StorageDoubleMap<
 		_,
@@ -388,9 +398,22 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
+	/// Allow accounts list of job policy
+	#[pallet::storage]
+	pub type JobPolicyAuthorizedAccounts<T: Config> = StorageNMap<
+		_,
+		(
+			NMapKey<Blake2_128Concat, T::PoolId>,
+			NMapKey<Blake2_128Concat, T::PolicyId>,
+			NMapKey<Blake2_128Concat, T::AccountId>,
+		),
+		(),
+		OptionQuery,
+	>;
+
 	/// Workers of pools
 	#[pallet::storage]
-	pub type PoolProvisionedWorkers<T: Config> = StorageDoubleMap<
+	pub type PoolAuthorizedWorkers<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		T::AccountId,
@@ -555,6 +578,7 @@ pub mod pallet {
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			impl_id: T::ImplId,
+			job_scheduler: JobScheduler,
 			create_job_enabled: bool,
 			auto_destroy_processed_job_enabled: bool,
 		) -> DispatchResult {
@@ -565,6 +589,7 @@ pub mod pallet {
 				owner,
 				pool_id.clone(),
 				impl_id,
+				job_scheduler,
 				create_job_enabled,
 				auto_destroy_processed_job_enabled,
 			)?;
@@ -612,6 +637,7 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			min_impl_spec_version: ImplSpecVersion,
 			max_impl_spec_version: ImplSpecVersion,
+			job_scheduler: JobScheduler,
 			create_job_enabled: bool,
 			auto_destroy_processed_job_enabled: bool,
 		) -> DispatchResult {
@@ -624,6 +650,7 @@ pub mod pallet {
 				pool_info,
 				min_impl_spec_version,
 				max_impl_spec_version,
+				job_scheduler,
 				create_job_enabled,
 				auto_destroy_processed_job_enabled,
 			)
@@ -667,6 +694,44 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(5)]
 		#[pallet::weight({0})]
+		pub fn authorize_account(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			policy_id: T::PolicyId,
+			account: AccountIdLookupOf<T>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
+			Self::ensure_pool_owner(&who, &pool_info)?;
+
+			let account = T::Lookup::lookup(account.clone())?;
+
+			Self::do_authorize_account(pool_id, policy_id, account)
+		}
+
+		#[transactional]
+		#[pallet::call_index(6)]
+		#[pallet::weight({0})]
+		pub fn revoke_account(
+			origin: OriginFor<T>,
+			pool_id: T::PoolId,
+			policy_id: T::PolicyId,
+			account: AccountIdLookupOf<T>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
+			Self::ensure_pool_owner(&who, &pool_info)?;
+
+			let account = T::Lookup::lookup(account.clone())?;
+
+			Self::do_revoke_account(pool_id, policy_id, account)
+		}
+
+		#[transactional]
+		#[pallet::call_index(7)]
+		#[pallet::weight({0})]
 		pub fn destroy_job_policy(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
@@ -681,7 +746,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(6)]
+		#[pallet::call_index(8)]
 		#[pallet::weight({0})]
 		pub fn update_job_policy_enablement(
 			origin: OriginFor<T>,
@@ -698,9 +763,9 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(7)]
+		#[pallet::call_index(9)]
 		#[pallet::weight({0})]
-		pub fn provision_worker(
+		pub fn authorize_worker(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			worker: AccountIdLookupOf<T>,
@@ -712,11 +777,11 @@ pub mod pallet {
 
 			let worker = T::Lookup::lookup(worker.clone())?;
 
-			Self::do_provision_worker(pool_info, worker)
+			Self::do_authorize_worker(pool_info, worker)
 		}
 
 		#[transactional]
-		#[pallet::call_index(8)]
+		#[pallet::call_index(10)]
 		#[pallet::weight({0})]
 		pub fn revoke_worker(
 			origin: OriginFor<T>,
@@ -738,7 +803,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(9)]
+		#[pallet::call_index(11)]
 		#[pallet::weight({0})]
 		pub fn subscribe_pool(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -747,7 +812,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(10)]
+		#[pallet::call_index(12)]
 		#[pallet::weight({0})]
 		pub fn unsubscribe_pool(origin: OriginFor<T>, pool_id: T::PoolId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -756,7 +821,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(11)]
+		#[pallet::call_index(13)]
 		#[pallet::weight({0})]
 		pub fn create_job(
 			origin: OriginFor<T>,
@@ -799,6 +864,12 @@ pub mod pallet {
 					ensure!(pool_info.owner == who, Error::<T>::JobPolicyNotApplicable)
 				},
 				ApplicableScope::Public => {},
+				ApplicableScope::AllowList => {
+					ensure!(
+						JobPolicyAuthorizedAccounts::<T>::contains_key((pool_id.clone(), policy_id.clone(), who.clone())),
+						Error::<T>::JobPolicyNotApplicable
+					)
+				},
 			};
 
 			let job_id = NextJobId::<T>::get(&pool_id).unwrap_or(1u32.into());
@@ -824,11 +895,11 @@ pub mod pallet {
 
 		#[allow(clippy::too_many_arguments)]
 		#[transactional]
-		#[pallet::call_index(12)]
+		#[pallet::call_index(14)]
 		#[pallet::weight({0})]
 		pub fn create_job_for(
 			origin: OriginFor<T>,
-			beneficiary: T::AccountId,
+			beneficiary: AccountIdLookupOf<T>,
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
 			unique_track_id: Option<UniqueTrackId>,
@@ -838,6 +909,7 @@ pub mod pallet {
 			// TODO: Tips?
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			let beneficiary = T::Lookup::lookup(beneficiary)?;
 
 			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
 			ensure!(pool_info.create_job_enabled, Error::<T>::PoolCreateNewJobUnavailable);
@@ -868,6 +940,12 @@ pub mod pallet {
 					ensure!(pool_info.owner == beneficiary, Error::<T>::JobPolicyNotApplicable)
 				},
 				ApplicableScope::Public => {},
+				ApplicableScope::AllowList => {
+					ensure!(
+						JobPolicyAuthorizedAccounts::<T>::contains_key((pool_id.clone(), policy_id.clone(), beneficiary.clone())),
+						Error::<T>::JobPolicyNotApplicable
+					)
+				},
 			};
 
 			let job_id = NextJobId::<T>::get(&pool_id).unwrap_or(1u32.into());
@@ -892,7 +970,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(13)]
+		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
 		pub fn destroy_job(
 			origin: OriginFor<T>,
@@ -905,7 +983,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(14)]
+		#[pallet::call_index(16)]
 		#[pallet::weight({0})]
 		pub fn destroy_expired_job(
 			origin: OriginFor<T>,
@@ -919,7 +997,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(15)]
+		#[pallet::call_index(17)]
 		#[pallet::weight({0})]
 		pub fn take_job(
 			origin: OriginFor<T>,
@@ -936,7 +1014,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(16)]
+		#[pallet::call_index(18)]
 		#[pallet::weight({0})]
 		pub fn release_job(
 			origin: OriginFor<T>,
@@ -949,7 +1027,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(17)]
+		#[pallet::call_index(19)]
 		#[pallet::weight({0})]
 		pub fn submit_job_result(
 			origin: OriginFor<T>,
@@ -1016,7 +1094,7 @@ pub mod pallet {
 			worker: &T::AccountId,
 		) -> DispatchResult {
 			ensure!(
-				PoolProvisionedWorkers::<T>::contains_key(worker, pool_id),
+				PoolAuthorizedWorkers::<T>::contains_key(worker, pool_id),
 				Error::<T>::WorkerNotInThePool
 			);
 
@@ -1130,7 +1208,7 @@ pub mod pallet {
 				None,
 			);
 			let _ =
-				PoolProvisionedWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
+				PoolAuthorizedWorkers::<T>::clear_prefix(worker, worker_added_pools_count, None);
 			CounterForWorkerSubscribedPools::<T>::remove(worker);
 			CounterForWorkerAddedPools::<T>::remove(worker);
 		}

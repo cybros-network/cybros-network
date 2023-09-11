@@ -1,7 +1,6 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToMany as OneToMany_} from "typeorm"
 import {Account} from "./account.model"
 import {AttestationMethod} from "./_attestationMethod"
-import {ApplicableScope} from "./_applicableScope"
 import {ImplBuild} from "./implBuild.model"
 import {Worker} from "./worker.model"
 import {Pool} from "./pool.model"
@@ -27,9 +26,6 @@ export class Impl {
 
     @Column_("varchar", {length: 6, nullable: false})
     attestationMethod!: AttestationMethod
-
-    @Column_("varchar", {length: 6, nullable: false})
-    deploymentScope!: ApplicableScope
 
     @Column_("bytea", {nullable: true})
     metadata!: Uint8Array | undefined | null

@@ -187,9 +187,6 @@ processor.run(database, async (ctx) => {
         assert(changes.attestationMethod)
         impl.attestationMethod = changes.attestationMethod
       }
-      if (changes.deploymentScope) {
-        impl.deploymentScope = changes.deploymentScope
-      }
       if (changes.metadata !== undefined) {
         impl.metadata = changes.metadata
       }
@@ -325,6 +322,9 @@ processor.run(database, async (ctx) => {
         assert(changes.implId)
         pool.implId = changes.implId
         pool.refImpl = (await implsManager.get(changes.implId.toString()))!
+      }
+      if (changes.jobScheduler !== undefined) {
+        pool.jobScheduler = changes.jobScheduler
       }
       if (changes.createJobEnabled !== undefined) {
         pool.createJobEnabled = changes.createJobEnabled
