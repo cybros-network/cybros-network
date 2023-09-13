@@ -60,8 +60,8 @@ pub struct JobPolicy<PoolId, BlockNumber> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum JobScheduler {
-	/// The pool need schedule jobs manually
-	External,
+	/// Deprecation
+	Deprecation
 }
 
 /// Information about a pool.

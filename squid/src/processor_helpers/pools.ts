@@ -18,8 +18,8 @@ function decodeJobScheduler(scheduler?: v100.JobScheduler): JobScheduler {
 
   const kind = scheduler.__kind
   switch (kind) {
-    case "External":
-      return JobScheduler.External
+    case "Deprecation":
+      return JobScheduler.Deprecation
     default:
       throw new Error(`Unrecognized scope ${kind}`)
   }

@@ -2,14 +2,14 @@ import {sts, Result, Option, Bytes} from './support'
 
 export const JobScheduler: sts.Type<JobScheduler> = sts.closedEnum(() => {
     return  {
-        External: sts.unit(),
+        Deprecation: sts.unit(),
     }
 })
 
-export type JobScheduler = JobScheduler_External
+export type JobScheduler = JobScheduler_Deprecation
 
-export interface JobScheduler_External {
-    __kind: 'External'
+export interface JobScheduler_Deprecation {
+    __kind: 'Deprecation'
 }
 
 export const JobStatus: sts.Type<JobStatus> = sts.closedEnum(() => {

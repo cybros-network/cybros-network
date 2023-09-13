@@ -12,7 +12,7 @@ enum AttestationMethod {
 }
 
 enum JobScheduler {
-  External
+  Deprecation
 }
 
 enum ImplBuildStatus {
