@@ -84,20 +84,20 @@
         "integrity": "sha512-Nr1QJIbW/afYYGzYvrF70LtaHrIRtd4TNAglX8BvlfxJLZ45SAmueIKYl5tWoNBPzp65ymXGFK0Bb1vZUpuc9g==",
         "dependencies": {
           "@aws-crypto/util": "@aws-crypto/util@1.2.2",
-          "@aws-sdk/types": "@aws-sdk/types@3.413.0",
+          "@aws-sdk/types": "@aws-sdk/types@3.418.0",
           "tslib": "tslib@1.14.1"
         }
       },
       "@aws-crypto/util@1.2.2": {
         "integrity": "sha512-H8PjG5WJ4wz0UXAFXeJjWCW1vkvIJ3qUUD+rGRwJ2/hj+xT58Qle2MTql/2MGzkU+1JLAFuR6aJpLAjHwhmwwg==",
         "dependencies": {
-          "@aws-sdk/types": "@aws-sdk/types@3.413.0",
+          "@aws-sdk/types": "@aws-sdk/types@3.418.0",
           "@aws-sdk/util-utf8-browser": "@aws-sdk/util-utf8-browser@3.259.0",
           "tslib": "tslib@1.14.1"
         }
       },
-      "@aws-sdk/types@3.413.0": {
-        "integrity": "sha512-j1xib0f/TazIFc5ySIKOlT1ujntRbaoG4LJFeEezz4ji03/wSJMI8Vi4KjzpBp8J1tTu0oRDnsxRIGixsUBeYQ==",
+      "@aws-sdk/types@3.418.0": {
+        "integrity": "sha512-y4PQSH+ulfFLY0+FYkaK4qbIaQI9IJNMO2xsxukW6/aNoApNymN1D2FSi2la8Qbp/iPjNDKsG8suNPm9NtsWXQ==",
         "dependencies": {
           "@smithy/types": "@smithy/types@2.3.3",
           "tslib": "tslib@2.6.2"
