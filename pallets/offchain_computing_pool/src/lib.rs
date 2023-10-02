@@ -828,6 +828,7 @@ pub mod pallet {
 			pool_id: T::PoolId,
 			policy_id: T::PolicyId,
 			unique_track_id: Option<UniqueTrackId>,
+			beneficiary: Option<AccountIdLookupOf<T>>,
 			impl_spec_version: ImplSpecVersion,
 			input: Option<BoundedVec<u8, T::InputLimit>>,
 			soft_expires_in: Option<u64>,
@@ -849,81 +850,11 @@ pub mod pallet {
 				);
 			}
 
-			let policy =
-				JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
-			ensure!(policy.enabled, Error::<T>::JobPolicyUnavailable);
-			let current_block = frame_system::Pallet::<T>::block_number();
-			if let Some(start_block) = policy.start_block {
-				ensure!(current_block >= start_block, Error::<T>::JobPolicyNotApplicable);
-			}
-			if let Some(end_block) = policy.end_block {
-				ensure!(current_block <= end_block, Error::<T>::JobPolicyNotApplicable);
-			}
-			match policy.applicable_scope {
-				ApplicableScope::Owner => {
-					ensure!(pool_info.owner == who, Error::<T>::JobPolicyNotApplicable)
-				},
-				ApplicableScope::Public => {},
-				ApplicableScope::AllowList => {
-					ensure!(
-						JobPolicyAuthorizedAccounts::<T>::contains_key((pool_id.clone(), policy_id.clone(), who.clone())),
-						Error::<T>::JobPolicyNotApplicable
-					)
-				},
+			let beneficiary = if let Some(beneficiary) = beneficiary {
+				T::Lookup::lookup(beneficiary)?
+			} else {
+				who.clone()
 			};
-
-			let job_id = NextJobId::<T>::get(&pool_id).unwrap_or(1u32.into());
-			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
-			Self::do_create_job(
-				pool_info,
-				policy,
-				job_id.clone(),
-				unique_track_id,
-				who.clone(),
-				who,
-				impl_spec_version,
-				input,
-				now,
-				soft_expires_in,
-			)?;
-
-			let next_id = job_id.increment();
-			NextJobId::<T>::set(&pool_id, next_id);
-
-			Ok(())
-		}
-
-		#[allow(clippy::too_many_arguments)]
-		#[transactional]
-		#[pallet::call_index(14)]
-		#[pallet::weight({0})]
-		pub fn create_job_for(
-			origin: OriginFor<T>,
-			beneficiary: AccountIdLookupOf<T>,
-			pool_id: T::PoolId,
-			policy_id: T::PolicyId,
-			unique_track_id: Option<UniqueTrackId>,
-			impl_spec_version: ImplSpecVersion,
-			input: Option<BoundedVec<u8, T::InputLimit>>,
-			soft_expires_in: Option<u64>,
-			// TODO: Tips?
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-			let beneficiary = T::Lookup::lookup(beneficiary)?;
-
-			let pool_info = Pools::<T>::get(&pool_id).ok_or(Error::<T>::PoolNotFound)?;
-			ensure!(pool_info.create_job_enabled, Error::<T>::PoolCreateNewJobUnavailable);
-			ensure!(
-				pool_info.jobs_count <= T::MaxJobsPerPool::get(),
-				Error::<T>::TasksPerPoolLimitExceeded
-			);
-
-			if let Some(unique_track_id) = unique_track_id.clone() {
-				ensure!(
-					!IndexedJobs::<T>::contains_key(&pool_id, unique_track_id),
-					Error::<T>::UniqueTrackIdNotUnique
-				);
-			}
 
 			let policy =
 				JobPolicies::<T>::get(&pool_id, &policy_id).ok_or(Error::<T>::JobPolicyNotFound)?;
@@ -970,7 +901,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(15)]
+		#[pallet::call_index(14)]
 		#[pallet::weight({0})]
 		pub fn destroy_job(
 			origin: OriginFor<T>,
@@ -983,7 +914,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(16)]
+		#[pallet::call_index(15)]
 		#[pallet::weight({0})]
 		pub fn destroy_expired_job(
 			origin: OriginFor<T>,
@@ -997,7 +928,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(17)]
+		#[pallet::call_index(16)]
 		#[pallet::weight({0})]
 		pub fn take_job(
 			origin: OriginFor<T>,
@@ -1010,11 +941,12 @@ pub mod pallet {
 
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			let expires_in = soft_expires_in.unwrap_or(T::DefaultJobExpiresIn::get());
-			Self::do_assign_job(pool_id, job_id, who, now, processing, expires_in)
+
+			Self::do_take_job(pool_id, job_id, who, now, processing, expires_in)
 		}
 
 		#[transactional]
-		#[pallet::call_index(18)]
+		#[pallet::call_index(17)]
 		#[pallet::weight({0})]
 		pub fn release_job(
 			origin: OriginFor<T>,
@@ -1027,7 +959,7 @@ pub mod pallet {
 		}
 
 		#[transactional]
-		#[pallet::call_index(19)]
+		#[pallet::call_index(18)]
 		#[pallet::weight({0})]
 		pub fn submit_job_result(
 			origin: OriginFor<T>,

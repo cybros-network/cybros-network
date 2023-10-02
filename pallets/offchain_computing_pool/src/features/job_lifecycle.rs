@@ -21,7 +21,8 @@ use frame_support::pallet_prelude::*;
 use sp_runtime::{traits::Zero, Saturating};
 
 impl<T: Config> Pallet<T> {
-	pub(crate) fn do_assign_job(
+	// TODO: Will be replaced by scheduler.
+	pub(crate) fn do_take_job(
 		pool_id: T::PoolId,
 		maybe_job_id: Option<T::JobId>,
 		worker: T::AccountId,
