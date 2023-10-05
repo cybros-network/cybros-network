@@ -450,6 +450,9 @@ processor.run(database, async (ctx) => {
         job.assigneeAddress = changes.assignee
         job.refAssignee = (await workersManager.get(changes.assignee))!
       }
+      if (changes.implBuildVersion !== undefined) {
+        job.implBuildVersion = changes.implBuildVersion
+      }
       if (changes.destroyer) {
         job.destroyerAddress = changes.destroyer
         job.refDestroyer = (await accountsManager.get(changes.destroyer))!
@@ -503,11 +506,34 @@ processor.run(database, async (ctx) => {
           event.blockTime = e.blockTime
         })
       }
+
+      await poolsManager.upsert(job.poolId.toString(), async (pool) => {
+        pool.pendingJobsCount += changes.pendingJobsCountChange
+        pool.processingJobsCount += changes.processingJobsCountChange
+        pool.processedJobsCount += changes.processedJobsCountChange
+        pool.successfulJobsCount += changes.successfulJobsCountChange
+        pool.failedJobsCount += changes.failedJobsCountChange
+        pool.erroredJobsCount += changes.erroredJobsCountChange
+        pool.panickyJobsCount += changes.panickyJobsCountChange
+      })
+
+      if (job.assigneeAddress) {
+        await workersManager.upsert(job.assigneeAddress.toString(), async (worker) => {
+          worker.pendingJobsCount += changes.workerPendingJobsCountChange
+          worker.processingJobsCount += changes.processingJobsCountChange
+          worker.processedJobsCount += changes.processedJobsCountChange
+          worker.successfulJobsCount += changes.successfulJobsCountChange
+          worker.failedJobsCount += changes.failedJobsCountChange
+          worker.erroredJobsCount += changes.erroredJobsCountChange
+          worker.panickyJobsCount += changes.panickyJobsCountChange
+        })
+      }
     })
   }
   await accountsManager.saveAll()
   await jobsManager.saveAll()
   await jobEventsManager.saveAll()
+  await poolsManager.saveAll()
 
   // Update stats
 
@@ -520,7 +546,7 @@ processor.run(database, async (ctx) => {
         deletedAt: IsNull(),
         poolId: In(
           Array.from(poolWorkersChangeSet.values())
-            .filter(changes => changes.poolWorkerCounterChange != 0)
+            .filter(changes => changes.poolWorkerCountChange != 0)
             .map(changes => changes.poolId)
         )
       }
@@ -535,27 +561,27 @@ processor.run(database, async (ctx) => {
         deletedAt: IsNull(),
         workerAddress: In(
           Array.from(poolWorkersChangeSet.values())
-            .filter(changes => changes.poolWorkerCounterChange != 0)
+            .filter(changes => changes.poolWorkerCountChange != 0)
             .map(changes => changes.worker)
         )
       }
     }
   }).then((pools: Pool[]) => pools.forEach(pool => poolsManager.add(pool)))
   for (let [_id, changes] of poolWorkersChangeSet) {
-    if (changes.poolWorkerCounterChange == 0) {
+    if (changes.poolWorkerCountChange == 0) {
       continue
     }
 
     const worker = await workersManager.get(changes.worker)
     assert(worker)
-    worker.poolsCount += changes.poolWorkerCounterChange
+    worker.poolsCount += changes.poolWorkerCountChange
     workersManager.add(worker)
 
     const pool = await poolsManager.get(changes.poolId.toString())
     assert(pool)
-    pool.workersCount += changes.poolWorkerCounterChange
+    pool.workersCount += changes.poolWorkerCountChange
     if (worker.status === "Online") {
-      pool.onlineWorkersCount += changes.poolWorkerCounterChange
+      pool.onlineWorkersCount += changes.poolWorkerCountChange
     }
 
     poolsManager.add(pool)
@@ -567,7 +593,7 @@ processor.run(database, async (ctx) => {
     where: {
       id: In(
         Array.from(workersChangeSet.values())
-          .filter(changes => changes.onlineWorkerCounterChange != 0 || changes.registerWorkerCounterChange != 0)
+          .filter(changes => changes.onlineWorkerCountChange != 0 || changes.registerWorkerCountChange != 0)
           .map(changes => changes.id)
       )
     }
@@ -604,15 +630,15 @@ processor.run(database, async (ctx) => {
     const worker = await workersManager.get(id)
     assert(worker)
 
-    if (changes.onlineWorkerCounterChange != 0) {
+    if (changes.onlineWorkerCountChange != 0) {
       assert(worker.implId)
       assert(worker.implBuildVersion)
 
       await implsManager.upsert(worker.implId.toString(), async (impl) => {
-        impl.onlineWorkersCount += changes.onlineWorkerCounterChange
+        impl.onlineWorkersCount += changes.onlineWorkerCountChange
       })
       await implBuildsManager.upsert(`${worker.implId}-${worker.implBuildVersion}`, async (implBuild) => {
-        implBuild.onlineWorkersCount += changes.onlineWorkerCounterChange
+        implBuild.onlineWorkersCount += changes.onlineWorkerCountChange
       })
 
       if (worker.poolsCount > 0) {
@@ -628,16 +654,16 @@ processor.run(database, async (ctx) => {
           }
         })
         for (let pool of pools) {
-          pool.onlineWorkersCount += changes.onlineWorkerCounterChange
+          pool.onlineWorkersCount += changes.onlineWorkerCountChange
           poolsManager.add(pool)
         }
       }
     }
 
-    if (changes.registerWorkerCounterChange != 0) {
+    if (changes.registerWorkerCountChange != 0) {
       assert(worker.ownerAddress)
       await accountsManager.upsert(worker.ownerAddress, async (account) => {
-        account.workersCount += changes.registerWorkerCounterChange
+        account.workersCount += changes.registerWorkerCountChange
       })
     }
   }

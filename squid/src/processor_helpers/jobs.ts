@@ -89,6 +89,7 @@ interface JobChanges {
   beneficiary?: string
   assignee?: string | null
   destroyer?: string
+  implBuildVersion?: number | null
 
   implSpecVersion?: number
   status?: JobStatus
@@ -105,6 +106,15 @@ interface JobChanges {
   createdAt: Date
   updatedAt: Date
   deletedAt?: Date | null
+
+  pendingJobsCountChange: number
+  workerPendingJobsCountChange: number
+  processingJobsCountChange: number
+  processedJobsCountChange: number
+  successfulJobsCountChange: number
+  failedJobsCountChange: number
+  erroredJobsCountChange: number
+  panickyJobsCountChange: number
 
   events: JobEvent[]
 }
@@ -143,7 +153,15 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           jobId: rec.jobId,
           createdAt: blockTime,
           updatedAt: blockTime,
-          events: []
+          pendingJobsCountChange: 0,
+          workerPendingJobsCountChange: 0,
+          processingJobsCountChange: 0,
+          processedJobsCountChange: 0,
+          successfulJobsCountChange: 0,
+          failedJobsCountChange: 0,
+          erroredJobsCountChange: 0,
+          panickyJobsCountChange: 0,
+          events: [],
         }
 
         changes.uniqueTrackId = rec.uniqueTrackId
@@ -168,6 +186,8 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         changes.deletedAt = null
         changes.updatedAt = blockTime
 
+        changes.pendingJobsCountChange += 1
+
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.events.length,
@@ -183,7 +203,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           jobId: number,
           uniqueTrackId?: string,
           destroyer: string,
-          force: boolean
+          reason: v100.JobDestroyReason
         }
         if (JobDestroyedEventV100.is(event)) {
           rec = JobDestroyedEventV100.decode(event)
@@ -198,6 +218,14 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           jobId: rec.jobId,
           createdAt: blockTime,
           updatedAt: blockTime,
+          pendingJobsCountChange: 0,
+          workerPendingJobsCountChange: 0,
+          processingJobsCountChange: 0,
+          processedJobsCountChange: 0,
+          successfulJobsCountChange: 0,
+          failedJobsCountChange: 0,
+          erroredJobsCountChange: 0,
+          panickyJobsCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
@@ -207,18 +235,27 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         changes.updatedAt = blockTime
         changes.deletedAt = blockTime
 
+        switch (rec.reason.__kind) {
+          case "Safe":
+            changes.pendingJobsCountChange -= 1;
+            break
+          case "Force":
+            changes.processingJobsCountChange -= 1;
+            break;
+        }
+
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.events.length,
           kind: JobEventKind.Destroyed,
-          payload: {force: rec.force},
+          payload: {reason: rec.reason.__kind},
           blockNumber,
           blockTime,
         })
 
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingPool.JobAssigned") {
-        let rec: { poolId: number, jobId: number, assignee: string }
+        let rec: { poolId: number, jobId: number, assignee: string, implBuildVersion: number }
         if (JobAssignedEventV100.is(event)) {
           rec = JobAssignedEventV100.decode(event)
         } else {
@@ -232,13 +269,24 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           jobId: rec.jobId,
           createdAt: blockTime,
           updatedAt: blockTime,
+          pendingJobsCountChange: 0,
+          workerPendingJobsCountChange: 0,
+          processingJobsCountChange: 0,
+          processedJobsCountChange: 0,
+          successfulJobsCountChange: 0,
+          failedJobsCountChange: 0,
+          erroredJobsCountChange: 0,
+          panickyJobsCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
 
+        changes.implBuildVersion = rec.implBuildVersion
         changes.assignee = decodeSS58Address(hexToU8a(rec.assignee))
         changes.assignedAt = blockTime
         changes.updatedAt = blockTime
+
+        changes.workerPendingJobsCountChange += 1
 
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,
@@ -265,13 +313,24 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           jobId: rec.jobId,
           createdAt: blockTime,
           updatedAt: blockTime,
+          pendingJobsCountChange: 0,
+          workerPendingJobsCountChange: 0,
+          processingJobsCountChange: 0,
+          processedJobsCountChange: 0,
+          successfulJobsCountChange: 0,
+          failedJobsCountChange: 0,
+          erroredJobsCountChange: 0,
+          panickyJobsCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
 
+        changes.implBuildVersion = null
         changes.assignee = null
         changes.assignedAt = null
         changes.updatedAt = blockTime
+
+        changes.workerPendingJobsCountChange -= 1
 
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,
@@ -297,6 +356,14 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           jobId: rec.jobId,
           createdAt: blockTime,
           updatedAt: blockTime,
+          pendingJobsCountChange: 0,
+          workerPendingJobsCountChange: 0,
+          processingJobsCountChange: 0,
+          processedJobsCountChange: 0,
+          successfulJobsCountChange: 0,
+          failedJobsCountChange: 0,
+          erroredJobsCountChange: 0,
+          panickyJobsCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
@@ -308,6 +375,18 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           changes.endedAt = blockTime
         }
         changes.updatedAt = blockTime
+
+        if (changes.status == JobStatus.Processing) {
+          changes.pendingJobsCountChange -= 1;
+          changes.workerPendingJobsCountChange -= 1
+          changes.processingJobsCountChange += 1;
+        } else if (changes.status == JobStatus.Processed) {
+          changes.processingJobsCountChange -= 1;
+          changes.processedJobsCountChange += 1;
+        } else if (changes.status == JobStatus.Discarded) {
+          changes.processingJobsCountChange -= 1;
+          changes.processedJobsCountChange += 1;
+        }
 
         if (changes.status == JobStatus.Processing) {
           changes.events.push({
@@ -341,6 +420,14 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           jobId: rec.jobId,
           createdAt: blockTime,
           updatedAt: blockTime,
+          pendingJobsCountChange: 0,
+          workerPendingJobsCountChange: 0,
+          processingJobsCountChange: 0,
+          processedJobsCountChange: 0,
+          successfulJobsCountChange: 0,
+          failedJobsCountChange: 0,
+          erroredJobsCountChange: 0,
+          panickyJobsCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
@@ -369,6 +456,21 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           return rec.proof
         })()
         changes.updatedAt = blockTime
+
+        switch (changes.result) {
+          case JobResult.Success:
+            changes.successfulJobsCountChange += 1
+            break
+          case JobResult.Fail:
+            changes.failedJobsCountChange += 1
+            break
+          case JobResult.Error:
+            changes.erroredJobsCountChange += 1
+            break
+          case JobResult.Panic:
+            changes.panickyJobsCountChange += 1
+            break
+        }
 
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,

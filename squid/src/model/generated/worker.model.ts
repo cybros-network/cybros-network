@@ -84,6 +84,9 @@ export class Worker {
     processingJobsCount!: number
 
     @Column_("int4", {nullable: false})
+    processedJobsCount!: number
+
+    @Column_("int4", {nullable: false})
     successfulJobsCount!: number
 
     @Column_("int4", {nullable: false})

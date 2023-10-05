@@ -59,6 +59,9 @@ export class Job {
     @Column_("text", {nullable: true})
     assigneeAddress!: string | undefined | null
 
+    @Column_("int4", {nullable: true})
+    implBuildVersion!: number | undefined | null
+
     @Index_()
     @ManyToOne_(() => Account, {nullable: true})
     refDestroyer!: Account | undefined | null

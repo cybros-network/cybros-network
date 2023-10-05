@@ -76,10 +76,14 @@ impl<T: Config> Pallet<T> {
 		CounterForWorkerAssignedJobs::<T>::insert(&worker, current_assigned_jobs_count + 1);
 		Jobs::<T>::insert(&pool_id, &job_id, job);
 
+		let Some(impl_build_version) = worker_info.impl_build_version else {
+			return Err(Error::<T>::InternalError.into())
+		};
 		Self::deposit_event(Event::JobAssigned {
 			pool_id: pool_id.clone(),
 			job_id: job_id.clone(),
 			assignee: worker,
+			impl_build_version,
 		});
 		if processing {
 			Self::deposit_event(Event::JobStatusUpdated {
@@ -105,6 +109,7 @@ impl<T: Config> Pallet<T> {
 		);
 		Self::ensure_job_assignee(&job, &worker)?;
 
+		job.impl_build_version = None;
 		job.assignee = None;
 		job.assigned_at = None;
 
@@ -208,7 +213,7 @@ impl<T: Config> Pallet<T> {
 
 		let pool_info = Pools::<T>::get(pool_id.clone()).ok_or(Error::<T>::PoolNotFound)?;
 		if pool_info.auto_destroy_processed_job_enabled {
-			Self::do_actual_destroy_job(pool_id, job, worker, true)?
+			Self::do_actual_destroy_job(pool_id, job, worker, JobDestroyReason::Completed)?
 		} else {
 			Jobs::<T>::insert(&pool_id, &job_id, job);
 		}

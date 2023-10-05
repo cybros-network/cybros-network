@@ -18,13 +18,12 @@ function decodeJobScheduler(scheduler?: v100.JobScheduler): JobScheduler {
 
   const kind = scheduler.__kind
   switch (kind) {
-    case "Deprecation":
-      return JobScheduler.Deprecation
+    case "DemoOnly":
+      return JobScheduler.DemoOnly
     default:
       throw new Error(`Unrecognized scope ${kind}`)
   }
 }
-
 
 interface PoolChanges {
   readonly id: string

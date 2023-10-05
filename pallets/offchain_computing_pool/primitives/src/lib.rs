@@ -60,8 +60,16 @@ pub struct JobPolicy<PoolId, BlockNumber> {
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum JobScheduler {
-	/// Deprecation
-	Deprecation
+	/// DemoOnly
+	DemoOnly
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum JobDestroyReason {
+	Safe,
+	Force,
+	Completed,
+	Expired,
 }
 
 /// Information about a pool.
@@ -131,6 +139,7 @@ pub struct JobInfo<JobId, PolicyId, AccountId, Balance> {
 	pub depositor: AccountId,
 	pub deposit: Balance,
 	pub beneficiary: AccountId,
+	pub impl_build_version: Option<ImplBuildVersion>,
 	/// The implementation spec version
 	pub impl_spec_version: ImplSpecVersion,
 	pub status: JobStatus,

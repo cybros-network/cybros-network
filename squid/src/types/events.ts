@@ -159,6 +159,7 @@ export const OffchainComputingPoolJobAssignedEventV100 = new EventType(
         poolId: sts.number(),
         jobId: sts.number(),
         assignee: sts.bytes(),
+        implBuildVersion: sts.number(),
     })
 )
 
@@ -182,7 +183,7 @@ export const OffchainComputingPoolJobDestroyedEventV100 = new EventType(
         jobId: sts.number(),
         uniqueTrackId: sts.option(() => sts.bytes()),
         destroyer: sts.bytes(),
-        force: sts.boolean(),
+        reason: v100.JobDestroyReason,
     })
 )
 

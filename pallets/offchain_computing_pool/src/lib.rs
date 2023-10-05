@@ -292,12 +292,13 @@ pub mod pallet {
 			job_id: T::JobId,
 			unique_track_id: Option<UniqueTrackId>,
 			destroyer: T::AccountId,
-			force: bool,
+			reason: JobDestroyReason,
 		},
 		JobAssigned {
 			pool_id: T::PoolId,
 			job_id: T::JobId,
 			assignee: T::AccountId,
+			impl_build_version: ImplBuildVersion,
 		},
 		JobReleased {
 			pool_id: T::PoolId,
@@ -910,7 +911,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_destroy_job(who, pool_id, job_id, false)
+			Self::do_destroy_job(who, pool_id, job_id, JobDestroyReason::Safe)
 		}
 
 		#[transactional]

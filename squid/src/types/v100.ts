@@ -2,14 +2,14 @@ import {sts, Result, Option, Bytes} from './support'
 
 export const JobScheduler: sts.Type<JobScheduler> = sts.closedEnum(() => {
     return  {
-        Deprecation: sts.unit(),
+        DemoOnly: sts.unit(),
     }
 })
 
-export type JobScheduler = JobScheduler_Deprecation
+export type JobScheduler = JobScheduler_DemoOnly
 
-export interface JobScheduler_Deprecation {
-    __kind: 'Deprecation'
+export interface JobScheduler_DemoOnly {
+    __kind: 'DemoOnly'
 }
 
 export const JobStatus: sts.Type<JobStatus> = sts.closedEnum(() => {
@@ -86,6 +86,33 @@ export interface ApplicableScope_Owner {
 
 export interface ApplicableScope_Public {
     __kind: 'Public'
+}
+
+export const JobDestroyReason: sts.Type<JobDestroyReason> = sts.closedEnum(() => {
+    return  {
+        Completed: sts.unit(),
+        Expired: sts.unit(),
+        Force: sts.unit(),
+        Safe: sts.unit(),
+    }
+})
+
+export type JobDestroyReason = JobDestroyReason_Completed | JobDestroyReason_Expired | JobDestroyReason_Force | JobDestroyReason_Safe
+
+export interface JobDestroyReason_Completed {
+    __kind: 'Completed'
+}
+
+export interface JobDestroyReason_Expired {
+    __kind: 'Expired'
+}
+
+export interface JobDestroyReason_Force {
+    __kind: 'Force'
+}
+
+export interface JobDestroyReason_Safe {
+    __kind: 'Safe'
 }
 
 export const OfflineReason: sts.Type<OfflineReason> = sts.closedEnum(() => {

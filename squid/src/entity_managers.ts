@@ -47,11 +47,6 @@ export class ImplBuildsManager extends EntitiesManager<ImplBuild> {
       newEntityFunc: id => new ImplBuild({
         id,
         onlineWorkersCount: 0,
-        processingJobsCount: 0,
-        successfulJobsCount: 0,
-        failedJobsCount: 0,
-        erroredJobsCount: 0,
-        panickyJobsCount: 0,
       })
     });
   }
@@ -66,6 +61,7 @@ export class WorkersManager extends EntitiesManager<Worker> {
         poolsCount: 0,
         pendingJobsCount: 0,
         processingJobsCount: 0,
+        processedJobsCount: 0,
         successfulJobsCount: 0,
         failedJobsCount: 0,
         erroredJobsCount: 0,
@@ -93,6 +89,7 @@ export class PoolsManager extends EntitiesManager<Pool> {
         pendingJobsCount: 0,
         processingJobsCount: 0,
         successfulJobsCount: 0,
+        processedJobsCount: 0,
         failedJobsCount: 0,
         erroredJobsCount: 0,
         panickyJobsCount: 0,

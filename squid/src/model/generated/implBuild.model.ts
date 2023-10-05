@@ -30,21 +30,6 @@ export class ImplBuild {
     @Column_("int4", {nullable: false})
     onlineWorkersCount!: number
 
-    @Column_("int4", {nullable: false})
-    processingJobsCount!: number
-
-    @Column_("int4", {nullable: false})
-    successfulJobsCount!: number
-
-    @Column_("int4", {nullable: false})
-    failedJobsCount!: number
-
-    @Column_("int4", {nullable: false})
-    erroredJobsCount!: number
-
-    @Column_("int4", {nullable: false})
-    panickyJobsCount!: number
-
     @Column_("timestamp with time zone", {nullable: false})
     createdAt!: Date
 

@@ -88,8 +88,8 @@ interface WorkerChanges {
   updatedAt: Date
   deletedAt?: Date | null
 
-  registerWorkerCounterChange: number
-  onlineWorkerCounterChange: number
+  registerWorkerCountChange: number
+  onlineWorkerCountChange: number
 
   events: WorkerEvent[]
 }
@@ -118,8 +118,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
           address,
           createdAt: blockTime,
           updatedAt: blockTime,
-          registerWorkerCounterChange: 0,
-          onlineWorkerCounterChange: 0,
+          registerWorkerCountChange: 0,
+          onlineWorkerCountChange: 0,
           events: []
         }
 
@@ -130,8 +130,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         changes.status = WorkerStatus.Registered
         changes.implId = rec.implId
 
-        changes.registerWorkerCounterChange = 1
-        changes.onlineWorkerCounterChange = 0
+        changes.registerWorkerCountChange = 1
+        changes.onlineWorkerCountChange = 0
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.events.length,
@@ -157,8 +157,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
           address,
           createdAt: blockTime,
           updatedAt: blockTime,
-          registerWorkerCounterChange: 0,
-          onlineWorkerCounterChange: 0,
+          registerWorkerCountChange: 0,
+          onlineWorkerCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
@@ -175,8 +175,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         changes.uptime = null
         changes.uptimeStartedAt = null
 
-        changes.registerWorkerCounterChange -= 1
-        changes.onlineWorkerCounterChange -= rec.force ? 1 : 0
+        changes.registerWorkerCountChange -= 1
+        changes.onlineWorkerCountChange -= rec.force ? 1 : 0
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.events.length,
@@ -209,8 +209,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
           address,
           createdAt: blockTime,
           updatedAt: blockTime,
-          registerWorkerCounterChange: 0,
-          onlineWorkerCounterChange: 0,
+          registerWorkerCountChange: 0,
+          onlineWorkerCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
@@ -226,7 +226,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         changes.uptimeStartedAt = blockTime
         changes.updatedAt = blockTime
 
-        changes.onlineWorkerCounterChange += 1
+        changes.onlineWorkerCountChange += 1
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.events.length,
@@ -251,8 +251,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
           address,
           createdAt: blockTime,
           updatedAt: blockTime,
-          registerWorkerCounterChange: 0,
-          onlineWorkerCounterChange: 0,
+          registerWorkerCountChange: 0,
+          onlineWorkerCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
@@ -260,7 +260,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         changes.status = WorkerStatus.Unresponsive
         changes.updatedAt = blockTime
 
-        changes.onlineWorkerCounterChange -= 1
+        changes.onlineWorkerCountChange -= 1
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.events.length,
@@ -285,8 +285,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
           address,
           createdAt: blockTime,
           updatedAt: blockTime,
-          registerWorkerCounterChange: 0,
-          onlineWorkerCounterChange: 0,
+          registerWorkerCountChange: 0,
+          onlineWorkerCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
@@ -318,8 +318,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
           address,
           createdAt: blockTime,
           updatedAt: blockTime,
-          registerWorkerCounterChange: 0,
-          onlineWorkerCounterChange: 0,
+          registerWorkerCountChange: 0,
+          onlineWorkerCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
@@ -338,7 +338,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         changes.uptime = null
         changes.uptimeStartedAt = null
 
-        changes.onlineWorkerCounterChange -= 1
+        changes.onlineWorkerCountChange -= 1
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.events.length,
@@ -363,8 +363,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
           address,
           createdAt: blockTime,
           updatedAt: blockTime,
-          registerWorkerCounterChange: 0,
-          onlineWorkerCounterChange: 0,
+          registerWorkerCountChange: 0,
+          onlineWorkerCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)
@@ -389,8 +389,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
           address,
           createdAt: blockTime,
           updatedAt: blockTime,
-          registerWorkerCounterChange: 0,
-          onlineWorkerCounterChange: 0,
+          registerWorkerCountChange: 0,
+          onlineWorkerCountChange: 0,
           events: []
         }
         assert(!changes.deletedAt)

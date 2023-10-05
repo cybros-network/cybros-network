@@ -27,7 +27,7 @@ interface PoolWorkerChanges {
   updatedAt: Date
   deletedAt?: Date | null
 
-  poolWorkerCounterChange: number
+  poolWorkerCountChange: number
 
   workerEvents: WorkerEvent[]
 }
@@ -57,13 +57,13 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
           worker,
           createdAt: blockTime,
           updatedAt: blockTime,
-          poolWorkerCounterChange: 0,
+          poolWorkerCountChange: 0,
           workerEvents: []
         }
 
         changes.deletedAt = null
         changes.updatedAt = blockTime
-        changes.poolWorkerCounterChange = 1
+        changes.poolWorkerCountChange = 1
         changes.workerEvents.push({
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.workerEvents.length,
@@ -90,13 +90,13 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
           worker,
           createdAt: blockTime,
           updatedAt: blockTime,
-          poolWorkerCounterChange: 0,
+          poolWorkerCountChange: 0,
           workerEvents: []
         }
 
         changes.deletedAt = blockTime
         changes.updatedAt = blockTime
-        changes.poolWorkerCounterChange = -1
+        changes.poolWorkerCountChange = -1
         changes.workerEvents.push({
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.workerEvents.length,

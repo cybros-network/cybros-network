@@ -163,10 +163,6 @@ mod pallet {
 		#[pallet::constant]
 		type CollectingHeartbeatsDurationInBlocks: Get<u32>;
 
-		/// The duration (blocks) of collecting workers' heartbeats
-		#[pallet::constant]
-		type MaxWorkerUnresponsiveProtectionInBlocks: Get<u32>;
-
 		/// Allow Opt out attestation
 		#[pallet::constant]
 		type DisallowOptOutAttestation: Get<bool>;

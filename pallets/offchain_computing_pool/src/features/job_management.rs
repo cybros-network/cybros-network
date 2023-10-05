@@ -71,6 +71,7 @@ impl<T: Config> Pallet<T> {
 			depositor: depositor.clone(),
 			deposit: job_deposit,
 			beneficiary: beneficiary.clone(),
+			impl_build_version: None,
 			impl_spec_version,
 			status: JobStatus::Pending,
 			result: None,
@@ -128,11 +129,11 @@ impl<T: Config> Pallet<T> {
 		who: T::AccountId,
 		pool_id: T::PoolId,
 		job_id: T::JobId,
-		force: bool,
+		reason: JobDestroyReason,
 	) -> DispatchResult {
 		let job = Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)?;
 
-		if !force {
+		if reason == JobDestroyReason::Safe {
 			Self::ensure_job_beneficiary_or_depositor(&who, &job)?;
 		}
 
@@ -141,7 +142,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::JobIsProcessing
 		);
 
-		Self::do_actual_destroy_job(pool_id, job, who, force)
+		Self::do_actual_destroy_job(pool_id, job, who, reason)
 	}
 
 	pub(crate) fn do_destroy_expired_job(
@@ -153,7 +154,7 @@ impl<T: Config> Pallet<T> {
 		let job = Jobs::<T>::get(&pool_id, &job_id).ok_or(Error::<T>::JobNotFound)?;
 		Self::ensure_job_expired(&job, now)?;
 
-		Self::do_actual_destroy_job(pool_id, job, destroyer, false)?;
+		Self::do_actual_destroy_job(pool_id, job, destroyer, JobDestroyReason::Expired)?;
 
 		Ok(())
 	}
@@ -162,7 +163,7 @@ impl<T: Config> Pallet<T> {
 		pool_id: T::PoolId,
 		job: JobInfo<T::JobId, T::PolicyId, T::AccountId, BalanceOf<T>>,
 		destroyer: T::AccountId,
-		force: bool,
+		reason: JobDestroyReason,
 	) -> DispatchResult {
 		let job_id = job.id;
 		let unique_track_id = job.unique_track_id;
@@ -253,7 +254,7 @@ impl<T: Config> Pallet<T> {
 			job_id,
 			unique_track_id,
 			destroyer,
-			force,
+			reason,
 		});
 		Ok(())
 	}

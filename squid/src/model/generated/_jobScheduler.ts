@@ -1,3 +1,3 @@
 export enum JobScheduler {
-    Deprecation = "Deprecation",
+    DemoOnly = "DemoOnly",
 }

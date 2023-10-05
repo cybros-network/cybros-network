@@ -12,7 +12,7 @@ enum AttestationMethod {
 }
 
 enum JobScheduler {
-  Deprecation
+  DemoOnly
 }
 
 enum ImplBuildStatus {
@@ -39,6 +39,13 @@ enum OfflineReason {
   ImplBuildRetired
   InsufficientDepositFunds
   Other
+}
+
+enum JobDestroyReason {
+  Safe
+  Force
+  Completed
+  Expired
 }
 
 enum JobStatus {
@@ -105,11 +112,6 @@ type ImplBuild @entity {
 
   # stats
   onlineWorkersCount: Int!
-  processingJobsCount: Int!
-  successfulJobsCount: Int!
-  failedJobsCount: Int!
-  erroredJobsCount: Int!
-  panickyJobsCount: Int!
 
   # timestamps
   createdAt: DateTime!
@@ -145,6 +147,7 @@ type Worker @entity {
   poolsCount: Int!
   pendingJobsCount: Int!
   processingJobsCount: Int!
+  processedJobsCount: Int!
   successfulJobsCount: Int!
   failedJobsCount: Int!
   erroredJobsCount: Int!
@@ -206,6 +209,7 @@ type Pool @entity {
   onlineWorkersCount: Int!
   pendingJobsCount: Int!
   processingJobsCount: Int!
+  processedJobsCount: Int!
   successfulJobsCount: Int!
   failedJobsCount: Int!
   erroredJobsCount: Int!
@@ -271,6 +275,8 @@ type Job @entity {
 
   refAssignee: Worker @index
   assigneeAddress: String
+
+  implBuildVersion: Int
 
   refDestroyer: Account
   destroyerAddress: String

@@ -32,7 +32,7 @@ export class Pool {
     @Column_("int4", {nullable: false})
     implId!: number
 
-    @Column_("varchar", {length: 11, nullable: false})
+    @Column_("varchar", {length: 8, nullable: false})
     jobScheduler!: JobScheduler
 
     @Column_("bool", {nullable: false})
@@ -55,6 +55,9 @@ export class Pool {
 
     @Column_("int4", {nullable: false})
     processingJobsCount!: number
+
+    @Column_("int4", {nullable: false})
+    processedJobsCount!: number
 
     @Column_("int4", {nullable: false})
     successfulJobsCount!: number
