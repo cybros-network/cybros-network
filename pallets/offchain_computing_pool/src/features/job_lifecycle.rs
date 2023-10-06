@@ -95,7 +95,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn do_release_job(
+	pub(crate) fn do_resign_job(
 		pool_id: T::PoolId,
 		job_id: T::JobId,
 		worker: T::AccountId,
@@ -124,7 +124,7 @@ impl<T: Config> Pallet<T> {
 
 		Jobs::<T>::insert(&pool_id, &job_id, job);
 
-		Self::deposit_event(Event::JobReleased { pool_id, job_id });
+		Self::deposit_event(Event::JobResigned { pool_id, job_id });
 		Ok(())
 	}
 

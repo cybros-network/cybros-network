@@ -212,7 +212,7 @@ export const OffchainComputingPoolJobPolicyEnablementUpdatedEventV100 = new Even
     })
 )
 
-export const OffchainComputingPoolJobReleasedEventV100 = new EventType(
+export const OffchainComputingPoolJobResignedEventV100 = new EventType(
     sts.struct({
         poolId: sts.number(),
         jobId: sts.number(),

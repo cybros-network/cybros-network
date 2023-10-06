@@ -68,7 +68,7 @@ export const processor = new SubstrateBatchProcessor()
       "OffchainComputingPool.JobCreated",
       "OffchainComputingPool.JobDestroyed",
       "OffchainComputingPool.JobAssigned",
-      "OffchainComputingPool.JobReleased",
+      "OffchainComputingPool.JobResigned",
       "OffchainComputingPool.JobStatusUpdated",
       "OffchainComputingPool.JobResultUpdated"
     ]

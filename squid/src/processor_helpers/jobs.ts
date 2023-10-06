@@ -3,7 +3,7 @@ import {
   OffchainComputingPoolJobAssignedEventV100 as JobAssignedEventV100,
   OffchainComputingPoolJobCreatedEventV100 as JobCreatedEventV100,
   OffchainComputingPoolJobDestroyedEventV100 as JobDestroyedEventV100,
-  OffchainComputingPoolJobReleasedEventV100 as JobReleasedEventV100,
+  OffchainComputingPoolJobResignedEventV100 as JobResignedEventV100,
   OffchainComputingPoolJobResultUpdatedEventV100 as JobResultUpdatedEventV100,
   OffchainComputingPoolJobStatusUpdatedEventV100 as JobStatusUpdatedEventV100,
 } from "../types/events"
@@ -298,10 +298,10 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.JobReleased") {
+      } else if (event.name == "OffchainComputingPool.JobResigned") {
         let rec: { poolId: number, jobId: number }
-        if (JobReleasedEventV100.is(event)) {
-          rec = JobReleasedEventV100.decode(event)
+        if (JobResignedEventV100.is(event)) {
+          rec = JobResignedEventV100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -335,7 +335,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         changes.events.push({
           id: `${id}-${blockNumber}-${event.index}`,
           sequence: blockNumber * 100 + changes.events.length,
-          kind: JobEventKind.Released,
+          kind: JobEventKind.Resigned,
           blockNumber,
           blockTime,
         })

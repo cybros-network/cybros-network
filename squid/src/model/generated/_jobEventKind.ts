@@ -1,7 +1,7 @@
 export enum JobEventKind {
     Created = "Created",
     Assigned = "Assigned",
-    Released = "Released",
+    Resigned = "Resigned",
     Processing = "Processing",
     Discarded = "Discarded",
     Success = "Success",

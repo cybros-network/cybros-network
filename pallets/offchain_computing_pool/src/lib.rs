@@ -300,7 +300,7 @@ pub mod pallet {
 			assignee: T::AccountId,
 			impl_build_version: ImplBuildVersion,
 		},
-		JobReleased {
+		JobResigned {
 			pool_id: T::PoolId,
 			job_id: T::JobId,
 		},
@@ -869,12 +869,12 @@ pub mod pallet {
 			}
 			match policy.applicable_scope {
 				ApplicableScope::Owner => {
-					ensure!(pool_info.owner == beneficiary, Error::<T>::JobPolicyNotApplicable)
+					ensure!(pool_info.owner == who, Error::<T>::JobPolicyNotApplicable)
 				},
 				ApplicableScope::Public => {},
 				ApplicableScope::AllowList => {
 					ensure!(
-						JobPolicyAuthorizedAccounts::<T>::contains_key((pool_id.clone(), policy_id.clone(), beneficiary.clone())),
+						JobPolicyAuthorizedAccounts::<T>::contains_key((pool_id.clone(), policy_id.clone(), who.clone())),
 						Error::<T>::JobPolicyNotApplicable
 					)
 				},
@@ -949,14 +949,14 @@ pub mod pallet {
 		#[transactional]
 		#[pallet::call_index(17)]
 		#[pallet::weight({0})]
-		pub fn release_job(
+		pub fn resign_job(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			job_id: T::JobId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::do_release_job(pool_id, job_id, who)
+			Self::do_resign_job(pool_id, job_id, who)
 		}
 
 		#[transactional]

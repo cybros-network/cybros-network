@@ -304,7 +304,7 @@ type Job @entity {
 enum JobEventKind {
   Created
   Assigned
-  Released
+  Resigned
   Processing
   Discarded
   Success
