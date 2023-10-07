@@ -1,12 +1,5 @@
 import type {Context} from "../processor"
-import {
-  OffchainComputingPoolJobAssignedEventV100 as JobAssignedEventV100,
-  OffchainComputingPoolJobCreatedEventV100 as JobCreatedEventV100,
-  OffchainComputingPoolJobDestroyedEventV100 as JobDestroyedEventV100,
-  OffchainComputingPoolJobResignedEventV100 as JobResignedEventV100,
-  OffchainComputingPoolJobResultUpdatedEventV100 as JobResultUpdatedEventV100,
-  OffchainComputingPoolJobStatusUpdatedEventV100 as JobStatusUpdatedEventV100,
-} from "../types/events"
+import {events} from "../types"
 import * as v100 from "../types/v100";
 import {JobEventKind, JobResult, JobStatus} from "../model";
 import {decodeSS58Address, hexToString, hexToU8a} from "../utils"
@@ -128,7 +121,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
     const blockTime = new Date(block.header.timestamp);
 
     for (let event of block.events) {
-      if (event.name == "OffchainComputingPool.JobCreated") {
+      if (event.name == events.offchainComputingPool.jobCreated.name) {
         let rec: {
           poolId: number,
           jobId: number,
@@ -140,8 +133,8 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           uniqueTrackId?: string,
           expiresIn: bigint
         }
-        if (JobCreatedEventV100.is(event)) {
-          rec = JobCreatedEventV100.decode(event)
+        if (events.offchainComputingPool.jobCreated.v100.is(event)) {
+          rec = events.offchainComputingPool.jobCreated.v100.decode(event)
         } else {
           throw new Error("Unsupported spec")
         }
@@ -197,7 +190,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.JobDestroyed") {
+      } else if (event.name == events.offchainComputingPool.jobDestroyed.name) {
         let rec: {
           poolId: number,
           jobId: number,
@@ -205,8 +198,8 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           destroyer: string,
           reason: v100.JobDestroyReason
         }
-        if (JobDestroyedEventV100.is(event)) {
-          rec = JobDestroyedEventV100.decode(event)
+        if (events.offchainComputingPool.jobDestroyed.v100.is(event)) {
+          rec = events.offchainComputingPool.jobDestroyed.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -254,10 +247,10 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.JobAssigned") {
+      } else if (event.name == events.offchainComputingPool.jobAssigned.name) {
         let rec: { poolId: number, jobId: number, assignee: string, implBuildVersion: number }
-        if (JobAssignedEventV100.is(event)) {
-          rec = JobAssignedEventV100.decode(event)
+        if (events.offchainComputingPool.jobAssigned.v100.is(event)) {
+          rec = events.offchainComputingPool.jobAssigned.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -298,10 +291,10 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.JobResigned") {
+      } else if (event.name == events.offchainComputingPool.jobResigned.name) {
         let rec: { poolId: number, jobId: number }
-        if (JobResignedEventV100.is(event)) {
-          rec = JobResignedEventV100.decode(event)
+        if (events.offchainComputingPool.jobResigned.v100.is(event)) {
+          rec = events.offchainComputingPool.jobResigned.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -341,10 +334,10 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.JobStatusUpdated") {
+      } else if (event.name == events.offchainComputingPool.jobStatusUpdated.name) {
         let rec: { poolId: number, jobId: number, status: v100.JobStatus }
-        if (JobStatusUpdatedEventV100.is(event)) {
-          rec = JobStatusUpdatedEventV100.decode(event)
+        if (events.offchainComputingPool.jobStatusUpdated.v100.is(event)) {
+          rec = events.offchainComputingPool.jobStatusUpdated.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -399,7 +392,7 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
         }
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.JobResultUpdated") {
+      } else if (event.name == events.offchainComputingPool.jobResultUpdated.name) {
         let rec: {
           poolId: number,
           jobId: number,
@@ -407,8 +400,8 @@ export function preprocessJobsEvents(ctx: Context): Map<string, JobChanges> {
           output?: string,
           proof?: string
         }
-        if (JobResultUpdatedEventV100.is(event)) {
-          rec = JobResultUpdatedEventV100.decode(event)
+        if (events.offchainComputingPool.jobResultUpdated.v100.is(event)) {
+          rec = events.offchainComputingPool.jobResultUpdated.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }

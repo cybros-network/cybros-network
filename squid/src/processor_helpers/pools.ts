@@ -1,11 +1,5 @@
 import type {Context} from "../processor"
-import {
-  OffchainComputingPoolPoolCreatedEventV100 as PoolCreatedEventV100,
-  OffchainComputingPoolPoolDestroyedEventV100 as PoolDestroyedEventV100,
-  OffchainComputingPoolPoolMetadataRemovedEventV100 as PoolMetadataRemovedEventV100,
-  OffchainComputingPoolPoolMetadataUpdatedEventV100 as PoolMetadataUpdatedEventV100,
-  OffchainComputingPoolPoolSettingsUpdatedEventV100 as PoolSettingsUpdatedEventV100,
-} from "../types/events"
+import {events} from "../types"
 import {decodeSS58Address, hexToString, hexToU8a} from "../utils";
 import assert from "assert";
 import * as v100 from "../types/v100";
@@ -52,7 +46,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
     const blockTime = new Date(block.header.timestamp);
 
     for (let event of block.events) {
-      if (event.name == "OffchainComputingPool.PoolCreated") {
+      if (event.name == events.offchainComputingPool.poolCreated.name) {
         let rec: {
           owner: string,
           poolId: number,
@@ -61,8 +55,8 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
           createJobEnabled: boolean,
           autoDestroyProcessedJobEnabled: boolean
         }
-        if (PoolCreatedEventV100.is(event)) {
-          rec = PoolCreatedEventV100.decode(event)
+        if (events.offchainComputingPool.poolCreated.v100.is(event)) {
+          rec = events.offchainComputingPool.poolCreated.v100.decode(event)
         } else {
           throw new Error("Unsupported spec")
         }
@@ -88,10 +82,10 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
         changes.updatedAt = blockTime
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.PoolDestroyed") {
+      } else if (event.name == events.offchainComputingPool.poolDestroyed.name) {
         let rec: { poolId: number }
-        if (PoolDestroyedEventV100.is(event)) {
-          rec = PoolDestroyedEventV100.decode(event)
+        if (events.offchainComputingPool.poolDestroyed.v100.is(event)) {
+          rec = events.offchainComputingPool.poolDestroyed.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -108,10 +102,10 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
         changes.updatedAt = blockTime
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.PoolMetadataUpdated") {
+      } else if (event.name == events.offchainComputingPool.poolMetadataUpdated.name) {
         let rec: { poolId: number, metadata: string }
-        if (PoolMetadataUpdatedEventV100.is(event)) {
-          rec = PoolMetadataUpdatedEventV100.decode(event)
+        if (events.offchainComputingPool.poolMetadataUpdated.v100.is(event)) {
+          rec = events.offchainComputingPool.poolMetadataUpdated.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -139,10 +133,10 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
         changes.updatedAt = blockTime
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.PoolMetadataRemoved") {
+      } else if (event.name == events.offchainComputingPool.poolMetadataRemoved.name) {
         let rec: { poolId: number }
-        if (PoolMetadataRemovedEventV100.is(event)) {
-          rec = PoolMetadataRemovedEventV100.decode(event)
+        if (events.offchainComputingPool.poolMetadataRemoved.v100.is(event)) {
+          rec = events.offchainComputingPool.poolMetadataRemoved.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -160,7 +154,7 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
         changes.updatedAt = blockTime
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.PoolSettingsUpdated") {
+      } else if (event.name == events.offchainComputingPool.poolSettingsUpdated.name) {
         let rec: {
           poolId: number,
           minImplSpecVersion: number,
@@ -168,8 +162,8 @@ export function preprocessPoolsEvents(ctx: Context): Map<string, PoolChanges> {
           createJobEnabled: boolean,
           autoDestroyProcessedJobEnabled: boolean
         }
-        if (PoolSettingsUpdatedEventV100.is(event)) {
-          rec = PoolSettingsUpdatedEventV100.decode(event)
+        if (events.offchainComputingPool.poolSettingsUpdated.v100.is(event)) {
+          rec = events.offchainComputingPool.poolSettingsUpdated.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }

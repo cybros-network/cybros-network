@@ -1,8 +1,5 @@
 import type {Context} from "../processor"
-import {
-  OffchainComputingPoolWorkerSubscribedEventV100 as WorkerSubscribedEventV100,
-  OffchainComputingPoolWorkerUnsubscribedEventV100 as WorkerUnsubscribedEventV100,
-} from "../types/events"
+import {events} from "../types"
 import {decodeSS58Address, hexToU8a} from "../utils"
 import {WorkerEventKind} from "../model";
 import assert from "assert";
@@ -41,10 +38,10 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
     const blockTime = new Date(block.header.timestamp);
 
     for (let event of block.events) {
-      if (event.name == "OffchainComputingPool.WorkerSubscribed") {
+      if (event.name == events.offchainComputingPool.workerSubscribed.name) {
         let rec: { worker: string, poolId: number }
-        if (WorkerSubscribedEventV100.is(event)) {
-          rec = WorkerSubscribedEventV100.decode(event)
+        if (events.offchainComputingPool.workerSubscribed.v100.is(event)) {
+          rec = events.offchainComputingPool.workerSubscribed.v100.decode(event)
         } else {
           throw new Error("Unsupported spec")
         }
@@ -74,10 +71,10 @@ export function preprocessPoolWorkersEvents(ctx: Context): Map<string, PoolWorke
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingPool.WorkerUnsubscribed") {
+      } else if (event.name == events.offchainComputingPool.workerUnsubscribed.name) {
         let rec: { worker: string, poolId: number }
-        if (WorkerUnsubscribedEventV100.is(event)) {
-          rec = WorkerUnsubscribedEventV100.decode(event)
+        if (events.offchainComputingPool.workerUnsubscribed.v100.is(event)) {
+          rec = events.offchainComputingPool.workerUnsubscribed.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }

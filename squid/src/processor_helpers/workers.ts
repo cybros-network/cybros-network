@@ -1,14 +1,5 @@
 import type {Context} from "../processor"
-import {
-  OffchainComputingInfraWorkerAttestationRefreshedEventV100 as WorkerAttestationRefreshedEventV100,
-  OffchainComputingInfraWorkerDeregisteredEventV100 as WorkerDeregisteredEventV100,
-  OffchainComputingInfraWorkerHeartbeatReceivedEventV100 as WorkerHeartbeatReceivedEventV100,
-  OffchainComputingInfraWorkerOfflineEventV100 as WorkerOfflineEventV100,
-  OffchainComputingInfraWorkerUnresponsiveEventV100 as WorkerUnresponsiveEventV100,
-  OffchainComputingInfraWorkerOnlineEventV100 as WorkerOnlineEventV100,
-  OffchainComputingInfraWorkerRegisteredEventV100 as WorkerRegisteredEventV100,
-  OffchainComputingInfraWorkerRequestingOfflineEventV100 as WorkerRequestingOfflineEventV100,
-} from "../types/events"
+import {events} from "../types"
 import * as v100 from "../types/v100"
 import {AttestationMethod, OfflineReason, WorkerEventKind, WorkerStatus} from "../model"
 import {decodeSS58Address, hexToU8a} from "../utils"
@@ -103,10 +94,10 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
     const blockTime = new Date(block.header.timestamp);
 
     for (let event of block.events) {
-      if (event.name == "OffchainComputingInfra.WorkerRegistered") {
+      if (event.name == events.offchainComputingInfra.workerRegistered.name) {
         let rec: { worker: string, owner: string, implId: number }
-        if (WorkerRegisteredEventV100.is(event)) {
-          rec = WorkerRegisteredEventV100.decode(event)
+        if (events.offchainComputingInfra.workerRegistered.v100.is(event)) {
+          rec = events.offchainComputingInfra.workerRegistered.v100.decode(event)
         } else {
           throw new Error("Unsupported spec")
         }
@@ -142,10 +133,10 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingInfra.WorkerDeregistered") {
+      } else if (event.name == events.offchainComputingInfra.workerDeregistered.name) {
         let rec: { worker: string, force: boolean }
-        if (WorkerDeregisteredEventV100.is(event)) {
-          rec = WorkerDeregisteredEventV100.decode(event)
+        if (events.offchainComputingInfra.workerDeregistered.v100.is(event)) {
+          rec = events.offchainComputingInfra.workerDeregistered.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -187,7 +178,7 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingInfra.WorkerOnline") {
+      } else if (event.name == events.offchainComputingInfra.workerOnline.name) {
         let rec: {
           worker: string,
           implSpecVersion: number,
@@ -196,8 +187,8 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
           attestationExpiresAt?: bigint,
           nextHeartbeat: number
         }
-        if (WorkerOnlineEventV100.is(event)) {
-          rec = WorkerOnlineEventV100.decode(event)
+        if (events.offchainComputingInfra.workerOnline.v100.is(event)) {
+          rec = events.offchainComputingInfra.workerOnline.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -236,10 +227,10 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingInfra.WorkerUnresponsive") {
+      } else if (event.name == events.offchainComputingInfra.workerUnresponsive.name) {
         let rec: { worker: string }
-        if (WorkerUnresponsiveEventV100.is(event)) {
-          rec = WorkerUnresponsiveEventV100.decode(event)
+        if (events.offchainComputingInfra.workerUnresponsive.v100.is(event)) {
+          rec = events.offchainComputingInfra.workerUnresponsive.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -270,10 +261,10 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingInfra.WorkerRequestingOffline") {
+      } else if (event.name == events.offchainComputingInfra.workerRequestingOffline.name) {
         let rec: { worker: string }
-        if (WorkerRequestingOfflineEventV100.is(event)) {
-          rec = WorkerRequestingOfflineEventV100.decode(event)
+        if (events.offchainComputingInfra.workerRequestingOffline.v100.is(event)) {
+          rec = events.offchainComputingInfra.workerRequestingOffline.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -303,10 +294,10 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingInfra.WorkerOffline") {
+      } else if (event.name == events.offchainComputingInfra.workerOffline.name) {
         let rec: { worker: string, reason: v100.OfflineReason }
-        if (WorkerOfflineEventV100.is(event)) {
-          rec = WorkerOfflineEventV100.decode(event)
+        if (events.offchainComputingInfra.workerOffline.v100.is(event)) {
+          rec = events.offchainComputingInfra.workerOffline.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -348,10 +339,10 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         })
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingInfra.WorkerHeartbeatReceived") {
+      } else if (event.name == events.offchainComputingInfra.workerHeartbeatReceived.name) {
         let rec: { worker: string, next: number, uptime: bigint }
-        if (WorkerHeartbeatReceivedEventV100.is(event)) {
-          rec = WorkerHeartbeatReceivedEventV100.decode(event)
+        if (events.offchainComputingInfra.workerHeartbeatReceived.v100.is(event)) {
+          rec = events.offchainComputingInfra.workerHeartbeatReceived.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -374,10 +365,10 @@ export function preprocessWorkersEvents(ctx: Context): Map<string, WorkerChanges
         changes.updatedAt = blockTime
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingInfra.WorkerAttestationRefreshed") {
+      } else if (event.name == events.offchainComputingInfra.workerAttestationRefreshed.name) {
         let rec: { worker: string, expiresAt?: bigint }
-        if (WorkerAttestationRefreshedEventV100.is(event)) {
-          rec = WorkerAttestationRefreshedEventV100.decode(event)
+        if (events.offchainComputingInfra.workerAttestationRefreshed.v100.is(event)) {
+          rec = events.offchainComputingInfra.workerAttestationRefreshed.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }

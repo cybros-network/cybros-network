@@ -1,15 +1,30 @@
-import {sts, Result, Option, Bytes} from './support'
+import {sts, Result, Option, Bytes, BitSequence} from './support'
 
-export const JobScheduler: sts.Type<JobScheduler> = sts.closedEnum(() => {
+export const JobResult: sts.Type<JobResult> = sts.closedEnum(() => {
     return  {
-        DemoOnly: sts.unit(),
+        Error: sts.unit(),
+        Fail: sts.unit(),
+        Panic: sts.unit(),
+        Success: sts.unit(),
     }
 })
 
-export type JobScheduler = JobScheduler_DemoOnly
+export type JobResult = JobResult_Error | JobResult_Fail | JobResult_Panic | JobResult_Success
 
-export interface JobScheduler_DemoOnly {
-    __kind: 'DemoOnly'
+export interface JobResult_Error {
+    __kind: 'Error'
+}
+
+export interface JobResult_Fail {
+    __kind: 'Fail'
+}
+
+export interface JobResult_Panic {
+    __kind: 'Panic'
+}
+
+export interface JobResult_Success {
+    __kind: 'Success'
 }
 
 export const JobStatus: sts.Type<JobStatus> = sts.closedEnum(() => {
@@ -39,55 +54,6 @@ export interface JobStatus_Processing {
     __kind: 'Processing'
 }
 
-export const JobResult: sts.Type<JobResult> = sts.closedEnum(() => {
-    return  {
-        Error: sts.unit(),
-        Fail: sts.unit(),
-        Panic: sts.unit(),
-        Success: sts.unit(),
-    }
-})
-
-export type JobResult = JobResult_Error | JobResult_Fail | JobResult_Panic | JobResult_Success
-
-export interface JobResult_Error {
-    __kind: 'Error'
-}
-
-export interface JobResult_Fail {
-    __kind: 'Fail'
-}
-
-export interface JobResult_Panic {
-    __kind: 'Panic'
-}
-
-export interface JobResult_Success {
-    __kind: 'Success'
-}
-
-export const ApplicableScope: sts.Type<ApplicableScope> = sts.closedEnum(() => {
-    return  {
-        AllowList: sts.unit(),
-        Owner: sts.unit(),
-        Public: sts.unit(),
-    }
-})
-
-export type ApplicableScope = ApplicableScope_AllowList | ApplicableScope_Owner | ApplicableScope_Public
-
-export interface ApplicableScope_AllowList {
-    __kind: 'AllowList'
-}
-
-export interface ApplicableScope_Owner {
-    __kind: 'Owner'
-}
-
-export interface ApplicableScope_Public {
-    __kind: 'Public'
-}
-
 export const JobDestroyReason: sts.Type<JobDestroyReason> = sts.closedEnum(() => {
     return  {
         Completed: sts.unit(),
@@ -114,6 +80,64 @@ export interface JobDestroyReason_Force {
 export interface JobDestroyReason_Safe {
     __kind: 'Safe'
 }
+
+export const ApplicableScope: sts.Type<ApplicableScope> = sts.closedEnum(() => {
+    return  {
+        AllowList: sts.unit(),
+        Owner: sts.unit(),
+        Public: sts.unit(),
+    }
+})
+
+export type ApplicableScope = ApplicableScope_AllowList | ApplicableScope_Owner | ApplicableScope_Public
+
+export interface ApplicableScope_AllowList {
+    __kind: 'AllowList'
+}
+
+export interface ApplicableScope_Owner {
+    __kind: 'Owner'
+}
+
+export interface ApplicableScope_Public {
+    __kind: 'Public'
+}
+
+export const JobScheduler: sts.Type<JobScheduler> = sts.closedEnum(() => {
+    return  {
+        DemoOnly: sts.unit(),
+    }
+})
+
+export type JobScheduler = JobScheduler_DemoOnly
+
+export interface JobScheduler_DemoOnly {
+    __kind: 'DemoOnly'
+}
+
+export const ImplBuildStatus: sts.Type<ImplBuildStatus> = sts.closedEnum(() => {
+    return  {
+        Deprecated: sts.unit(),
+        Released: sts.unit(),
+        Retired: sts.unit(),
+    }
+})
+
+export type ImplBuildStatus = ImplBuildStatus_Deprecated | ImplBuildStatus_Released | ImplBuildStatus_Retired
+
+export interface ImplBuildStatus_Deprecated {
+    __kind: 'Deprecated'
+}
+
+export interface ImplBuildStatus_Released {
+    __kind: 'Released'
+}
+
+export interface ImplBuildStatus_Retired {
+    __kind: 'Retired'
+}
+
+export const BoundedVec = sts.bytes()
 
 export const OfflineReason: sts.Type<OfflineReason> = sts.closedEnum(() => {
     return  {
@@ -169,24 +193,4 @@ export interface AttestationMethod_OptOut {
     __kind: 'OptOut'
 }
 
-export const ImplBuildStatus: sts.Type<ImplBuildStatus> = sts.closedEnum(() => {
-    return  {
-        Deprecated: sts.unit(),
-        Released: sts.unit(),
-        Retired: sts.unit(),
-    }
-})
-
-export type ImplBuildStatus = ImplBuildStatus_Deprecated | ImplBuildStatus_Released | ImplBuildStatus_Retired
-
-export interface ImplBuildStatus_Deprecated {
-    __kind: 'Deprecated'
-}
-
-export interface ImplBuildStatus_Released {
-    __kind: 'Released'
-}
-
-export interface ImplBuildStatus_Retired {
-    __kind: 'Retired'
-}
+export const AccountId32 = sts.bytes()

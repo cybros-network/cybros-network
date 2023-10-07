@@ -1,10 +1,5 @@
 import type {Context} from "../processor"
-import {
-  OffchainComputingInfraImplDeregisteredEventV100 as ImplDeregisteredEventV100,
-  OffchainComputingInfraImplMetadataRemovedEventV100 as ImplMetadataRemovedEventV100,
-  OffchainComputingInfraImplMetadataUpdatedEventV100 as ImplMetadataUpdatedEventV100,
-  OffchainComputingInfraImplRegisteredEventV100 as ImplRegisteredEventV100,
-} from "../types/events"
+import {events} from "../types"
 import * as v100 from "../types/v100"
 import {AttestationMethod} from "../model"
 import {decodeSS58Address, hexToU8a} from "../utils"
@@ -46,14 +41,14 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
     const blockTime = new Date(block.header.timestamp);
 
     for (let event of block.events) {
-      if (event.name == "OffchainComputingInfra.ImplRegistered") {
+      if (event.name == events.offchainComputingInfra.implRegistered.name) {
         let rec: {
           implId: number,
           owner: string,
           attestationMethod: v100.AttestationMethod,
         }
-        if (ImplRegisteredEventV100.is(event)) {
-          rec = ImplRegisteredEventV100.decode(event)
+        if (events.offchainComputingInfra.implRegistered.v100.is(event)) {
+          rec = events.offchainComputingInfra.implRegistered.v100.decode(event)
         } else {
           throw new Error("Unsupported spec")
         }
@@ -73,10 +68,10 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
         changes.updatedAt = blockTime
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingInfra.ImplDeregistered") {
+      } else if (event.name == events.offchainComputingInfra.implDeregistered.name) {
         let rec: { implId: number }
-        if (ImplDeregisteredEventV100.is(event)) {
-          rec = ImplDeregisteredEventV100.decode(event)
+        if (events.offchainComputingInfra.implDeregistered.v100.is(event)) {
+          rec = events.offchainComputingInfra.implDeregistered.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -92,10 +87,10 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
         changes.deletedAt = blockTime
 
         changeSet.set(id, changes)
-      } else if (event.name == "OffchainComputingInfra.ImplMetadataUpdated") {
+      } else if (event.name == events.offchainComputingInfra.implMetadataUpdated.name) {
         let rec: { implId: number, metadata: string }
-        if (ImplMetadataUpdatedEventV100.is(event)) {
-          rec = ImplMetadataUpdatedEventV100.decode(event)
+        if (events.offchainComputingInfra.implMetadataUpdated.v100.is(event)) {
+          rec = events.offchainComputingInfra.implMetadataUpdated.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
@@ -115,8 +110,8 @@ export function preprocessImplsEvents(ctx: Context): Map<string, ImplChanges> {
         changeSet.set(id, changes)
       } else if (event.name == "OffchainComputingInfra.ImplMetadataRemoved") {
         let rec: { implId: number }
-        if (ImplMetadataRemovedEventV100.is(event)) {
-          rec = ImplMetadataRemovedEventV100.decode(event)
+        if (events.offchainComputingInfra.implMetadataRemoved.v100.is(event)) {
+          rec = events.offchainComputingInfra.implMetadataRemoved.v100.decode(event)
         } else {
           throw new Error('Unsupported spec')
         }
