@@ -1,7 +1,12 @@
 import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
 import {loadSync as loadEnvSync} from "https://deno.land/std/dotenv/mod.ts";
+import {crypto, toHashString} from "https://deno.land/std/crypto/mod.ts"
 import {decode as decodeBase64} from 'https://deno.land/std/encoding/base64.ts';
+
+// import { S3Client, PutObjectCommand } from "npm:@aws-sdk/client-s3";
+// import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner";
+import * as Minio from "npm:minio";
 
 import type {HexString} from "https://deno.land/x/polkadot/util/types.ts";
 import type {Keypair} from "https://deno.land/x/polkadot/util-crypto/types.ts";
@@ -14,6 +19,27 @@ const specVersion = 1;
 const workPath = path.dirname(path.fromFileUrl(import.meta.url));
 const isProd = Deno.env.get("DEBUG") !== "1";
 const env = loadEnvSync();
+
+let s3Client;
+if (env.FALLBACK_S3_ENABLED.toString() == "1") {
+  // s3Client = new S3Client({
+  //   credentials: {
+  //     secretAccessKey: env.FALLBACK_S3_SECRET_ACCESS_KEY,
+  //     accessKeyId: env.FALLBACK_S3_ACCESS_KEY_ID,
+  //   },
+  //   endpoint: env.FALLBACK_S3_ENDPOINT,
+  //   tls: env.FALLBACK_S3_USE_SSL.toString() === "1",
+  //   forcePathStyle: env.FALLBACK_S3_FORCE_PATH_STYLE.toString() === "1",
+  //   region: env.FALLBACK_S3_REGION,
+  // });
+
+  s3Client = new Minio.Client({
+    endPoint: env.FALLBACK_S3_ENDPOINT,
+    useSSL: env.FALLBACK_S3_USE_SSL.toString() === "1",
+    accessKey: env.FALLBACK_S3_ACCESS_KEY_ID,
+    secretKey: env.FALLBACK_S3_SECRET_ACCESS_KEY,
+  })
+}
 
 enum Result {
   Success = "Success",
@@ -161,12 +187,12 @@ if (parsedInput["v"] != 1) {
   renderAndExit(Result.Error, "VERSION_INCOMPATIBLE");
 }
 
-const imageUploadUrl = parsedData["image_upload_url"] ? parsedData["image_upload_url"].toString().trim() : "";
-if (imageUploadUrl.length === 0) {
+let imageUploadUrl = parsedData["image_upload_url"] ? parsedData["image_upload_url"].toString().trim() : "";
+if (imageUploadUrl.length === 0 && !s3Client) {
   renderAndExit(Result.Error, "IMAGE_UPLOAD_URL_IS_BLANK");
 }
-const proofUploadUrl = parsedData["proof_upload_url"] ? parsedData["proof_upload_url"].toString().trim() : "";
-if (proofUploadUrl.length === 0) {
+let proofUploadUrl = parsedData["proof_upload_url"] ? parsedData["proof_upload_url"].toString().trim() : "";
+if (proofUploadUrl.length === 0 && !s3Client) {
   renderAndExit(Result.Error, "PROOF_UPLOAD_URL_IS_BLANK");
 }
 
@@ -407,7 +433,18 @@ try {
 }
 
 // Upload image
-
+const imageHash = toHashString(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(image)));
+if (imageUploadUrl.length === 0 && s3Client) {
+  // imageUploadUrl = await getSignedUrl(
+  //   s3Client,
+  //   new PutObjectCommand({
+  //     Bucket: env.FALLBACK_S3_BUCKET,
+  //     Key: `${imageHash}.png`,
+  //   }),
+  //   { expiresIn: 60 }
+  // )
+  imageUploadUrl = await s3Client.presignedPutObject(env.FALLBACK_S3_BUCKET, `${imageHash}.png`, 60);
+}
 const imageUploadResp = await fetch(imageUploadUrl, {
   method: 'PUT',
   body: image
@@ -418,7 +455,18 @@ if (!imageUploadResp.ok) {
 }
 
 // Upload proof
-
+const proofHash = toHashString(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(responsePayload)));
+if (proofUploadUrl.length === 0 && s3Client) {
+  // proofUploadUrl = await getSignedUrl(
+  //   s3Client,
+  //   new PutObjectCommand({
+  //     Bucket: env.FALLBACK_S3_BUCKET,
+  //     Key: `${imageHash}.json`,
+  //   }),
+  //   { expiresIn: 60 }
+  // )
+  proofUploadUrl = await s3Client.presignedPutObject(env.FALLBACK_S3_BUCKET, `${imageHash}.json`, 60);
+}
 const proofUploadResp = await fetch(proofUploadUrl, {
   method: 'PUT',
   body: new TextEncoder().encode(responsePayload)
@@ -435,5 +483,7 @@ proofUrl.search = ""
 
 renderAndExit(Result.Success, {
   imageUrl,
+  imageHash,
   proofUrl,
+  proofHash,
 });

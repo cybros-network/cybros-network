@@ -290,6 +290,7 @@ async function handleJob() {
       "--no-prompt",
       "--allow-env",
       "--allow-net",
+      "--allow-sys",
       `--allow-read=${jobWorkPath}`,
       `--allow-write=${jobWorkPath}`,
       path.join(jobWorkPath, "main.ts"),
@@ -304,13 +305,16 @@ async function handleJob() {
   child.output().then(async ({code, stdout, stderr}) => {
     const out = new TextDecoder().decode(stdout).trim();
     console.log(out);
-    // const errorOut = new TextDecoder().decode(stderr).trim();
+    const errorOut = new TextDecoder().decode(stderr).trim();
+    console.error(errorOut);
 
     let parsedOut;
     try {
       parsedOut = JSON.parse(hexToString(out));
       console.log(parsedOut);
-    } catch (_e) {}
+    } catch (e) {
+      console.error(e.message);
+    }
 
     const jobResult = api.createType("JobResult", parsedOut ? parsedOut.result : "Success");
     const jobOutput = out && out.length > 0 ? api.createType("JobOutput", out) : null;
