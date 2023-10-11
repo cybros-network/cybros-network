@@ -4,6 +4,8 @@ import {loadSync as loadEnvSync} from "https://deno.land/std/dotenv/mod.ts";
 import {crypto, toHashString} from "https://deno.land/std/crypto/mod.ts"
 import {decode as decodeBase64} from 'https://deno.land/std/encoding/base64.ts';
 
+import { createCanvas, loadImage as loadImageForCanvas } from "https://deno.land/x/canvas/mod.ts";
+
 // import { S3Client, PutObjectCommand } from "npm:@aws-sdk/client-s3";
 // import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner";
 import * as Minio from "npm:minio";
@@ -422,6 +424,9 @@ try {
     body: JSON.stringify(requestPayload),
   });
   responsePayload = await resp.text();
+  if (!isProd) {
+    logger.debug(responsePayload)
+  }
   const parsedResponsePayload = JSON.parse(responsePayload);
   if (parsedResponsePayload.error) {
     renderAndExit(Result.Error, "SD_API_ERROR_OR_BAD_PROMPT");
@@ -430,6 +435,31 @@ try {
 } catch (e) {
   logger.error(JSON.stringify(e, Object.getOwnPropertyNames(e)));
   renderAndExit(Result.Error, "SD_API_ERROR");
+}
+
+// Test image, sometimes the image will full black
+function isCanvasBlank(canvas) {
+  const context = canvas.getContext('2d');
+
+  const pixelBuffer = new Uint32Array(
+    context.getImageData(0, 0, canvas.width, canvas.height).data.buffer
+  );
+
+  return !pixelBuffer.some(color => color !== 0 && color !== 4278190080);
+}
+
+try {
+  const canvas = createCanvas(width, height);
+  const canvasCtx = canvas.getContext("2d");
+  canvasCtx.drawImage(await loadImageForCanvas(image), 0, 0);
+
+  if (isCanvasBlank(canvas)) {
+    renderAndExit(Result.Fail, "IMAGE_VERIFY_FAILED");
+  }
+} catch (e) {
+  logger.error(JSON.stringify(e, Object.getOwnPropertyNames(e)));
+  renderPanic(isProd, "UNABLE_VERIFY_IMAGE");
+  Deno.exit(1);
 }
 
 // Upload image
