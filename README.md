@@ -5,6 +5,13 @@ Cybros Network is a Web 3 infra that provides blockchain-based job scheduling ab
 which is extremely useful for automation, edge tech (like AI) and Web 2 services integration, oracles, etc.
 It shall help innovate new dApp forms we have yet to see.
 
+## Dev net
+
+Dev net will often reset to reflect latest change!
+
+- WS RPC: wss://node-rpc.cybros.network
+- Indexer: https://squid.cybros.network/graphql
+
 ## Why Cybros
 
 > WIP
