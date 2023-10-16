@@ -55,12 +55,15 @@ CMakeLists.txt
 *.so
 *.so.*
 
-# Project relates
-.github
-tools
-templates
-docs
-misc
-docker
 **/tmp
 **/log
+
+# Project relates
+.github
+docker
+docs
+misc
+protocol_impl
+squid
+testnet-faucet
+testnet-faucet-ui

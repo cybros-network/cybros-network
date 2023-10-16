@@ -10,14 +10,32 @@ rls*.log
 **/Cargo.lock
 !/Cargo.lock
 
-**/node_modules
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
+**/node_modules
+**/logs
 **/tmp
 **/.env
 **/.vitepress/cache
 **/.vitepress/dist
+**/.svelte-kit
+**/vite.config.js.timestamp-*
+**/vite.config.ts.timestamp-*
 
 /tools/session_keys.json
+
+/testnet-faucet/env.*.config.json.d.ts
+/testnet-faucet/data
+/testnet-faucet/build
+/testnet-faucet/e2e/containter_logs
+
+/testnet-faucet-ui/build
+/testnet-faucet-ui/package
 
 /squid/lib
 /squid/builds
