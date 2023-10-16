@@ -1807,7 +1807,6 @@ dependencies = [
 name = "cybros-runtime-primitives"
 version = "0.0.1-dev"
 dependencies = [
- "frame-support",
  "sp-core",
  "sp-runtime",
 ]
