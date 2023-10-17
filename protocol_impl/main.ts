@@ -432,7 +432,10 @@ if (isNaN(subscribePool)) {
 }
 
 interface Locals {
+  // Send by the owner, for convenient
   sentRegisterAt?: number;
+  sentAuthorizePoolAt?: number;
+
   sentOnlineAt?: number;
   sentHeartbeatAt?: number;
   sentSubscribePoolAt?: number;
@@ -649,9 +652,33 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
   ]);
 
   if (!invited) {
-    console.log(`Worker not added to ${window.subscribePool} yet`)
+    console.log(`Worker not added to ${window.subscribePool} yet`);
+
+    if (window.locals.sentAuthorizePoolAt && window.locals.sentAuthorizePoolAt >= finalizedBlockNumber) {
+      logger.debug("Waiting authorize worker extrinsic finalize");
+
+      return;
+    }
+
+    if (window.ownerKeyPair !== null) {
+      logger.info(`Sending "offchainComputingPool.authorizeWorker(poolId, worker)`);
+      const txPromise = api.tx.offchainComputingPool.authorizeWorker(window.subscribePool, window.workerKeyPair.address);
+      logger.debug(`Call hash: ${txPromise.toHex()}`);
+      const txHash = await txPromise.signAndSend(window.ownerKeyPair, { nonce: -1 });
+      logger.info(`Transaction hash: ${txHash.toHex()}`);
+      // TODO: Catch whether failed
+
+      window.locals.sentAuthorizePoolAt = latestBlockNumber;
+    }
+
     return;
-  } else if (!subscribed) {
+  } else if (window.locals.sentAuthorizePoolAt && invited) {
+    console.log(`Worker has been invited to pool ${window.subscribePool}.`)
+
+    window.locals.sentAuthorizePoolAt = undefined
+  }
+
+  if (!subscribed) {
     if (window.locals.sentSubscribePoolAt && window.locals.sentSubscribePoolAt >= finalizedBlockNumber) {
       logger.debug("Waiting subscribe pool extrinsic finalize");
 
@@ -668,7 +695,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     window.locals.sentSubscribePoolAt = latestBlockNumber;
 
     return;
-  } else if (subscribed && window.locals.sentSubscribePoolAt) {
+  } else if (window.locals.sentSubscribePoolAt && subscribed) {
     console.log(`Worker subscribed pool ${window.subscribePool}.`)
 
     window.locals.sentSubscribePoolAt = undefined
