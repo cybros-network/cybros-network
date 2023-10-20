@@ -302,7 +302,7 @@ try {
   const models = await resp.json();
 
   for (const item of models) {
-    if (item.model_name == modelName) {
+    if (item.name == modelName) {
       modelTitle = item.title
       break;
     }
@@ -328,14 +328,14 @@ try {
   const samplers = await resp.json();
 
   for (const item of samplers) {
-    if (item.name === samplerName || item.aliases.includes(samplerName)) {
+    if (item.name == samplerName || item.aliases.includes(samplerName)) {
       samplerTitle = item.name;
       break;
     }
   }
 
   if (!samplerTitle) {
-    logger.error(`Sampler "${samplerTitle}" not found`);
+    logger.error(`Sampler "${samplerName}" not found`);
     renderAndExit(Result.Error, "SAMPLER_NOT_FOUND");
   }
 } catch (e) {
