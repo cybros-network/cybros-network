@@ -302,7 +302,7 @@ try {
   const models = await resp.json();
 
   for (const item of models) {
-    if (item.name == modelName) {
+    if (item["name"] == modelName || item["model_name"] == modelName) {
       modelTitle = item.title
       break;
     }
@@ -328,7 +328,7 @@ try {
   const samplers = await resp.json();
 
   for (const item of samplers) {
-    if (item.name == samplerName || item.aliases.includes(samplerName)) {
+    if (item["name"] == samplerName || item["aliases"].includes(samplerName)) {
       samplerTitle = item.name;
       break;
     }
