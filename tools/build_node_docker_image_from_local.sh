@@ -11,7 +11,7 @@ DOCKER_TAG=latest
 
 # Build the image
 echo "Building ${DOCKER_ORG}/${DOCKER_REPO}:${DOCKER_TAG} docker image, hang on!"
-time DOCKER_BUILDKIT=1 docker build -f ./docker/node.Dockerfile -t ${DOCKER_ORG}/${DOCKER_REPO}:${DOCKER_TAG} .
+time docker build -t ${DOCKER_ORG}/${DOCKER_REPO}:${DOCKER_TAG} .
 
 # Show the list of available images for this repo
 echo "Image is ready"

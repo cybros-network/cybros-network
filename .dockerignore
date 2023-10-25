@@ -16,6 +16,8 @@ rls*.log
 *.bk
 *~
 
+**/node_modules
+
 # Keep
 !.keep
 
@@ -58,12 +60,16 @@ CMakeLists.txt
 **/tmp
 **/log
 
+.git
+
 # Project relates
+**/.env*
 .github
-docker
 docs
 misc
 protocol_impl
 squid
+statescan
+tools
 testnet-faucet
 testnet-faucet-ui

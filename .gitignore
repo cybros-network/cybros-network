@@ -42,6 +42,8 @@ lerna-debug.log*
 /squid/**Versions.json
 /squid/**Versions.jsonl
 
+/statescan/data
+
 /protocol_impl/data
 /protocol_impl/log
 /protocol_impl/main.js
