@@ -29,7 +29,7 @@
   }
 
   async function request(address: string): Promise<string> {
-    return faucetRequest(address, token, $testnet, network);
+    return faucetRequest(address, token, $testnet);
   }
 </script>
 

@@ -3,7 +3,6 @@ import { type Frame, type FullConfig, type Locator, type Page, expect, test } fr
 type FormSubmit = {
   address: string;
   recaptcha: string;
-  parachain_id?: string;
 };
 
 const getFormElements = async (page: Page, getCaptcha = false) => {
@@ -101,19 +100,6 @@ export class FaucetTests {
           await expect(captcha).toBeVisible();
         });
 
-        test("page loads with default value in parachain field", async ({ page }) => {
-          await page.goto(this.url);
-          const { network } = await getFormElements(page);
-          await expect(network).toHaveValue("-1");
-        });
-
-        test("page with get parameter loads with value in parachain field", async ({ page }) => {
-          const parachainId = "1234";
-          await page.goto(`${this.url}?parachain=${parachainId}`);
-          const { network } = await getFormElements(page);
-          await expect(network).toHaveValue(parachainId);
-        });
-
         test("page has captcha", async ({ page }) => {
           await page.goto(this.url);
           const { captcha } = await getFormElements(page, true);
@@ -157,31 +143,6 @@ export class FaucetTests {
           await networkBtn.click();
           await expect(networkBtn).not.toBeVisible();
           await expect(network).toHaveValue("1000");
-        });
-      });
-
-      test.describe("Custom networks", () => {
-        let network: Locator;
-        let customChainDiv: Locator;
-
-        test.beforeEach(async ({ page }) => {
-          await page.goto(this.url);
-          network = (await getFormElements(page)).network;
-          customChainDiv = page.getByTestId("custom-network-button");
-          await expect(customChainDiv).toBeEnabled();
-          await expect(customChainDiv).toContainText("Use custom chain id");
-          await customChainDiv.click();
-          await expect(network).toBeVisible();
-        });
-
-        test("Value is empty on network pick", async () => {
-          await expect(network).toHaveValue("");
-        });
-
-        test("Value restores to -1 when picking preselected network", async () => {
-          await customChainDiv.click();
-          await expect(network).toBeHidden();
-          await expect(network).toHaveValue("-1");
         });
       });
 
@@ -240,8 +201,7 @@ export class FaucetTests {
             const request = page.waitForRequest((req) => {
               if (req.url() === faucetUrl) {
                 const data = req.postDataJSON() as FormSubmit;
-                const parachain_id = chain.id > 0 ? chain.id.toString() : undefined;
-                expect(data).toMatchObject({ address: myAddress, parachain_id });
+                expect(data).toMatchObject({ address: myAddress });
                 return !!data.recaptcha;
               }
               return false;
@@ -251,33 +211,6 @@ export class FaucetTests {
             await request;
           });
         }
-
-        test("sends data with custom chain on submit", async ({ page }, { config }) => {
-          await page.goto(this.url);
-          const { address, network, captcha, submit } = await getFormElements(page, true);
-          await expect(submit).toBeDisabled();
-          const myAddress = "0x000000002";
-          await address.fill(myAddress);
-          const customChainDiv = page.getByTestId("custom-network-button");
-          await customChainDiv.click();
-          await network.fill("9999");
-          await captcha.click();
-          await expect(submit).toBeEnabled();
-          const faucetUrl = this.getFaucetUrl(config);
-          await page.route(faucetUrl, (route) => route.fulfill({ body: JSON.stringify({ hash: "hash" }) }));
-
-          const request = page.waitForRequest((req) => {
-            if (req.url() === faucetUrl) {
-              const data = req.postDataJSON() as FormSubmit;
-              expect(data).toMatchObject({ address: myAddress, parachain_id: "9999" });
-              return !!data.recaptcha;
-            }
-            return false;
-          });
-
-          await submit.click();
-          await request;
-        });
 
         test("display link to transaction", async ({ page }, { config }) => {
           await page.goto(this.url);

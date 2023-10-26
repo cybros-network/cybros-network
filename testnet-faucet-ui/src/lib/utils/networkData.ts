@@ -22,44 +22,18 @@ export interface NetworkData {
   explorer: string | null;
 }
 
-export const Rococo: NetworkData = {
-  networkName: "Rococo",
-  currency: "ROC",
+export const Cybros: NetworkData = {
+  networkName: "Cybros",
+  currency: "CBT",
   chains: [
-    { name: "Rococo Relay Chain", id: -1 },
-    { name: "Rockmine", id: 1000 },
-    { name: "Contracts", id: 1002 },
-    { name: "Encointer Lietaer", id: 1003 },
-    { name: "Bridgehub", id: 1013 },
+    { name: "Dev (the Primal)", id: -1 },
   ],
-  endpoint: faucetUrl("https://rococo-faucet.parity-testnet.parity.io/drip/web"),
-  explorer: "https://rococo.subscan.io",
-};
-
-export const Westend: NetworkData = {
-  networkName: "Westend",
-  currency: "WND",
-  chains: [
-    { name: "Westend Relay Chain", id: -1 },
-    { name: "Westmint", id: 1000 },
-    { name: "Collectives", id: 1001 },
-  ],
-  endpoint: faucetUrl("https://westend-faucet.polkadot.io/drip/web"),
-  explorer: "https://westend.subscan.io",
-};
-
-export const Trappist: NetworkData = {
-  networkName: "Trappist",
-  currency: "HOP",
-  chains: [{ name: "Trappist rococo parachain", id: -1 }],
-  endpoint: faucetUrl("https://trappist-faucet.parity-testnet.parity.io/drip/web"),
-  explorer: null,
+  endpoint: faucetUrl("https://faucet-api.cybros.network/drip/web"),
+  explorer: "https://scan.cybros.network",
 };
 
 export const Networks: { network: NetworkData; url: string }[] = [
-  { network: Rococo, url: (base as string) || "/" },
-  { network: Westend, url: `${base as string}/westend` },
-  { network: Trappist, url: `${base as string}/trappist` },
+  { network: Cybros, url: (base as string) || "/" },
 ];
 
 export function getChainName(network: NetworkData, id: number): string | null {

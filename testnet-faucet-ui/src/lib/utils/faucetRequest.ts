@@ -6,22 +6,19 @@ export async function request(
   address: string,
   recaptcha: string,
   network: NetworkData,
-  parachain?: number,
 ): Promise<string> {
   if (DEMO !== undefined && DEMO !== "") {
     return await boilerplateRequest(address);
   }
-  const chain = parachain && parachain > 0 ? parachain.toString() : undefined;
-  return await faucetRequest(address, recaptcha, network, chain);
+  return await faucetRequest(address, recaptcha, network);
 }
 
 export async function faucetRequest(
   address: string,
   recaptcha: string,
   network: NetworkData,
-  parachain_id?: string,
 ): Promise<string> {
-  const body = { address, parachain_id, recaptcha };
+  const body = { address, recaptcha };
 
   const url = network.endpoint;
   if (!url) {

@@ -1,7 +1,6 @@
 <script lang="ts">
   import Card from "$lib/components/Card.svelte";
   import Form from "$lib/components/Form.svelte";
-  import SocialTags from "$lib/components/SocialTags.svelte";
   import Error from "$lib/components/screens/Error.svelte";
   import FrequentlyAskedQuestions from "$lib/components/screens/FrequentlyAskedQuestions.svelte";
   import Success from "$lib/components/screens/Success.svelte";
@@ -13,22 +12,17 @@
   export let faq: string;
   export let network: NetworkData;
 
-  let parachain: number;
   onMount(() => {
     const urlParams = new URLSearchParams(window.location.search);
-
-    const parachainQuery = urlParams.get("parachain") ?? "-1";
-    parachain = parseInt(parachainQuery);
     testnet.set(network);
   });
 </script>
 
 <main>
-  <SocialTags />
   <div class="flex items-center justify-center mt-16 mb-4 md:my-16">
     <Card>
       {#if !$operation}
-        <Form network={parachain ?? -1} />
+        <Form network={-1} />
       {:else}
         <div in:fly={{ y: 30, duration: 500 }}>
           {#if $operation.success}

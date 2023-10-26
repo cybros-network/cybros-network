@@ -1,26 +1,11 @@
 <script lang="ts">
   import { testnet } from "$lib/utils/stores";
-  import { Rococo, getChainName } from "../utils/networkData";
+  import { Cybros, getChainName } from "../utils/networkData";
   import Chevron from "./icons/Chevron.svelte";
 
   export let network: number = -1;
   let disabled: boolean = false;
   let input: HTMLInputElement;
-
-  let customValue: boolean = false;
-  let customBtnMessage = "Use preselected chains";
-  $: customBtnMessage = !customValue ? "Use custom chain id" : "Use preselected chains";
-  $: customValue = !getChainName(Rococo, network);
-
-  function switchCustomValue() {
-    if (!customValue) {
-      input.value = "";
-    } else {
-      network = -1;
-      input.value = network.toString();
-    }
-    customValue = !customValue;
-  }
 
   function selectChain(chain: number) {
     // calling blur closes the dropdown
@@ -36,40 +21,22 @@
   <label class="label" for="address">
     <span class="form-label">Network</span>
   </label>
-  <input
-    type="number"
-    bind:value={network}
-    bind:this={input}
-    placeholder="Add custom chain id"
-    class="input w-full text-sm form-background text-white inter"
-    id="network"
-    {disabled}
-    data-testid="network"
-    max="9999"
-    pattern="\d*"
-    class:hidden={!customValue}
-  />
-  {#if !customValue}
-    <div class="dropdown w-full">
-      <div tabindex="0" class="chain-dropdown" data-testid="dropdown">
-        <div class="w-full flex justify-between">
-          <div>
-            {getChainName($testnet, network)}
-          </div>
-          <Chevron />
+  <div class="dropdown w-full">
+    <div tabindex="0" class="chain-dropdown" data-testid="dropdown">
+      <div class="w-full flex justify-between">
+        <div>
+          {getChainName($testnet, network)}
         </div>
+        <Chevron />
       </div>
-      <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-full text-white">
-        {#each $testnet.chains as chain, i}
-          <li class:selected={network === chain.id} data-testid={`network-${i}`}>
-            <a on:click={() => selectChain(chain.id)}>{chain.name}</a>
-          </li>
-        {/each}
-      </ul>
     </div>
-  {/if}
-  <div class="custom-chain-switch" on:click={switchCustomValue} data-testid="custom-network-button">
-    &#8594; {customBtnMessage}
+    <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-full text-white">
+      {#each $testnet.chains as chain, i}
+        <li class:selected={network === chain.id} data-testid={`network-${i}`}>
+          <a on:click={() => selectChain(chain.id)}>{chain.name}</a>
+        </li>
+      {/each}
+    </ul>
   </div>
 </div>
 
