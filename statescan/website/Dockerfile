@@ -1,23 +1,25 @@
-FROM node:20-alpine
+FROM node:20-alpine as builder
 
 RUN apk update && apk add --no-cache build-base git
-RUN npm install pm2 -g
 
-ARG GIT_REPO="https://github.com/opensquare-network/statescan-v2.git"
-ARG GIT_TAG="main"
-RUN git clone --depth 1 --recurse-submodules --shallow-submodules -j 8 -b ${GIT_TAG} ${GIT_REPO} /opt/statescan
+ARG STATE_SCAN_GIT_REPO="https://github.com/opensquare-network/statescan-v2.git"
+ARG STATE_SCAN_GIT_TAG="main"
+RUN git clone --depth 1 --recurse-submodules --shallow-submodules -j 8 -b ${STATE_SCAN_GIT_TAG} ${STATE_SCAN_GIT_REPO} /opt/statescan
 
 WORKDIR /opt/statescan/site
 
 RUN yarn
 
-ADD ecosystem.config.js ./
 ADD ./src ./src
 
-# ENV PUBLIC_IDENTITY_SERVER_HOST=""
-ENV PUBLIC_API_END_POINT="http://127.0.0.1:5010/"
-ENV PUBLIC_IDENTITY_API_END_POINT=""
-ENV SUB_CHAIN_NAME="cybros-primal"
-ENV DEFAULT_IPFS_GATEWAY=""
+ARG REACT_APP_PUBLIC_IDENTITY_SERVER_HOST=""
+ARG REACT_APP_PUBLIC_API_END_POINT=""
+ARG REACT_APP_PUBLIC_IDENTITY_API_END_POINT=""
+ARG REACT_APP_PUBLIC_CHAIN=""
+ARG REACT_APP_DEFAULT_IPFS_GATEWAY=""
 
-CMD ["pm2-runtime", "ecosystem.config.js"]
+RUN yarn build
+
+FROM nginx:stable
+
+COPY --from=builder /opt/statescan/site/build /usr/share/nginx/html

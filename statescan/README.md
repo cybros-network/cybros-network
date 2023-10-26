@@ -8,11 +8,12 @@ To change to another network:
 
 - `cp .env.example .env`
 - Review and edit `.env`
-  - If the deployment intents to expose to the Internet, `BACKEND_API_HOST` should be the public domain
+  - If the deployment intents to expose to the Internet, `PUBLIC_BACKEND_API_ENDPOINT` should be the public host
+  - Backend doesn't enable `identity-scan` yet, so keep `PUBLIC_IDENTITY_API_ENDPOINT` and `PUBLIC_IDENTITY_SERVER_HOST` blank
 - Review and edit `backend/packages/server/src/utils/consts/chains.js`
 - Review and edit `website/src/utils/consts/chains/index.js`
   - Do not change `identity: "polkadot",`
-- Comment `website` section in `docker-compose.yml` if we want to deploy the frontend in another place
+- Comment `website` section in `docker-compose.yml` if the frontend deploy to another place
 
 ## Run
 
@@ -20,10 +21,5 @@ To change to another network:
 
 ## Use
 
-By default, backend API use the port `5010`, and website use the port `3000`.
-If the deployment intents to expose to the Internet, you should reverse proxying these ports.
-
-## TODO
-
-- Wait `scan-meta` open source
-  - Current indexing is slow
+By default, backend API uses the port `5010`, and website uses the port `3000`.
+If the deployment intents to expose to the Internet, set a reverse proxy for these ports.

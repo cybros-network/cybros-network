@@ -1,7 +1,19 @@
-const mongoConnectionString = process.env.MONGO_CONNECTION_STRING ?? "mongodb://mongo:mongo@127.0.0.1:27017/"
-const subWsRpcEndpoint = process.env.SUB_WS_RPC_ENDPOINT ?? "wss://node-rpc.cybros.network"
-const chain = process.env.SUB_CHAIN_NAME ?? "cybros"
+const mongoConnectionString = String(process.env.MONGO_CONNECTION_STRING ?? "")
+const subWsRpcEndpoint = String(process.env.SUB_WS_RPC_ENDPOINT ?? "")
+const chain = String(process.env.SUB_CHAIN_NAME ?? "")
+
+if (mongoConnectionString === "") {
+  throw new Error("ENV `MONGO_CONNECTION_STRING` must provide!")
+}
+if (subWsRpcEndpoint === "") {
+  throw new Error("ENV `SUB_WS_RPC_ENDPOINT` must provide!")
+}
+if (chain === "") {
+  throw new Error("ENV `SUB_CHAIN_NAME` must provide!")
+}
+
 const scanStep = process.env.SCAN_STEP ?? "100"
+const useMeta = process.env.USE_META ?? "0"
 
 const env = {
   "NODE_ENV": "production",
@@ -10,9 +22,9 @@ const env = {
   "WS_ENDPOINT": subWsRpcEndpoint,
   "CHAIN": chain,
   "FOLLOW_BLOCK_SCAN": "true",
-  // "USE_META": "0",
-  // "MONGO_META_URL": mongoConnectionString,
-  // "MONGO_DB_META_NAME": "meta-polkadot",
+  "USE_META": useMeta,
+  "MONGO_META_URL": mongoConnectionString,
+  "MONGO_DB_META_NAME": "statescan-meta",
   "MONGO_ACCOUNT_SCAN_URL": mongoConnectionString,
   "MONGO_ACCOUNT_SCAN_NAME": "statescan-account",
   "MONGO_ASSET_SCAN_URL": mongoConnectionString,
@@ -28,31 +40,31 @@ module.exports = {
     {
       name: "account-scan",
       script: "./backend/packages/account-scan/src/index.js",
-      watch: true,
+      watch: false,
       env
     },
     {
       name: "asset-scan",
       script: "./backend/packages/asset-scan/src/index.js",
-      watch: true,
+      watch: false,
       env
     },
     {
       name: "block-scan",
       script: "./backend/packages/block-scan/src/index.js",
-      watch: true,
+      watch: false,
       env
     },
     {
       name: "runtime-scan",
       script: "./backend/packages/runtime-scan/src/index.js",
-      watch: true,
+      watch: false,
       env
     },
     {
       name: "server",
       script: "./backend/packages/server/src/index.js",
-      watch: true,
+      watch: false,
       env: {
         ...env,
         "ACHAINABLE_PROFILE_URL": "",
