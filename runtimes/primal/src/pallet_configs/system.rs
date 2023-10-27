@@ -20,7 +20,7 @@ use crate::*;
 use frame_support::{
 	dispatch::DispatchClass,
 	parameter_types,
-	traits::ConstU32,
+	traits::{ConstU32, InsideBoth},
 	weights::constants::{
 		BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
 		WEIGHT_REF_TIME_PER_SECOND,
@@ -69,11 +69,13 @@ parameter_types! {
 		.build_or_panic();
 }
 
+const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO.deconstruct());
+
 impl frame_system::Config for Runtime {
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = BaseCallFilter;
+	type BaseCallFilter = InsideBoth<DefaultCallFilter, InsideBoth<SafeMode, TxPause>>;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = RuntimeBlockWeights;
 	/// The maximum length of a block (in bytes).

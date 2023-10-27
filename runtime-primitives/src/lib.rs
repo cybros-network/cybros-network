@@ -87,7 +87,7 @@ pub mod constants {
 
 		pub const MILLI_CENTS: Balance = 1_000_000;
 		pub const CENTS: Balance = 1_000 * MILLI_CENTS;
-		pub const UNITS: Balance = 1_000 * CENTS;
+		pub const DOLLARS: Balance = 1_000 * CENTS;
 
 		/// Existential deposit.
 		pub const EXISTENTIAL_DEPOSIT: u128 = CENTS;

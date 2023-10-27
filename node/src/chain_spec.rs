@@ -171,6 +171,8 @@ fn genesis_config(
 		balances: BalancesConfig { balances: endowed_accounts },
 		transaction_payment: Default::default(),
 		vesting: Default::default(),
+		safe_mode: Default::default(),
+		tx_pause: Default::default(),
 		sudo: SudoConfig { key: Some(root_key) },
 	}
 }

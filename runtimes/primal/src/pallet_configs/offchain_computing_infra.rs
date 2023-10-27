@@ -28,9 +28,9 @@ impl pallet_offchain_computing_infra::Config for Runtime {
 	type Randomness = RandomnessCollectiveFlip;
 	type ImplId = u32;
 	type RegisterImplOrigin = EnsureSigned<Self::AccountId>;
-	type RegisterWorkerDeposit = ConstU128<{ 100 * UNITS }>;
-	type RegisterImplDeposit = ConstU128<{ 100 * UNITS }>;
-	type ImplMetadataDepositBase = ConstU128<{ UNITS }>;
+	type RegisterWorkerDeposit = ConstU128<{ 100 * DOLLARS }>;
+	type RegisterImplDeposit = ConstU128<{ 100 * DOLLARS }>;
+	type ImplMetadataDepositBase = ConstU128<{ DOLLARS }>;
 	type ImplMetadataDepositPerByte = ConstU128<{ CENTS }>;
 	type ImplMetadataLimit = ConstU32<2048>; // 2KiB
 	type MaxImplBuilds = ConstU32<8>;

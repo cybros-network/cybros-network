@@ -24,6 +24,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use static_assertions::const_assert;
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
@@ -49,6 +50,7 @@ use frame_support::{
 
 use pallet_grandpa::AuthorityId as GrandpaId;
 use pallet_transaction_payment::Multiplier;
+use pallet_tx_pause::RuntimeCallNameOf;
 
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
@@ -134,10 +136,43 @@ pub type Executive = frame_executive::Executive<
 /// `OnRuntimeUpgrade`.
 type Migrations = ();
 
-pub struct BaseCallFilter;
-impl Contains<RuntimeCall> for BaseCallFilter {
-	fn contains(_call: &RuntimeCall) -> bool {
-		true
+pub struct SafeModeWhitelistedCalls;
+impl Contains<RuntimeCall> for SafeModeWhitelistedCalls {
+	fn contains(call: &RuntimeCall) -> bool {
+		match call {
+			RuntimeCall::System(_) | RuntimeCall::Timestamp(_) |
+			RuntimeCall::Grandpa(_) |
+			RuntimeCall::SafeMode(_) | RuntimeCall::TxPause(_) |
+			RuntimeCall::Sudo(_) => true,
+			_ => false,
+		}
+	}
+}
+
+/// Calls that cannot be paused by the tx-pause pallet.
+pub struct TxPauseWhitelistedCalls;
+/// Whitelist `Sudo` and `Balances::transfer_keep_alive`, all others are pause-able.
+impl Contains<RuntimeCallNameOf<Runtime>> for TxPauseWhitelistedCalls {
+	fn contains(full_name: &RuntimeCallNameOf<Runtime>) -> bool {
+		let full_name_slice = full_name.0.as_slice();
+		if full_name_slice == b"Sudo" {
+			return true
+		}
+
+		match (full_name_slice, full_name.1.as_slice()) {
+			(b"Balances", b"transfer_keep_alive") => true,
+			_ => false,
+		}
+	}
+}
+
+pub struct DefaultCallFilter;
+impl Contains<RuntimeCall> for DefaultCallFilter {
+	fn contains(call: &RuntimeCall) -> bool {
+		match call {
+			RuntimeCall::SafeMode(_) | RuntimeCall::TxPause(_) => false,
+			_ => true,
+		}
 	}
 }
 
@@ -193,6 +228,9 @@ construct_runtime!(
 		System: frame_system = 0,
 		Timestamp: pallet_timestamp = 1,
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 2,
+
+		TxPause: pallet_tx_pause = 18,
+		SafeMode: pallet_safe_mode = 19,
 
 		// Consensus
 		Aura: pallet_aura = 20,
@@ -471,6 +509,8 @@ mod benches {
 		[pallet_multisig, Multisig]
 		[pallet_balances, Balances]
 		[pallet_vesting, Vesting]
+		[pallet_tx_pause, TxPause]
+		[pallet_safe_mode, SafeMode]
 		[pallet_sudo, Sudo]
 		[pallet_offchain_computing_infra, OffchainComputingInfra]
 	);

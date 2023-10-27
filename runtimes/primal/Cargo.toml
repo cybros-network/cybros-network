@@ -13,6 +13,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 log = { version = "0.4.20", default-features = false }
+static_assertions = { version = "1.1.0" }
 
 scale-codec = { package = "parity-scale-codec", version = "3.6.5", default-features = false, features = ["derive"] }
 scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
@@ -54,6 +55,8 @@ pallet-proxy = { git = "https://github.com/paritytech/polkadot-sdk.git", branch 
 pallet-balances = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 pallet-vesting = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 
+pallet-tx-pause = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
+pallet-safe-mode = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 pallet-sudo = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 
 pallet-offchain_computing-infra = { path = "../../pallets/offchain_computing_infra", default-features = false }
@@ -105,6 +108,8 @@ std = [
 	"pallet-transaction-payment/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-vesting/std",
+	"pallet-tx-pause/std",
+	"pallet-safe-mode/std",
 	"pallet-sudo/std",
 	"pallet-offchain_computing-infra/std",
 	"pallet-offchain_computing-pool/std",
@@ -122,6 +127,8 @@ runtime-benchmarks = [
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-vesting/runtime-benchmarks",
+	"pallet-tx-pause/runtime-benchmarks",
+	"pallet-safe-mode/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-offchain_computing-infra/runtime-benchmarks",
 	"pallet-offchain_computing-pool/runtime-benchmarks",
@@ -142,6 +149,8 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"pallet-vesting/try-runtime",
+	"pallet-tx-pause/try-runtime",
+	"pallet-safe-mode/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-offchain_computing-infra/try-runtime",
 	"pallet-offchain_computing-pool/try-runtime",

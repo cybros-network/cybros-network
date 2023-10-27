@@ -16,27 +16,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-mod insecure_randomness_collective_flip;
-mod system;
-mod timestamp;
+use crate::*;
+use frame_system::EnsureRoot;
+use frame_support::traits::ConstU32;
 
-mod aura;
-mod grandpa;
-
-mod multisig;
-mod proxy;
-mod utility;
-
-mod balances;
-mod transaction_payment;
-mod vesting;
-
-mod tx_pause;
-mod safe_mode;
-
-mod offchain_computing_infra;
-mod offchain_computing_pool;
-
-mod sudo;
-
-pub use system::*;
+impl pallet_tx_pause::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type PauseOrigin = EnsureRoot<AccountId>;
+	type UnpauseOrigin = EnsureRoot<AccountId>;
+	type WhitelistedCalls = TxPauseWhitelistedCalls;
+	type MaxNameLen = ConstU32<256>;
+	type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
+}

@@ -28,8 +28,8 @@ impl pallet_offchain_computing_pool::Config for Runtime {
 	type JobId = u32;
 	type PolicyId = u32;
 	type CreatePoolOrigin = EnsureSigned<Self::AccountId>;
-	type PoolCreationDeposit = ConstU128<{ UNITS }>;
-	type JobCreationDeposit = ConstU128<{ UNITS }>;
+	type PoolCreationDeposit = ConstU128<{ DOLLARS }>;
+	type JobCreationDeposit = ConstU128<{ DOLLARS }>;
 	type JobStorageDepositPerByte = ConstU128<{ CENTS }>;
 	type PoolMetadataDepositBase = ConstU128<{ CENTS }>;
 	type PoolMetadataDepositPerByte = ConstU128<{ CENTS }>;
