@@ -16,10 +16,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-use primal_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GrandpaConfig, RuntimeGenesisConfig, SudoConfig,
-	SystemConfig, WASM_BINARY,
-};
+use primal_runtime::{AccountId, RuntimeGenesisConfig, WASM_BINARY};
 use sc_chain_spec::Properties;
 use sc_service::ChainType;
 use serde::Deserialize;
@@ -94,7 +91,12 @@ pub fn local() -> Result<ChainSpec, String> {
 	let genesis_profile: GenesisConfigProfile =
 		serde_json::from_slice(genesis_profile_in_bytes).expect("Bad chain profile");
 
-	chain_spec_for("Cybros Primal local", "cybros_primal_local", ChainType::Local, genesis_profile)
+	chain_spec_for(
+		"Cybros Primal local",
+		"cybros_primal_local",
+		ChainType::Local,
+		genesis_profile
+	)
 }
 
 fn chain_spec_for(
@@ -103,16 +105,17 @@ fn chain_spec_for(
 	chain_type: ChainType,
 	genesis_profile: GenesisConfigProfile,
 ) -> Result<ChainSpec, String> {
-	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
-
-	Ok(ChainSpec::from_genesis(
-		name,
-		id,
-		chain_type,
-		move || {
-			let genesis_profile = genesis_profile.clone();
+	Ok(
+		ChainSpec::builder(
+			WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
+			None,
+		)
+		.with_name(name)
+		.with_id(id)
+		.with_chain_type(chain_type)
+		.with_properties(chain_properties())
+		.with_genesis_config_patch(
 			genesis_config(
-				wasm_binary,
 				// Initial PoA authorities
 				genesis_profile.initial_authorities,
 				// Sudo account
@@ -125,24 +128,18 @@ fn chain_spec_for(
 					.collect(),
 				true,
 			)
-		},
-		vec![],
-		None,
-		None,
-		None,
-		chain_properties(),
-		None,
-	))
+		)
+		.build()
+	)
 }
 
 /// Configure initial storage state for FRAME modules.
 fn genesis_config(
-	wasm_binary: &[u8],
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<(AccountId, u128)>,
 	_enable_println: bool,
-) -> RuntimeGenesisConfig {
+) -> serde_json::Value {
 	assert!(
 		initial_authorities
 			.iter()
@@ -155,34 +152,28 @@ fn genesis_config(
 		"All the genesis accounts must be endowed; qed."
 	);
 
-	RuntimeGenesisConfig {
-		system: SystemConfig {
-			// Add Wasm runtime to storage.
-			code: wasm_binary.to_vec(),
-			..Default::default()
+	serde_json::json!({
+		"balances": {
+			"balances": endowed_accounts,
 		},
-		aura: AuraConfig {
-			authorities: initial_authorities.iter().map(|x| (x.1.clone())).collect(),
+		"aura": {
+			"authorities": initial_authorities.iter().map(|x| (x.1.clone())).collect::<Vec<_>>(),
 		},
-		grandpa: GrandpaConfig {
-			authorities: initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect(),
-			..Default::default()
+		"grandpa": {
+			"authorities": initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect::<Vec<_>>(),
 		},
-		balances: BalancesConfig { balances: endowed_accounts },
-		transaction_payment: Default::default(),
-		vesting: Default::default(),
-		safe_mode: Default::default(),
-		tx_pause: Default::default(),
-		sudo: SudoConfig { key: Some(root_key) },
-	}
+		"sudo": {
+			"key": Some(root_key),
+		},
+	})
 }
 
-fn chain_properties() -> Option<Properties> {
+fn chain_properties() -> Properties {
 	let mut p = Properties::new();
 
 	p.insert("tokenSymbol".into(), "CBT".into());
 	p.insert("tokenDecimals".into(), 12.into());
 	p.insert("ss58Format".into(), 42.into());
 
-	Some(p)
+	p
 }
