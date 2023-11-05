@@ -33,7 +33,7 @@ You can learn more about "job" from Wikipedia
 
 ## How it works
 
-![How Cybros works](docs/assets/how_cybros_works.png)
+![How Cybros works](docs/public/how_cybros_works.png)
 
 ## Concepts
 
