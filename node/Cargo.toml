@@ -19,10 +19,10 @@ name = "cybros-node"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.4.6", features = ["derive"] }
-futures = { version = "0.3.28", features = ["thread-pool"]}
-serde = { version = "1.0.188", features = ["derive"] }
-serde_json = "1.0.107"
+clap = { version = "4.4.7", features = ["derive"] }
+futures = { version = "0.3.29", features = ["thread-pool"]}
+serde = { version = "1.0.192", features = ["derive"] }
+serde_json = "1.0.108"
 
 sc-cli = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }

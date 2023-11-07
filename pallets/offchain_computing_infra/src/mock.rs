@@ -78,7 +78,7 @@ impl frame_system::Config for Test {
 impl pallet_balances::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type RuntimeFreezeReason = ();
+	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type WeightInfo = ();
 	type Balance = Balance;
 	type DustRemoval = ();

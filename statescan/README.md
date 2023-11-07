@@ -13,7 +13,7 @@ To change to another network:
 - Review and edit `backend/packages/server/src/utils/consts/chains.js`
 - Review and edit `website/src/utils/consts/chains/index.js`
   - Do not change `identity: "polkadot",`
-- Comment `website` section in `docker-compose.yml` if the frontend deploy to another place
+  - Or comment the `website` section in `docker-compose.yml` if the frontend deploy to another place
 
 ## Run
 
@@ -22,4 +22,4 @@ To change to another network:
 ## Use
 
 By default, backend API uses the port `5010`, and website uses the port `3000`.
-If the deployment intents to expose to the Internet, set a reverse proxy for these ports.
+If the deployment intents to expose to the Internet, set up a reverse proxy for these ports.

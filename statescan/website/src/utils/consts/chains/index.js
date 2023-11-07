@@ -17,7 +17,7 @@ const cybrosPrimal = {
   nodes: [
     { name: "Cybros", url: "wss://node-rpc.cybros.network" },
   ],
-  useOnChainBlockData: true,
+  useOnChainBlockData: false,
 };
 
 const chains = {
