@@ -23,9 +23,9 @@ use frame_system::EnsureSigned;
 impl pallet_offchain_computing_infra::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type Currency = Balances;
-	type UnixTime = Timestamp;
-	type Randomness = RandomnessCollectiveFlip;
+	type Currency = pallet_balances::Pallet<Runtime>;
+	type UnixTime = pallet_timestamp::Pallet<Runtime>;
+	type Randomness = pallet_insecure_randomness_collective_flip::Pallet<Runtime>;
 	type ImplId = u32;
 	type RegisterImplOrigin = EnsureSigned<Self::AccountId>;
 	type RegisterWorkerDeposit = ConstU128<{ 100 * DOLLARS }>;
@@ -38,5 +38,5 @@ impl pallet_offchain_computing_infra::Config for Runtime {
 	type CollectingHeartbeatsDurationInBlocks = ConstU32<300>; // 30min * 60 / 6
 	type DisallowOptOutAttestation = ConstBool<false>;
 	type WeightInfo = pallet_offchain_computing_infra::weights::SubstrateWeight<Runtime>;
-	type OffchainWorkerLifecycleHooks = OffchainComputingPool;
+	type OffchainWorkerLifecycleHooks = pallet_offchain_computing_pool::Pallet<Runtime>;
 }

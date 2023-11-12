@@ -16,7 +16,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-#![cfg(test)]
+//! Some configurable implementations as associated type for the runtime.
 
 #[allow(unused_imports)]
-use crate::*;
+use frame_support::pallet_prelude::*;
+#[allow(unused_imports)]
+use sp_std::prelude::*;

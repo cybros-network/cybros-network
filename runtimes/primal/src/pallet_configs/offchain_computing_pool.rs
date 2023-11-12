@@ -23,7 +23,7 @@ use frame_system::EnsureSigned;
 impl pallet_offchain_computing_pool::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type Currency = Balances;
+	type Currency = pallet_balances::Pallet<Runtime>;
 	type PoolId = u32;
 	type JobId = u32;
 	type PolicyId = u32;

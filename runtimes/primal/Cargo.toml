@@ -26,6 +26,7 @@ sp-consensus-grandpa = { git = "https://github.com/paritytech/polkadot-sdk.git",
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false, features = ["serde"] }
 sp-genesis-builder = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 sp-inherents = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
+sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 sp-offchain = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false, features = ["serde"] }
 sp-session = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
@@ -60,11 +61,18 @@ pallet-tx-pause = { git = "https://github.com/paritytech/polkadot-sdk.git", bran
 pallet-safe-mode = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 pallet-sudo = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 
+pallet-treasury = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
+pallet-identity = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
+
 pallet-offchain_computing-infra = { path = "../../pallets/offchain_computing_infra", default-features = false }
 pallet-offchain_computing-pool = { path = "../../pallets/offchain_computing_pool", default-features = false }
 
 # Local Dependencies
 runtime-primitives = { package = "cybros-runtime-primitives", path = "../../runtime-primitives", default-features = false }
+
+[dev-dependencies]
+keyring = { package = "sp-keyring", git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+separator = "0.4.1"
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", optional = true }
@@ -84,6 +92,7 @@ std = [
 	"sp-core/std",
 	"sp-genesis-builder/std",
 	"sp-inherents/std",
+	"sp-io/std",
 	"sp-offchain/std",
 	"sp-runtime/std",
 	"sp-session/std",
@@ -110,6 +119,8 @@ std = [
 	"pallet-transaction-payment/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-vesting/std",
+	"pallet-treasury/std",
+	"pallet-identity/std",
 	"pallet-tx-pause/std",
 	"pallet-safe-mode/std",
 	"pallet-sudo/std",
@@ -129,6 +140,8 @@ runtime-benchmarks = [
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-vesting/runtime-benchmarks",
+	"pallet-treasury/runtime-benchmarks",
+	"pallet-identity/runtime-benchmarks",
 	"pallet-tx-pause/runtime-benchmarks",
 	"pallet-safe-mode/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
@@ -151,6 +164,8 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"pallet-vesting/try-runtime",
+	"pallet-treasury/try-runtime",
+	"pallet-identity/try-runtime",
 	"pallet-tx-pause/try-runtime",
 	"pallet-safe-mode/try-runtime",
 	"pallet-sudo/try-runtime",

@@ -30,7 +30,7 @@ parameter_types! {
 
 impl pallet_safe_mode::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
+	type Currency = pallet_balances::Pallet<Runtime>;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type WhitelistedCalls = SafeModeWhitelistedCalls;
 	type EnterDuration = EnterDuration;

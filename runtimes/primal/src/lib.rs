@@ -32,7 +32,7 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, RuntimeDebug};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{Block as BlockT, NumberFor, One},
+	traits::{Block as BlockT, NumberFor},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -44,7 +44,7 @@ use sp_version::RuntimeVersion;
 use frame_support::{
 	construct_runtime,
 	genesis_builder_helper::{build_config, create_default_config},
-	traits::{Contains, InstanceFilter, WithdrawReasons},
+	traits::{Contains, Currency, Imbalance, InstanceFilter, OnUnbalanced, WithdrawReasons},
 	weights::Weight,
 };
 
@@ -67,10 +67,13 @@ pub use runtime_primitives::{
 };
 
 mod migrations;
-mod pallet_configs;
-#[cfg(test)]
-mod test;
 
+#[cfg(test)]
+mod tests;
+
+pub mod impls;
+
+pub mod pallet_configs;
 pub use pallet_configs::*;
 
 impl_opaque_keys! {
@@ -173,7 +176,8 @@ pub struct DefaultCallFilter;
 impl Contains<RuntimeCall> for DefaultCallFilter {
 	fn contains(call: &RuntimeCall) -> bool {
 		match call {
-			RuntimeCall::SafeMode(_) | RuntimeCall::TxPause(_) => false,
+			RuntimeCall::SafeMode(_) | RuntimeCall::TxPause(_) |
+			RuntimeCall::Treasury(_) => false,
 			_ => true,
 		}
 	}
@@ -196,6 +200,7 @@ impl Contains<RuntimeCall> for DefaultCallFilter {
 pub enum ProxyType {
 	Any,
 	NonTransfer,
+	Governance,
 }
 impl Default for ProxyType {
 	fn default() -> Self {
@@ -211,6 +216,10 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Balances(..) |
 					RuntimeCall::Vesting(pallet_vesting::Call::vested_transfer { .. })
 			),
+			ProxyType::Governance => matches!(
+				c,
+				RuntimeCall::Treasury(..)
+			),
 		}
 	}
 	fn is_superset(&self, o: &Self) -> bool {
@@ -219,7 +228,23 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 			(ProxyType::Any, _) => true,
 			(_, ProxyType::Any) => false,
 			(ProxyType::NonTransfer, _) => true,
-			// _ => false,
+			_ => false,
+		}
+	}
+}
+
+type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
+
+pub struct DealWithFees;
+impl OnUnbalanced<NegativeImbalance> for DealWithFees {
+	fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
+		if let Some(mut fees) = fees_then_tips.next() {
+			if let Some(tips) = fees_then_tips.next() {
+				// for tips, if any, 80% to treasury, 20% to author (though this can be anything)
+				tips.merge_into( &mut fees);
+			}
+
+			Treasury::on_unbalanced(fees);
 		}
 	}
 }
@@ -231,9 +256,6 @@ construct_runtime!(
 		System: frame_system = 0,
 		Timestamp: pallet_timestamp = 1,
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 2,
-
-		TxPause: pallet_tx_pause = 18,
-		SafeMode: pallet_safe_mode = 19,
 
 		// Consensus
 		Aura: pallet_aura = 20,
@@ -249,11 +271,17 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment = 61,
 		Vesting: pallet_vesting = 62,
 
+		// Governance
+		Treasury: pallet_treasury = 80,
+		Identity: pallet_identity = 81,
+
 		// The main stage
 		OffchainComputingInfra: pallet_offchain_computing_infra = 100,
 		OffchainComputingPool: pallet_offchain_computing_pool = 101,
 
-		// Non-permanent
+		// Super authority
+		TxPause: pallet_tx_pause = 253,
+		SafeMode: pallet_safe_mode = 254,
 		Sudo: pallet_sudo = 255,
 	}
 );
@@ -457,7 +485,13 @@ impl_runtime_apis! {
 			impl baseline::Config for Runtime {}
 
 			use frame_support::traits::WhitelistedStorageKeys;
-			let whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
+			let mut whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
+
+			// Treasury Account
+			// TODO: this is manual for now, someday we might be able to use a
+			// macro for this particular key
+			let treasury_key = frame_system::Account::<Runtime>::hashed_key_for(Treasury::account_id());
+			whitelist.push(treasury_key.to_vec().into());
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
@@ -512,6 +546,8 @@ mod benches {
 		[pallet_multisig, Multisig]
 		[pallet_balances, Balances]
 		[pallet_vesting, Vesting]
+		[pallet_treasury, Treasury]
+		[pallet_identity, Identity]
 		[pallet_tx_pause, TxPause]
 		[pallet_safe_mode, SafeMode]
 		[pallet_sudo, Sudo]
