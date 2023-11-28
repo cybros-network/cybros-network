@@ -16,16 +16,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Substrate Node CLI library.
-#![warn(missing_docs)]
+use crate::*;
 
-mod benchmarking;
-mod cli;
-mod command;
-mod chain_spec;
-mod rpc;
-mod service;
-
-fn main() -> sc_cli::Result<()> {
-	command::run()
+impl pallet_skip_feeless_payment::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
 }

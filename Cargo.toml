@@ -28,6 +28,7 @@ license = "AGPL-3.0-only"
 resolver = "2"
 members = [
     "node",
+    "vendors/node-inspect",
     "pallets/*",
     "runtime-primitives",
     "runtimes/*",

@@ -38,6 +38,9 @@ mod balances;
 pub use balances::*;
 mod transaction_payment;
 pub use transaction_payment::*;
+
+mod skip_feeless_payment;
+pub use skip_feeless_payment::*;
 mod vesting;
 pub use vesting::*;
 

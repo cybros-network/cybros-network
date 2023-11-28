@@ -18,15 +18,19 @@
 
 use sc_cli::RunCmd;
 
+/// An overarching CLI command definition.
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
+	/// Possible subcommand with parameters.
 	#[command(subcommand)]
 	pub subcommand: Option<Subcommand>,
 
+	#[allow(missing_docs)]
 	#[clap(flatten)]
 	pub run: RunCmd,
 }
 
+/// Possible subcommands of the main binary.
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
 	/// Key management cli utilities
@@ -53,6 +57,13 @@ pub enum Subcommand {
 
 	/// Revert the chain to a previous state.
 	Revert(sc_cli::RevertCmd),
+
+	/// The custom inspect subcommmand for decoding blocks and extrinsics.
+	#[command(
+		name = "inspect",
+		about = "Decode given block or extrinsic using current native runtime."
+	)]
+	Inspect(node_inspect::cli::InspectCmd),
 
 	/// Sub-commands concerned with benchmarking.
 	#[command(subcommand)]

@@ -19,7 +19,7 @@
 use crate as pallet_offchain_computing_pool;
 
 use frame_support::{
-	assert_ok,
+	assert_ok, derive_impl,
 	traits::{OnFinalize, OnInitialize},
 };
 use frame_system::EnsureSigned;
@@ -56,6 +56,7 @@ frame_support::construct_runtime!(
 	}
 );
 
+#[derive_impl(frame_system::config_preludes::TestDefaultConfig as frame_system::DefaultConfig)]
 impl frame_system::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type BaseCallFilter = frame_support::traits::Everything;

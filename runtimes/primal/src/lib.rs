@@ -24,6 +24,21 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+/// Max size for serialized extrinsic params for this testing runtime.
+/// This is a quite arbitrary but empirically battle tested value.
+#[cfg(test)]
+pub const CALL_PARAMS_MAX_SIZE: usize = 208;
+
+/// Wasm binary unwrapped. If built with `SKIP_WASM_BUILD`, the function panics.
+#[cfg(feature = "std")]
+pub fn wasm_binary_unwrap() -> &'static [u8] {
+	WASM_BINARY.expect(
+		"Development wasm binary is not available. This means the client is built with \
+		 `SKIP_WASM_BUILD` flag and it is only usable for production chains. Please rebuild with \
+		 the flag disabled.",
+	)
+}
+
 use static_assertions::const_assert;
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -32,9 +47,9 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, RuntimeDebug};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{Block as BlockT, NumberFor},
+	traits::{self, Block as BlockT, NumberFor},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult,
+	generic::Era, ApplyExtrinsicResult, SaturatedConversion
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -58,6 +73,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
+use sp_runtime::traits::StaticLookup;
 
 pub use runtime_primitives::{
 	opaque::{self, Header},
@@ -124,7 +140,10 @@ pub type SignedExtra = (
 	frame_system::CheckEra<Runtime>,
 	frame_system::CheckNonce<Runtime>,
 	frame_system::CheckWeight<Runtime>,
-	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+	pallet_skip_feeless_payment::SkipCheckIfFeeless<
+		Runtime,
+		pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+	>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -141,6 +160,64 @@ pub type Executive = frame_executive::Executive<
 	AllPalletsWithSystem,
 	Migrations,
 >;
+
+impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+where
+	RuntimeCall: From<LocalCall>,
+{
+	fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+		call: RuntimeCall,
+		public: <Signature as traits::Verify>::Signer,
+		account: AccountId,
+		nonce: Nonce,
+	) -> Option<(RuntimeCall, <UncheckedExtrinsic as traits::Extrinsic>::SignaturePayload)> {
+		let tip = 0;
+		// take the biggest period possible.
+		let period =
+			BlockHashCount::get().checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
+		let current_block = System::block_number()
+			.saturated_into::<u64>()
+			// The `System::block_number` is initialized with `n+1`,
+			// so the actual block number is `n`.
+			.saturating_sub(1);
+		let era = Era::mortal(period, current_block);
+		let extra = (
+			frame_system::CheckNonZeroSender::<Runtime>::new(),
+			frame_system::CheckSpecVersion::<Runtime>::new(),
+			frame_system::CheckTxVersion::<Runtime>::new(),
+			frame_system::CheckGenesis::<Runtime>::new(),
+			frame_system::CheckEra::<Runtime>::from(era),
+			frame_system::CheckNonce::<Runtime>::from(nonce),
+			frame_system::CheckWeight::<Runtime>::new(),
+			pallet_skip_feeless_payment::SkipCheckIfFeeless::from(
+				pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+			),
+		);
+		let raw_payload = SignedPayload::new(call, extra)
+			.map_err(|e| {
+				log::warn!("Unable to create signed payload: {:?}", e);
+			})
+			.ok()?;
+		let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+		let address = <<Runtime as frame_system::Config>::Lookup as StaticLookup>::unlookup(account);
+		let (call, extra, _) = raw_payload.deconstruct();
+		Some((call, (address, signature, extra)))
+	}
+}
+
+impl frame_system::offchain::SigningTypes for Runtime {
+	type Public = <Signature as traits::Verify>::Signer;
+	type Signature = Signature;
+}
+
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+	where
+		RuntimeCall: From<C>,
+{
+	type Extrinsic = UncheckedExtrinsic;
+	type OverarchingCall = RuntimeCall;
+}
+
 
 pub struct SafeModeWhitelistedCalls;
 impl Contains<RuntimeCall> for SafeModeWhitelistedCalls {
@@ -267,9 +344,10 @@ construct_runtime!(
 		Proxy: pallet_proxy = 42,
 
 		// Monetary
-		Balances: pallet_balances = 60,
-		TransactionPayment: pallet_transaction_payment = 61,
-		Vesting: pallet_vesting = 62,
+		TransactionPayment: pallet_transaction_payment = 60,
+		SkipFeelessPayment: pallet_skip_feeless_payment = 61,
+		Balances: pallet_balances = 62,
+		Vesting: pallet_vesting = 63,
 
 		// Governance
 		Treasury: pallet_treasury = 80,

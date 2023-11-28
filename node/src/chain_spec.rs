@@ -16,13 +16,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-use primal_runtime::{AccountId, RuntimeGenesisConfig, WASM_BINARY};
-use sc_chain_spec::Properties;
+use primal_runtime::{AccountId, Block, RuntimeGenesisConfig, wasm_binary_unwrap};
+use sc_chain_spec::{ChainSpecExtension, Properties};
 use sc_service::ChainType;
-use serde::Deserialize;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use std::str::FromStr;
+use serde::{Deserialize, Serialize};
 
 /// The struct for JSON format genesis config
 ///
@@ -68,8 +68,23 @@ struct GenesisConfigProfile {
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
+/// Node `ChainSpec` extensions.
+///
+/// Additional parameters for some Substrate core modules,
+/// customizable from the chain spec.
+#[derive(Default, Clone, Serialize, Deserialize, ChainSpecExtension)]
+#[serde(rename_all = "camelCase")]
+pub struct Extensions {
+	/// Block numbers with known hashes.
+	pub fork_blocks: sc_client_api::ForkBlocks<Block>,
+	/// Known bad block hashes.
+	pub bad_blocks: sc_client_api::BadBlocks<Block>,
+	/// The light sync state extension used by the sync-state rpc.
+	pub light_sync_state: sc_sync_state_rpc::LightSyncStateExtension,
+}
+
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
-pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
+pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig, Extensions>;
 
 pub fn development() -> Result<ChainSpec, String> {
 	let genesis_profile_in_bytes = include_bytes!("../res/development_network_genesis_config.json");
@@ -107,8 +122,8 @@ fn chain_spec_for(
 ) -> Result<ChainSpec, String> {
 	Ok(
 		ChainSpec::builder(
-			WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
-			None,
+			wasm_binary_unwrap(),
+			Default::default(),
 		)
 		.with_name(name)
 		.with_id(id)

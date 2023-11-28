@@ -18,50 +18,125 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use futures::FutureExt;
+use std::{sync::Arc, time::Duration};
+use futures::prelude::*;
+use sp_core::{crypto::Pair, Encode};
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
-pub use sc_executor::NativeElseWasmExecutor;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
-use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
-use std::{sync::Arc, time::Duration};
+use sp_runtime::{generic, SaturatedConversion};
+use sp_api::ProvideRuntimeApi;
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
+use frame_system_rpc_runtime_api::AccountNonceApi;
 
 use runtime_primitives::opaque::Block;
+use primal_runtime::RuntimeApi;
 
-// Our native executor instance.
-pub struct ExecutorDispatch;
+/// Host functions required for the Primal runtime and Substrate node.
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub type HostFunctions = (
+	sp_io::SubstrateHostFunctions,
+);
 
-impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
-	/// Only enable the benchmarking host functions when we actually want to benchmark.
-	#[cfg(feature = "runtime-benchmarks")]
-	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-	/// Otherwise we only use the default Substrate host functions.
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type ExtendHostFunctions = ();
+/// Host functions required for the Primal runtime and Substrate node.
+#[cfg(feature = "runtime-benchmarks")]
+pub type HostFunctions = (
+	sp_io::SubstrateHostFunctions,
+	frame_benchmarking::benchmarking::HostFunctions,
+);
 
-	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-		primal_runtime::api::dispatch(method, data)
-	}
+/// A specialized `WasmExecutor` intended to use across substrate node. It provides all required
+/// HostFunctions.
+pub type RuntimeExecutor = sc_executor::WasmExecutor<HostFunctions>;
 
-	fn native_version() -> sc_executor::NativeVersion {
-		primal_runtime::native_version()
-	}
-}
-
-pub(crate) type FullClient = sc_service::TFullClient<
-	Block,
-	primal_runtime::RuntimeApi,
-	NativeElseWasmExecutor<ExecutorDispatch>,
->;
+/// The full client type definition.
+pub type FullClient = sc_service::TFullClient<Block, RuntimeApi, RuntimeExecutor>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
 /// The minimum period of blocks on which justifications will be
 /// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
+
+/// Fetch the nonce of the given `account` from the chain state.
+///
+/// Note: Should only be used for tests.
+pub fn fetch_nonce(client: &FullClient, account: sp_core::sr25519::Pair) -> u32 {
+	let best_hash = client.chain_info().best_hash;
+	client
+		.runtime_api()
+		.account_nonce(best_hash, account.public().into())
+		.expect("Fetching account nonce works; qed")
+}
+
+/// Create a transaction using the given `call`.
+///
+/// The transaction will be signed by `sender`. If `nonce` is `None` it will be fetched from the
+/// state of the best block.
+///
+/// Note: Should only be used for tests.
+pub fn create_extrinsic(
+	client: &FullClient,
+	sender: sp_core::sr25519::Pair,
+	function: impl Into<primal_runtime::RuntimeCall>,
+	nonce: Option<u32>,
+) -> primal_runtime::UncheckedExtrinsic {
+	let function = function.into();
+	let genesis_hash = client.block_hash(0).ok().flatten().expect("Genesis block exists; qed");
+	let best_hash = client.chain_info().best_hash;
+	let best_block = client.chain_info().best_number;
+	let nonce = nonce.unwrap_or_else(|| fetch_nonce(client, sender.clone()));
+
+	let period = primal_runtime::BlockHashCount::get()
+		.checked_next_power_of_two()
+		.map(|c| c / 2)
+		.unwrap_or(2) as u64;
+	let tip = 0;
+	let extra: primal_runtime::SignedExtra =
+		(
+			frame_system::CheckNonZeroSender::<primal_runtime::Runtime>::new(),
+			frame_system::CheckSpecVersion::<primal_runtime::Runtime>::new(),
+			frame_system::CheckTxVersion::<primal_runtime::Runtime>::new(),
+			frame_system::CheckGenesis::<primal_runtime::Runtime>::new(),
+			frame_system::CheckEra::<primal_runtime::Runtime>::from(generic::Era::mortal(
+				period,
+				best_block.saturated_into(),
+			)),
+			frame_system::CheckNonce::<primal_runtime::Runtime>::from(nonce),
+			frame_system::CheckWeight::<primal_runtime::Runtime>::new(),
+			pallet_skip_feeless_payment::SkipCheckIfFeeless::from(
+				pallet_transaction_payment::ChargeTransactionPayment::<
+					primal_runtime::Runtime,
+				>::from(tip),
+			),
+		);
+
+	let raw_payload = primal_runtime::SignedPayload::from_raw(
+		function.clone(),
+		extra.clone(),
+		(
+			(),
+			primal_runtime::VERSION.spec_version,
+			primal_runtime::VERSION.transaction_version,
+			genesis_hash,
+			best_hash,
+			(),
+			(),
+			(),
+		),
+	);
+	let signature = raw_payload.using_encoded(|e| sender.sign(e));
+
+	primal_runtime::UncheckedExtrinsic::new_signed(
+		function,
+		sp_runtime::AccountId32::from(sender.public()).into(),
+		primal_runtime::Signature::Sr25519(signature),
+		extra,
+	)
+}
 
 pub fn new_partial(
 	config: &Configuration,
@@ -96,7 +171,7 @@ pub fn new_partial(
 		})
 		.transpose()?;
 
-	let executor = sc_service::new_native_or_wasm_executor(config);
+	let executor = sc_service::new_wasm_executor(&config);
 
 	let (client, backend, keystore_container, task_manager) =
 		sc_service::new_full_parts::<Block, primal_runtime::RuntimeApi, _>(
@@ -185,9 +260,9 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		&config.chain_spec,
 	);
 
-	net_config.add_notification_protocol(sc_consensus_grandpa::grandpa_peers_set_config(
-		grandpa_protocol_name.clone(),
-	));
+	let (grandpa_protocol_config, grandpa_notification_service) =
+		sc_consensus_grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone());
+	net_config.add_notification_protocol(grandpa_protocol_config);
 
 	let warp_sync = Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
 		backend.clone(),
@@ -338,6 +413,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 			link: grandpa_link,
 			network,
 			sync: Arc::new(sync_service),
+			notification_service: grandpa_notification_service,
 			voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
 			prometheus_registry,
 			shared_voter_state: SharedVoterState::empty(),

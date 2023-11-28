@@ -28,6 +28,7 @@ use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
 
 use runtime_primitives::{constants::currency::EXISTENTIAL_DEPOSIT, opaque::Block};
+use primal_runtime::RuntimeApi;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -120,6 +121,11 @@ pub fn run() -> sc_cli::Result<()> {
 				});
 				Ok((cmd.run(client, backend, Some(aux_revert)), task_manager))
 			})
+		},
+		Some(Subcommand::Inspect(cmd)) => {
+			let runner = cli.create_runner(cmd)?;
+
+			runner.sync_run(|config| cmd.run::<Block, RuntimeApi>(config))
 		},
 		Some(Subcommand::Benchmark(cmd)) => {
 			let runner = cli.create_runner(cmd)?;

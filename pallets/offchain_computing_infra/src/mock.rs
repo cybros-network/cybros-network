@@ -18,7 +18,10 @@
 
 use crate as pallet_offchain_computing_infra;
 
-use frame_support::traits::{fungible::Mutate, OnFinalize, OnInitialize};
+use frame_support::{
+	derive_impl,
+	traits::{fungible::Mutate, OnFinalize, OnInitialize},
+};
 use frame_system::EnsureSigned;
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
@@ -49,6 +52,7 @@ frame_support::construct_runtime!(
 	}
 );
 
+#[derive_impl(frame_system::config_preludes::TestDefaultConfig as frame_system::DefaultConfig)]
 impl frame_system::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type BaseCallFilter = frame_support::traits::Everything;
