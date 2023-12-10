@@ -462,6 +462,10 @@ try {
   Deno.exit(1);
 }
 
+if (!isProd) {
+  logger.debug("Uploading image")
+}
+
 // Upload image
 const imageHash = toHashString(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(image)));
 if (imageUploadUrl.length === 0 && s3Client) {
@@ -482,6 +486,10 @@ const imageUploadResp = await fetch(imageUploadUrl, {
 if (!imageUploadResp.ok) {
   logger.error(await imageUploadResp.text());
   renderAndExit(Result.Error, "IMAGE_UPLOAD_ERROR");
+}
+
+if (!isProd) {
+  logger.debug("Uploading proof")
 }
 
 // Upload proof
@@ -510,6 +518,10 @@ let imageUrl = new URL(imageUploadUrl);
 imageUrl.search = ""
 let proofUrl = new URL(proofUploadUrl);
 proofUrl.search = ""
+
+if (!isProd) {
+  logger.debug("Finished")
+}
 
 renderAndExit(Result.Success, {
   imageUrl,
