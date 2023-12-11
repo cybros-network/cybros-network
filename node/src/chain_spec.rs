@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 /// The struct for JSON format genesis config
 ///
 /// Json sample:
-/// ```
+/// ```ignore
 /// {
 ///   "rootKey": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
 ///   "initialAuthorities": [

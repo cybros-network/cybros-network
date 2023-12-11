@@ -43,12 +43,13 @@ mod skip_feeless_payment;
 pub use skip_feeless_payment::*;
 mod vesting;
 pub use vesting::*;
-
 mod treasury;
 pub use treasury::*;
 mod identity;
 pub use identity::*;
 
+mod contracts;
+pub use contracts::*;
 mod offchain_computing_infra;
 pub use offchain_computing_infra::*;
 mod offchain_computing_pool;

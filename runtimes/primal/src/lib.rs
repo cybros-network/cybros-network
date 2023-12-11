@@ -161,6 +161,11 @@ pub type Executive = frame_executive::Executive<
 	Migrations,
 >;
 
+type EventRecord = frame_system::EventRecord<
+	<Runtime as frame_system::Config>::RuntimeEvent,
+	<Runtime as frame_system::Config>::Hash,
+>;
+
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
 	RuntimeCall: From<LocalCall>,
@@ -354,8 +359,9 @@ construct_runtime!(
 		Identity: pallet_identity = 81,
 
 		// The main stage
-		OffchainComputingInfra: pallet_offchain_computing_infra = 100,
-		OffchainComputingPool: pallet_offchain_computing_pool = 101,
+		Contracts: pallet_contracts = 100,
+		OffchainComputingInfra: pallet_offchain_computing_infra = 101,
+		OffchainComputingPool: pallet_offchain_computing_pool = 102,
 
 		// Super authority
 		TxPause: pallet_tx_pause = 253,
@@ -610,6 +616,80 @@ impl_runtime_apis! {
 			build_config::<RuntimeGenesisConfig>(config)
 		}
 	}
+
+		impl pallet_contracts::ContractsApi<Block, AccountId, Balance, BlockNumber, Hash, EventRecord> for Runtime
+	{
+		fn call(
+			origin: AccountId,
+			dest: AccountId,
+			value: Balance,
+			gas_limit: Option<Weight>,
+			storage_deposit_limit: Option<Balance>,
+			input_data: Vec<u8>,
+		) -> pallet_contracts::ContractExecResult<Balance, EventRecord> {
+			let gas_limit = gas_limit.unwrap_or(RuntimeBlockWeights::get().max_block);
+			Contracts::bare_call(
+				origin,
+				dest,
+				value,
+				gas_limit,
+				storage_deposit_limit,
+				input_data,
+				pallet_contracts::DebugInfo::UnsafeDebug,
+				pallet_contracts::CollectEvents::UnsafeCollect,
+				pallet_contracts::Determinism::Enforced,
+			)
+		}
+
+		fn instantiate(
+			origin: AccountId,
+			value: Balance,
+			gas_limit: Option<Weight>,
+			storage_deposit_limit: Option<Balance>,
+			code: pallet_contracts::Code<Hash>,
+			data: Vec<u8>,
+			salt: Vec<u8>,
+		) -> pallet_contracts::ContractInstantiateResult<AccountId, Balance, EventRecord>
+		{
+			let gas_limit = gas_limit.unwrap_or(RuntimeBlockWeights::get().max_block);
+			Contracts::bare_instantiate(
+				origin,
+				value,
+				gas_limit,
+				storage_deposit_limit,
+				code,
+				data,
+				salt,
+				pallet_contracts::DebugInfo::UnsafeDebug,
+				pallet_contracts::CollectEvents::UnsafeCollect,
+			)
+		}
+
+		fn upload_code(
+			origin: AccountId,
+			code: Vec<u8>,
+			storage_deposit_limit: Option<Balance>,
+			determinism: pallet_contracts::Determinism,
+		) -> pallet_contracts::CodeUploadResult<Hash, Balance>
+		{
+			Contracts::bare_upload_code(
+				origin,
+				code,
+				storage_deposit_limit,
+				determinism,
+			)
+		}
+
+		fn get_storage(
+			address: AccountId,
+			key: Vec<u8>,
+		) -> pallet_contracts::GetStorageResult {
+			Contracts::get_storage(
+				address,
+				key
+			)
+		}
+	}
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -629,6 +709,7 @@ mod benches {
 		[pallet_tx_pause, TxPause]
 		[pallet_safe_mode, SafeMode]
 		[pallet_sudo, Sudo]
+		[pallet_contracts, Contracts]
 		[pallet_offchain_computing_infra, OffchainComputingInfra]
 	);
 }

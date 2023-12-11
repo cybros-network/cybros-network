@@ -18,9 +18,8 @@
 
 use crate::*;
 use frame_support::{
-	derive_impl,
+	parameter_types, derive_impl,
 	dispatch::DispatchClass,
-	parameter_types,
 	traits::{ConstU32, InsideBoth},
 	weights::constants::{
 		BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,

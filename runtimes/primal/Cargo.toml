@@ -65,6 +65,7 @@ pallet-sudo = { git = "https://github.com/paritytech/polkadot-sdk.git", branch =
 pallet-treasury = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 pallet-identity = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 
+pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 pallet-offchain_computing-infra = { path = "../../pallets/offchain_computing_infra", default-features = false }
 pallet-offchain_computing-pool = { path = "../../pallets/offchain_computing_pool", default-features = false }
 
@@ -126,6 +127,7 @@ std = [
 	"pallet-tx-pause/std",
 	"pallet-safe-mode/std",
 	"pallet-sudo/std",
+	"pallet-contracts/std",
 	"pallet-offchain_computing-infra/std",
 	"pallet-offchain_computing-pool/std",
 ]
@@ -148,6 +150,7 @@ runtime-benchmarks = [
 	"pallet-tx-pause/runtime-benchmarks",
 	"pallet-safe-mode/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
+	"pallet-contracts/runtime-benchmarks",
 	"pallet-offchain_computing-infra/runtime-benchmarks",
 	"pallet-offchain_computing-pool/runtime-benchmarks",
 ]
@@ -173,7 +176,7 @@ try-runtime = [
 	"pallet-tx-pause/try-runtime",
 	"pallet-safe-mode/try-runtime",
 	"pallet-sudo/try-runtime",
+	"pallet-contracts/try-runtime",
 	"pallet-offchain_computing-infra/try-runtime",
 	"pallet-offchain_computing-pool/try-runtime",
 ]
-experimental = ["pallet-aura/experimental"]
