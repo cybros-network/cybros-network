@@ -2,6 +2,7 @@
 name = "pallet-fake_offchain_computing"
 version = "0.0.1-dev"
 description = "Substrate pallet to providing fake off-chain computing jobs, this is a test-only pallet for pallet-offchain_computing_workers"
+readme = "README.md"
 authors.workspace = true
 repository.workspace = true
 license.workspace = true
@@ -14,7 +15,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 log = { version = "0.4.20", default-features = false }
 
-scale-codec = { package = "parity-scale-codec", version = "3.6.5", default-features = false, features = ["derive"] }
+scale-codec = { package = "parity-scale-codec", version = "3.6.5", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
 
 frame-support = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
