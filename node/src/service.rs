@@ -148,13 +148,20 @@ pub fn new_partial(
 		sc_consensus::DefaultImportQueue<Block>,
 		sc_transaction_pool::FullPool<Block, FullClient>,
 		(
-			sc_consensus_grandpa::GrandpaBlockImport<
-				FullBackend,
-				Block,
-				FullClient,
-				FullSelectChain,
-			>,
-			sc_consensus_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
+			impl Fn(
+				crate::rpc::DenyUnsafe,
+				sc_rpc::SubscriptionTaskExecutor,
+			) -> Result<jsonrpsee::RpcModule<()>, sc_service::Error>,
+			(
+				sc_consensus_grandpa::GrandpaBlockImport<
+					FullBackend,
+					Block,
+					FullClient,
+					FullSelectChain,
+				>,
+				sc_consensus_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
+			),
+			SharedVoterState,
 			Option<Telemetry>,
 		),
 	>,
@@ -229,6 +236,50 @@ pub fn new_partial(
 			compatibility_mode: Default::default(),
 		})?;
 
+	let import_setup = (grandpa_block_import, grandpa_link);
+
+	let (rpc_extensions_builder, rpc_setup) = {
+		let (_, grandpa_link) = &import_setup;
+
+		let justification_stream = grandpa_link.justification_stream();
+		let shared_authority_set = grandpa_link.shared_authority_set().clone();
+		let shared_voter_state = SharedVoterState::empty();
+		let shared_voter_state2 = shared_voter_state.clone();
+
+		let finality_proof_provider = sc_consensus_grandpa::FinalityProofProvider::new_for_service(
+			backend.clone(),
+			Some(shared_authority_set.clone()),
+		);
+
+		let client = client.clone();
+		let pool = transaction_pool.clone();
+		let select_chain = select_chain.clone();
+		let chain_spec = config.chain_spec.cloned_box();
+
+		let rpc_backend = backend.clone();
+		let rpc_extensions_builder = move |deny_unsafe, subscription_executor| {
+			let deps = crate::rpc::FullDeps {
+				client: client.clone(),
+				pool: pool.clone(),
+				select_chain: select_chain.clone(),
+				chain_spec: chain_spec.cloned_box(),
+				deny_unsafe,
+				grandpa: crate::rpc::GrandpaDeps {
+					shared_voter_state: shared_voter_state.clone(),
+					shared_authority_set: shared_authority_set.clone(),
+					justification_stream: justification_stream.clone(),
+					subscription_executor,
+					finality_provider: finality_proof_provider.clone(),
+				},
+				backend: rpc_backend.clone(),
+			};
+
+			crate::rpc::create_full(deps).map_err(Into::into)
+		};
+
+		(rpc_extensions_builder, shared_voter_state2)
+	};
+
 	Ok(sc_service::PartialComponents {
 		client,
 		backend,
@@ -237,7 +288,12 @@ pub fn new_partial(
 		keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (grandpa_block_import, grandpa_link, telemetry),
+		other: (
+			rpc_extensions_builder,
+			import_setup,
+			rpc_setup,
+			telemetry
+		),
 	})
 }
 
@@ -251,8 +307,14 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (block_import, grandpa_link, mut telemetry),
+		other: (
+			rpc_builder,
+			(block_import, grandpa_link),
+			rpc_setup,
+			mut telemetry
+		),
 	} = new_partial(&config)?;
+	let shared_voter_state = rpc_setup;
 	let mut net_config = sc_network::config::FullNetworkConfiguration::new(&config.network);
 
 	let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
@@ -311,24 +373,13 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 	let enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
 
-	let rpc_extensions_builder = {
-		let client = client.clone();
-		let pool = transaction_pool.clone();
-
-		Box::new(move |deny_unsafe, _| {
-			let deps =
-				crate::rpc::FullDeps { client: client.clone(), pool: pool.clone(), deny_unsafe };
-			crate::rpc::create_full(deps).map_err(Into::into)
-		})
-	};
-
 	let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
 		network: network.clone(),
 		client: client.clone(),
 		keystore: keystore_container.keystore(),
 		task_manager: &mut task_manager,
 		transaction_pool: transaction_pool.clone(),
-		rpc_builder: rpc_extensions_builder,
+		rpc_builder: Box::new(rpc_builder),
 		backend,
 		system_rpc_tx,
 		tx_handler_controller,
@@ -416,7 +467,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 			notification_service: grandpa_notification_service,
 			voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
 			prometheus_registry,
-			shared_voter_state: SharedVoterState::empty(),
+			shared_voter_state,
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
 			offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool),
 		};

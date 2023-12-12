@@ -35,6 +35,7 @@ sp-api = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "mas
 sp-blockchain = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sp-block-builder = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+sp-consensus = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sp-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sp-consensus-grandpa = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
@@ -54,9 +55,12 @@ sc-offchain = { git = "https://github.com/paritytech/polkadot-sdk.git", branch =
 sc-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sc-consensus = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sc-consensus-grandpa = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+sc-consensus-grandpa-rpc = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sc-chain-spec = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+sc-rpc = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sc-rpc-api = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+sc-rpc-spec-v2 = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sc-sync-state-rpc = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 sc-basic-authorship = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 
