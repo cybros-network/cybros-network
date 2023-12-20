@@ -19,7 +19,7 @@
 //! items for the NFTs pallet.
 
 use crate::*;
-use frame_support::{pallet_prelude::*, traits::ExistenceRequirement};
+use frame_support::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
 	/// Mint a new unique item with the given `collection`, `item`, and other minting configuration
@@ -113,13 +113,13 @@ impl<T: Config> Pallet<T> {
 	/// This function allows minting a new item using a pre-signed message. The minting process is
 	/// similar to the regular minting process, but it is performed by a pre-authorized account. The
 	/// `mint_to` account receives the newly minted item. The minting process is configurable
-	/// through the provided `mint_data`. The attributes, metadata, and price of the item are set
+	/// through the provided `mint_data`. The attributes and metadata are set
 	/// according to the provided `mint_data`. The `with_details_and_config` closure is called to
 	/// validate the provided `collection_details` and `collection_config` before minting the item.
 	///
 	/// - `mint_to`: The account that receives the newly minted item.
 	/// - `mint_data`: The pre-signed minting data containing the `collection`, `item`,
-	///   `attributes`, `metadata`, `deadline`, `only_account`, and `mint_price`.
+	///   `attributes`, `metadata`, `deadline`, and `only_account`.
 	/// - `signer`: The account that is authorized to mint the item using the pre-signed message.
 	pub(crate) fn do_mint_pre_signed(
 		mint_to: T::AccountId,
@@ -133,7 +133,6 @@ impl<T: Config> Pallet<T> {
 			metadata,
 			deadline,
 			only_account,
-			mint_price,
 		} = mint_data;
 		let metadata = Self::construct_metadata(metadata)?;
 
@@ -160,17 +159,7 @@ impl<T: Config> Pallet<T> {
 			Some(mint_to.clone()),
 			mint_to.clone(),
 			item_config,
-			|collection_details, _| {
-				if let Some(price) = mint_price {
-					T::Currency::transfer(
-						&mint_to,
-						&collection_details.owner,
-						price,
-						ExistenceRequirement::KeepAlive,
-					)?;
-				}
-				Ok(())
-			},
+			|_, _| Ok(()),
 		)?;
 		let admin_account = Self::find_account_by_role(&collection, CollectionRole::Admin);
 		if let Some(admin_account) = admin_account {

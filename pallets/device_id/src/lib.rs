@@ -72,7 +72,7 @@ type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use frame_support::{pallet_prelude::*, traits::ExistenceRequirement};
+    use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
 
     /// The current storage version.
@@ -676,8 +676,7 @@ pub mod pallet {
         /// - `item`: An identifier of the new item.
         /// - `mint_to`: Account into which the item will be minted.
         /// - `witness_data`: When the mint type is `HolderOf(collection_id)`, then the owned
-        ///   item_id from that collection needs to be provided within the witness data object. If
-        ///   the mint price is set, then it should be additionally confirmed in the `witness_data`.
+        ///   item_id from that collection needs to be provided within the witness data object.
         ///
         /// Note: the deposit will be taken from the `origin` and not the `owner` of the `item`.
         ///
@@ -691,7 +690,6 @@ pub mod pallet {
             collection: T::CollectionId,
             item: T::ItemId,
             mint_to: AccountIdLookupOf<T>,
-            witness_data: Option<MintWitness<T::ItemId, DepositBalanceOf<T>>>,
         ) -> DispatchResult {
             let caller = ensure_signed(origin)?;
             let mint_to = T::Lookup::lookup(mint_to)?;
@@ -704,7 +702,7 @@ pub mod pallet {
                 Some(caller.clone()),
                 mint_to.clone(),
                 item_config,
-                |collection_details, collection_config| {
+                |_collection_details, collection_config| {
                     let mint_settings = collection_config.mint_settings;
                     let now = frame_system::Pallet::<T>::block_number();
 
@@ -723,19 +721,6 @@ pub mod pallet {
 							);
                         },
                         _ => {},
-                    }
-
-                    if let Some(price) = mint_settings.price {
-                        let MintWitness { mint_price, .. } =
-                            witness_data.clone().ok_or(Error::<T>::WitnessRequired)?;
-                        let mint_price = mint_price.ok_or(Error::<T>::BadWitness)?;
-                        ensure!(mint_price >= price, Error::<T>::BadWitness);
-                        T::Currency::transfer(
-                            &caller,
-                            &collection_details.owner,
-                            price,
-                            ExistenceRequirement::KeepAlive,
-                        )?;
                     }
 
                     Ok(())
@@ -1425,7 +1410,7 @@ pub mod pallet {
         pub fn update_mint_settings(
             origin: OriginFor<T>,
             collection: T::CollectionId,
-            mint_settings: MintSettings<BalanceOf<T>, BlockNumberFor<T>>,
+            mint_settings: MintSettings<BlockNumberFor<T>>,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
@@ -1486,5 +1471,3 @@ pub mod pallet {
         }
     }
 }
-
-sp_core::generate_feature_enabled_macro!(runtime_benchmarks_enabled, feature = "runtime-benchmarks", $);

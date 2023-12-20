@@ -157,7 +157,7 @@ fn basic_minting_should_work() {
 			default_collection_config()
 		));
 		assert_eq!(collections(), vec![(account(1), 0)]);
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 		assert_eq!(items(), vec![(account(1), 0, 42)]);
 
 		assert_ok!(DeviceId::force_create(
@@ -166,7 +166,7 @@ fn basic_minting_should_work() {
 			default_collection_config()
 		));
 		assert_eq!(collections(), vec![(account(1), 0), (account(2), 1)]);
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(2)), 1, 69, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(2)), 1, 69, account(1)));
 		assert_eq!(items(), vec![(account(1), 0, 42), (account(1), 1, 69)]);
 	});
 }
@@ -207,7 +207,7 @@ fn lifecycle_should_work() {
 			default_item_config()
 		));
 		assert_eq!(Balances::reserved_balance(&account(1)), 7);
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 70, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 70, account(1)));
 		assert_eq!(items(), vec![(account(1), 0, 70), (account(10), 0, 42), (account(20), 0, 69)]);
 		assert_eq!(Collection::<Test>::get(0).unwrap().items, 3);
 		assert_eq!(Collection::<Test>::get(0).unwrap().item_metadatas, 0);
@@ -298,7 +298,7 @@ fn destroy_should_work() {
 			collection_config_with_all_settings_enabled()
 		));
 
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(2), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(2)));
 		assert_noop!(
 			DeviceId::destroy(
 				RuntimeOrigin::signed(account(1)),
@@ -330,7 +330,7 @@ fn mint_should_work() {
 			account(1),
 			default_collection_config()
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 		assert_eq!(DeviceId::owner(0, 42).unwrap(), account(1));
 		assert_eq!(collections(), vec![(account(1), 0)]);
 		assert_eq!(items(), vec![(account(1), 0, 42)]);
@@ -349,54 +349,14 @@ fn mint_should_work() {
 
 		System::set_block_number(1);
 		assert_noop!(
-			DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 43, account(1), None),
+			DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 43, account(1)),
 			Error::<Test>::MintNotStarted
 		);
 		System::set_block_number(4);
 		assert_noop!(
-			DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 43, account(1), None),
+			DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 43, account(1)),
 			Error::<Test>::MintEnded
 		);
-
-		// validate price
-		assert_ok!(DeviceId::update_mint_settings(
-			RuntimeOrigin::signed(account(1)),
-			0,
-			MintSettings { mint_type: MintType::Public, price: Some(1), ..Default::default() }
-		));
-		Balances::make_free_balance_be(&account(2), 100);
-		assert_noop!(
-			DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 43, account(2), None,),
-			Error::<Test>::WitnessRequired
-		);
-		assert_noop!(
-			DeviceId::mint(
-				RuntimeOrigin::signed(account(2)),
-				0,
-				43,
-				account(2),
-				Some(MintWitness { ..Default::default() })
-			),
-			Error::<Test>::BadWitness
-		);
-		assert_noop!(
-			DeviceId::mint(
-				RuntimeOrigin::signed(account(2)),
-				0,
-				43,
-				account(2),
-				Some(MintWitness { mint_price: Some(0), ..Default::default() })
-			),
-			Error::<Test>::BadWitness
-		);
-		assert_ok!(DeviceId::mint(
-			RuntimeOrigin::signed(account(2)),
-			0,
-			43,
-			account(2),
-			Some(MintWitness { mint_price: Some(1), ..Default::default() })
-		));
-		assert_eq!(Balances::total_balance(&account(2)), 99);
 	});
 }
 
@@ -456,7 +416,7 @@ fn locking_transfer_should_work() {
 			account(1),
 			default_collection_config()
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 		assert_ok!(DeviceId::lock_item_transfer(RuntimeOrigin::signed(account(1)), 0, 42));
 		assert_noop!(
 			DeviceId::transfer(RuntimeOrigin::signed(account(1)), 0, 42, account(2)),
@@ -491,7 +451,7 @@ fn origin_guards_should_work() {
 			account(1),
 			default_collection_config()
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 
 		Balances::make_free_balance_be(&account(2), 100);
 		assert_ok!(DeviceId::set_accept_ownership(RuntimeOrigin::signed(account(2)), Some(0)));
@@ -518,10 +478,10 @@ fn origin_guards_should_work() {
 			Error::<Test>::NoPermission
 		);
 		assert_noop!(
-			DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 69, account(2), None),
+			DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 69, account(2)),
 			Error::<Test>::NoPermission
 		);
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 43, account(2), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 43, account(2)));
 		assert_noop!(
 			DeviceId::burn(RuntimeOrigin::signed(account(1)), 0, 43),
 			Error::<Test>::NoPermission
@@ -576,7 +536,7 @@ fn transfer_owner_should_work() {
 			0,
 			bvec![0u8; 20],
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 		assert_eq!(Balances::reserved_balance(&account(1)), 1);
 		assert_ok!(DeviceId::set_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 20]));
 		assert_ok!(DeviceId::set_accept_ownership(RuntimeOrigin::signed(account(3)), Some(0)));
@@ -617,7 +577,7 @@ fn set_team_should_work() {
 			Some(account(4)),
 		));
 
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 42, account(2), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 42, account(2)));
 
 		// admin can't transfer/burn items he doesn't own
 		assert_noop!(
@@ -773,7 +733,7 @@ fn set_item_metadata_should_work() {
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 		// Cannot add metadata to unowned item
 		assert_noop!(
 			DeviceId::set_metadata(RuntimeOrigin::signed(account(2)), 0, 42, bvec![0u8; 20]),
@@ -843,7 +803,7 @@ fn set_collection_owner_attributes_should_work() {
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 0, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
 
 		assert_ok!(DeviceId::set_attribute(
 			RuntimeOrigin::signed(account(1)),
@@ -933,7 +893,7 @@ fn set_collection_system_attributes_should_work() {
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 0, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
 
 		let collection_id = 0;
 		let attribute_key = [0u8];
@@ -1372,8 +1332,8 @@ fn set_attribute_should_respect_lock() {
 			account(1),
 			collection_config_with_all_settings_enabled(),
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 0, account(1), None));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 1, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 1, account(1)));
 
 		assert_ok!(DeviceId::set_attribute(
 			RuntimeOrigin::signed(account(1)),
@@ -1477,8 +1437,8 @@ fn preserve_config_for_frozen_items() {
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 0, account(1), None));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 1, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 1, account(1)));
 
 		// if the item is not locked/frozen then the config gets deleted on item burn
 		assert_ok!(DeviceId::burn(RuntimeOrigin::signed(account(1)), 0, 1));
@@ -1519,7 +1479,7 @@ fn preserve_config_for_frozen_items() {
 				..Default::default()
 			}
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 0, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
 	});
 }
 
@@ -1533,7 +1493,7 @@ fn force_update_collection_should_work() {
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 		assert_ok!(DeviceId::force_mint(
 			RuntimeOrigin::signed(account(1)),
 			0,
@@ -1556,7 +1516,7 @@ fn force_update_collection_should_work() {
 			0,
 			collection_config_from_disabled_settings(CollectionSetting::DepositRequired.into()),
 		));
-		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 142, account(1), None));
+		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 142, account(1)));
 		assert_ok!(DeviceId::force_mint(
 			RuntimeOrigin::signed(account(1)),
 			0,
@@ -1747,23 +1707,20 @@ fn max_supply_should_work() {
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			0,
-			user_id.clone(),
-			None
+			user_id.clone()
 		));
 		assert_ok!(DeviceId::mint(
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			1,
-			user_id.clone(),
-			None
+			user_id.clone()
 		));
 		assert_noop!(
 			DeviceId::mint(
 				RuntimeOrigin::signed(user_id.clone()),
 				collection_id,
 				2,
-				user_id.clone(),
-				None
+				user_id.clone()
 			),
 			Error::<Test>::MaxSupplyReached
 		);
@@ -1802,8 +1759,7 @@ fn mint_settings_should_work() {
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			item_id,
-			user_id.clone(),
-			None,
+			user_id.clone()
 		));
 		assert_eq!(
 			ItemConfigOf::<Test>::get(collection_id, item_id)
@@ -1831,8 +1787,7 @@ fn mint_settings_should_work() {
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			item_id,
-			user_id.clone(),
-			None,
+			user_id.clone()
 		));
 		assert_eq!(
 			ItemConfigOf::<Test>::get(collection_id, item_id)
@@ -1977,8 +1932,7 @@ fn add_remove_item_attributes_approval_should_work() {
 			RuntimeOrigin::signed(user_1.clone()),
 			collection_id,
 			item_id,
-			user_1.clone(),
-			None
+			user_1.clone()
 		));
 		assert_ok!(DeviceId::approve_item_attributes(
 			RuntimeOrigin::signed(user_1.clone()),
@@ -2032,14 +1986,13 @@ fn validate_signature() {
 		let user_1_pair = sp_core::sr25519::Pair::from_string("//Alice", None).unwrap();
 		let user_1_signer = MultiSigner::Sr25519(user_1_pair.public());
 		let user_1 = user_1_signer.clone().into_account();
-		let mint_data: PreSignedMint<u32, u32, AccountId, u32, u64> = PreSignedMint {
+		let mint_data: PreSignedMint<u32, u32, AccountId, u32> = PreSignedMint {
 			collection: 0,
 			item: 0,
 			attributes: vec![],
 			metadata: vec![],
 			only_account: None,
 			deadline: 100000,
-			mint_price: None,
 		};
 		let encoded_data = Encode::encode(&mint_data);
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&encoded_data));
@@ -2069,7 +2022,6 @@ fn pre_signed_mints_should_work() {
 			metadata: vec![0, 1],
 			only_account: None,
 			deadline: 10000000,
-			mint_price: Some(10),
 		};
 		let message = Encode::encode(&mint_data);
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&message));
@@ -2116,8 +2068,8 @@ fn pre_signed_mints_should_work() {
 		assert_eq!(deposit.account, Some(user_2.clone()));
 		assert_eq!(deposit.amount, 3);
 
-		assert_eq!(Balances::free_balance(&user_0), 100 - 2 + 10); // 2 - collection deposit, 10 - mint price
-		assert_eq!(Balances::free_balance(&user_2), 100 - 1 - 3 - 6 - 10); // 1 - item deposit, 3 - metadata, 6 - attributes, 10 - mint price
+		assert_eq!(Balances::free_balance(&user_0), 100 - 2); // 2 - collection deposit
+		assert_eq!(Balances::free_balance(&user_2), 100 - 1 - 3 - 6); // 1 - item deposit, 3 - metadata, 6 - attributes
 
 		assert_noop!(
 			DeviceId::mint_pre_signed(
@@ -2130,7 +2082,7 @@ fn pre_signed_mints_should_work() {
 		);
 
 		assert_ok!(DeviceId::burn(RuntimeOrigin::signed(user_2.clone()), 0, 0));
-		assert_eq!(Balances::free_balance(&user_2), 100 - 6 - 10);
+		assert_eq!(Balances::free_balance(&user_2), 100 - 6);
 
 		// validate the `only_account` field
 		let mint_data = PreSignedMint {
@@ -2140,7 +2092,6 @@ fn pre_signed_mints_should_work() {
 			metadata: vec![],
 			only_account: Some(account(2)),
 			deadline: 10000000,
-			mint_price: None,
 		};
 
 		// can't mint with the wrong signature
@@ -2188,7 +2139,6 @@ fn pre_signed_mints_should_work() {
 			metadata: vec![],
 			only_account: Some(account(2)),
 			deadline: 10000000,
-			mint_price: None,
 		};
 		let message = Encode::encode(&mint_data);
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&message));
@@ -2211,7 +2161,6 @@ fn pre_signed_mints_should_work() {
 			metadata: vec![0, 1],
 			only_account: None,
 			deadline: 10000000,
-			mint_price: None,
 		};
 		let message = Encode::encode(&mint_data);
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&message));
@@ -2253,7 +2202,6 @@ fn pre_signed_attributes_should_work() {
 			collection_id,
 			item_id,
 			user_2.clone(),
-			None,
 		));
 
 		// validate the CollectionOwner namespace

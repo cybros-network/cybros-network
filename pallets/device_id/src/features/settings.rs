@@ -19,6 +19,7 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
+use frame_system::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
 	/// Forcefully change the configuration of a collection.
@@ -96,10 +97,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_update_mint_settings(
 		maybe_check_origin: Option<T::AccountId>,
 		collection: T::CollectionId,
-		mint_settings: MintSettings<
-			BalanceOf<T>,
-			frame_system::pallet_prelude::BlockNumberFor<T>,
-		>,
+		mint_settings: MintSettings<BlockNumberFor<T>>,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(

@@ -56,19 +56,15 @@ pub(super) type ItemMetadataDepositOf<T> =
 /// A type that holds the details of a single item.
 pub(super) type ItemDetailsFor<T> =
 	ItemDetails<<T as frame_system::Config>::AccountId, ItemDepositOf<T>, ApprovalsOf<T>>;
-/// A type alias for an accounts balance.
-pub(super) type BalanceOf<T> =
-	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 /// A type alias for the settings configuration of a collection.
 pub(super) type CollectionConfigFor<T> =
-	CollectionConfig<BalanceOf<T>, BlockNumberFor<T>>;
+	CollectionConfig<BlockNumberFor<T>>;
 /// A type alias for the pre-signed minting configuration for a specified collection.
 pub(super) type PreSignedMintOf<T> = PreSignedMint<
 	<T as Config>::CollectionId,
 	<T as Config>::ItemId,
 	<T as frame_system::Config>::AccountId,
 	BlockNumberFor<T>,
-	BalanceOf<T>,
 >;
 /// A type alias for the pre-signed minting configuration on the attribute level of an item.
 pub(super) type PreSignedAttributesOf<T> = PreSignedAttributes<
@@ -248,11 +244,9 @@ pub enum MintType {
 
 /// Holds the information about minting.
 #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct MintSettings<Price, BlockNumber> {
+pub struct MintSettings<BlockNumber> {
 	/// Whether anyone can mint or if minters are restricted to some subset.
 	pub mint_type: MintType,
-	/// An optional price per mint.
-	pub price: Option<Price>,
 	/// When the mint starts.
 	pub start_block: Option<BlockNumber>,
 	/// When the mint ends.
@@ -261,11 +255,10 @@ pub struct MintSettings<Price, BlockNumber> {
 	pub default_item_settings: ItemSettings,
 }
 
-impl<Price, BlockNumber> Default for MintSettings<Price, BlockNumber> {
+impl<BlockNumber> Default for MintSettings<BlockNumber> {
 	fn default() -> Self {
 		Self {
 			mint_type: MintType::Issuer,
-			price: None,
 			start_block: None,
 			end_block: None,
 			default_item_settings: ItemSettings::all_enabled(),
@@ -308,16 +301,16 @@ pub enum PalletAttributes<CollectionId> {
 #[derive(
 	Clone, Copy, Decode, Default, Encode, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo,
 )]
-pub struct CollectionConfig<Price, BlockNumber> {
+pub struct CollectionConfig<BlockNumber> {
 	/// Collection's settings.
 	pub settings: CollectionSettings,
 	/// Collection's max supply.
 	pub max_supply: Option<u32>,
 	/// Default settings each item will get during the mint.
-	pub mint_settings: MintSettings<Price, BlockNumber>,
+	pub mint_settings: MintSettings<BlockNumber>,
 }
 
-impl<Price, BlockNumber> CollectionConfig<Price, BlockNumber> {
+impl<BlockNumber> CollectionConfig<BlockNumber> {
 	pub fn is_setting_enabled(&self, setting: CollectionSetting) -> bool {
 		!self.settings.is_disabled(setting)
 	}
@@ -428,7 +421,7 @@ impl CollectionRoles {
 impl_codec_bitflags!(CollectionRoles, u8, CollectionRole);
 
 #[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct PreSignedMint<CollectionId, ItemId, AccountId, Deadline, Balance> {
+pub struct PreSignedMint<CollectionId, ItemId, AccountId, Deadline> {
 	/// A collection of the item to be minted.
 	pub(super) collection: CollectionId,
 	/// Item's ID.
@@ -441,8 +434,6 @@ pub struct PreSignedMint<CollectionId, ItemId, AccountId, Deadline, Balance> {
 	pub(super) only_account: Option<AccountId>,
 	/// A deadline for the signature.
 	pub(super) deadline: Deadline,
-	/// An optional price the claimer would need to pay for the mint.
-	pub(super) mint_price: Option<Balance>,
 }
 
 #[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]

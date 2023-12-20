@@ -29,7 +29,7 @@ use frame_support::{
 	traits::{EnsureOrigin, Get, UnfilteredDispatchable},
 	BoundedVec,
 };
-use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin as SystemOrigin};
+use frame_system::{RawOrigin as SystemOrigin};
 use sp_io::crypto::{sr25519_generate, sr25519_sign};
 use sp_runtime::{
 	traits::{Bounded, IdentifyAccount, One},
@@ -97,7 +97,6 @@ fn mint_item<T: Config>(
 			collection,
 			item,
 			caller_lookup.clone(),
-			None,
 		));
 	}
 	(item, caller, caller_lookup)
@@ -646,7 +645,6 @@ benchmarks_instance_pallet! {
 			metadata: metadata.clone(),
 			only_account: None,
 			deadline: One::one(),
-			mint_price: Some(DepositBalanceOf::<T>::min_value()),
 		};
 		let message = Encode::encode(&mint_data);
 		let signature = MultiSignature::Sr25519(sr25519_sign(0.into(), &caller_public, &message).unwrap());
