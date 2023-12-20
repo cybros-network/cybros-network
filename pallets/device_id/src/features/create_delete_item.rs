@@ -42,7 +42,7 @@ impl<T: Config> Pallet<T> {
 	///   ([`MaxSupplyReached`](crate::Error::MaxSupplyReached)).
 	/// - If any error occurs in the `with_details_and_config` closure.
 	pub fn do_mint(
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		item: T::ItemId,
 		maybe_depositor: Option<T::AccountId>,
 		mint_to: T::AccountId,
@@ -194,7 +194,7 @@ impl<T: Config> Pallet<T> {
 	/// - If the collection ID is invalid ([`UnknownCollection`](crate::Error::UnknownCollection)).
 	/// - If the item is locked ([`ItemLocked`](crate::Error::ItemLocked)).
 	pub fn do_burn(
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		item: T::ItemId,
 		with_details: impl FnOnce(&ItemDetailsFor<T>) -> DispatchResult,
 	) -> DispatchResult {

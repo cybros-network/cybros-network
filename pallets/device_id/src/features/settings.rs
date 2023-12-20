@@ -29,7 +29,7 @@ impl<T: Config> Pallet<T> {
 	/// This function allows for changing the configuration of a collection without any checks.
 	/// It updates the collection configuration and emits a `CollectionConfigChanged` event.
 	pub(crate) fn do_force_collection_config(
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		config: CollectionConfig,
 	) -> DispatchResult {
 		ensure!(Collection::<T>::contains_key(&collection), Error::<T>::UnknownCollection);
@@ -56,7 +56,7 @@ impl<T: Config> Pallet<T> {
 	/// `CollectionMaxSupplySet` event.
 	pub(crate) fn do_set_collection_max_supply(
 		maybe_check_owner: Option<T::AccountId>,
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		max_supply: u32,
 	) -> DispatchResult {
 		let collection_config = Self::get_collection_config(&collection)?;
@@ -95,7 +95,7 @@ impl<T: Config> Pallet<T> {
 	/// `CollectionMintSettingsUpdated` event.
 	pub(crate) fn do_update_mint_settings(
 		maybe_check_origin: Option<T::AccountId>,
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		mint_settings: MintSettings,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
@@ -121,7 +121,7 @@ impl<T: Config> Pallet<T> {
 	/// with the given `collection_id`. If the configuration exists, it returns `Ok(config)`,
 	/// otherwise, it returns a `DispatchError` with `Error::NoConfig`.
 	pub(crate) fn get_collection_config(
-		collection_id: &T::CollectionId,
+		collection_id: &T::ProductId,
 	) -> Result<CollectionConfig, DispatchError> {
 		let config =
 			CollectionConfigOf::<T>::get(&collection_id).ok_or(Error::<T>::NoConfig)?;
@@ -137,7 +137,7 @@ impl<T: Config> Pallet<T> {
 	/// `collection_id` and `item_id`. If the configuration exists, it returns `Ok(config)`,
 	/// otherwise, it returns a `DispatchError` with `Error::UnknownItem`.
 	pub(crate) fn get_item_config(
-		collection_id: &T::CollectionId,
+		collection_id: &T::ProductId,
 		item_id: &T::ItemId,
 	) -> Result<ItemConfig, DispatchError> {
 		let config = ItemConfigOf::<T>::get(&collection_id, &item_id)
@@ -154,7 +154,7 @@ impl<T: Config> Pallet<T> {
 	/// returns `Ok(default_item_settings)`, otherwise, it returns a `DispatchError` with
 	/// `Error::NoConfig`.
 	pub(crate) fn get_default_item_settings(
-		collection_id: &T::CollectionId,
+		collection_id: &T::ProductId,
 	) -> Result<ItemSettings, DispatchError> {
 		let collection_config = Self::get_collection_config(collection_id)?;
 		Ok(collection_config.mint_settings.default_item_settings)

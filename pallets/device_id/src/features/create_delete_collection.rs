@@ -34,12 +34,12 @@ impl<T: Config> Pallet<T> {
 	/// This function returns a [`CollectionIdInUse`](crate::Error::CollectionIdInUse) error if the
 	/// collection ID is already in use.
 	pub fn do_create_collection(
-		collection: T::CollectionId,
-		owner: T::AccountId,
-		admin: T::AccountId,
-		config: CollectionConfig,
-		deposit: DepositBalanceOf<T>,
-		event: Event<T>,
+        collection: T::ProductId,
+        owner: T::AccountId,
+        admin: T::AccountId,
+        config: CollectionConfig,
+        deposit: DepositBalanceOf<T>,
+        event: Event<T>,
 	) -> DispatchResult {
 		ensure!(!Collection::<T>::contains_key(collection), Error::<T>::CollectionIdInUse);
 
@@ -98,9 +98,9 @@ impl<T: Config> Pallet<T> {
 	/// - If the `witness` does not match the actual collection details
 	///   ([`BadWitness`](crate::Error::BadWitness)).
 	pub fn do_destroy_collection(
-		collection: T::CollectionId,
-		witness: DestroyWitness,
-		maybe_check_owner: Option<T::AccountId>,
+        collection: T::ProductId,
+        witness: DestroyWitness,
+        maybe_check_owner: Option<T::AccountId>,
 	) -> Result<DestroyWitness, DispatchError> {
 		Collection::<T>::try_mutate_exists(collection, |maybe_details| {
 			let collection_details =

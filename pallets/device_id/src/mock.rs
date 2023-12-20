@@ -77,7 +77,7 @@ impl pallet_balances::Config for Test {
 
 impl pallet_device_id::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
-	type CollectionId = u32;
+	type ProductId = u32;
 	type ItemId = u32;
 	type Currency = Balances;
 	type CreateOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<Self::AccountId>>;

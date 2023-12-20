@@ -36,11 +36,11 @@ impl<T: Config> Pallet<T> {
 	/// `Some(account)`, but other roles can only be updated by the root or an account with an
 	/// existing role in the collection.
 	pub(crate) fn do_set_team(
-		maybe_check_owner: Option<T::AccountId>,
-		collection: T::CollectionId,
-		issuer: Option<T::AccountId>,
-		admin: Option<T::AccountId>,
-		freezer: Option<T::AccountId>,
+        maybe_check_owner: Option<T::AccountId>,
+        collection: T::ProductId,
+        issuer: Option<T::AccountId>,
+        admin: Option<T::AccountId>,
+        freezer: Option<T::AccountId>,
 	) -> DispatchResult {
 		Collection::<T>::try_mutate(collection, |maybe_details| {
 			let details = maybe_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
@@ -94,7 +94,7 @@ impl<T: Config> Pallet<T> {
 	/// This function clears all the roles associated with the given `collection_id`. It throws an
 	/// error if some of the roles were left in storage, indicating that the maximum number of roles
 	/// may need to be adjusted.
-	pub(crate) fn clear_roles(collection_id: &T::CollectionId) -> Result<(), DispatchError> {
+	pub(crate) fn clear_roles(collection_id: &T::ProductId) -> Result<(), DispatchError> {
 		let res = CollectionRoleOf::<T>::clear_prefix(
 			&collection_id,
 			CollectionRoles::max_roles() as u32,
@@ -112,9 +112,9 @@ impl<T: Config> Pallet<T> {
 	///
 	/// Returns `true` if the account has the specified role, `false` otherwise.
 	pub(crate) fn has_role(
-		collection_id: &T::CollectionId,
-		account_id: &T::AccountId,
-		role: CollectionRole,
+        collection_id: &T::ProductId,
+        account_id: &T::AccountId,
+        role: CollectionRole,
 	) -> bool {
 		CollectionRoleOf::<T>::get(&collection_id, &account_id)
 			.map_or(false, |roles| roles.has_role(role))
@@ -127,8 +127,8 @@ impl<T: Config> Pallet<T> {
 	///
 	/// Returns `Some(T::AccountId)` if the record was found, `None` otherwise.
 	pub(crate) fn find_account_by_role(
-		collection_id: &T::CollectionId,
-		role: CollectionRole,
+        collection_id: &T::ProductId,
+        role: CollectionRole,
 	) -> Option<T::AccountId> {
 		CollectionRoleOf::<T>::iter_prefix(&collection_id).into_iter().find_map(
 			|(account, roles)| if roles.has_role(role) { Some(account.clone()) } else { None },

@@ -113,7 +113,7 @@ pub mod pallet {
         /// the `create_collection_with_id` function. However, if the `Incrementable` trait
         /// implementation has an incremental order, the `create_collection_with_id` function
         /// should not be used as it can claim a value in the ID sequence.
-        type CollectionId: Member + Parameter + MaxEncodedLen + Copy + Incrementable;
+        type ProductId: Member + Parameter + MaxEncodedLen + Copy + Incrementable;
 
         /// The type used to identify a unique item within a collection.
         type ItemId: Member + Parameter + MaxEncodedLen + Copy;
@@ -129,12 +129,12 @@ pub mod pallet {
         /// collection are in this set.
         type CreateOrigin: EnsureOriginWithArg<
             Self::RuntimeOrigin,
-            Self::CollectionId,
+            Self::ProductId,
             Success = Self::AccountId,
         >;
 
         /// Locker trait to enable Locking mechanism downstream.
-        type Locker: Locker<Self::CollectionId, Self::ItemId>;
+        type Locker: Locker<Self::ProductId, Self::ItemId>;
 
         /// The basic amount of funds that must be reserved for collection.
         #[pallet::constant]
@@ -189,7 +189,7 @@ pub mod pallet {
 
         #[cfg(feature = "runtime-benchmarks")]
         /// A set of helper functions for benchmarking.
-        type Helper: BenchmarkHelper<Self::CollectionId, Self::ItemId>;
+        type Helper: BenchmarkHelper<Self::ProductId, Self::ItemId>;
 
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -200,14 +200,14 @@ pub mod pallet {
     pub type Collection<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
-        T::CollectionId,
+        T::ProductId,
         CollectionDetails<T::AccountId, DepositBalanceOf<T>>,
     >;
 
     /// The collection, if any, of which an account is willing to take ownership.
     #[pallet::storage]
     pub type OwnershipAcceptance<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, T::CollectionId>;
+        StorageMap<_, Blake2_128Concat, T::AccountId, T::ProductId>;
 
     /// The items held by any given account; set out this way so that items owned by a single
     /// account can be enumerated.
@@ -216,7 +216,7 @@ pub mod pallet {
         _,
         (
             NMapKey<Blake2_128Concat, T::AccountId>, // owner
-            NMapKey<Blake2_128Concat, T::CollectionId>,
+            NMapKey<Blake2_128Concat, T::ProductId>,
             NMapKey<Blake2_128Concat, T::ItemId>,
         ),
         (),
@@ -231,7 +231,7 @@ pub mod pallet {
         Blake2_128Concat,
         T::AccountId,
         Blake2_128Concat,
-        T::CollectionId,
+        T::ProductId,
         (),
         OptionQuery,
     >;
@@ -242,7 +242,7 @@ pub mod pallet {
     pub type CollectionRoleOf<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
-        T::CollectionId,
+        T::ProductId,
         Blake2_128Concat,
         T::AccountId,
         CollectionRoles,
@@ -254,7 +254,7 @@ pub mod pallet {
     pub type Item<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
-        T::CollectionId,
+        T::ProductId,
         Blake2_128Concat,
         T::ItemId,
         ItemDetails<T::AccountId, ItemDepositOf<T>>,
@@ -266,7 +266,7 @@ pub mod pallet {
     pub type CollectionMetadataOf<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
-        T::CollectionId,
+        T::ProductId,
         CollectionMetadata<DepositBalanceOf<T>, T::StringLimit>,
         OptionQuery,
     >;
@@ -276,7 +276,7 @@ pub mod pallet {
     pub type ItemMetadataOf<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
-        T::CollectionId,
+        T::ProductId,
         Blake2_128Concat,
         T::ItemId,
         ItemMetadata<ItemMetadataDepositOf<T>, T::StringLimit>,
@@ -288,7 +288,7 @@ pub mod pallet {
     pub type Attribute<T: Config> = StorageNMap<
         _,
         (
-            NMapKey<Blake2_128Concat, T::CollectionId>,
+            NMapKey<Blake2_128Concat, T::ProductId>,
             NMapKey<Blake2_128Concat, Option<T::ItemId>>,
             NMapKey<Blake2_128Concat, AttributeNamespace<T::AccountId>>,
             NMapKey<Blake2_128Concat, BoundedVec<u8, T::KeyLimit>>,
@@ -302,7 +302,7 @@ pub mod pallet {
     pub type ItemAttributesApprovalsOf<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
-        T::CollectionId,
+        T::ProductId,
         Blake2_128Concat,
         T::ItemId,
         ItemAttributesApprovals<T>,
@@ -313,19 +313,19 @@ pub mod pallet {
     /// This gets incremented whenever a new collection is created.
     #[pallet::storage]
     pub type NextCollectionId<T: Config> =
-        StorageValue<_, T::CollectionId, OptionQuery>;
+        StorageValue<_, T::ProductId, OptionQuery>;
 
     /// Config of a collection.
     #[pallet::storage]
     pub type CollectionConfigOf<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::CollectionId, CollectionConfig, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, T::ProductId, CollectionConfig, OptionQuery>;
 
     /// Config of an item.
     #[pallet::storage]
     pub type ItemConfigOf<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
-        T::CollectionId,
+        T::ProductId,
         Blake2_128Concat,
         T::ItemId,
         ItemConfig,
@@ -336,61 +336,61 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// A `collection` was created.
-        Created { collection: T::CollectionId, creator: T::AccountId, owner: T::AccountId },
+        Created { collection: T::ProductId, creator: T::AccountId, owner: T::AccountId },
         /// A `collection` was force-created.
-        ForceCreated { collection: T::CollectionId, owner: T::AccountId },
+        ForceCreated { collection: T::ProductId, owner: T::AccountId },
         /// A `collection` was destroyed.
-        Destroyed { collection: T::CollectionId },
+        Destroyed { collection: T::ProductId },
         /// An `item` was issued.
-        Issued { collection: T::CollectionId, item: T::ItemId, owner: T::AccountId },
+        Issued { collection: T::ProductId, item: T::ItemId, owner: T::AccountId },
         /// An `item` was transferred.
         Transferred {
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             from: T::AccountId,
             to: T::AccountId,
         },
         /// An `item` was destroyed.
-        Burned { collection: T::CollectionId, item: T::ItemId, owner: T::AccountId },
+        Burned { collection: T::ProductId, item: T::ItemId, owner: T::AccountId },
         /// An `item` became non-transferable.
-        ItemTransferLocked { collection: T::CollectionId, item: T::ItemId },
+        ItemTransferLocked { collection: T::ProductId, item: T::ItemId },
         /// An `item` became transferable.
-        ItemTransferUnlocked { collection: T::CollectionId, item: T::ItemId },
+        ItemTransferUnlocked { collection: T::ProductId, item: T::ItemId },
         /// `item` metadata or attributes were locked.
         ItemPropertiesLocked {
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             lock_metadata: bool,
             lock_attributes: bool,
         },
         /// Some `collection` was locked.
-        CollectionLocked { collection: T::CollectionId },
+        CollectionLocked { collection: T::ProductId },
         /// The owner changed.
-        OwnerChanged { collection: T::CollectionId, new_owner: T::AccountId },
+        OwnerChanged { collection: T::ProductId, new_owner: T::AccountId },
         /// The management team changed.
         TeamChanged {
-            collection: T::CollectionId,
+            collection: T::ProductId,
             issuer: Option<T::AccountId>,
             admin: Option<T::AccountId>,
             freezer: Option<T::AccountId>,
         },
         /// A `collection` has had its config changed by the `Force` origin.
-        CollectionConfigChanged { collection: T::CollectionId },
+        CollectionConfigChanged { collection: T::ProductId },
         /// New metadata has been set for a `collection`.
-        CollectionMetadataSet { collection: T::CollectionId, data: BoundedVec<u8, T::StringLimit> },
+        CollectionMetadataSet { collection: T::ProductId, data: BoundedVec<u8, T::StringLimit> },
         /// Metadata has been cleared for a `collection`.
-        CollectionMetadataCleared { collection: T::CollectionId },
+        CollectionMetadataCleared { collection: T::ProductId },
         /// New metadata has been set for an item.
         ItemMetadataSet {
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             data: BoundedVec<u8, T::StringLimit>,
         },
         /// Metadata has been cleared for an item.
-        ItemMetadataCleared { collection: T::CollectionId, item: T::ItemId },
+        ItemMetadataCleared { collection: T::ProductId, item: T::ItemId },
         /// New attribute metadata has been set for a `collection` or `item`.
         AttributeSet {
-            collection: T::CollectionId,
+            collection: T::ProductId,
             maybe_item: Option<T::ItemId>,
             key: BoundedVec<u8, T::KeyLimit>,
             value: BoundedVec<u8, T::ValueLimit>,
@@ -398,41 +398,41 @@ pub mod pallet {
         },
         /// Attribute metadata has been cleared for a `collection` or `item`.
         AttributeCleared {
-            collection: T::CollectionId,
+            collection: T::ProductId,
             maybe_item: Option<T::ItemId>,
             key: BoundedVec<u8, T::KeyLimit>,
             namespace: AttributeNamespace<T::AccountId>,
         },
         /// A new approval to modify item attributes was added.
         ItemAttributesApprovalAdded {
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             delegate: T::AccountId,
         },
         /// A new approval to modify item attributes was removed.
         ItemAttributesApprovalRemoved {
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             delegate: T::AccountId,
         },
         /// Ownership acceptance has changed for an account.
-        OwnershipAcceptanceChanged { who: T::AccountId, maybe_collection: Option<T::CollectionId> },
+        OwnershipAcceptanceChanged { who: T::AccountId, maybe_collection: Option<T::ProductId> },
         /// Max supply has been set for a collection.
-        CollectionMaxSupplySet { collection: T::CollectionId, max_supply: u32 },
+        CollectionMaxSupplySet { collection: T::ProductId, max_supply: u32 },
         /// Mint settings for a collection had changed.
-        CollectionMintSettingsUpdated { collection: T::CollectionId },
+        CollectionMintSettingsUpdated { collection: T::ProductId },
         /// Event gets emitted when the `NextCollectionId` gets incremented.
-        NextCollectionIdIncremented { next_id: Option<T::CollectionId> },
+        NextCollectionIdIncremented { next_id: Option<T::ProductId> },
         /// New attributes have been set for an `item` of the `collection`.
         PreSignedAttributesSet {
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             namespace: AttributeNamespace<T::AccountId>,
         },
         /// A new attribute in the `Pallet` namespace was set for the `collection` or an `item`
         /// within that `collection`.
         PalletAttributeSet {
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: Option<T::ItemId>,
             attribute: PalletAttributes,
             value: BoundedVec<u8, T::ValueLimit>,
@@ -540,7 +540,7 @@ pub mod pallet {
             config: CollectionConfig,
         ) -> DispatchResult {
             let collection = NextCollectionId::<T>::get()
-                .or(T::CollectionId::initial_value())
+                .or(T::ProductId::initial_value())
                 .ok_or(Error::<T>::UnknownCollection)?;
 
             let owner = T::CreateOrigin::ensure_origin(origin, &collection)?;
@@ -591,7 +591,7 @@ pub mod pallet {
             let owner = T::Lookup::lookup(owner)?;
 
             let collection = NextCollectionId::<T>::get()
-                .or(T::CollectionId::initial_value())
+                .or(T::ProductId::initial_value())
                 .ok_or(Error::<T>::UnknownCollection)?;
 
             Self::do_create_collection(
@@ -632,7 +632,7 @@ pub mod pallet {
         ))]
         pub fn destroy(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             witness: DestroyWitness,
         ) -> DispatchResultWithPostInfo {
             let maybe_check_owner = T::ForceOrigin::try_origin(origin)
@@ -666,7 +666,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::mint())]
         pub fn mint(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             mint_to: AccountIdLookupOf<T>,
         ) -> DispatchResult {
@@ -716,7 +716,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::force_mint())]
         pub fn force_mint(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             mint_to: AccountIdLookupOf<T>,
             item_config: ItemConfig,
@@ -750,7 +750,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::burn())]
         pub fn burn(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
@@ -783,7 +783,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::transfer())]
         pub fn transfer(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             dest: AccountIdLookupOf<T>,
         ) -> DispatchResult {
@@ -810,7 +810,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::lock_item_transfer())]
         pub fn lock_item_transfer(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
@@ -831,7 +831,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::unlock_item_transfer())]
         pub fn unlock_item_transfer(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
@@ -854,7 +854,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::lock_collection())]
         pub fn lock_collection(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             lock_settings: CollectionSettings,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
@@ -876,7 +876,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::transfer_ownership())]
         pub fn transfer_ownership(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             new_owner: AccountIdLookupOf<T>,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
@@ -904,7 +904,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_team())]
         pub fn set_team(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             issuer: Option<AccountIdLookupOf<T>>,
             admin: Option<AccountIdLookupOf<T>>,
             freezer: Option<AccountIdLookupOf<T>>,
@@ -932,7 +932,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::force_collection_owner())]
         pub fn force_collection_owner(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             owner: AccountIdLookupOf<T>,
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
@@ -954,7 +954,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::force_collection_config())]
         pub fn force_collection_config(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             config: CollectionConfig,
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
@@ -982,7 +982,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::lock_item_properties())]
         pub fn lock_item_properties(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             lock_metadata: bool,
             lock_attributes: bool,
@@ -1025,7 +1025,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_attribute())]
         pub fn set_attribute(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             maybe_item: Option<T::ItemId>,
             namespace: AttributeNamespace<T::AccountId>,
             key: BoundedVec<u8, T::KeyLimit>,
@@ -1062,7 +1062,7 @@ pub mod pallet {
         pub fn force_set_attribute(
             origin: OriginFor<T>,
             set_as: Option<T::AccountId>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             maybe_item: Option<T::ItemId>,
             namespace: AttributeNamespace<T::AccountId>,
             key: BoundedVec<u8, T::KeyLimit>,
@@ -1091,7 +1091,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::clear_attribute())]
         pub fn clear_attribute(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             maybe_item: Option<T::ItemId>,
             namespace: AttributeNamespace<T::AccountId>,
             key: BoundedVec<u8, T::KeyLimit>,
@@ -1115,7 +1115,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::approve_item_attributes())]
         pub fn approve_item_attributes(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             delegate: AccountIdLookupOf<T>,
         ) -> DispatchResult {
@@ -1140,7 +1140,7 @@ pub mod pallet {
         ))]
         pub fn cancel_item_attributes_approval(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             delegate: AccountIdLookupOf<T>,
             witness: CancelAttributesApprovalWitness,
@@ -1170,7 +1170,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_metadata())]
         pub fn set_metadata(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
             data: BoundedVec<u8, T::StringLimit>,
         ) -> DispatchResult {
@@ -1197,7 +1197,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::clear_metadata())]
         pub fn clear_metadata(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             item: T::ItemId,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
@@ -1225,7 +1225,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_collection_metadata())]
         pub fn set_collection_metadata(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             data: BoundedVec<u8, T::StringLimit>,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
@@ -1250,7 +1250,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::clear_collection_metadata())]
         pub fn clear_collection_metadata(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
@@ -1272,7 +1272,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_accept_ownership())]
         pub fn set_accept_ownership(
             origin: OriginFor<T>,
-            maybe_collection: Option<T::CollectionId>,
+            maybe_collection: Option<T::ProductId>,
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
             Self::do_set_accept_ownership(who, maybe_collection)
@@ -1291,7 +1291,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_collection_max_supply())]
         pub fn set_collection_max_supply(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             max_supply: u32,
         ) -> DispatchResult {
             let maybe_check_owner = T::ForceOrigin::try_origin(origin)
@@ -1313,7 +1313,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::update_mint_settings())]
         pub fn update_mint_settings(
             origin: OriginFor<T>,
-            collection: T::CollectionId,
+            collection: T::ProductId,
             mint_settings: MintSettings,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)

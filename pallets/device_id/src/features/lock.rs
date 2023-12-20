@@ -36,7 +36,7 @@ impl<T: Config> Pallet<T> {
 	/// - `lock_settings`: The collection settings to be locked.
 	pub(crate) fn do_lock_collection(
 		origin: T::AccountId,
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		lock_settings: CollectionSettings,
 	) -> DispatchResult {
 		ensure!(Self::collection_owner(collection) == Some(origin), Error::<T>::NoPermission);
@@ -68,7 +68,7 @@ impl<T: Config> Pallet<T> {
 	/// - `item`: The identifier of the item to be locked for transfer.
 	pub(crate) fn do_lock_item_transfer(
 		origin: T::AccountId,
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		item: T::ItemId,
 	) -> DispatchResult {
 		ensure!(
@@ -98,7 +98,7 @@ impl<T: Config> Pallet<T> {
 	/// - `item`: The identifier of the item to be unlocked for transfer.
 	pub(crate) fn do_unlock_item_transfer(
 		origin: T::AccountId,
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		item: T::ItemId,
 	) -> DispatchResult {
 		ensure!(
@@ -133,7 +133,7 @@ impl<T: Config> Pallet<T> {
 	/// - `lock_attributes`: A boolean indicating whether to lock the attributes of the item.
 	pub(crate) fn do_lock_item_properties(
 		maybe_check_origin: Option<T::AccountId>,
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		item: T::ItemId,
 		lock_metadata: bool,
 		lock_attributes: bool,

@@ -29,7 +29,7 @@ use sp_std::prelude::*;
 
 impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 	type ItemId = T::ItemId;
-	type CollectionId = T::CollectionId;
+	type CollectionId = T::ProductId;
 
 	fn owner(
 		collection: &Self::CollectionId,
@@ -157,7 +157,7 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfig>
 		who: &T::AccountId,
 		admin: &T::AccountId,
 		config: &CollectionConfig,
-	) -> Result<T::CollectionId, DispatchError> {
+	) -> Result<T::ProductId, DispatchError> {
 		// DepositRequired can be disabled by calling the force_create() only
 		ensure!(
 			!config.has_disabled_setting(CollectionSetting::DepositRequired),
@@ -165,7 +165,7 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfig>
 		);
 
 		let collection = NextCollectionId::<T>::get()
-			.or(T::CollectionId::initial_value())
+			.or(T::ProductId::initial_value())
 			.ok_or(Error::<T>::UnknownCollection)?;
 
 		Self::do_create_collection(
@@ -190,7 +190,7 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfig>
 	/// SAFETY: This function can break the pallet if it is used in combination with the auto
 	/// increment functionality, as it can claim a value in the ID sequence.
 	fn create_collection_with_id(
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		who: &T::AccountId,
 		admin: &T::AccountId,
 		config: &CollectionConfig,
@@ -443,10 +443,10 @@ impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
 }
 
 impl<T: Config> InspectEnumerable<T::AccountId> for Pallet<T> {
-	type CollectionsIterator = KeyPrefixIterator<<T as Config>::CollectionId>;
+	type CollectionsIterator = KeyPrefixIterator<<T as Config>::ProductId>;
 	type ItemsIterator = KeyPrefixIterator<<T as Config>::ItemId>;
 	type OwnedIterator =
-		KeyPrefixIterator<(<T as Config>::CollectionId, <T as Config>::ItemId)>;
+		KeyPrefixIterator<(<T as Config>::ProductId, <T as Config>::ItemId)>;
 	type OwnedInCollectionIterator = KeyPrefixIterator<<T as Config>::ItemId>;
 
 	/// Returns an iterator of the collections in existence.

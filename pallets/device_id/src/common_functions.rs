@@ -22,12 +22,12 @@ use frame_support::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
 	/// Get the owner of the item, if the item exists.
-	pub fn owner(collection: T::CollectionId, item: T::ItemId) -> Option<T::AccountId> {
+	pub fn owner(collection: T::ProductId, item: T::ItemId) -> Option<T::AccountId> {
 		Item::<T>::get(collection, item).map(|i| i.owner)
 	}
 
 	/// Get the owner of the collection, if the collection exists.
-	pub fn collection_owner(collection: T::CollectionId) -> Option<T::AccountId> {
+	pub fn collection_owner(collection: T::ProductId) -> Option<T::AccountId> {
 		Collection::<T>::get(collection).map(|i| i.owner)
 	}
 
@@ -60,21 +60,21 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub(crate) fn set_next_collection_id(collection: T::CollectionId) {
+	pub(crate) fn set_next_collection_id(collection: T::ProductId) {
 		let next_id = collection.increment();
 		NextCollectionId::<T>::set(next_id);
 		Self::deposit_event(Event::NextCollectionIdIncremented { next_id });
 	}
 
 	#[cfg(any(test, feature = "runtime-benchmarks"))]
-	pub fn set_next_id(id: T::CollectionId) {
+	pub fn set_next_id(id: T::ProductId) {
 		NextCollectionId::<T>::set(Some(id));
 	}
 
 	#[cfg(test)]
-	pub fn get_next_id() -> T::CollectionId {
+	pub fn get_next_id() -> T::ProductId {
 		NextCollectionId::<T>::get()
-			.or(T::CollectionId::initial_value())
+			.or(T::ProductId::initial_value())
 			.expect("Failed to get next collection ID")
 	}
 }

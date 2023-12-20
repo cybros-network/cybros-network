@@ -39,11 +39,11 @@ impl<T: Config> Pallet<T> {
 	/// - `NoPermission`: The caller does not have the required permission to set the metadata.
 	/// - `DepositExceeded`: The deposit amount exceeds the maximum allowed value.
 	pub(crate) fn do_set_item_metadata(
-		maybe_check_origin: Option<T::AccountId>,
-		collection: T::CollectionId,
-		item: T::ItemId,
-		data: BoundedVec<u8, T::StringLimit>,
-		maybe_depositor: Option<T::AccountId>,
+        maybe_check_origin: Option<T::AccountId>,
+        collection: T::ProductId,
+        item: T::ItemId,
+        data: BoundedVec<u8, T::StringLimit>,
+        maybe_depositor: Option<T::AccountId>,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
@@ -123,9 +123,9 @@ impl<T: Config> Pallet<T> {
 	/// - `LockedItemMetadata`: The metadata for the item is locked and cannot be modified.
 	/// - `NoPermission`: The caller does not have the required permission to clear the metadata.
 	pub(crate) fn do_clear_item_metadata(
-		maybe_check_origin: Option<T::AccountId>,
-		collection: T::CollectionId,
-		item: T::ItemId,
+        maybe_check_origin: Option<T::AccountId>,
+        collection: T::ProductId,
+        item: T::ItemId,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
@@ -176,9 +176,9 @@ impl<T: Config> Pallet<T> {
 	///   modified.
 	/// - `NoPermission`: The caller does not have the required permission to set the metadata.
 	pub(crate) fn do_set_collection_metadata(
-		maybe_check_origin: Option<T::AccountId>,
-		collection: T::CollectionId,
-		data: BoundedVec<u8, T::StringLimit>,
+        maybe_check_origin: Option<T::AccountId>,
+        collection: T::ProductId,
+        data: BoundedVec<u8, T::StringLimit>,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
@@ -237,8 +237,8 @@ impl<T: Config> Pallet<T> {
 	///   modified.
 	/// - `NoPermission`: The caller does not have the required permission to clear the metadata.
 	pub(crate) fn do_clear_collection_metadata(
-		maybe_check_origin: Option<T::AccountId>,
-		collection: T::CollectionId,
+        maybe_check_origin: Option<T::AccountId>,
+        collection: T::ProductId,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(

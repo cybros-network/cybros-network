@@ -44,7 +44,7 @@ impl<T: Config> Pallet<T> {
 	/// - If the collection or item is non-transferable
 	///   ([`ItemsNonTransferable`](crate::Error::ItemsNonTransferable)).
 	pub fn do_transfer(
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		item: T::ItemId,
 		dest: T::AccountId,
 		with_details: impl FnOnce(
@@ -116,7 +116,7 @@ impl<T: Config> Pallet<T> {
 	/// new owner is an acceptable account based on the collection's acceptance settings.
 	pub(crate) fn do_transfer_ownership(
 		origin: T::AccountId,
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		new_owner: T::AccountId,
 	) -> DispatchResult {
 		// Check if the new owner is acceptable based on the collection's acceptance settings.
@@ -164,7 +164,7 @@ impl<T: Config> Pallet<T> {
 	/// ownership transfers for any collection.
 	pub(crate) fn do_set_accept_ownership(
 		who: T::AccountId,
-		maybe_collection: Option<T::CollectionId>,
+		maybe_collection: Option<T::ProductId>,
 	) -> DispatchResult {
 		let exists = OwnershipAcceptance::<T>::contains_key(&who);
 		match (exists, maybe_collection.is_some()) {
@@ -196,7 +196,7 @@ impl<T: Config> Pallet<T> {
 	/// It moves the deposit to the new owner, updates the collection's owner, and emits
 	/// an `OwnerChanged` event.
 	pub(crate) fn do_force_collection_owner(
-		collection: T::CollectionId,
+		collection: T::ProductId,
 		owner: T::AccountId,
 	) -> DispatchResult {
 		// Try to retrieve and mutate the collection details.

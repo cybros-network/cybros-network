@@ -52,14 +52,14 @@ pub(super) type ItemDetailsFor<T> =
 	ItemDetails<<T as frame_system::Config>::AccountId, ItemDepositOf<T>>;
 /// A type alias for the pre-signed minting configuration for a specified collection.
 pub(super) type PreSignedMintOf<T> = PreSignedMint<
-	<T as Config>::CollectionId,
+	<T as Config>::ProductId,
 	<T as Config>::ItemId,
 	<T as frame_system::Config>::AccountId,
 	BlockNumberFor<T>,
 >;
 /// A type alias for the pre-signed minting configuration on the attribute level of an item.
 pub(super) type PreSignedAttributesOf<T> = PreSignedAttributes<
-	<T as Config>::CollectionId,
+	<T as Config>::ProductId,
 	<T as Config>::ItemId,
 	<T as frame_system::Config>::AccountId,
 	BlockNumberFor<T>,

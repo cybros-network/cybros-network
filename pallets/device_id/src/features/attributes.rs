@@ -46,13 +46,13 @@ impl<T: Config> Pallet<T> {
 	/// The deposit for setting an attribute is based on the `T::DepositPerByte` and
 	/// `T::AttributeDepositBase` configuration.
 	pub(crate) fn do_set_attribute(
-		origin: T::AccountId,
-		collection: T::CollectionId,
-		maybe_item: Option<T::ItemId>,
-		namespace: AttributeNamespace<T::AccountId>,
-		key: BoundedVec<u8, T::KeyLimit>,
-		value: BoundedVec<u8, T::ValueLimit>,
-		depositor: T::AccountId,
+        origin: T::AccountId,
+        collection: T::ProductId,
+        maybe_item: Option<T::ItemId>,
+        namespace: AttributeNamespace<T::AccountId>,
+        key: BoundedVec<u8, T::KeyLimit>,
+        value: BoundedVec<u8, T::ValueLimit>,
+        depositor: T::AccountId,
 	) -> DispatchResult {
 		ensure!(
 			Self::is_valid_namespace(&origin, &namespace, &collection, &maybe_item)?,
@@ -167,12 +167,12 @@ impl<T: Config> Pallet<T> {
 	/// - `value`: The value of the attribute. It should be a vector of bytes within the limits
 	///   defined by `T::ValueLimit`.
 	pub(crate) fn do_force_set_attribute(
-		set_as: Option<T::AccountId>,
-		collection: T::CollectionId,
-		maybe_item: Option<T::ItemId>,
-		namespace: AttributeNamespace<T::AccountId>,
-		key: BoundedVec<u8, T::KeyLimit>,
-		value: BoundedVec<u8, T::ValueLimit>,
+        set_as: Option<T::AccountId>,
+        collection: T::ProductId,
+        maybe_item: Option<T::ItemId>,
+        namespace: AttributeNamespace<T::AccountId>,
+        key: BoundedVec<u8, T::KeyLimit>,
+        value: BoundedVec<u8, T::ValueLimit>,
 	) -> DispatchResult {
 		let mut collection_details =
 			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
@@ -276,11 +276,11 @@ impl<T: Config> Pallet<T> {
 	/// - `key`: The key of the attribute to be cleared. It should be a vector of bytes within the
 	///   limits defined by `T::KeyLimit`.
 	pub(crate) fn do_clear_attribute(
-		maybe_check_origin: Option<T::AccountId>,
-		collection: T::CollectionId,
-		maybe_item: Option<T::ItemId>,
-		namespace: AttributeNamespace<T::AccountId>,
-		key: BoundedVec<u8, T::KeyLimit>,
+        maybe_check_origin: Option<T::AccountId>,
+        collection: T::ProductId,
+        maybe_item: Option<T::ItemId>,
+        namespace: AttributeNamespace<T::AccountId>,
+        key: BoundedVec<u8, T::KeyLimit>,
 	) -> DispatchResult {
 		let (_, deposit) = Attribute::<T>::take((collection, maybe_item, &namespace, &key))
 			.ok_or(Error::<T>::AttributeNotFound)?;
@@ -363,10 +363,10 @@ impl<T: Config> Pallet<T> {
 	/// - `delegate`: The account that is being approved to set attributes on behalf of the item's
 	///   owner.
 	pub(crate) fn do_approve_item_attributes(
-		check_origin: T::AccountId,
-		collection: T::CollectionId,
-		item: T::ItemId,
-		delegate: T::AccountId,
+        check_origin: T::AccountId,
+        collection: T::ProductId,
+        item: T::ItemId,
+        delegate: T::AccountId,
 	) -> DispatchResult {
 		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
 		ensure!(check_origin == details.owner, Error::<T>::NoPermission);
@@ -398,11 +398,11 @@ impl<T: Config> Pallet<T> {
 	/// - `witness`: The witness containing the number of attributes set by the delegate for the
 	///   item.
 	pub(crate) fn do_cancel_item_attributes_approval(
-		check_origin: T::AccountId,
-		collection: T::CollectionId,
-		item: T::ItemId,
-		delegate: T::AccountId,
-		witness: CancelAttributesApprovalWitness,
+        check_origin: T::AccountId,
+        collection: T::ProductId,
+        item: T::ItemId,
+        delegate: T::AccountId,
+        witness: CancelAttributesApprovalWitness,
 	) -> DispatchResult {
 		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
 		ensure!(check_origin == details.owner, Error::<T>::NoPermission);
@@ -437,10 +437,10 @@ impl<T: Config> Pallet<T> {
 
 	/// A helper method to check whether an attribute namespace is valid.
 	fn is_valid_namespace(
-		origin: &T::AccountId,
-		namespace: &AttributeNamespace<T::AccountId>,
-		collection: &T::CollectionId,
-		maybe_item: &Option<T::ItemId>,
+        origin: &T::AccountId,
+        namespace: &AttributeNamespace<T::AccountId>,
+        collection: &T::ProductId,
+        maybe_item: &Option<T::ItemId>,
 	) -> Result<bool, DispatchError> {
 		let mut result = false;
 		match namespace {
@@ -493,9 +493,9 @@ impl<T: Config> Pallet<T> {
 	/// This function returns an [`IncorrectData`](crate::Error::IncorrectData) error if the
 	/// provided pallet attribute is too long.
 	pub fn has_system_attribute(
-		collection: &T::CollectionId,
-		item: &T::ItemId,
-		attribute_key: PalletAttributes,
+        collection: &T::ProductId,
+        item: &T::ItemId,
+        attribute_key: PalletAttributes,
 	) -> Result<bool, DispatchError> {
 		let attribute = (
 			&collection,

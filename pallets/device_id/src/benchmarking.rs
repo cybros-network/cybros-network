@@ -42,7 +42,7 @@ use crate::Pallet as ThePallet;
 const SEED: u32 = 0;
 
 fn create_collection<T: Config>(
-) -> (T::CollectionId, T::AccountId, AccountIdLookupOf<T>) {
+) -> (T::ProductId, T::AccountId, AccountIdLookupOf<T>) {
 	let caller: T::AccountId = whitelisted_caller();
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
 	let collection = T::Helper::collection(0);
