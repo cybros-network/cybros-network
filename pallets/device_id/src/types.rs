@@ -197,24 +197,6 @@ pub struct ItemMetadataDeposit<DepositBalance, AccountId> {
 	pub(super) amount: DepositBalance,
 }
 
-/// Specifies whether the tokens will be sent or received.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum PriceDirection {
-	/// Tokens will be sent.
-	Send,
-	/// Tokens will be received.
-	Receive,
-}
-
-/// Holds the details about the price.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct PriceWithDirection<Amount> {
-	/// An amount.
-	pub(super) amount: Amount,
-	/// A direction (send or receive).
-	pub(super) direction: PriceDirection,
-}
-
 /// Support for up to 64 user-enabled features on a collection.
 #[bitflags]
 #[repr(u64)]
@@ -422,8 +404,6 @@ pub enum PalletFeature {
 	Attributes,
 	/// Allow/disallow transfer approvals.
 	Approvals,
-	/// Allow/disallow atomic items swap.
-	Swaps,
 }
 
 /// Wrapper type for `BitFlags<PalletFeature>` that implements `Codec`.

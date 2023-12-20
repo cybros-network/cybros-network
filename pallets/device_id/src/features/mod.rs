@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod approvals;
 pub mod attributes;
 pub mod create_delete_collection;
 pub mod create_delete_item;

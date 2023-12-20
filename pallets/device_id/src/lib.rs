@@ -102,7 +102,7 @@ pub mod pallet {
     pub trait Config: frame_system::Config {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>>
-        + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+            + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         /// Identifier for the collection of item.
         ///
@@ -390,25 +390,6 @@ pub mod pallet {
             admin: Option<T::AccountId>,
             freezer: Option<T::AccountId>,
         },
-        /// An `item` of a `collection` has been approved by the `owner` for transfer by
-        /// a `delegate`.
-        TransferApproved {
-            collection: T::CollectionId,
-            item: T::ItemId,
-            owner: T::AccountId,
-            delegate: T::AccountId,
-            deadline: Option<BlockNumberFor<T>>,
-        },
-        /// An approval for a `delegate` account to transfer the `item` of an item
-        /// `collection` was cancelled by its `owner`.
-        ApprovalCancelled {
-            collection: T::CollectionId,
-            item: T::ItemId,
-            owner: T::AccountId,
-            delegate: T::AccountId,
-        },
-        /// All approvals of an item got cancelled.
-        AllApprovalsCancelled { collection: T::CollectionId, item: T::ItemId, owner: T::AccountId },
         /// A `collection` has had its config changed by the `Force` origin.
         CollectionConfigChanged { collection: T::CollectionId },
         /// New metadata has been set for a `collection`.
@@ -484,8 +465,6 @@ pub mod pallet {
         UnknownCollection,
         /// The item ID has already been used for an item.
         AlreadyExists,
-        /// The approval had a deadline that expired, so the approval isn't valid anymore.
-        ApprovalExpired,
         /// The owner turned out to be different to what was expected.
         WrongOwner,
         /// The witness data given does not match the current state of the chain.
@@ -498,8 +477,6 @@ pub mod pallet {
         NotDelegate,
         /// The delegate turned out to be different to what was expected.
         WrongDelegate,
-        /// No approval exists that would allow the transfer.
-        Unapproved,
         /// The named owner has not signed ownership acceptance of the collection.
         Unaccepted,
         /// The item is locked (non-transferable).
@@ -903,14 +880,7 @@ pub mod pallet {
             let dest = T::Lookup::lookup(dest)?;
 
             Self::do_transfer(collection, item, dest, |_, details| {
-                if details.owner != origin {
-                    let deadline =
-                        details.approvals.get(&origin).ok_or(Error::<T>::NoPermission)?;
-                    if let Some(d) = deadline {
-                        let block_number = frame_system::Pallet::<T>::block_number();
-                        ensure!(block_number <= *d, Error::<T>::ApprovalExpired);
-                    }
-                }
+                ensure!(details.owner == origin, Error::<T>::NoPermission);
                 Ok(())
             })
         }
@@ -1145,97 +1115,6 @@ pub mod pallet {
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
             Self::do_force_collection_config(collection, config)
-        }
-
-        /// Approve an item to be transferred by a delegated third-party account.
-        ///
-        /// Origin must be either `ForceOrigin` or Signed and the sender should be the Owner of the
-        /// `item`.
-        ///
-        /// - `collection`: The collection of the item to be approved for delegated transfer.
-        /// - `item`: The item to be approved for delegated transfer.
-        /// - `delegate`: The account to delegate permission to transfer the item.
-        /// - `maybe_deadline`: Optional deadline for the approval. Specified by providing the
-        /// 	number of blocks after which the approval will expire
-        ///
-        /// Emits `TransferApproved` on success.
-        ///
-        /// Weight: `O(1)`
-        #[pallet::call_index(15)]
-        #[pallet::weight(T::WeightInfo::approve_transfer())]
-        pub fn approve_transfer(
-            origin: OriginFor<T>,
-            collection: T::CollectionId,
-            item: T::ItemId,
-            delegate: AccountIdLookupOf<T>,
-            maybe_deadline: Option<BlockNumberFor<T>>,
-        ) -> DispatchResult {
-            let maybe_check_origin = T::ForceOrigin::try_origin(origin)
-                .map(|_| None)
-                .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            let delegate = T::Lookup::lookup(delegate)?;
-            Self::do_approve_transfer(
-                maybe_check_origin,
-                collection,
-                item,
-                delegate,
-                maybe_deadline,
-            )
-        }
-
-        /// Cancel one of the transfer approvals for a specific item.
-        ///
-        /// Origin must be either:
-        /// - the `Force` origin;
-        /// - `Signed` with the signer being the Owner of the `item`;
-        ///
-        /// Arguments:
-        /// - `collection`: The collection of the item of whose approval will be cancelled.
-        /// - `item`: The item of the collection of whose approval will be cancelled.
-        /// - `delegate`: The account that is going to loose their approval.
-        ///
-        /// Emits `ApprovalCancelled` on success.
-        ///
-        /// Weight: `O(1)`
-        #[pallet::call_index(16)]
-        #[pallet::weight(T::WeightInfo::cancel_approval())]
-        pub fn cancel_approval(
-            origin: OriginFor<T>,
-            collection: T::CollectionId,
-            item: T::ItemId,
-            delegate: AccountIdLookupOf<T>,
-        ) -> DispatchResult {
-            let maybe_check_origin = T::ForceOrigin::try_origin(origin)
-                .map(|_| None)
-                .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            let delegate = T::Lookup::lookup(delegate)?;
-            Self::do_cancel_approval(maybe_check_origin, collection, item, delegate)
-        }
-
-        /// Cancel all the approvals of a specific item.
-        ///
-        /// Origin must be either:
-        /// - the `Force` origin;
-        /// - `Signed` with the signer being the Owner of the `item`;
-        ///
-        /// Arguments:
-        /// - `collection`: The collection of the item of whose approvals will be cleared.
-        /// - `item`: The item of the collection of whose approvals will be cleared.
-        ///
-        /// Emits `AllApprovalsCancelled` on success.
-        ///
-        /// Weight: `O(1)`
-        #[pallet::call_index(17)]
-        #[pallet::weight(T::WeightInfo::clear_all_transfer_approvals())]
-        pub fn clear_all_transfer_approvals(
-            origin: OriginFor<T>,
-            collection: T::CollectionId,
-            item: T::ItemId,
-        ) -> DispatchResult {
-            let maybe_check_origin = T::ForceOrigin::try_origin(origin)
-                .map(|_| None)
-                .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_clear_all_transfer_approvals(maybe_check_origin, collection, item)
         }
 
         /// Disallows changing the metadata or attributes of the item.

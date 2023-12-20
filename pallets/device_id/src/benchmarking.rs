@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Nfts pallet benchmarking.
+//! DeviceId pallet benchmarking.
 
 #![cfg(feature = "runtime-benchmarks")]
 
@@ -33,7 +33,7 @@ use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin as SystemOrigin};
 use sp_io::crypto::{sr25519_generate, sr25519_sign};
 use sp_runtime::{
 	traits::{Bounded, IdentifyAccount, One},
-	AccountId32, MultiSignature, MultiSigner,
+	MultiSignature, MultiSigner,
 };
 use sp_std::prelude::*;
 
@@ -84,7 +84,7 @@ fn mint_item<T: Config>(
 	if item_exists {
 		return (item, caller, caller_lookup)
 	} else if let Some(item_config) = item_config {
-		assert_ok!(DeviceId::<T>::force_mint(
+		assert_ok!(ThePallet::<T>::force_mint(
 			SystemOrigin::Signed(caller.clone()).into(),
 			collection,
 			item,
@@ -92,7 +92,7 @@ fn mint_item<T: Config>(
 			item_config,
 		));
 	} else {
-		assert_ok!(DeviceId::<T>::mint(
+		assert_ok!(ThePallet::<T>::mint(
 			SystemOrigin::Signed(caller.clone()).into(),
 			collection,
 			item,
@@ -112,7 +112,7 @@ fn lock_item<T: Config>(
 	}
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
 	let item = T::Helper::item(index);
-	assert_ok!(DeviceId::<T>::lock_item_transfer(
+	assert_ok!(ThePallet::<T>::lock_item_transfer(
 		SystemOrigin::Signed(caller.clone()).into(),
 		T::Helper::collection(0),
 		item,
@@ -129,7 +129,7 @@ fn burn_item<T: Config>(
 	}
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
 	let item = T::Helper::item(index);
-	assert_ok!(DeviceId::<T>::burn(
+	assert_ok!(ThePallet::<T>::burn(
 		SystemOrigin::Signed(caller.clone()).into(),
 		T::Helper::collection(0),
 		item,
@@ -145,7 +145,7 @@ fn add_item_metadata<T: Config>(
 		whitelist_account!(caller);
 	}
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
-	assert_ok!(DeviceId::<T>::set_metadata(
+	assert_ok!(ThePallet::<T>::set_metadata(
 		SystemOrigin::Signed(caller.clone()).into(),
 		T::Helper::collection(0),
 		item,
@@ -163,7 +163,7 @@ fn add_item_attribute<T: Config>(
 	}
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
 	let key: BoundedVec<_, _> = vec![0; T::KeyLimit::get() as usize].try_into().unwrap();
-	assert_ok!(DeviceId::<T>::set_attribute(
+	assert_ok!(ThePallet::<T>::set_attribute(
 		SystemOrigin::Signed(caller.clone()).into(),
 		T::Helper::collection(0),
 		Some(item),
@@ -183,7 +183,7 @@ fn add_collection_attribute<T: Config>(
 	}
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
 	let key: BoundedVec<_, _> = make_filled_vec(i, T::KeyLimit::get() as usize).try_into().unwrap();
-	assert_ok!(DeviceId::<T>::set_attribute(
+	assert_ok!(ThePallet::<T>::set_attribute(
 		SystemOrigin::Signed(caller.clone()).into(),
 		T::Helper::collection(0),
 		None,
@@ -232,7 +232,6 @@ benchmarks_instance_pallet! {
 	where_clause {
 		where
 			T::OffchainSignature: From<MultiSignature>,
-			T::AccountId: From<AccountId32>,
 	}
 
 	create {
@@ -324,7 +323,7 @@ benchmarks_instance_pallet! {
 		let i in 0 .. 5_000;
 		let (collection, caller, _) = create_collection::<T>();
 		let items = (0..i).map(|x| mint_item::<T>(x as u16).0).collect::<Vec<_>>();
-		DeviceId::<T>::force_collection_config(
+		ThePallet::<T>::force_collection_config(
 			SystemOrigin::Root.into(),
 			collection,
 			make_collection_config::<T>(CollectionSetting::DepositRequired.into()),
@@ -345,7 +344,7 @@ benchmarks_instance_pallet! {
 	unlock_item_transfer {
 		let (collection, caller, _) = create_collection::<T>();
 		let (item, ..) = mint_item::<T>(0);
-		DeviceId::<T>::lock_item_transfer(
+		ThePallet::<T>::lock_item_transfer(
 			SystemOrigin::Signed(caller.clone()).into(),
 			collection,
 			item,
@@ -374,7 +373,7 @@ benchmarks_instance_pallet! {
 		let target_lookup = T::Lookup::unlookup(target.clone());
 		T::Currency::make_free_balance_be(&target, T::Currency::minimum_balance());
 		let origin = SystemOrigin::Signed(target.clone()).into();
-		DeviceId::<T>::set_accept_ownership(origin, Some(collection))?;
+		ThePallet::<T>::set_accept_ownership(origin, Some(collection))?;
 	}: _(SystemOrigin::Signed(caller), collection, target_lookup)
 	verify {
 		assert_last_event::<T>(Event::OwnerChanged { collection, new_owner: target }.into());
@@ -515,7 +514,7 @@ benchmarks_instance_pallet! {
 		let (item, ..) = mint_item::<T>(0);
 		let target: T::AccountId = account("target", 0, SEED);
 		let target_lookup = T::Lookup::unlookup(target.clone());
-		DeviceId::<T>::approve_item_attributes(
+		ThePallet::<T>::approve_item_attributes(
 			SystemOrigin::Signed(caller.clone()).into(),
 			collection,
 			item,
@@ -525,7 +524,7 @@ benchmarks_instance_pallet! {
 		let value: BoundedVec<_, _> = vec![0u8; T::ValueLimit::get() as usize].try_into().unwrap();
 		for i in 0..n {
 			let key = make_filled_vec(i as u16, T::KeyLimit::get() as usize);
-			DeviceId::<T>::set_attribute(
+			ThePallet::<T>::set_attribute(
 				SystemOrigin::Signed(target.clone()).into(),
 				T::Helper::collection(0),
 				Some(item),
@@ -583,43 +582,6 @@ benchmarks_instance_pallet! {
 		assert_last_event::<T>(Event::CollectionMetadataCleared { collection }.into());
 	}
 
-	approve_transfer {
-		let (collection, caller, _) = create_collection::<T>();
-		let (item, ..) = mint_item::<T>(0);
-		let delegate: T::AccountId = account("delegate", 0, SEED);
-		let delegate_lookup = T::Lookup::unlookup(delegate.clone());
-		let deadline = BlockNumberFor::<T>::max_value();
-	}: _(SystemOrigin::Signed(caller.clone()), collection, item, delegate_lookup, Some(deadline))
-	verify {
-		assert_last_event::<T>(Event::TransferApproved { collection, item, owner: caller, delegate, deadline: Some(deadline) }.into());
-	}
-
-	cancel_approval {
-		let (collection, caller, _) = create_collection::<T>();
-		let (item, ..) = mint_item::<T>(0);
-		let delegate: T::AccountId = account("delegate", 0, SEED);
-		let delegate_lookup = T::Lookup::unlookup(delegate.clone());
-		let origin = SystemOrigin::Signed(caller.clone()).into();
-		let deadline = BlockNumberFor::<T>::max_value();
-		DeviceId::<T>::approve_transfer(origin, collection, item, delegate_lookup.clone(), Some(deadline))?;
-	}: _(SystemOrigin::Signed(caller.clone()), collection, item, delegate_lookup)
-	verify {
-		assert_last_event::<T>(Event::ApprovalCancelled { collection, item, owner: caller, delegate }.into());
-	}
-
-	clear_all_transfer_approvals {
-		let (collection, caller, _) = create_collection::<T>();
-		let (item, ..) = mint_item::<T>(0);
-		let delegate: T::AccountId = account("delegate", 0, SEED);
-		let delegate_lookup = T::Lookup::unlookup(delegate.clone());
-		let origin = SystemOrigin::Signed(caller.clone()).into();
-		let deadline = BlockNumberFor::<T>::max_value();
-		DeviceId::<T>::approve_transfer(origin, collection, item, delegate_lookup.clone(), Some(deadline))?;
-	}: _(SystemOrigin::Signed(caller.clone()), collection, item)
-	verify {
-		assert_last_event::<T>(Event::AllApprovalsCancelled {collection, item, owner: caller}.into());
-	}
-
 	set_accept_ownership {
 		let caller: T::AccountId = whitelisted_caller();
 		T::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
@@ -648,7 +610,6 @@ benchmarks_instance_pallet! {
 			mint_type: MintType::HolderOf(T::Helper::collection(0)),
 			start_block: Some(One::one()),
 			end_block: Some(One::one()),
-			price: Some(ItemPrice::<T>::from(1u32)),
 			default_item_settings: ItemSettings::all_enabled(),
 		};
 	}: _(SystemOrigin::Signed(caller.clone()), collection, mint_settings)
@@ -665,7 +626,7 @@ benchmarks_instance_pallet! {
 
 		let collection = T::Helper::collection(0);
 		let item = T::Helper::item(0);
-		assert_ok!(DeviceId::<T>::force_create(
+		assert_ok!(ThePallet::<T>::force_create(
 			SystemOrigin::Root.into(),
 			caller_lookup.clone(),
 			default_collection_config::<T>()
@@ -712,7 +673,7 @@ benchmarks_instance_pallet! {
 		T::Currency::make_free_balance_be(&item_owner, DepositBalanceOf::<T>::max_value());
 
 		let item = T::Helper::item(0);
-		assert_ok!(DeviceId::<T>::force_mint(
+		assert_ok!(ThePallet::<T>::force_mint(
 			SystemOrigin::Root.into(),
 			collection,
 			item,
@@ -749,5 +710,5 @@ benchmarks_instance_pallet! {
 		);
 	}
 
-	impl_benchmark_test_suite!(Nfts, crate::mock::new_test_ext(), crate::mock::Test);
+	impl_benchmark_test_suite!(ThePallet, crate::mock::new_test_ext(), crate::mock::Test);
 }
