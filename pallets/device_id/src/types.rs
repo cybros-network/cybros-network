@@ -61,7 +61,7 @@ pub(super) type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 /// A type alias for the settings configuration of a collection.
 pub(super) type CollectionConfigFor<T> =
-	CollectionConfig<BalanceOf<T>, BlockNumberFor<T>, <T as Config>::CollectionId>;
+	CollectionConfig<BalanceOf<T>, BlockNumberFor<T>>;
 /// A type alias for the pre-signed minting configuration for a specified collection.
 pub(super) type PreSignedMintOf<T> = PreSignedMint<
 	<T as Config>::CollectionId,
@@ -239,20 +239,18 @@ impl_codec_bitflags!(CollectionSettings, u64, CollectionSetting);
 /// or only by wallets that already hold an NFT from a certain collection?
 /// The ownership of a privately minted NFT is still publicly visible.
 #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum MintType<CollectionId> {
+pub enum MintType {
 	/// Only an `Issuer` could mint items.
 	Issuer,
 	/// Anyone could mint items.
 	Public,
-	/// Only holders of items in specified collection could mint new items.
-	HolderOf(CollectionId),
 }
 
 /// Holds the information about minting.
 #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct MintSettings<Price, BlockNumber, CollectionId> {
+pub struct MintSettings<Price, BlockNumber> {
 	/// Whether anyone can mint or if minters are restricted to some subset.
-	pub mint_type: MintType<CollectionId>,
+	pub mint_type: MintType,
 	/// An optional price per mint.
 	pub price: Option<Price>,
 	/// When the mint starts.
@@ -263,7 +261,7 @@ pub struct MintSettings<Price, BlockNumber, CollectionId> {
 	pub default_item_settings: ItemSettings,
 }
 
-impl<Price, BlockNumber, CollectionId> Default for MintSettings<Price, BlockNumber, CollectionId> {
+impl<Price, BlockNumber> Default for MintSettings<Price, BlockNumber> {
 	fn default() -> Self {
 		Self {
 			mint_type: MintType::Issuer,
@@ -310,16 +308,16 @@ pub enum PalletAttributes<CollectionId> {
 #[derive(
 	Clone, Copy, Decode, Default, Encode, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo,
 )]
-pub struct CollectionConfig<Price, BlockNumber, CollectionId> {
+pub struct CollectionConfig<Price, BlockNumber> {
 	/// Collection's settings.
 	pub settings: CollectionSettings,
 	/// Collection's max supply.
 	pub max_supply: Option<u32>,
 	/// Default settings each item will get during the mint.
-	pub mint_settings: MintSettings<Price, BlockNumber, CollectionId>,
+	pub mint_settings: MintSettings<Price, BlockNumber>,
 }
 
-impl<Price, BlockNumber, CollectionId> CollectionConfig<Price, BlockNumber, CollectionId> {
+impl<Price, BlockNumber> CollectionConfig<Price, BlockNumber> {
 	pub fn is_setting_enabled(&self, setting: CollectionSetting) -> bool {
 		!self.settings.is_disabled(setting)
 	}

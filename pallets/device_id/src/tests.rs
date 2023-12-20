@@ -397,55 +397,6 @@ fn mint_should_work() {
 			Some(MintWitness { mint_price: Some(1), ..Default::default() })
 		));
 		assert_eq!(Balances::total_balance(&account(2)), 99);
-
-		// validate types
-		assert_ok!(DeviceId::force_create(
-			RuntimeOrigin::root(),
-			account(1),
-			default_collection_config()
-		));
-		assert_ok!(DeviceId::update_mint_settings(
-			RuntimeOrigin::signed(account(1)),
-			1,
-			MintSettings { mint_type: MintType::HolderOf(0), ..Default::default() }
-		));
-		assert_noop!(
-			DeviceId::mint(RuntimeOrigin::signed(account(3)), 1, 42, account(3), None),
-			Error::<Test>::WitnessRequired
-		);
-		assert_noop!(
-			DeviceId::mint(RuntimeOrigin::signed(account(2)), 1, 42, account(2), None),
-			Error::<Test>::WitnessRequired
-		);
-		assert_noop!(
-			DeviceId::mint(
-				RuntimeOrigin::signed(account(2)),
-				1,
-				42,
-				account(2),
-				Some(MintWitness { owned_item: Some(42), ..Default::default() })
-			),
-			Error::<Test>::BadWitness
-		);
-		assert_ok!(DeviceId::mint(
-			RuntimeOrigin::signed(account(2)),
-			1,
-			42,
-			account(2),
-			Some(MintWitness { owned_item: Some(43), ..Default::default() })
-		));
-
-		// can't mint twice
-		assert_noop!(
-			DeviceId::mint(
-				RuntimeOrigin::signed(account(2)),
-				1,
-				46,
-				account(2),
-				Some(MintWitness { owned_item: Some(43), ..Default::default() })
-			),
-			Error::<Test>::AlreadyClaimed
-		);
 	});
 }
 

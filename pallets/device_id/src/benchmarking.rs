@@ -607,7 +607,7 @@ benchmarks_instance_pallet! {
 	update_mint_settings {
 		let (collection, caller, _) = create_collection::<T>();
 		let mint_settings = MintSettings {
-			mint_type: MintType::HolderOf(T::Helper::collection(0)),
+			mint_type: MintType::Public,
 			start_block: Some(One::one()),
 			end_block: Some(One::one()),
 			default_item_settings: ItemSettings::all_enabled(),

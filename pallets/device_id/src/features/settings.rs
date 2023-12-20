@@ -99,7 +99,6 @@ impl<T: Config> Pallet<T> {
 		mint_settings: MintSettings<
 			BalanceOf<T>,
 			frame_system::pallet_prelude::BlockNumberFor<T>,
-			T::CollectionId,
 		>,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {

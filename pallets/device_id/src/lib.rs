@@ -722,45 +722,6 @@ pub mod pallet {
 								Error::<T>::NoPermission
 							);
                         },
-                        MintType::HolderOf(collection_id) => {
-                            let MintWitness { owned_item, .. } =
-                                witness_data.clone().ok_or(Error::<T>::WitnessRequired)?;
-                            let owned_item = owned_item.ok_or(Error::<T>::BadWitness)?;
-
-                            let owns_item = Account::<T>::contains_key((
-                                &caller,
-                                &collection_id,
-                                &owned_item,
-                            ));
-                            ensure!(owns_item, Error::<T>::BadWitness);
-
-                            let pallet_attribute =
-                                PalletAttributes::<T::CollectionId>::UsedToClaim(collection);
-
-                            let key = (
-                                &collection_id,
-                                Some(owned_item),
-                                AttributeNamespace::Pallet,
-                                &Self::construct_attribute_key(pallet_attribute.encode())?,
-                            );
-                            let already_claimed = Attribute::<T>::contains_key(key.clone());
-                            ensure!(!already_claimed, Error::<T>::AlreadyClaimed);
-
-                            let attribute_value = Self::construct_attribute_value(vec![])?;
-                            Attribute::<T>::insert(
-                                key,
-                                (
-                                    attribute_value.clone(),
-                                    AttributeDeposit { account: None, amount: Zero::zero() },
-                                ),
-                            );
-                            Self::deposit_event(Event::PalletAttributeSet {
-                                collection,
-                                item: Some(item),
-                                attribute: pallet_attribute,
-                                value: attribute_value,
-                            });
-                        },
                         _ => {},
                     }
 
@@ -1464,7 +1425,7 @@ pub mod pallet {
         pub fn update_mint_settings(
             origin: OriginFor<T>,
             collection: T::CollectionId,
-            mint_settings: MintSettings<BalanceOf<T>, BlockNumberFor<T>, T::CollectionId>,
+            mint_settings: MintSettings<BalanceOf<T>, BlockNumberFor<T>>,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
