@@ -17,8 +17,6 @@
 
 //! This module contains helper methods to configure attributes for items and collections in the
 //! NFTs pallet.
-//! The bitflag [`PalletFeature::Attributes`] needs to be set in [`Config::Features`] for NFTs
-//! to have the functionality defined in this module.
 
 use crate::*;
 use frame_support::pallet_prelude::*;
@@ -56,11 +54,6 @@ impl<T: Config> Pallet<T> {
 		value: BoundedVec<u8, T::ValueLimit>,
 		depositor: T::AccountId,
 	) -> DispatchResult {
-		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Attributes),
-			Error::<T>::MethodDisabled
-		);
-
 		ensure!(
 			Self::is_valid_namespace(&origin, &namespace, &collection, &maybe_item)?,
 			Error::<T>::NoPermission
@@ -375,11 +368,6 @@ impl<T: Config> Pallet<T> {
 		item: T::ItemId,
 		delegate: T::AccountId,
 	) -> DispatchResult {
-		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Attributes),
-			Error::<T>::MethodDisabled
-		);
-
 		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
 		ensure!(check_origin == details.owner, Error::<T>::NoPermission);
 
@@ -416,11 +404,6 @@ impl<T: Config> Pallet<T> {
 		delegate: T::AccountId,
 		witness: CancelAttributesApprovalWitness,
 	) -> DispatchResult {
-		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Attributes),
-			Error::<T>::MethodDisabled
-		);
-
 		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
 		ensure!(check_origin == details.owner, Error::<T>::NoPermission);
 

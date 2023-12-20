@@ -395,34 +395,6 @@ impl ItemConfig {
 	}
 }
 
-/// Support for up to 64 system-enabled features on a collection.
-#[bitflags]
-#[repr(u64)]
-#[derive(Copy, Clone, RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
-pub enum PalletFeature {
-	/// Allow/disallow setting attributes.
-	Attributes,
-	/// Allow/disallow transfer approvals.
-	Approvals,
-}
-
-/// Wrapper type for `BitFlags<PalletFeature>` that implements `Codec`.
-#[derive(Default, RuntimeDebug)]
-pub struct PalletFeatures(pub BitFlags<PalletFeature>);
-
-impl PalletFeatures {
-	pub fn all_enabled() -> Self {
-		Self(BitFlags::EMPTY)
-	}
-	pub fn from_disabled(features: BitFlags<PalletFeature>) -> Self {
-		Self(features)
-	}
-	pub fn is_enabled(&self, feature: PalletFeature) -> bool {
-		!self.0.contains(feature)
-	}
-}
-impl_codec_bitflags!(PalletFeatures, u64, PalletFeature);
-
 /// Support for up to 8 different roles for collections.
 #[bitflags]
 #[repr(u8)]

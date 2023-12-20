@@ -1978,46 +1978,6 @@ fn collection_locking_should_work() {
 }
 
 #[test]
-fn pallet_level_feature_flags_should_work() {
-	new_test_ext().execute_with(|| {
-		Features::set(&PalletFeatures::from_disabled(
-			PalletFeature::Attributes.into(),
-		));
-
-		let user_id = account(1);
-		let collection_id = 0;
-		let item_id = 1;
-
-		assert_ok!(DeviceId::force_create(
-			RuntimeOrigin::root(),
-			user_id.clone(),
-			default_collection_config()
-		));
-
-		assert_ok!(DeviceId::mint(
-			RuntimeOrigin::signed(user_id.clone()),
-			collection_id,
-			item_id,
-			user_id.clone(),
-			None,
-		));
-
-		// PalletFeature::Attributes
-		assert_noop!(
-			DeviceId::set_attribute(
-				RuntimeOrigin::signed(user_id),
-				collection_id,
-				None,
-				AttributeNamespace::CollectionOwner,
-				bvec![0],
-				bvec![0],
-			),
-			Error::<Test>::MethodDisabled
-		);
-	})
-}
-
-#[test]
 fn group_roles_by_account_should_work() {
 	new_test_ext().execute_with(|| {
 		assert_eq!(DeviceId::group_roles_by_account(vec![]), vec![]);

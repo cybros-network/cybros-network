@@ -163,16 +163,4 @@ impl<T: Config> Pallet<T> {
 		let collection_config = Self::get_collection_config(collection_id)?;
 		Ok(collection_config.mint_settings.default_item_settings)
 	}
-
-	/// Check if a specified pallet feature is enabled.
-	///
-	/// - `feature`: The feature to check.
-	///
-	/// This function checks if the given `feature` is enabled in the runtime using the
-	/// pallet's `T::Features::get()` function. It returns `true` if the feature is enabled,
-	/// otherwise it returns `false`.
-	pub(crate) fn is_pallet_feature_enabled(feature: PalletFeature) -> bool {
-		let features = T::Features::get();
-		return features.is_enabled(feature)
-	}
 }

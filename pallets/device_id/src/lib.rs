@@ -189,10 +189,6 @@ pub mod pallet {
         #[pallet::constant]
         type MaxAttributesPerCall: Get<u32>;
 
-        /// Disables some of pallet's features.
-        #[pallet::constant]
-        type Features: Get<PalletFeatures>;
-
         /// Off-Chain signature type.
         ///
         /// Can verify whether an `Self::OffchainPublic` created a signature.
@@ -507,8 +503,6 @@ pub mod pallet {
         DeadlineExpired,
         /// The duration provided should be less than or equal to `MaxDeadlineDuration`.
         WrongDuration,
-        /// The method is disabled by system settings.
-        MethodDisabled,
         /// The provided setting can't be set.
         WrongSetting,
         /// Item's config already exists and should be equal to the provided one.

@@ -21,7 +21,7 @@ use super::*;
 use crate as pallet_device_id;
 
 use frame_support::{
-	construct_runtime, derive_impl, parameter_types,
+	construct_runtime, derive_impl,
 	traits::{AsEnsureOriginWithArg, ConstU16, ConstU32, ConstU64},
 };
 use sp_keystore::{testing::MemoryKeystore, KeystoreExt};
@@ -75,10 +75,6 @@ impl pallet_balances::Config for Test {
 	type MaxHolds = ();
 }
 
-parameter_types! {
-	pub storage Features: PalletFeatures = PalletFeatures::all_enabled();
-}
-
 impl pallet_device_id::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type CollectionId = u32;
@@ -100,7 +96,6 @@ impl pallet_device_id::Config for Test {
 	type MaxTips = ConstU32<10>;
 	type MaxDeadlineDuration = ConstU64<10000>;
 	type MaxAttributesPerCall = ConstU32<2>;
-	type Features = Features;
 	/// Off-chain = signature On-chain - therefore no conversion needed.
 	/// It needs to be From<MultiSignature> for benchmarking.
 	type OffchainSignature = Signature;
