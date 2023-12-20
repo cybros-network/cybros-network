@@ -49,7 +49,7 @@ impl<T: Config> Pallet<T> {
 		item_config: ItemConfig,
 		with_details_and_config: impl FnOnce(
 			&CollectionDetailsFor<T>,
-			&CollectionConfigFor<T>,
+			&CollectionConfig,
 		) -> DispatchResult,
 	) -> DispatchResult {
 		ensure!(!Item::<T>::contains_key(collection, item), Error::<T>::AlreadyExists);

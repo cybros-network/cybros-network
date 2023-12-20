@@ -113,7 +113,7 @@ fn events() -> Vec<Event<Test>> {
 
 fn collection_config_from_disabled_settings(
 	settings: BitFlags<CollectionSetting>,
-) -> CollectionConfigFor<Test> {
+) -> CollectionConfig {
 	CollectionConfig {
 		settings: CollectionSettings::from_disabled(settings),
 		max_supply: None,
@@ -121,7 +121,7 @@ fn collection_config_from_disabled_settings(
 	}
 }
 
-fn collection_config_with_all_settings_enabled() -> CollectionConfigFor<Test> {
+fn collection_config_with_all_settings_enabled() -> CollectionConfig {
 	CollectionConfig {
 		settings: CollectionSettings::all_enabled(),
 		max_supply: None,
@@ -129,7 +129,7 @@ fn collection_config_with_all_settings_enabled() -> CollectionConfigFor<Test> {
 	}
 }
 
-fn default_collection_config() -> CollectionConfigFor<Test> {
+fn default_collection_config() -> CollectionConfig {
 	collection_config_from_disabled_settings(CollectionSetting::DepositRequired.into())
 }
 
@@ -334,29 +334,6 @@ fn mint_should_work() {
 		assert_eq!(DeviceId::owner(0, 42).unwrap(), account(1));
 		assert_eq!(collections(), vec![(account(1), 0)]);
 		assert_eq!(items(), vec![(account(1), 0, 42)]);
-
-		// validate minting start and end settings
-		assert_ok!(DeviceId::update_mint_settings(
-			RuntimeOrigin::signed(account(1)),
-			0,
-			MintSettings {
-				start_block: Some(2),
-				end_block: Some(3),
-				mint_type: MintType::Public,
-				..Default::default()
-			}
-		));
-
-		System::set_block_number(1);
-		assert_noop!(
-			DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 43, account(1)),
-			Error::<Test>::MintNotStarted
-		);
-		System::set_block_number(4);
-		assert_noop!(
-			DeviceId::mint(RuntimeOrigin::signed(account(2)), 0, 43, account(1)),
-			Error::<Test>::MintEnded
-		);
 	});
 }
 

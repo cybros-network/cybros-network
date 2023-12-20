@@ -149,14 +149,14 @@ impl<T: Config> InspectRole<<T as frame_system::Config>::AccountId> for Pallet<T
 	}
 }
 
-impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfigFor<T>>
+impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfig>
 	for Pallet<T>
 {
 	/// Create a `collection` of nonfungible items to be owned by `who` and managed by `admin`.
 	fn create_collection(
 		who: &T::AccountId,
 		admin: &T::AccountId,
-		config: &CollectionConfigFor<T>,
+		config: &CollectionConfig,
 	) -> Result<T::CollectionId, DispatchError> {
 		// DepositRequired can be disabled by calling the force_create() only
 		ensure!(
@@ -193,7 +193,7 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfigF
 		collection: T::CollectionId,
 		who: &T::AccountId,
 		admin: &T::AccountId,
-		config: &CollectionConfigFor<T>,
+		config: &CollectionConfig,
 	) -> Result<(), DispatchError> {
 		// DepositRequired can be disabled by calling the force_create() only
 		ensure!(

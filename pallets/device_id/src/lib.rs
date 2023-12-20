@@ -318,7 +318,7 @@ pub mod pallet {
     /// Config of a collection.
     #[pallet::storage]
     pub type CollectionConfigOf<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::CollectionId, CollectionConfigFor<T>, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, T::CollectionId, CollectionConfig, OptionQuery>;
 
     /// Config of an item.
     #[pallet::storage]
@@ -495,10 +495,6 @@ pub mod pallet {
         NoConfig,
         /// Some roles were not cleared.
         RolesNotCleared,
-        /// Mint has not started yet.
-        MintNotStarted,
-        /// Mint has already ended.
-        MintEnded,
         /// The provided Item was already used for claiming.
         AlreadyClaimed,
         /// The provided data is incorrect.
@@ -541,7 +537,7 @@ pub mod pallet {
         pub fn create(
             origin: OriginFor<T>,
             admin: AccountIdLookupOf<T>,
-            config: CollectionConfigFor<T>,
+            config: CollectionConfig,
         ) -> DispatchResult {
             let collection = NextCollectionId::<T>::get()
                 .or(T::CollectionId::initial_value())
@@ -589,7 +585,7 @@ pub mod pallet {
         pub fn force_create(
             origin: OriginFor<T>,
             owner: AccountIdLookupOf<T>,
-            config: CollectionConfigFor<T>,
+            config: CollectionConfig,
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
             let owner = T::Lookup::lookup(owner)?;
@@ -648,8 +644,7 @@ pub mod pallet {
                 details.item_metadata,
                 details.item_configs,
                 details.attributes,
-            ))
-                .into())
+            )).into())
         }
 
         /// Mint an item of a particular collection.
@@ -688,14 +683,6 @@ pub mod pallet {
                 item_config,
                 |_collection_details, collection_config| {
                     let mint_settings = collection_config.mint_settings;
-                    let now = frame_system::Pallet::<T>::block_number();
-
-                    if let Some(start_block) = mint_settings.start_block {
-                        ensure!(start_block <= now, Error::<T>::MintNotStarted);
-                    }
-                    if let Some(end_block) = mint_settings.end_block {
-                        ensure!(end_block >= now, Error::<T>::MintEnded);
-                    }
 
                     match mint_settings.mint_type {
                         MintType::Issuer => {
@@ -704,7 +691,7 @@ pub mod pallet {
 								Error::<T>::NoPermission
 							);
                         },
-                        _ => {},
+                        // _ => {},
                     }
 
                     Ok(())
@@ -968,7 +955,7 @@ pub mod pallet {
         pub fn force_collection_config(
             origin: OriginFor<T>,
             collection: T::CollectionId,
-            config: CollectionConfigFor<T>,
+            config: CollectionConfig,
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
             Self::do_force_collection_config(collection, config)
@@ -1327,7 +1314,7 @@ pub mod pallet {
         pub fn update_mint_settings(
             origin: OriginFor<T>,
             collection: T::CollectionId,
-            mint_settings: MintSettings<BlockNumberFor<T>>,
+            mint_settings: MintSettings,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)

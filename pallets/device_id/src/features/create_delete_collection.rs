@@ -37,7 +37,7 @@ impl<T: Config> Pallet<T> {
 		collection: T::CollectionId,
 		owner: T::AccountId,
 		admin: T::AccountId,
-		config: CollectionConfigFor<T>,
+		config: CollectionConfig,
 		deposit: DepositBalanceOf<T>,
 		event: Event<T>,
 	) -> DispatchResult {

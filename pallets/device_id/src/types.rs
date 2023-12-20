@@ -50,9 +50,6 @@ pub(super) type ItemMetadataDepositOf<T> =
 /// A type that holds the details of a single item.
 pub(super) type ItemDetailsFor<T> =
 	ItemDetails<<T as frame_system::Config>::AccountId, ItemDepositOf<T>>;
-/// A type alias for the settings configuration of a collection.
-pub(super) type CollectionConfigFor<T> =
-	CollectionConfig<BlockNumberFor<T>>;
 /// A type alias for the pre-signed minting configuration for a specified collection.
 pub(super) type PreSignedMintOf<T> = PreSignedMint<
 	<T as Config>::CollectionId,
@@ -221,29 +218,21 @@ impl_codec_bitflags!(CollectionSettings, u64, CollectionSetting);
 pub enum MintType {
 	/// Only an `Issuer` could mint items.
 	Issuer,
-	/// Anyone could mint items.
-	Public,
 }
 
 /// Holds the information about minting.
 #[derive(Clone, Copy, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct MintSettings<BlockNumber> {
+pub struct MintSettings {
 	/// Whether anyone can mint or if minters are restricted to some subset.
 	pub mint_type: MintType,
-	/// When the mint starts.
-	pub start_block: Option<BlockNumber>,
-	/// When the mint ends.
-	pub end_block: Option<BlockNumber>,
 	/// Default settings each item will get during the mint.
 	pub default_item_settings: ItemSettings,
 }
 
-impl<BlockNumber> Default for MintSettings<BlockNumber> {
+impl Default for MintSettings {
 	fn default() -> Self {
 		Self {
 			mint_type: MintType::Issuer,
-			start_block: None,
-			end_block: None,
 			default_item_settings: ItemSettings::all_enabled(),
 		}
 	}
@@ -282,16 +271,16 @@ pub enum PalletAttributes {
 #[derive(
 	Clone, Copy, Decode, Default, Encode, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo,
 )]
-pub struct CollectionConfig<BlockNumber> {
+pub struct CollectionConfig {
 	/// Collection's settings.
 	pub settings: CollectionSettings,
 	/// Collection's max supply.
 	pub max_supply: Option<u32>,
 	/// Default settings each item will get during the mint.
-	pub mint_settings: MintSettings<BlockNumber>,
+	pub mint_settings: MintSettings,
 }
 
-impl<BlockNumber> CollectionConfig<BlockNumber> {
+impl CollectionConfig {
 	pub fn is_setting_enabled(&self, setting: CollectionSetting) -> bool {
 		!self.settings.is_disabled(setting)
 	}

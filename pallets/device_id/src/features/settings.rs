@@ -19,7 +19,6 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
-use frame_system::pallet_prelude::*;
 
 impl<T: Config> Pallet<T> {
 	/// Forcefully change the configuration of a collection.
@@ -31,7 +30,7 @@ impl<T: Config> Pallet<T> {
 	/// It updates the collection configuration and emits a `CollectionConfigChanged` event.
 	pub(crate) fn do_force_collection_config(
 		collection: T::CollectionId,
-		config: CollectionConfigFor<T>,
+		config: CollectionConfig,
 	) -> DispatchResult {
 		ensure!(Collection::<T>::contains_key(&collection), Error::<T>::UnknownCollection);
 		CollectionConfigOf::<T>::insert(&collection, config);
@@ -97,7 +96,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_update_mint_settings(
 		maybe_check_origin: Option<T::AccountId>,
 		collection: T::CollectionId,
-		mint_settings: MintSettings<BlockNumberFor<T>>,
+		mint_settings: MintSettings,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
@@ -123,7 +122,7 @@ impl<T: Config> Pallet<T> {
 	/// otherwise, it returns a `DispatchError` with `Error::NoConfig`.
 	pub(crate) fn get_collection_config(
 		collection_id: &T::CollectionId,
-	) -> Result<CollectionConfigFor<T>, DispatchError> {
+	) -> Result<CollectionConfig, DispatchError> {
 		let config =
 			CollectionConfigOf::<T>::get(&collection_id).ok_or(Error::<T>::NoConfig)?;
 		Ok(config)

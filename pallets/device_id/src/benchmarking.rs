@@ -203,7 +203,7 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
 
 fn make_collection_config<T: Config>(
 	disable_settings: BitFlags<CollectionSetting>,
-) -> CollectionConfigFor<T> {
+) -> CollectionConfig {
 	CollectionConfig {
 		settings: CollectionSettings::from_disabled(disable_settings),
 		max_supply: None,
@@ -211,7 +211,7 @@ fn make_collection_config<T: Config>(
 	}
 }
 
-fn default_collection_config<T: Config>() -> CollectionConfigFor<T> {
+fn default_collection_config<T: Config>() -> CollectionConfig {
 	make_collection_config::<T>(CollectionSetting::empty())
 }
 
@@ -592,9 +592,7 @@ benchmarks_instance_pallet! {
 	update_mint_settings {
 		let (collection, caller, _) = create_collection::<T>();
 		let mint_settings = MintSettings {
-			mint_type: MintType::Public,
-			start_block: Some(One::one()),
-			end_block: Some(One::one()),
+			mint_type: MintType::Issuer,
 			default_item_settings: ItemSettings::all_enabled(),
 		};
 	}: _(SystemOrigin::Signed(caller.clone()), collection, mint_settings)
