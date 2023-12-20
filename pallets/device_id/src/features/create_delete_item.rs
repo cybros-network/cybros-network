@@ -73,7 +73,7 @@ impl<T: Config> Pallet<T> {
 				let deposit_amount = match collection_config
 					.is_setting_enabled(CollectionSetting::DepositRequired)
 				{
-					true => T::ItemDeposit::get(),
+					true => T::DeviceEntryDeposit::get(),
 					false => Zero::zero(),
 				};
 				let deposit_account = match maybe_depositor {

@@ -37,7 +37,7 @@ pub(super) type CollectionDetailsFor<T> =
 	CollectionDetails<<T as frame_system::Config>::AccountId, DepositBalanceOf<T>>;
 /// A type alias for keeping track of approvals for an item's attributes.
 pub(super) type ItemAttributesApprovals<T> =
-	BoundedBTreeSet<<T as frame_system::Config>::AccountId, <T as Config>::ItemAttributesApprovalsLimit>;
+	BoundedBTreeSet<<T as frame_system::Config>::AccountId, <T as Config>::DeviceAttributesApprovalsLimit>;
 /// A type that holds the deposit for a single item.
 pub(super) type ItemDepositOf<T> =
 	ItemDeposit<DepositBalanceOf<T>, <T as frame_system::Config>::AccountId>;

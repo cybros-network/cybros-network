@@ -138,11 +138,11 @@ pub mod pallet {
 
         /// The basic amount of funds that must be reserved for collection.
         #[pallet::constant]
-        type CollectionDeposit: Get<DepositBalanceOf<Self>>;
+        type ProductEntryDeposit: Get<DepositBalanceOf<Self>>;
 
         /// The basic amount of funds that must be reserved for an item.
         #[pallet::constant]
-        type ItemDeposit: Get<DepositBalanceOf<Self>>;
+        type DeviceEntryDeposit: Get<DepositBalanceOf<Self>>;
 
         /// The basic amount of funds that must be reserved when adding metadata to your item.
         #[pallet::constant]
@@ -171,7 +171,7 @@ pub mod pallet {
 
         /// The maximum attributes approvals an item could have.
         #[pallet::constant]
-        type ItemAttributesApprovalsLimit: Get<u32>;
+        type DeviceAttributesApprovalsLimit: Get<u32>;
 
         /// The max number of attributes a user could set per call.
         #[pallet::constant]
@@ -557,7 +557,7 @@ pub mod pallet {
                 owner.clone(),
                 admin.clone(),
                 config,
-                T::CollectionDeposit::get(),
+                T::ProductEntryDeposit::get(),
                 Event::Created { collection, creator: owner, owner: admin },
             )?;
 

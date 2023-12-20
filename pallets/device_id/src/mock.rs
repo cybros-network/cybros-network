@@ -83,15 +83,15 @@ impl pallet_device_id::Config for Test {
 	type CreateOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<Self::AccountId>>;
 	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type Locker = ();
-	type CollectionDeposit = ConstU64<2>;
-	type ItemDeposit = ConstU64<1>;
+	type ProductEntryDeposit = ConstU64<2>;
+	type DeviceEntryDeposit = ConstU64<1>;
 	type MetadataDepositBase = ConstU64<1>;
 	type AttributeDepositBase = ConstU64<1>;
 	type DepositPerByte = ConstU64<1>;
 	type StringLimit = ConstU32<50>;
 	type KeyLimit = ConstU32<50>;
 	type ValueLimit = ConstU32<50>;
-	type ItemAttributesApprovalsLimit = ConstU32<2>;
+	type DeviceAttributesApprovalsLimit = ConstU32<2>;
 	type MaxAttributesPerCall = ConstU32<2>;
 	/// Off-chain = signature On-chain - therefore no conversion needed.
 	/// It needs to be From<MultiSignature> for benchmarking.

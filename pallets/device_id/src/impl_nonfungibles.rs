@@ -173,7 +173,7 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfig>
 			who.clone(),
 			admin.clone(),
 			*config,
-			T::CollectionDeposit::get(),
+			T::ProductEntryDeposit::get(),
 			Event::Created { collection, creator: who.clone(), owner: admin.clone() },
 		)?;
 
@@ -206,7 +206,7 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfig>
 			who.clone(),
 			admin.clone(),
 			*config,
-			T::CollectionDeposit::get(),
+			T::ProductEntryDeposit::get(),
 			Event::Created { collection, creator: who.clone(), owner: admin.clone() },
 		)
 	}
