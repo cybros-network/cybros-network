@@ -428,7 +428,7 @@ impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
 		<Self as Mutate<T::AccountId, ItemConfig>>::set_attribute(
 			collection,
 			item,
-			&PalletAttributes::<Self::CollectionId>::TransferDisabled.encode(),
+			&PalletAttributes::TransferDisabled.encode(),
 			&[],
 		)
 	}
@@ -437,7 +437,7 @@ impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
 		<Self as Mutate<T::AccountId, ItemConfig>>::clear_attribute(
 			collection,
 			item,
-			&PalletAttributes::<Self::CollectionId>::TransferDisabled.encode(),
+			&PalletAttributes::TransferDisabled.encode(),
 		)
 	}
 }

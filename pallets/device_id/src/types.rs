@@ -273,9 +273,7 @@ pub struct CancelAttributesApprovalWitness {
 
 /// A list of possible pallet-level attributes.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub enum PalletAttributes<CollectionId> {
-	/// Marks an item as being used in order to claim another item.
-	UsedToClaim(CollectionId),
+pub enum PalletAttributes {
 	/// Marks an item as being restricted from transferring.
 	TransferDisabled,
 }

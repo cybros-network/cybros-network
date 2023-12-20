@@ -434,7 +434,7 @@ pub mod pallet {
         PalletAttributeSet {
             collection: T::CollectionId,
             item: Option<T::ItemId>,
-            attribute: PalletAttributes<T::CollectionId>,
+            attribute: PalletAttributes,
             value: BoundedVec<u8, T::ValueLimit>,
         },
     }

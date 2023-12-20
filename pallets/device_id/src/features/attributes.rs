@@ -495,7 +495,7 @@ impl<T: Config> Pallet<T> {
 	pub fn has_system_attribute(
 		collection: &T::CollectionId,
 		item: &T::ItemId,
-		attribute_key: PalletAttributes<T::CollectionId>,
+		attribute_key: PalletAttributes,
 	) -> Result<bool, DispatchError> {
 		let attribute = (
 			&collection,
