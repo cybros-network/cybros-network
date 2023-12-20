@@ -35,11 +35,11 @@ impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 		collection: &Self::CollectionId,
 		item: &Self::ItemId,
 	) -> Option<<T as frame_system::Config>::AccountId> {
-		Item::<T>::get(collection, item).map(|a| a.owner)
+		DeviceCollection::<T>::get(collection, item).map(|a| a.owner)
 	}
 
 	fn collection_owner(collection: &Self::CollectionId) -> Option<<T as frame_system::Config>::AccountId> {
-		Collection::<T>::get(collection).map(|a| a.owner)
+		ProductCollection::<T>::get(collection).map(|a| a.owner)
 	}
 
 	/// Returns the attribute value of `item` of `collection` corresponding to `key`.
@@ -54,7 +54,7 @@ impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 	) -> Option<Vec<u8>> {
 		if key.is_empty() {
 			// We make the empty key map to the item metadata value.
-			ItemMetadataOf::<T>::get(collection, item).map(|m| m.data.into())
+			DeviceMetadataOf::<T>::get(collection, item).map(|m| m.data.into())
 		} else {
 			let namespace = AttributeNamespace::ProductOwner;
 			let key = BoundedSlice::<_, _>::try_from(key).ok()?;
@@ -102,7 +102,7 @@ impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 	fn collection_attribute(collection: &Self::CollectionId, key: &[u8]) -> Option<Vec<u8>> {
 		if key.is_empty() {
 			// We make the empty key map to the item metadata value.
-			CollectionMetadataOf::<T>::get(collection).map(|m| m.data.into())
+			ProductMetadataOf::<T>::get(collection).map(|m| m.data.into())
 		} else {
 			let key = BoundedSlice::<_, _>::try_from(key).ok()?;
 			Attribute::<T>::get((
@@ -125,12 +125,12 @@ impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 			_ => (),
 		}
 		match (
-			CollectionConfigOf::<T>::get(collection),
-			ItemConfigOf::<T>::get(collection, item),
+			ProductConfigOf::<T>::get(collection),
+			DeviceConfigOf::<T>::get(collection, item),
 		) {
 			(Some(cc), Some(ic))
 				if cc.is_setting_enabled(ProductSetting::TransferableItems) &&
-					ic.is_setting_enabled(ItemSetting::Transferable) =>
+					ic.is_setting_enabled(DeviceSetting::Transferable) =>
 				true,
 			_ => false,
 		}
@@ -164,9 +164,9 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, ProductConfig>
 			Error::<T>::WrongSetting
 		);
 
-		let collection = NextCollectionId::<T>::get()
+		let collection = NextProductId::<T>::get()
 			.or(T::ProductId::initial_value())
-			.ok_or(Error::<T>::UnknownCollection)?;
+			.ok_or(Error::<T>::UnknownProduct)?;
 
 		Self::do_create_collection(
 			collection,
@@ -174,7 +174,7 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, ProductConfig>
 			admin.clone(),
 			*config,
 			T::ProductEntryDeposit::get(),
-			Event::Created { collection, creator: who.clone(), owner: admin.clone() },
+			Event::ProductCreated { product_id: collection, creator: who.clone(), owner: admin.clone() },
 		)?;
 
 		Self::set_next_collection_id(collection);
@@ -207,7 +207,7 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, ProductConfig>
 			admin.clone(),
 			*config,
 			T::ProductEntryDeposit::get(),
-			Event::Created { collection, creator: who.clone(), owner: admin.clone() },
+			Event::ProductCreated { product_id: collection, creator: who.clone(), owner: admin.clone() },
 		)
 	}
 }
@@ -216,7 +216,7 @@ impl<T: Config> Destroy<<T as frame_system::Config>::AccountId> for Pallet<T> {
 	type DestroyWitness = DestroyWitness;
 
 	fn get_destroy_witness(collection: &Self::CollectionId) -> Option<DestroyWitness> {
-		Collection::<T>::get(collection).map(|a| a.destroy_witness())
+		ProductCollection::<T>::get(collection).map(|a| a.destroy_witness())
 	}
 
 	fn destroy(
@@ -422,7 +422,7 @@ impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
 			Self::has_system_attribute(&collection, &item, PalletAttributes::TransferDisabled)?;
 		// Can't lock the item twice
 		if transfer_disabled {
-			return Err(Error::<T>::ItemLocked.into())
+			return Err(Error::<T>::DeviceLocked.into())
 		}
 
 		<Self as Mutate<T::AccountId, DeviceConfig>>::set_attribute(
@@ -453,14 +453,14 @@ impl<T: Config> InspectEnumerable<T::AccountId> for Pallet<T> {
 	///
 	/// NOTE: iterating this list invokes a storage read per item.
 	fn collections() -> Self::CollectionsIterator {
-		Collection::<T>::iter_keys()
+		ProductCollection::<T>::iter_keys()
 	}
 
 	/// Returns an iterator of the items of a `collection` in existence.
 	///
 	/// NOTE: iterating this list invokes a storage read per item.
 	fn items(collection: &Self::CollectionId) -> Self::ItemsIterator {
-		Item::<T>::iter_key_prefix(collection)
+		DeviceCollection::<T>::iter_key_prefix(collection)
 	}
 
 	/// Returns an iterator of the items of all collections owned by `who`.

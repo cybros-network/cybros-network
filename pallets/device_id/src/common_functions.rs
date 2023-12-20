@@ -23,12 +23,12 @@ use frame_support::pallet_prelude::*;
 impl<T: Config> Pallet<T> {
 	/// Get the owner of the item, if the item exists.
 	pub fn owner(collection: T::ProductId, item: T::DeviceId) -> Option<T::AccountId> {
-		Item::<T>::get(collection, item).map(|i| i.owner)
+		DeviceCollection::<T>::get(collection, item).map(|i| i.owner)
 	}
 
 	/// Get the owner of the collection, if the collection exists.
 	pub fn collection_owner(collection: T::ProductId) -> Option<T::AccountId> {
-		Collection::<T>::get(collection).map(|i| i.owner)
+		ProductCollection::<T>::get(collection).map(|i| i.owner)
 	}
 
 	/// Validates the signature of the given data with the provided signer's account ID.
@@ -62,18 +62,18 @@ impl<T: Config> Pallet<T> {
 
 	pub(crate) fn set_next_collection_id(collection: T::ProductId) {
 		let next_id = collection.increment();
-		NextCollectionId::<T>::set(next_id);
-		Self::deposit_event(Event::NextCollectionIdIncremented { next_id });
+		NextProductId::<T>::set(next_id);
+		Self::deposit_event(Event::NextProductIdIncremented { next_id });
 	}
 
 	#[cfg(any(test, feature = "runtime-benchmarks"))]
 	pub fn set_next_id(id: T::ProductId) {
-		NextCollectionId::<T>::set(Some(id));
+		NextProductId::<T>::set(Some(id));
 	}
 
 	#[cfg(test)]
 	pub fn get_next_id() -> T::ProductId {
-		NextCollectionId::<T>::get()
+		NextProductId::<T>::get()
 			.or(T::ProductId::initial_value())
 			.expect("Failed to get next collection ID")
 	}

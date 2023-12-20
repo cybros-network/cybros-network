@@ -37,15 +37,15 @@ impl<T: Config> Pallet<T> {
 	/// # Errors
 	///
 	/// This function returns a dispatch error in the following cases:
-	/// - If the collection ID is invalid ([`UnknownCollection`](crate::Error::UnknownCollection)).
-	/// - If the item ID is invalid ([`UnknownItem`](crate::Error::UnknownItem)).
+	/// - If the collection ID is invalid ([`UnknownCollection`](crate::Error::UnknownProduct)).
+	/// - If the item ID is invalid ([`UnknownItem`](crate::Error::UnknownDevice)).
 	/// - If the item is locked or transferring it is disabled
-	///   ([`ItemLocked`](crate::Error::ItemLocked)).
+	///   ([`ItemLocked`](crate::Error::DeviceLocked)).
 	/// - If the collection or item is non-transferable
-	///   ([`ItemsNonTransferable`](crate::Error::ItemsNonTransferable)).
+	///   ([`ItemsNonTransferable`](crate::Error::DevicesNonTransferable)).
 	pub fn do_transfer(
-		collection: T::ProductId,
-		item: T::DeviceId,
+		product_id: T::ProductId,
+		device_id: T::DeviceId,
 		dest: T::AccountId,
 		with_details: impl FnOnce(
 			&ProductEntryFor<T>,
@@ -53,54 +53,54 @@ impl<T: Config> Pallet<T> {
 		) -> DispatchResult,
 	) -> DispatchResult {
 		// Retrieve collection details.
-		let collection_details =
-			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
+		let product =
+			ProductCollection::<T>::get(&product_id).ok_or(Error::<T>::UnknownProduct)?;
 
 		// Ensure the item is not locked.
-		ensure!(!T::Locker::is_locked(collection, item), Error::<T>::ItemLocked);
+		ensure!(!T::Locker::is_locked(product_id, device_id), Error::<T>::DeviceLocked);
 
 		// Ensure the item is not transfer disabled on the system level attribute.
 		ensure!(
-			!Self::has_system_attribute(&collection, &item, PalletAttributes::TransferDisabled)?,
-			Error::<T>::ItemLocked
+			!Self::has_system_attribute(&product_id, &device_id, PalletAttributes::TransferDisabled)?,
+			Error::<T>::DeviceLocked
 		);
 
 		// Retrieve collection config and check if items are transferable.
-		let collection_config = Self::get_collection_config(&collection)?;
+		let product_config = Self::get_product_config(&product_id)?;
 		ensure!(
-			collection_config.is_setting_enabled(ProductSetting::TransferableItems),
-			Error::<T>::ItemsNonTransferable
+			product_config.is_setting_enabled(ProductSetting::TransferableItems),
+			Error::<T>::DevicesNonTransferable
 		);
 
 		// Retrieve item config and check if the item is transferable.
-		let item_config = Self::get_item_config(&collection, &item)?;
+		let device_config = Self::get_device_config(&product_id, &device_id)?;
 		ensure!(
-			item_config.is_setting_enabled(ItemSetting::Transferable),
-			Error::<T>::ItemLocked
+			device_config.is_setting_enabled(DeviceSetting::Transferable),
+			Error::<T>::DeviceLocked
 		);
 
 		// Retrieve the item details.
-		let mut details =
-			Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
+		let mut device =
+			DeviceCollection::<T>::get(&product_id, &device_id).ok_or(Error::<T>::UnknownDevice)?;
 
 		// Perform the transfer with custom details using the provided closure.
-		with_details(&collection_details, &mut details)?;
+		with_details(&product, &mut device)?;
 
 		// Update account ownership information.
-		Account::<T>::remove((&details.owner, &collection, &item));
-		Account::<T>::insert((&dest, &collection, &item), ());
-		let origin = details.owner;
-		details.owner = dest;
+		Account::<T>::remove((&device.owner, &product_id, &device_id));
+		Account::<T>::insert((&dest, &product_id, &device_id), ());
+		let origin = device.owner;
+		device.owner = dest;
 
 		// Update item details.
-		Item::<T>::insert(&collection, &item, &details);
+		DeviceCollection::<T>::insert(&product_id, &device_id, &device);
 
 		// Emit `Transferred` event.
-		Self::deposit_event(Event::Transferred {
-			collection,
-			item,
+		Self::deposit_event(Event::DeviceTransferred {
+			product_id,
+			device_id,
 			from: origin,
-			to: details.owner,
+			to: device.owner,
 		});
 		Ok(())
 	}
@@ -116,40 +116,40 @@ impl<T: Config> Pallet<T> {
 	/// new owner is an acceptable account based on the collection's acceptance settings.
 	pub(crate) fn do_transfer_ownership(
 		origin: T::AccountId,
-		collection: T::ProductId,
+		product_id: T::ProductId,
 		new_owner: T::AccountId,
 	) -> DispatchResult {
 		// Check if the new owner is acceptable based on the collection's acceptance settings.
-		let acceptable_collection = OwnershipAcceptance::<T>::get(&new_owner);
-		ensure!(acceptable_collection.as_ref() == Some(&collection), Error::<T>::Unaccepted);
+		let acceptable_product = OwnershipAcceptance::<T>::get(&new_owner);
+		ensure!(acceptable_product.as_ref() == Some(&product_id), Error::<T>::Unaccepted);
 
 		// Try to retrieve and mutate the collection details.
-		Collection::<T>::try_mutate(collection, |maybe_details| {
-			let details = maybe_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
+		ProductCollection::<T>::try_mutate(product_id, |maybe_product| {
+			let product = maybe_product.as_mut().ok_or(Error::<T>::UnknownProduct)?;
 			// Check if the `origin` is the current owner of the collection.
-			ensure!(origin == details.owner, Error::<T>::NoPermission);
-			if details.owner == new_owner {
+			ensure!(origin == product.owner, Error::<T>::NoPermission);
+			if product.owner == new_owner {
 				return Ok(())
 			}
 
 			// Move the deposit to the new owner.
 			T::Currency::repatriate_reserved(
-				&details.owner,
+				&product.owner,
 				&new_owner,
-				details.owner_deposit,
+				product.owner_deposit,
 				Reserved,
 			)?;
 
 			// Update account ownership information.
-			CollectionAccount::<T>::remove(&details.owner, &collection);
-			CollectionAccount::<T>::insert(&new_owner, &collection, ());
+			ProductOwnerAccount::<T>::remove(&product.owner, &product_id);
+			ProductOwnerAccount::<T>::insert(&new_owner, &product_id, ());
 
-			details.owner = new_owner.clone();
+			product.owner = new_owner.clone();
 			OwnershipAcceptance::<T>::remove(&new_owner);
 			frame_system::Pallet::<T>::dec_consumers(&new_owner);
 
 			// Emit `OwnerChanged` event.
-			Self::deposit_event(Event::OwnerChanged { collection, new_owner });
+			Self::deposit_event(Event::ProductOwnerChanged { product_id, new_owner });
 			Ok(())
 		})
 	}
@@ -164,10 +164,10 @@ impl<T: Config> Pallet<T> {
 	/// ownership transfers for any collection.
 	pub(crate) fn do_set_accept_ownership(
 		who: T::AccountId,
-		maybe_collection: Option<T::ProductId>,
+		maybe_product_id: Option<T::ProductId>,
 	) -> DispatchResult {
 		let exists = OwnershipAcceptance::<T>::contains_key(&who);
-		match (exists, maybe_collection.is_some()) {
+		match (exists, maybe_product_id.is_some()) {
 			(false, true) => {
 				frame_system::Pallet::<T>::inc_consumers(&who)?;
 			},
@@ -176,14 +176,14 @@ impl<T: Config> Pallet<T> {
 			},
 			_ => {},
 		}
-		if let Some(collection) = maybe_collection.as_ref() {
-			OwnershipAcceptance::<T>::insert(&who, collection);
+		if let Some(product_id) = maybe_product_id.as_ref() {
+			OwnershipAcceptance::<T>::insert(&who, product_id);
 		} else {
 			OwnershipAcceptance::<T>::remove(&who);
 		}
 
 		// Emit `OwnershipAcceptanceChanged` event.
-		Self::deposit_event(Event::OwnershipAcceptanceChanged { who, maybe_collection });
+		Self::deposit_event(Event::ProductOwnershipAcceptanceChanged { who, maybe_product_id });
 		Ok(())
 	}
 
@@ -196,31 +196,31 @@ impl<T: Config> Pallet<T> {
 	/// It moves the deposit to the new owner, updates the collection's owner, and emits
 	/// an `OwnerChanged` event.
 	pub(crate) fn do_force_collection_owner(
-		collection: T::ProductId,
+		product_id: T::ProductId,
 		owner: T::AccountId,
 	) -> DispatchResult {
 		// Try to retrieve and mutate the collection details.
-		Collection::<T>::try_mutate(collection, |maybe_details| {
-			let details = maybe_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
-			if details.owner == owner {
+		ProductCollection::<T>::try_mutate(product_id, |maybe_product| {
+			let product = maybe_product.as_mut().ok_or(Error::<T>::UnknownProduct)?;
+			if product.owner == owner {
 				return Ok(())
 			}
 
 			// Move the deposit to the new owner.
 			T::Currency::repatriate_reserved(
-				&details.owner,
+				&product.owner,
 				&owner,
-				details.owner_deposit,
+				product.owner_deposit,
 				Reserved,
 			)?;
 
 			// Update collection accounts and set the new owner.
-			CollectionAccount::<T>::remove(&details.owner, &collection);
-			CollectionAccount::<T>::insert(&owner, &collection, ());
-			details.owner = owner.clone();
+			ProductOwnerAccount::<T>::remove(&product.owner, &product_id);
+			ProductOwnerAccount::<T>::insert(&owner, &product_id, ());
+			product.owner = owner.clone();
 
 			// Emit `OwnerChanged` event.
-			Self::deposit_event(Event::OwnerChanged { collection, new_owner: owner });
+			Self::deposit_event(Event::ProductOwnerChanged { product_id, new_owner: owner });
 			Ok(())
 		})
 	}

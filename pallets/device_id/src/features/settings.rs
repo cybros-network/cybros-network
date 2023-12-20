@@ -29,12 +29,12 @@ impl<T: Config> Pallet<T> {
 	/// This function allows for changing the configuration of a collection without any checks.
 	/// It updates the collection configuration and emits a `CollectionConfigChanged` event.
 	pub(crate) fn do_force_collection_config(
-		collection: T::ProductId,
+		product_id: T::ProductId,
 		config: ProductConfig,
 	) -> DispatchResult {
-		ensure!(Collection::<T>::contains_key(&collection), Error::<T>::UnknownCollection);
-		CollectionConfigOf::<T>::insert(&collection, config);
-		Self::deposit_event(Event::CollectionConfigChanged { collection });
+		ensure!(ProductCollection::<T>::contains_key(&product_id), Error::<T>::UnknownProduct);
+		ProductConfigOf::<T>::insert(&product_id, config);
+		Self::deposit_event(Event::ProductConfigChanged { product_id });
 		Ok(())
 	}
 
@@ -56,27 +56,27 @@ impl<T: Config> Pallet<T> {
 	/// `CollectionMaxSupplySet` event.
 	pub(crate) fn do_set_collection_max_supply(
 		maybe_check_owner: Option<T::AccountId>,
-		collection: T::ProductId,
+		product_id: T::ProductId,
 		max_supply: u32,
 	) -> DispatchResult {
-		let collection_config = Self::get_collection_config(&collection)?;
+		let product_config = Self::get_product_config(&product_id)?;
 		ensure!(
-			collection_config.is_setting_enabled(ProductSetting::UnlockedMaxSupply),
+			product_config.is_setting_enabled(ProductSetting::UnlockedMaxSupply),
 			Error::<T>::MaxSupplyLocked
 		);
 
-		let details =
-			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
+		let product =
+			ProductCollection::<T>::get(&product_id).ok_or(Error::<T>::UnknownProduct)?;
 		if let Some(check_owner) = &maybe_check_owner {
-			ensure!(check_owner == &details.owner, Error::<T>::NoPermission);
+			ensure!(check_owner == &product.owner, Error::<T>::NoPermission);
 		}
 
-		ensure!(details.items <= max_supply, Error::<T>::MaxSupplyTooSmall);
+		ensure!(product.devices_count <= max_supply, Error::<T>::MaxSupplyTooSmall);
 
-		CollectionConfigOf::<T>::try_mutate(collection, |maybe_config| {
+		ProductConfigOf::<T>::try_mutate(product_id, |maybe_config| {
 			let config = maybe_config.as_mut().ok_or(Error::<T>::NoConfig)?;
 			config.max_supply = Some(max_supply);
-			Self::deposit_event(Event::CollectionMaxSupplySet { collection, max_supply });
+			Self::deposit_event(Event::ProductMaxSupplySet { product_id, max_supply });
 			Ok(())
 		})
 	}
@@ -95,20 +95,20 @@ impl<T: Config> Pallet<T> {
 	/// `CollectionMintSettingsUpdated` event.
 	pub(crate) fn do_update_mint_settings(
 		maybe_check_origin: Option<T::AccountId>,
-		collection: T::ProductId,
+		product_id: T::ProductId,
 		mint_settings: MintSettings,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, ProductRole::Issuer),
+				Self::has_role(&product_id, &check_origin, ProductRole::Issuer),
 				Error::<T>::NoPermission
 			);
 		}
 
-		CollectionConfigOf::<T>::try_mutate(collection, |maybe_config| {
+		ProductConfigOf::<T>::try_mutate(product_id, |maybe_config| {
 			let config = maybe_config.as_mut().ok_or(Error::<T>::NoConfig)?;
 			config.mint_settings = mint_settings;
-			Self::deposit_event(Event::CollectionMintSettingsUpdated { collection });
+			Self::deposit_event(Event::ProductMintSettingsUpdated { product_id });
 			Ok(())
 		})
 	}
@@ -120,11 +120,11 @@ impl<T: Config> Pallet<T> {
 	/// This function attempts to fetch the configuration (`CollectionConfigFor`) associated
 	/// with the given `collection_id`. If the configuration exists, it returns `Ok(config)`,
 	/// otherwise, it returns a `DispatchError` with `Error::NoConfig`.
-	pub(crate) fn get_collection_config(
-		collection_id: &T::ProductId,
+	pub(crate) fn get_product_config(
+		product_id: &T::ProductId,
 	) -> Result<ProductConfig, DispatchError> {
 		let config =
-			CollectionConfigOf::<T>::get(&collection_id).ok_or(Error::<T>::NoConfig)?;
+			ProductConfigOf::<T>::get(&product_id).ok_or(Error::<T>::NoConfig)?;
 		Ok(config)
 	}
 
@@ -136,12 +136,12 @@ impl<T: Config> Pallet<T> {
 	/// This function attempts to fetch the configuration (`ItemConfig`) associated with the given
 	/// `collection_id` and `item_id`. If the configuration exists, it returns `Ok(config)`,
 	/// otherwise, it returns a `DispatchError` with `Error::UnknownItem`.
-	pub(crate) fn get_item_config(
-		collection_id: &T::ProductId,
-		item_id: &T::DeviceId,
+	pub(crate) fn get_device_config(
+		product_id: &T::ProductId,
+		device_id: &T::DeviceId,
 	) -> Result<DeviceConfig, DispatchError> {
-		let config = ItemConfigOf::<T>::get(&collection_id, &item_id)
-			.ok_or(Error::<T>::UnknownItem)?;
+		let config = DeviceConfigOf::<T>::get(&product_id, &device_id)
+			.ok_or(Error::<T>::UnknownDevice)?;
 		Ok(config)
 	}
 
@@ -154,9 +154,9 @@ impl<T: Config> Pallet<T> {
 	/// returns `Ok(default_item_settings)`, otherwise, it returns a `DispatchError` with
 	/// `Error::NoConfig`.
 	pub(crate) fn get_default_item_settings(
-		collection_id: &T::ProductId,
+		product_id: &T::ProductId,
 	) -> Result<DeviceSettings, DispatchError> {
-		let collection_config = Self::get_collection_config(collection_id)?;
+		let collection_config = Self::get_product_config(product_id)?;
 		Ok(collection_config.mint_settings.default_device_settings)
 	}
 }

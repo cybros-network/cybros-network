@@ -197,7 +197,7 @@ pub mod pallet {
 
     /// Details of a collection.
     #[pallet::storage]
-    pub type Collection<T: Config> = StorageMap<
+    pub type ProductCollection<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
         T::ProductId,
@@ -226,7 +226,7 @@ pub mod pallet {
     /// The collections owned by any given account; set out this way so that collections owned by
     /// a single account can be enumerated.
     #[pallet::storage]
-    pub type CollectionAccount<T: Config> = StorageDoubleMap<
+    pub type ProductOwnerAccount<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         T::AccountId,
@@ -239,7 +239,7 @@ pub mod pallet {
     /// The items in existence and their ownership details.
     #[pallet::storage]
     /// Stores collection roles as per account.
-    pub type CollectionRoleOf<T: Config> = StorageDoubleMap<
+    pub type ProductRoleOf<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         T::ProductId,
@@ -251,7 +251,7 @@ pub mod pallet {
 
     /// The items in existence and their ownership details.
     #[pallet::storage]
-    pub type Item<T: Config> = StorageDoubleMap<
+    pub type DeviceCollection<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         T::ProductId,
@@ -263,7 +263,7 @@ pub mod pallet {
 
     /// Metadata of a collection.
     #[pallet::storage]
-    pub type CollectionMetadataOf<T: Config> = StorageMap<
+    pub type ProductMetadataOf<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
         T::ProductId,
@@ -273,7 +273,7 @@ pub mod pallet {
 
     /// Metadata of an item.
     #[pallet::storage]
-    pub type ItemMetadataOf<T: Config> = StorageDoubleMap<
+    pub type DeviceMetadataOf<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         T::ProductId,
@@ -299,7 +299,7 @@ pub mod pallet {
 
     /// Item attribute approvals.
     #[pallet::storage]
-    pub type ItemAttributesApprovalsOf<T: Config> = StorageDoubleMap<
+    pub type DeviceAttributesApprovalsOf<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         T::ProductId,
@@ -312,17 +312,17 @@ pub mod pallet {
     /// Stores the `CollectionId` that is going to be used for the next collection.
     /// This gets incremented whenever a new collection is created.
     #[pallet::storage]
-    pub type NextCollectionId<T: Config> =
+    pub type NextProductId<T: Config> =
         StorageValue<_, T::ProductId, OptionQuery>;
 
     /// Config of a collection.
     #[pallet::storage]
-    pub type CollectionConfigOf<T: Config> =
+    pub type ProductConfigOf<T: Config> =
         StorageMap<_, Blake2_128Concat, T::ProductId, ProductConfig, OptionQuery>;
 
     /// Config of an item.
     #[pallet::storage]
-    pub type ItemConfigOf<T: Config> = StorageDoubleMap<
+    pub type DeviceConfigOf<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         T::ProductId,
@@ -336,104 +336,104 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// A `collection` was created.
-        Created { collection: T::ProductId, creator: T::AccountId, owner: T::AccountId },
+        ProductCreated { product_id: T::ProductId, creator: T::AccountId, owner: T::AccountId },
         /// A `collection` was force-created.
-        ForceCreated { collection: T::ProductId, owner: T::AccountId },
+        ProductForceCreated { product_id: T::ProductId, owner: T::AccountId },
         /// A `collection` was destroyed.
-        Destroyed { collection: T::ProductId },
+        ProductDestroyed { product_id: T::ProductId },
         /// An `item` was issued.
-        Issued { collection: T::ProductId, item: T::DeviceId, owner: T::AccountId },
+        DeviceIssued { product_id: T::ProductId, device_id: T::DeviceId, owner: T::AccountId },
         /// An `item` was transferred.
-        Transferred {
-            collection: T::ProductId,
-            item: T::DeviceId,
+        DeviceTransferred {
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             from: T::AccountId,
             to: T::AccountId,
         },
         /// An `item` was destroyed.
-        Burned { collection: T::ProductId, item: T::DeviceId, owner: T::AccountId },
+        DeviceBurned { product_id: T::ProductId, device_id: T::DeviceId, owner: T::AccountId },
         /// An `item` became non-transferable.
-        ItemTransferLocked { collection: T::ProductId, item: T::DeviceId },
+        DeviceTransferLocked { product_id: T::ProductId, device_id: T::DeviceId },
         /// An `item` became transferable.
-        ItemTransferUnlocked { collection: T::ProductId, item: T::DeviceId },
+        DeviceTransferUnlocked { product_id: T::ProductId, device_id: T::DeviceId },
         /// `item` metadata or attributes were locked.
-        ItemPropertiesLocked {
-            collection: T::ProductId,
-            item: T::DeviceId,
+        DevicePropertiesLocked {
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             lock_metadata: bool,
             lock_attributes: bool,
         },
         /// Some `collection` was locked.
-        CollectionLocked { collection: T::ProductId },
+        ProductLocked { product_id: T::ProductId },
         /// The owner changed.
-        OwnerChanged { collection: T::ProductId, new_owner: T::AccountId },
+        ProductOwnerChanged { product_id: T::ProductId, new_owner: T::AccountId },
         /// The management team changed.
-        TeamChanged {
-            collection: T::ProductId,
+        ProductTeamChanged {
+            product_id: T::ProductId,
             issuer: Option<T::AccountId>,
             admin: Option<T::AccountId>,
             freezer: Option<T::AccountId>,
         },
         /// A `collection` has had its config changed by the `Force` origin.
-        CollectionConfigChanged { collection: T::ProductId },
+        ProductConfigChanged { product_id: T::ProductId },
         /// New metadata has been set for a `collection`.
-        CollectionMetadataSet { collection: T::ProductId, data: BoundedVec<u8, T::StringLimit> },
+        ProductMetadataSet { product_id: T::ProductId, data: BoundedVec<u8, T::StringLimit> },
         /// Metadata has been cleared for a `collection`.
-        CollectionMetadataCleared { collection: T::ProductId },
+        ProductMetadataCleared { product_id: T::ProductId },
         /// New metadata has been set for an item.
-        ItemMetadataSet {
-            collection: T::ProductId,
-            item: T::DeviceId,
+        DeviceMetadataSet {
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             data: BoundedVec<u8, T::StringLimit>,
         },
         /// Metadata has been cleared for an item.
-        ItemMetadataCleared { collection: T::ProductId, item: T::DeviceId },
+        DeviceMetadataCleared { product_id: T::ProductId, device_id: T::DeviceId },
         /// New attribute metadata has been set for a `collection` or `item`.
         AttributeSet {
-            collection: T::ProductId,
-            maybe_item: Option<T::DeviceId>,
+            product_id: T::ProductId,
+            maybe_device_id: Option<T::DeviceId>,
             key: BoundedVec<u8, T::KeyLimit>,
             value: BoundedVec<u8, T::ValueLimit>,
             namespace: AttributeNamespace<T::AccountId>,
         },
         /// Attribute metadata has been cleared for a `collection` or `item`.
         AttributeCleared {
-            collection: T::ProductId,
-            maybe_item: Option<T::DeviceId>,
+            product_id: T::ProductId,
+            maybe_device_id: Option<T::DeviceId>,
             key: BoundedVec<u8, T::KeyLimit>,
             namespace: AttributeNamespace<T::AccountId>,
         },
         /// A new approval to modify item attributes was added.
-        ItemAttributesApprovalAdded {
-            collection: T::ProductId,
-            item: T::DeviceId,
+        DeviceAttributesApprovalAdded {
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             delegate: T::AccountId,
         },
         /// A new approval to modify item attributes was removed.
-        ItemAttributesApprovalRemoved {
-            collection: T::ProductId,
-            item: T::DeviceId,
+        DeviceAttributesApprovalRemoved {
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             delegate: T::AccountId,
         },
         /// Ownership acceptance has changed for an account.
-        OwnershipAcceptanceChanged { who: T::AccountId, maybe_collection: Option<T::ProductId> },
+        ProductOwnershipAcceptanceChanged { who: T::AccountId, maybe_product_id: Option<T::ProductId> },
         /// Max supply has been set for a collection.
-        CollectionMaxSupplySet { collection: T::ProductId, max_supply: u32 },
+        ProductMaxSupplySet { product_id: T::ProductId, max_supply: u32 },
         /// Mint settings for a collection had changed.
-        CollectionMintSettingsUpdated { collection: T::ProductId },
+        ProductMintSettingsUpdated { product_id: T::ProductId },
         /// Event gets emitted when the `NextCollectionId` gets incremented.
-        NextCollectionIdIncremented { next_id: Option<T::ProductId> },
+        NextProductIdIncremented { next_id: Option<T::ProductId> },
         /// New attributes have been set for an `item` of the `collection`.
         PreSignedAttributesSet {
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             namespace: AttributeNamespace<T::AccountId>,
         },
         /// A new attribute in the `Pallet` namespace was set for the `collection` or an `item`
         /// within that `collection`.
         PalletAttributeSet {
-            collection: T::ProductId,
-            item: Option<T::DeviceId>,
+            product_id: T::ProductId,
+            device_id: Option<T::DeviceId>,
             attribute: PalletAttributes,
             value: BoundedVec<u8, T::ValueLimit>,
         },
@@ -444,7 +444,7 @@ pub mod pallet {
         /// The signing account has no permission to do the operation.
         NoPermission,
         /// The given item ID is unknown.
-        UnknownCollection,
+        UnknownProduct,
         /// The item ID has already been used for an item.
         AlreadyExists,
         /// The owner turned out to be different to what was expected.
@@ -452,25 +452,21 @@ pub mod pallet {
         /// The witness data given does not match the current state of the chain.
         BadWitness,
         /// Collection ID is already taken.
-        CollectionIdInUse,
+        ProductIdInUse,
         /// Items within that collection are non-transferable.
-        ItemsNonTransferable,
-        /// The provided account is not a delegate.
-        NotDelegate,
-        /// The delegate turned out to be different to what was expected.
-        WrongDelegate,
+        DevicesNonTransferable,
         /// The named owner has not signed ownership acceptance of the collection.
         Unaccepted,
         /// The item is locked (non-transferable).
-        ItemLocked,
+        DeviceLocked,
         /// Item's attributes are locked.
-        LockedItemAttributes,
+        LockedDeviceAttributes,
         /// Collection's attributes are locked.
-        LockedCollectionAttributes,
+        LockedProductAttributes,
         /// Item's metadata is locked.
-        LockedItemMetadata,
+        LockedDeviceMetadata,
         /// Collection's metadata is locked.
-        LockedCollectionMetadata,
+        LockedProductMetadata,
         /// All items have been minted.
         MaxSupplyReached,
         /// The max supply is locked and can't be changed.
@@ -478,7 +474,7 @@ pub mod pallet {
         /// The provided max supply is less than the number of items a collection already has.
         MaxSupplyTooSmall,
         /// The given item ID is unknown.
-        UnknownItem,
+        UnknownDevice,
         /// The given item has no metadata set.
         MetadataNotFound,
         /// The provided attribute can't be found.
@@ -490,13 +486,11 @@ pub mod pallet {
         /// The provided setting can't be set.
         WrongSetting,
         /// Item's config already exists and should be equal to the provided one.
-        InconsistentItemConfig,
+        InconsistentDeviceConfig,
         /// Config for a collection or an item can't be found.
         NoConfig,
         /// Some roles were not cleared.
         RolesNotCleared,
-        /// The provided Item was already used for claiming.
-        AlreadyClaimed,
         /// The provided data is incorrect.
         IncorrectData,
         /// The extrinsic was sent by the wrong origin.
@@ -510,9 +504,7 @@ pub mod pallet {
         /// The provided namespace isn't supported in this call.
         WrongNamespace,
         /// Can't delete non-empty collections.
-        CollectionNotEmpty,
-        /// The witness data should be provided.
-        WitnessRequired,
+        ProductNotEmpty,
     }
 
     #[pallet::call]
@@ -539,11 +531,11 @@ pub mod pallet {
             admin: AccountIdLookupOf<T>,
             config: ProductConfig,
         ) -> DispatchResult {
-            let collection = NextCollectionId::<T>::get()
+            let product_id = NextProductId::<T>::get()
                 .or(T::ProductId::initial_value())
-                .ok_or(Error::<T>::UnknownCollection)?;
+                .ok_or(Error::<T>::UnknownProduct)?;
 
-            let owner = T::CreateOrigin::ensure_origin(origin, &collection)?;
+            let owner = T::CreateOrigin::ensure_origin(origin, &product_id)?;
             let admin = T::Lookup::lookup(admin)?;
 
             // DepositRequired can be disabled by calling the force_create() only
@@ -553,15 +545,15 @@ pub mod pallet {
 			);
 
             Self::do_create_collection(
-                collection,
+                product_id,
                 owner.clone(),
                 admin.clone(),
                 config,
                 T::ProductEntryDeposit::get(),
-                Event::Created { collection, creator: owner, owner: admin },
+                Event::ProductCreated { product_id, creator: owner, owner: admin },
             )?;
 
-            Self::set_next_collection_id(collection);
+            Self::set_next_collection_id(product_id);
             Ok(())
         }
 
@@ -590,20 +582,20 @@ pub mod pallet {
             T::ForceOrigin::ensure_origin(origin)?;
             let owner = T::Lookup::lookup(owner)?;
 
-            let collection = NextCollectionId::<T>::get()
+            let product_id = NextProductId::<T>::get()
                 .or(T::ProductId::initial_value())
-                .ok_or(Error::<T>::UnknownCollection)?;
+                .ok_or(Error::<T>::UnknownProduct)?;
 
             Self::do_create_collection(
-                collection,
+                product_id,
                 owner.clone(),
                 owner.clone(),
                 config,
                 Zero::zero(),
-                Event::ForceCreated { collection, owner },
+                Event::ProductForceCreated { product_id, owner },
             )?;
 
-            Self::set_next_collection_id(collection);
+            Self::set_next_collection_id(product_id);
             Ok(())
         }
 
@@ -626,9 +618,9 @@ pub mod pallet {
         /// - `a = witness.attributes`
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::destroy(
-            witness.item_metadata,
-            witness.item_configs,
-            witness.attributes,
+            witness.device_metadata_count,
+            witness.device_configs_count,
+            witness.attributes_count,
         ))]
         pub fn destroy(
             origin: OriginFor<T>,
@@ -641,9 +633,9 @@ pub mod pallet {
             let details = Self::do_destroy_collection(collection, witness, maybe_check_owner)?;
 
             Ok(Some(T::WeightInfo::destroy(
-                details.item_metadata,
-                details.item_configs,
-                details.attributes,
+                details.device_metadata_count,
+                details.device_configs_count,
+                details.attributes_count,
             )).into())
         }
 
@@ -666,28 +658,28 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::mint())]
         pub fn mint(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             mint_to: AccountIdLookupOf<T>,
         ) -> DispatchResult {
             let caller = ensure_signed(origin)?;
             let mint_to = T::Lookup::lookup(mint_to)?;
-            let item_config =
-                DeviceConfig { settings: Self::get_default_item_settings(&collection)? };
+            let device_config =
+                DeviceConfig { settings: Self::get_default_item_settings(&product_id)? };
 
             Self::do_mint(
-                collection,
-                item,
+                product_id,
+                device_id,
                 Some(caller.clone()),
                 mint_to.clone(),
-                item_config,
-                |_collection_details, collection_config| {
-                    let mint_settings = collection_config.mint_settings;
+                device_config,
+                |_product, product_config| {
+                    let mint_settings = product_config.mint_settings;
 
                     match mint_settings.mint_type {
                         MintType::Issuer => {
                             ensure!(
-								Self::has_role(&collection, &caller, ProductRole::Issuer),
+								Self::has_role(&product_id, &caller, ProductRole::Issuer),
 								Error::<T>::NoPermission
 							);
                         },
@@ -716,10 +708,10 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::force_mint())]
         pub fn force_mint(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             mint_to: AccountIdLookupOf<T>,
-            item_config: DeviceConfig,
+            device_config: DeviceConfig,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
@@ -728,11 +720,11 @@ pub mod pallet {
 
             if let Some(check_origin) = maybe_check_origin {
                 ensure!(
-					Self::has_role(&collection, &check_origin, ProductRole::Issuer),
+					Self::has_role(&product_id, &check_origin, ProductRole::Issuer),
 					Error::<T>::NoPermission
 				);
             }
-            Self::do_mint(collection, item, None, mint_to, item_config, |_, _| Ok(()))
+            Self::do_mint(product_id, device_id, None, mint_to, device_config, |_, _| Ok(()))
         }
 
         /// Destroy a single item.
@@ -750,14 +742,14 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::burn())]
         pub fn burn(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
 
-            Self::do_burn(collection, item, |details| {
+            Self::do_burn(product_id, device_id, |details| {
                 if let Some(check_origin) = maybe_check_origin {
                     ensure!(details.owner == check_origin, Error::<T>::NoPermission);
                 }
@@ -783,15 +775,15 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::transfer())]
         pub fn transfer(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             dest: AccountIdLookupOf<T>,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
             let dest = T::Lookup::lookup(dest)?;
 
-            Self::do_transfer(collection, item, dest, |_, details| {
-                ensure!(details.owner == origin, Error::<T>::NoPermission);
+            Self::do_transfer(product_id, device_id, dest, |_, device| {
+                ensure!(device.owner == origin, Error::<T>::NoPermission);
                 Ok(())
             })
         }
@@ -810,11 +802,11 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::lock_item_transfer())]
         pub fn lock_item_transfer(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
-            Self::do_lock_item_transfer(origin, collection, item)
+            Self::do_lock_item_transfer(origin, product_id, device_id)
         }
 
         /// Re-allow unprivileged transfer of an item.
@@ -831,11 +823,11 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::unlock_item_transfer())]
         pub fn unlock_item_transfer(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
-            Self::do_unlock_item_transfer(origin, collection, item)
+            Self::do_unlock_item_transfer(origin, product_id, device_id)
         }
 
         /// Disallows specified settings for the whole collection.
@@ -854,11 +846,11 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::lock_collection())]
         pub fn lock_collection(
             origin: OriginFor<T>,
-            collection: T::ProductId,
+            product_id: T::ProductId,
             lock_settings: ProductSettings,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
-            Self::do_lock_collection(origin, collection, lock_settings)
+            Self::do_lock_collection(origin, product_id, lock_settings)
         }
 
         /// Change the Owner of a collection.
@@ -876,12 +868,12 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::transfer_ownership())]
         pub fn transfer_ownership(
             origin: OriginFor<T>,
-            collection: T::ProductId,
+            product_id: T::ProductId,
             new_owner: AccountIdLookupOf<T>,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
             let new_owner = T::Lookup::lookup(new_owner)?;
-            Self::do_transfer_ownership(origin, collection, new_owner)
+            Self::do_transfer_ownership(origin, product_id, new_owner)
         }
 
         /// Change the Issuer, Admin and Freezer of a collection.
@@ -904,7 +896,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_team())]
         pub fn set_team(
             origin: OriginFor<T>,
-            collection: T::ProductId,
+            product_id: T::ProductId,
             issuer: Option<AccountIdLookupOf<T>>,
             admin: Option<AccountIdLookupOf<T>>,
             freezer: Option<AccountIdLookupOf<T>>,
@@ -915,7 +907,7 @@ pub mod pallet {
             let issuer = issuer.map(T::Lookup::lookup).transpose()?;
             let admin = admin.map(T::Lookup::lookup).transpose()?;
             let freezer = freezer.map(T::Lookup::lookup).transpose()?;
-            Self::do_set_team(maybe_check_owner, collection, issuer, admin, freezer)
+            Self::do_set_team(maybe_check_owner, product_id, issuer, admin, freezer)
         }
 
         /// Change the Owner of a collection.
@@ -932,12 +924,12 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::force_collection_owner())]
         pub fn force_collection_owner(
             origin: OriginFor<T>,
-            collection: T::ProductId,
+            product_id: T::ProductId,
             owner: AccountIdLookupOf<T>,
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
             let new_owner = T::Lookup::lookup(owner)?;
-            Self::do_force_collection_owner(collection, new_owner)
+            Self::do_force_collection_owner(product_id, new_owner)
         }
 
         /// Change the config of a collection.
@@ -954,11 +946,11 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::force_collection_config())]
         pub fn force_collection_config(
             origin: OriginFor<T>,
-            collection: T::ProductId,
+            product_id: T::ProductId,
             config: ProductConfig,
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
-            Self::do_force_collection_config(collection, config)
+            Self::do_force_collection_config(product_id, config)
         }
 
         /// Disallows changing the metadata or attributes of the item.
@@ -982,8 +974,8 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::lock_item_properties())]
         pub fn lock_item_properties(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             lock_metadata: bool,
             lock_attributes: bool,
         ) -> DispatchResult {
@@ -992,8 +984,8 @@ pub mod pallet {
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
             Self::do_lock_item_properties(
                 maybe_check_origin,
-                collection,
-                item,
+                product_id,
+                device_id,
                 lock_metadata,
                 lock_attributes,
             )
@@ -1025,8 +1017,8 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_attribute())]
         pub fn set_attribute(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            maybe_item: Option<T::DeviceId>,
+            product_id: T::ProductId,
+            maybe_device_id: Option<T::DeviceId>,
             namespace: AttributeNamespace<T::AccountId>,
             key: BoundedVec<u8, T::KeyLimit>,
             value: BoundedVec<u8, T::ValueLimit>,
@@ -1034,10 +1026,10 @@ pub mod pallet {
             let origin = ensure_signed(origin)?;
             let depositor = match namespace {
                 AttributeNamespace::ProductOwner =>
-                    Self::collection_owner(collection).ok_or(Error::<T>::UnknownCollection)?,
+                    Self::collection_owner(product_id).ok_or(Error::<T>::UnknownProduct)?,
                 _ => origin.clone(),
             };
-            Self::do_set_attribute(origin, collection, maybe_item, namespace, key, value, depositor)
+            Self::do_set_attribute(origin, product_id, maybe_device_id, namespace, key, value, depositor)
         }
 
         /// Force-set an attribute for a collection or item.
@@ -1062,14 +1054,14 @@ pub mod pallet {
         pub fn force_set_attribute(
             origin: OriginFor<T>,
             set_as: Option<T::AccountId>,
-            collection: T::ProductId,
-            maybe_item: Option<T::DeviceId>,
+            product_id: T::ProductId,
+            maybe_device_id: Option<T::DeviceId>,
             namespace: AttributeNamespace<T::AccountId>,
             key: BoundedVec<u8, T::KeyLimit>,
             value: BoundedVec<u8, T::ValueLimit>,
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
-            Self::do_force_set_attribute(set_as, collection, maybe_item, namespace, key, value)
+            Self::do_force_set_attribute(set_as, product_id, maybe_device_id, namespace, key, value)
         }
 
         /// Clear an attribute for a collection or item.
@@ -1091,15 +1083,15 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::clear_attribute())]
         pub fn clear_attribute(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            maybe_item: Option<T::DeviceId>,
+            product_id: T::ProductId,
+            maybe_device_id: Option<T::DeviceId>,
             namespace: AttributeNamespace<T::AccountId>,
             key: BoundedVec<u8, T::KeyLimit>,
         ) -> DispatchResult {
             let maybe_check_owner = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_clear_attribute(maybe_check_owner, collection, maybe_item, namespace, key)
+            Self::do_clear_attribute(maybe_check_owner, product_id, maybe_device_id, namespace, key)
         }
 
         /// Approve item's attributes to be changed by a delegated third-party account.
@@ -1115,13 +1107,13 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::approve_item_attributes())]
         pub fn approve_item_attributes(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             delegate: AccountIdLookupOf<T>,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
             let delegate = T::Lookup::lookup(delegate)?;
-            Self::do_approve_item_attributes(origin, collection, item, delegate)
+            Self::do_approve_item_attributes(origin, product_id, device_id, delegate)
         }
 
         /// Cancel the previously provided approval to change item's attributes.
@@ -1136,18 +1128,18 @@ pub mod pallet {
         /// Emits `ItemAttributesApprovalRemoved` on success.
         #[pallet::call_index(23)]
         #[pallet::weight(T::WeightInfo::cancel_item_attributes_approval(
-        witness.account_attributes
+            witness.account_attributes
         ))]
         pub fn cancel_item_attributes_approval(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             delegate: AccountIdLookupOf<T>,
             witness: CancelAttributesApprovalWitness,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
             let delegate = T::Lookup::lookup(delegate)?;
-            Self::do_cancel_item_attributes_approval(origin, collection, item, delegate, witness)
+            Self::do_cancel_item_attributes_approval(origin, product_id, device_id, delegate, witness)
         }
 
         /// Set the metadata for an item.
@@ -1170,14 +1162,14 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_metadata())]
         pub fn set_metadata(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
             data: BoundedVec<u8, T::StringLimit>,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_set_item_metadata(maybe_check_origin, collection, item, data, None)
+            Self::do_set_item_metadata(maybe_check_origin, product_id, device_id, data, None)
         }
 
         /// Clear the metadata for an item.
@@ -1197,13 +1189,13 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::clear_metadata())]
         pub fn clear_metadata(
             origin: OriginFor<T>,
-            collection: T::ProductId,
-            item: T::DeviceId,
+            product_id: T::ProductId,
+            device_id: T::DeviceId,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_clear_item_metadata(maybe_check_origin, collection, item)
+            Self::do_clear_item_metadata(maybe_check_origin, product_id, device_id)
         }
 
         /// Set the metadata for a collection.
@@ -1225,13 +1217,13 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_collection_metadata())]
         pub fn set_collection_metadata(
             origin: OriginFor<T>,
-            collection: T::ProductId,
+            product_id: T::ProductId,
             data: BoundedVec<u8, T::StringLimit>,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_set_collection_metadata(maybe_check_origin, collection, data)
+            Self::do_set_collection_metadata(maybe_check_origin, product_id, data)
         }
 
         /// Clear the metadata for a collection.
@@ -1250,12 +1242,12 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::clear_collection_metadata())]
         pub fn clear_collection_metadata(
             origin: OriginFor<T>,
-            collection: T::ProductId,
+            product_id: T::ProductId,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_clear_collection_metadata(maybe_check_origin, collection)
+            Self::do_clear_collection_metadata(maybe_check_origin, product_id)
         }
 
         /// Set (or reset) the acceptance of ownership for a particular account.
@@ -1272,10 +1264,10 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_accept_ownership())]
         pub fn set_accept_ownership(
             origin: OriginFor<T>,
-            maybe_collection: Option<T::ProductId>,
+            maybe_product_id: Option<T::ProductId>,
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
-            Self::do_set_accept_ownership(who, maybe_collection)
+            Self::do_set_accept_ownership(who, maybe_product_id)
         }
 
         /// Set the maximum number of items a collection could have.
@@ -1291,13 +1283,13 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_collection_max_supply())]
         pub fn set_collection_max_supply(
             origin: OriginFor<T>,
-            collection: T::ProductId,
+            product_id: T::ProductId,
             max_supply: u32,
         ) -> DispatchResult {
             let maybe_check_owner = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_set_collection_max_supply(maybe_check_owner, collection, max_supply)
+            Self::do_set_collection_max_supply(maybe_check_owner, product_id, max_supply)
         }
 
         /// Update mint settings.
@@ -1313,13 +1305,13 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::update_mint_settings())]
         pub fn update_mint_settings(
             origin: OriginFor<T>,
-            collection: T::ProductId,
+            product_id: T::ProductId,
             mint_settings: MintSettings,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_update_mint_settings(maybe_check_origin, collection, mint_settings)
+            Self::do_update_mint_settings(maybe_check_origin, product_id, mint_settings)
         }
 
         /// Mint an item by providing the pre-signed approval.

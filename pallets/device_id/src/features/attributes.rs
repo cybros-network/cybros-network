@@ -46,45 +46,45 @@ impl<T: Config> Pallet<T> {
 	/// The deposit for setting an attribute is based on the `T::DepositPerByte` and
 	/// `T::AttributeDepositBase` configuration.
 	pub(crate) fn do_set_attribute(
-        origin: T::AccountId,
-        collection: T::ProductId,
-        maybe_item: Option<T::DeviceId>,
-        namespace: AttributeNamespace<T::AccountId>,
-        key: BoundedVec<u8, T::KeyLimit>,
-        value: BoundedVec<u8, T::ValueLimit>,
-        depositor: T::AccountId,
+		origin: T::AccountId,
+		product_id: T::ProductId,
+		maybe_device_id: Option<T::DeviceId>,
+		namespace: AttributeNamespace<T::AccountId>,
+		key: BoundedVec<u8, T::KeyLimit>,
+		value: BoundedVec<u8, T::ValueLimit>,
+		depositor: T::AccountId,
 	) -> DispatchResult {
 		ensure!(
-			Self::is_valid_namespace(&origin, &namespace, &collection, &maybe_item)?,
+			Self::is_valid_namespace(&origin, &namespace, &product_id, &maybe_device_id)?,
 			Error::<T>::NoPermission
 		);
 
-		let collection_config = Self::get_collection_config(&collection)?;
+		let product_config = Self::get_product_config(&product_id)?;
 		// for the `CollectionOwner` namespace we need to check if the collection/item is not locked
 		match namespace {
-			AttributeNamespace::ProductOwner => match maybe_item {
+			AttributeNamespace::ProductOwner => match maybe_device_id {
 				None => {
 					ensure!(
-						collection_config.is_setting_enabled(ProductSetting::UnlockedAttributes),
-						Error::<T>::LockedCollectionAttributes
+						product_config.is_setting_enabled(ProductSetting::UnlockedAttributes),
+						Error::<T>::LockedProductAttributes
 					)
 				},
 				Some(item) => {
-					let maybe_is_locked = Self::get_item_config(&collection, &item)
-						.map(|c| c.has_disabled_setting(ItemSetting::UnlockedAttributes))?;
-					ensure!(!maybe_is_locked, Error::<T>::LockedItemAttributes);
+					let maybe_is_locked = Self::get_device_config(&product_id, &item)
+						.map(|c| c.has_disabled_setting(DeviceSetting::UnlockedAttributes))?;
+					ensure!(!maybe_is_locked, Error::<T>::LockedDeviceAttributes);
 				},
 			},
 			_ => (),
 		}
 
-		let mut collection_details =
-			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
+		let mut product =
+			ProductCollection::<T>::get(&product_id).ok_or(Error::<T>::UnknownProduct)?;
 
-		let attribute = Attribute::<T>::get((collection, maybe_item, &namespace, &key));
+		let attribute = Attribute::<T>::get((product_id, maybe_device_id, &namespace, &key));
 		let attribute_exists = attribute.is_some();
 		if !attribute_exists {
-			collection_details.attributes.saturating_inc();
+			product.attributes_count.saturating_inc();
 		}
 
 		let old_deposit =
@@ -92,7 +92,7 @@ impl<T: Config> Pallet<T> {
 
 		let mut deposit = Zero::zero();
 		// disabled DepositRequired setting only affects the CollectionOwner namespace
-		if collection_config.is_setting_enabled(ProductSetting::DepositRequired) ||
+		if product_config.is_setting_enabled(ProductSetting::DepositRequired) ||
 			namespace != AttributeNamespace::ProductOwner
 		{
 			deposit = T::DepositPerByte::get()
@@ -100,15 +100,15 @@ impl<T: Config> Pallet<T> {
 				.saturating_add(T::AttributeDepositBase::get());
 		}
 
-		let is_collection_owner_namespace = namespace == AttributeNamespace::ProductOwner;
-		let is_depositor_collection_owner =
-			is_collection_owner_namespace && collection_details.owner == depositor;
+		let is_product_owner_namespace = namespace == AttributeNamespace::ProductOwner;
+		let is_depositor_product_owner =
+			is_product_owner_namespace && product.owner == depositor;
 
 		// NOTE: in the CollectionOwner namespace if the depositor is `None` that means the deposit
 		// was paid by the collection's owner.
 		let old_depositor =
-			if is_collection_owner_namespace && old_deposit.account.is_none() && attribute_exists {
-				Some(collection_details.owner.clone())
+			if is_product_owner_namespace && old_deposit.account.is_none() && attribute_exists {
+				Some(product.owner.clone())
 			} else {
 				old_deposit.account
 			};
@@ -128,24 +128,24 @@ impl<T: Config> Pallet<T> {
 			T::Currency::unreserve(&depositor, old_deposit.amount - deposit);
 		}
 
-		if is_depositor_collection_owner {
+		if is_depositor_product_owner {
 			if !depositor_has_changed {
-				collection_details.owner_deposit.saturating_reduce(old_deposit.amount);
+				product.owner_deposit.saturating_reduce(old_deposit.amount);
 			}
-			collection_details.owner_deposit.saturating_accrue(deposit);
+			product.owner_deposit.saturating_accrue(deposit);
 		}
 
-		let new_deposit_owner = match is_depositor_collection_owner {
+		let new_deposit_owner = match is_depositor_product_owner {
 			true => None,
 			false => Some(depositor),
 		};
 		Attribute::<T>::insert(
-			(&collection, maybe_item, &namespace, &key),
+			(&product_id, maybe_device_id, &namespace, &key),
 			(&value, AttributeDeposit { account: new_deposit_owner, amount: deposit }),
 		);
 
-		Collection::<T>::insert(collection, &collection_details);
-		Self::deposit_event(Event::AttributeSet { collection, maybe_item, key, value, namespace });
+		ProductCollection::<T>::insert(product_id, &product);
+		Self::deposit_event(Event::AttributeSet { product_id, maybe_device_id, key, value, namespace });
 		Ok(())
 	}
 
@@ -167,17 +167,17 @@ impl<T: Config> Pallet<T> {
 	/// - `value`: The value of the attribute. It should be a vector of bytes within the limits
 	///   defined by `T::ValueLimit`.
 	pub(crate) fn do_force_set_attribute(
-        set_as: Option<T::AccountId>,
-        collection: T::ProductId,
-        maybe_item: Option<T::DeviceId>,
-        namespace: AttributeNamespace<T::AccountId>,
-        key: BoundedVec<u8, T::KeyLimit>,
-        value: BoundedVec<u8, T::ValueLimit>,
+		set_as: Option<T::AccountId>,
+		product_id: T::ProductId,
+		maybe_device_id: Option<T::DeviceId>,
+		namespace: AttributeNamespace<T::AccountId>,
+		key: BoundedVec<u8, T::KeyLimit>,
+		value: BoundedVec<u8, T::ValueLimit>,
 	) -> DispatchResult {
-		let mut collection_details =
-			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
+		let mut product =
+			ProductCollection::<T>::get(&product_id).ok_or(Error::<T>::UnknownProduct)?;
 
-		let attribute = Attribute::<T>::get((collection, maybe_item, &namespace, &key));
+		let attribute = Attribute::<T>::get((product_id, maybe_device_id, &namespace, &key));
 		if let Some((_, deposit)) = attribute {
 			if deposit.account != set_as && deposit.amount != Zero::zero() {
 				if let Some(deposit_account) = deposit.account {
@@ -185,15 +185,15 @@ impl<T: Config> Pallet<T> {
 				}
 			}
 		} else {
-			collection_details.attributes.saturating_inc();
+			product.attributes_count.saturating_inc();
 		}
 
 		Attribute::<T>::insert(
-			(&collection, maybe_item, &namespace, &key),
+			(&product_id, maybe_device_id, &namespace, &key),
 			(&value, AttributeDeposit { account: set_as, amount: Zero::zero() }),
 		);
-		Collection::<T>::insert(collection, &collection_details);
-		Self::deposit_event(Event::AttributeSet { collection, maybe_item, key, value, namespace });
+		ProductCollection::<T>::insert(product_id, &product);
+		Self::deposit_event(Event::AttributeSet { product_id, maybe_device_id, key, value, namespace });
 		Ok(())
 	}
 
@@ -211,7 +211,13 @@ impl<T: Config> Pallet<T> {
 		data: PreSignedAttributesOf<T>,
 		signer: T::AccountId,
 	) -> DispatchResult {
-		let PreSignedAttributes { collection, item, attributes, namespace, deadline } = data;
+		let PreSignedAttributes {
+			product_id,
+			device_id,
+			attributes,
+			namespace,
+			deadline
+		} = data;
 
 		ensure!(
 			attributes.len() <= T::MaxAttributesPerCall::get() as usize,
@@ -221,9 +227,9 @@ impl<T: Config> Pallet<T> {
 		let now = frame_system::Pallet::<T>::block_number();
 		ensure!(deadline >= now, Error::<T>::DeadlineExpired);
 
-		let item_details =
-			Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
-		ensure!(item_details.owner == origin, Error::<T>::NoPermission);
+		let device =
+			DeviceCollection::<T>::get(&product_id, &device_id).ok_or(Error::<T>::UnknownDevice)?;
+		ensure!(device.owner == origin, Error::<T>::NoPermission);
 
 		// Only the CollectionOwner and Account() namespaces could be updated in this way.
 		// For the Account() namespace we check and set the approval if it wasn't set before.
@@ -231,12 +237,12 @@ impl<T: Config> Pallet<T> {
 			AttributeNamespace::ProductOwner => {},
 			AttributeNamespace::Account(account) => {
 				ensure!(account == &signer, Error::<T>::NoPermission);
-				let approvals = ItemAttributesApprovalsOf::<T>::get(&collection, &item);
+				let approvals = DeviceAttributesApprovalsOf::<T>::get(&product_id, &device_id);
 				if !approvals.contains(account) {
 					Self::do_approve_item_attributes(
 						origin.clone(),
-						collection,
-						item,
+						product_id,
+						device_id,
 						account.clone(),
 					)?;
 				}
@@ -247,15 +253,15 @@ impl<T: Config> Pallet<T> {
 		for (key, value) in attributes {
 			Self::do_set_attribute(
 				signer.clone(),
-				collection,
-				Some(item),
+				product_id,
+				Some(device_id),
 				namespace.clone(),
 				Self::construct_attribute_key(key)?,
 				Self::construct_attribute_value(value)?,
 				origin.clone(),
 			)?;
 		}
-		Self::deposit_event(Event::PreSignedAttributesSet { collection, item, namespace });
+		Self::deposit_event(Event::PreSignedAttributesSet { product_id, device_id, namespace });
 		Ok(())
 	}
 
@@ -276,13 +282,13 @@ impl<T: Config> Pallet<T> {
 	/// - `key`: The key of the attribute to be cleared. It should be a vector of bytes within the
 	///   limits defined by `T::KeyLimit`.
 	pub(crate) fn do_clear_attribute(
-        maybe_check_origin: Option<T::AccountId>,
-        collection: T::ProductId,
-        maybe_item: Option<T::DeviceId>,
-        namespace: AttributeNamespace<T::AccountId>,
-        key: BoundedVec<u8, T::KeyLimit>,
+		maybe_check_origin: Option<T::AccountId>,
+		product_id: T::ProductId,
+		maybe_device_id: Option<T::DeviceId>,
+		namespace: AttributeNamespace<T::AccountId>,
+		key: BoundedVec<u8, T::KeyLimit>,
 	) -> DispatchResult {
-		let (_, deposit) = Attribute::<T>::take((collection, maybe_item, &namespace, &key))
+		let (_, deposit) = Attribute::<T>::take((product_id, maybe_device_id, &namespace, &key))
 			.ok_or(Error::<T>::AttributeNotFound)?;
 
 		if let Some(check_origin) = &maybe_check_origin {
@@ -290,36 +296,36 @@ impl<T: Config> Pallet<T> {
 			// the same as the `deposit.account` (e.g. the deposit was paid by different account)
 			if deposit.account != maybe_check_origin {
 				ensure!(
-					Self::is_valid_namespace(&check_origin, &namespace, &collection, &maybe_item)?,
+					Self::is_valid_namespace(&check_origin, &namespace, &product_id, &maybe_device_id)?,
 					Error::<T>::NoPermission
 				);
 			}
 
 			// can't clear `CollectionOwner` type attributes if the collection/item is locked
 			match namespace {
-				AttributeNamespace::ProductOwner => match maybe_item {
+				AttributeNamespace::ProductOwner => match maybe_device_id {
 					None => {
-						let collection_config = Self::get_collection_config(&collection)?;
+						let product_config = Self::get_product_config(&product_id)?;
 						ensure!(
-							collection_config
+							product_config
 								.is_setting_enabled(ProductSetting::UnlockedAttributes),
-							Error::<T>::LockedCollectionAttributes
+							Error::<T>::LockedProductAttributes
 						)
 					},
 					Some(item) => {
 						// NOTE: if the item was previously burned, the ItemConfigOf record
 						// might not exist. In that case, we allow to clear the attribute.
-						let maybe_is_locked = Self::get_item_config(&collection, &item)
+						let maybe_is_locked = Self::get_device_config(&product_id, &item)
 							.map_or(None, |c| {
-								Some(c.has_disabled_setting(ItemSetting::UnlockedAttributes))
+								Some(c.has_disabled_setting(DeviceSetting::UnlockedAttributes))
 							});
 						if let Some(is_locked) = maybe_is_locked {
-							ensure!(!is_locked, Error::<T>::LockedItemAttributes);
+							ensure!(!is_locked, Error::<T>::LockedDeviceAttributes);
 							// Only the collection's admin can clear attributes in that namespace.
 							// e.g. in off-chain mints, the attribute's depositor will be the item's
 							// owner, that's why we need to do this extra check.
 							ensure!(
-								Self::has_role(&collection, &check_origin, ProductRole::Admin),
+								Self::has_role(&product_id, &check_origin, ProductRole::Admin),
 								Error::<T>::NoPermission
 							);
 						}
@@ -329,24 +335,24 @@ impl<T: Config> Pallet<T> {
 			};
 		}
 
-		let mut collection_details =
-			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
+		let mut product =
+			ProductCollection::<T>::get(&product_id).ok_or(Error::<T>::UnknownProduct)?;
 
-		collection_details.attributes.saturating_dec();
+		product.attributes_count.saturating_dec();
 
 		match deposit.account {
 			Some(deposit_account) => {
 				T::Currency::unreserve(&deposit_account, deposit.amount);
 			},
 			None if namespace == AttributeNamespace::ProductOwner => {
-				collection_details.owner_deposit.saturating_reduce(deposit.amount);
-				T::Currency::unreserve(&collection_details.owner, deposit.amount);
+				product.owner_deposit.saturating_reduce(deposit.amount);
+				T::Currency::unreserve(&product.owner, deposit.amount);
 			},
 			_ => (),
 		}
 
-		Collection::<T>::insert(collection, &collection_details);
-		Self::deposit_event(Event::AttributeCleared { collection, maybe_item, key, namespace });
+		ProductCollection::<T>::insert(product_id, &product);
+		Self::deposit_event(Event::AttributeCleared { product_id, maybe_device_id, key, namespace });
 
 		Ok(())
 	}
@@ -363,20 +369,20 @@ impl<T: Config> Pallet<T> {
 	/// - `delegate`: The account that is being approved to set attributes on behalf of the item's
 	///   owner.
 	pub(crate) fn do_approve_item_attributes(
-        check_origin: T::AccountId,
-        collection: T::ProductId,
-        item: T::DeviceId,
-        delegate: T::AccountId,
+		check_origin: T::AccountId,
+		product_id: T::ProductId,
+		device_id: T::DeviceId,
+		delegate: T::AccountId,
 	) -> DispatchResult {
-		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
-		ensure!(check_origin == details.owner, Error::<T>::NoPermission);
+		let device = DeviceCollection::<T>::get(&product_id, &device_id).ok_or(Error::<T>::UnknownDevice)?;
+		ensure!(check_origin == device.owner, Error::<T>::NoPermission);
 
-		ItemAttributesApprovalsOf::<T>::try_mutate(collection, item, |approvals| {
+		DeviceAttributesApprovalsOf::<T>::try_mutate(product_id, device_id, |approvals| {
 			approvals
 				.try_insert(delegate.clone())
 				.map_err(|_| Error::<T>::ReachedApprovalLimit)?;
 
-			Self::deposit_event(Event::ItemAttributesApprovalAdded { collection, item, delegate });
+			Self::deposit_event(Event::DeviceAttributesApprovalAdded { product_id, device_id, delegate });
 			Ok(())
 		})
 	}
@@ -398,23 +404,23 @@ impl<T: Config> Pallet<T> {
 	/// - `witness`: The witness containing the number of attributes set by the delegate for the
 	///   item.
 	pub(crate) fn do_cancel_item_attributes_approval(
-        check_origin: T::AccountId,
-        collection: T::ProductId,
-        item: T::DeviceId,
-        delegate: T::AccountId,
-        witness: CancelAttributesApprovalWitness,
+		check_origin: T::AccountId,
+		product_id: T::ProductId,
+		device_id: T::DeviceId,
+		delegate: T::AccountId,
+		witness: CancelAttributesApprovalWitness,
 	) -> DispatchResult {
-		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
-		ensure!(check_origin == details.owner, Error::<T>::NoPermission);
+		let device = DeviceCollection::<T>::get(&product_id, &device_id).ok_or(Error::<T>::UnknownDevice)?;
+		ensure!(check_origin == device.owner, Error::<T>::NoPermission);
 
-		ItemAttributesApprovalsOf::<T>::try_mutate(collection, item, |approvals| {
+		DeviceAttributesApprovalsOf::<T>::try_mutate(product_id, device_id, |approvals| {
 			approvals.remove(&delegate);
 
 			let mut attributes: u32 = 0;
 			let mut deposited: DepositBalanceOf<T> = Zero::zero();
 			for (_, (_, deposit)) in Attribute::<T>::drain_prefix((
-				&collection,
-				Some(item),
+				&product_id,
+				Some(device_id),
 				AttributeNamespace::Account(delegate.clone()),
 			)) {
 				attributes.saturating_inc();
@@ -426,35 +432,33 @@ impl<T: Config> Pallet<T> {
 				T::Currency::unreserve(&delegate, deposited);
 			}
 
-			Self::deposit_event(Event::ItemAttributesApprovalRemoved {
-				collection,
-				item,
-				delegate,
-			});
+			Self::deposit_event(
+				Event::DeviceAttributesApprovalRemoved { product_id, device_id, delegate, }
+			);
 			Ok(())
 		})
 	}
 
 	/// A helper method to check whether an attribute namespace is valid.
 	fn is_valid_namespace(
-        origin: &T::AccountId,
-        namespace: &AttributeNamespace<T::AccountId>,
-        collection: &T::ProductId,
-        maybe_item: &Option<T::DeviceId>,
+		origin: &T::AccountId,
+		namespace: &AttributeNamespace<T::AccountId>,
+		product_id: &T::ProductId,
+		maybe_device_id: &Option<T::DeviceId>,
 	) -> Result<bool, DispatchError> {
 		let mut result = false;
 		match namespace {
 			AttributeNamespace::ProductOwner =>
-				result = Self::has_role(&collection, &origin, ProductRole::Admin),
+				result = Self::has_role(&product_id, &origin, ProductRole::Admin),
 			AttributeNamespace::DeviceOwner =>
-				if let Some(item) = maybe_item {
+				if let Some(device_id) = maybe_device_id {
 					let item_details =
-						Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
+						DeviceCollection::<T>::get(&product_id, &device_id).ok_or(Error::<T>::UnknownDevice)?;
 					result = origin == &item_details.owner
 				},
 			AttributeNamespace::Account(account_id) =>
-				if let Some(item) = maybe_item {
-					let approvals = ItemAttributesApprovalsOf::<T>::get(&collection, &item);
+				if let Some(item) = maybe_device_id {
+					let approvals = DeviceAttributesApprovalsOf::<T>::get(&product_id, &item);
 					result = account_id == origin && approvals.contains(&origin)
 				},
 			_ => (),
@@ -493,13 +497,13 @@ impl<T: Config> Pallet<T> {
 	/// This function returns an [`IncorrectData`](crate::Error::IncorrectData) error if the
 	/// provided pallet attribute is too long.
 	pub fn has_system_attribute(
-        collection: &T::ProductId,
-        item: &T::DeviceId,
-        attribute_key: PalletAttributes,
+		product_id: &T::ProductId,
+		device_id: &T::DeviceId,
+		attribute_key: PalletAttributes,
 	) -> Result<bool, DispatchError> {
 		let attribute = (
-			&collection,
-			Some(item),
+			&product_id,
+			Some(device_id),
 			AttributeNamespace::Pallet,
 			&Self::construct_attribute_key(attribute_key.encode())?,
 		);

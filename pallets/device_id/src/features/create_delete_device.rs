@@ -33,77 +33,77 @@ impl<T: Config> Pallet<T> {
 	/// # Errors
 	///
 	/// This function returns a dispatch error in the following cases:
-	/// - If the collection ID is invalid ([`UnknownCollection`](crate::Error::UnknownCollection)).
+	/// - If the collection ID is invalid ([`UnknownCollection`](crate::Error::UnknownProduct)).
 	/// - If the item already exists in the collection
 	///   ([`AlreadyExists`](crate::Error::AlreadyExists)).
 	/// - If the item configuration already exists
-	///   ([`InconsistentItemConfig`](crate::Error::InconsistentItemConfig)).
+	///   ([`InconsistentItemConfig`](crate::Error::InconsistentDeviceConfig)).
 	/// - If the max supply limit (if configured) for the collection is reached
 	///   ([`MaxSupplyReached`](crate::Error::MaxSupplyReached)).
 	/// - If any error occurs in the `with_details_and_config` closure.
 	pub fn do_mint(
-		collection: T::ProductId,
-		item: T::DeviceId,
+		product_id: T::ProductId,
+		device_id: T::DeviceId,
 		maybe_depositor: Option<T::AccountId>,
 		mint_to: T::AccountId,
-		item_config: DeviceConfig,
-		with_details_and_config: impl FnOnce(
+		device_config: DeviceConfig,
+		with_entry_and_config: impl FnOnce(
 			&ProductEntryFor<T>,
 			&ProductConfig,
 		) -> DispatchResult,
 	) -> DispatchResult {
-		ensure!(!Item::<T>::contains_key(collection, item), Error::<T>::AlreadyExists);
+		ensure!(!DeviceCollection::<T>::contains_key(product_id, device_id), Error::<T>::AlreadyExists);
 
-		Collection::<T>::try_mutate(
-			&collection,
-			|maybe_collection_details| -> DispatchResult {
-				let collection_details =
-					maybe_collection_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
+		ProductCollection::<T>::try_mutate(
+			&product_id,
+			|maybe_product| -> DispatchResult {
+				let product =
+					maybe_product.as_mut().ok_or(Error::<T>::UnknownProduct)?;
 
-				let collection_config = Self::get_collection_config(&collection)?;
-				with_details_and_config(collection_details, &collection_config)?;
+				let product_config = Self::get_product_config(&product_id)?;
+				with_entry_and_config(product, &product_config)?;
 
-				if let Some(max_supply) = collection_config.max_supply {
-					ensure!(collection_details.items < max_supply, Error::<T>::MaxSupplyReached);
+				if let Some(max_supply) = product_config.max_supply {
+					ensure!(product.devices_count < max_supply, Error::<T>::MaxSupplyReached);
 				}
 
-				collection_details.items.saturating_inc();
+				product.devices_count.saturating_inc();
 
-				let collection_config = Self::get_collection_config(&collection)?;
-				let deposit_amount = match collection_config
+				// let collection_config = Self::get_product_config(&product_id)?;
+				let deposit_amount = match product_config
 					.is_setting_enabled(ProductSetting::DepositRequired)
 				{
 					true => T::DeviceEntryDeposit::get(),
 					false => Zero::zero(),
 				};
 				let deposit_account = match maybe_depositor {
-					None => collection_details.owner.clone(),
+					None => product.owner.clone(),
 					Some(depositor) => depositor,
 				};
 
-				let item_owner = mint_to.clone();
-				Account::<T>::insert((&item_owner, &collection, &item), ());
+				let device_owner = mint_to.clone();
+				Account::<T>::insert((&device_owner, &product_id, &device_id), ());
 
-				if let Ok(existing_config) = ItemConfigOf::<T>::try_get(&collection, &item) {
-					ensure!(existing_config == item_config, Error::<T>::InconsistentItemConfig);
+				if let Ok(existing_config) = DeviceConfigOf::<T>::try_get(&product_id, &device_id) {
+					ensure!(existing_config == device_config, Error::<T>::InconsistentDeviceConfig);
 				} else {
-					ItemConfigOf::<T>::insert(&collection, &item, item_config);
-					collection_details.item_configs.saturating_inc();
+					DeviceConfigOf::<T>::insert(&product_id, &device_id, device_config);
+					product.device_configs_count.saturating_inc();
 				}
 
 				T::Currency::reserve(&deposit_account, deposit_amount)?;
 
 				let deposit = DeviceEntryDeposit { account: deposit_account, amount: deposit_amount };
 				let details = DeviceEntry {
-					owner: item_owner,
+					owner: device_owner,
 					deposit,
 				};
-				Item::<T>::insert(&collection, &item, details);
+				DeviceCollection::<T>::insert(&product_id, &device_id, details);
 				Ok(())
 			},
 		)?;
 
-		Self::deposit_event(Event::Issued { collection, item, owner: mint_to });
+		Self::deposit_event(Event::DeviceIssued { product_id, device_id, owner: mint_to });
 		Ok(())
 	}
 
@@ -126,8 +126,8 @@ impl<T: Config> Pallet<T> {
 		signer: T::AccountId,
 	) -> DispatchResult {
 		let PreSignedMint {
-			collection,
-			item,
+			product_id,
+			device_id,
 			attributes,
 			metadata,
 			deadline,
@@ -147,26 +147,26 @@ impl<T: Config> Pallet<T> {
 		ensure!(deadline >= now, Error::<T>::DeadlineExpired);
 
 		ensure!(
-			Self::has_role(&collection, &signer, ProductRole::Issuer),
+			Self::has_role(&product_id, &signer, ProductRole::Issuer),
 			Error::<T>::NoPermission
 		);
 
-		let item_config = DeviceConfig { settings: Self::get_default_item_settings(&collection)? };
+		let item_config = DeviceConfig { settings: Self::get_default_item_settings(&product_id)? };
 		Self::do_mint(
-			collection,
-			item,
+			product_id,
+			device_id,
 			Some(mint_to.clone()),
 			mint_to.clone(),
 			item_config,
 			|_, _| Ok(()),
 		)?;
-		let admin_account = Self::find_account_by_role(&collection, ProductRole::Admin);
+		let admin_account = Self::find_account_by_role(&product_id, ProductRole::Admin);
 		if let Some(admin_account) = admin_account {
 			for (key, value) in attributes {
 				Self::do_set_attribute(
 					admin_account.clone(),
-					collection,
-					Some(item),
+					product_id,
+					Some(device_id),
 					AttributeNamespace::ProductOwner,
 					Self::construct_attribute_key(key)?,
 					Self::construct_attribute_value(value)?,
@@ -176,8 +176,8 @@ impl<T: Config> Pallet<T> {
 			if !metadata.len().is_zero() {
 				Self::do_set_item_metadata(
 					Some(admin_account.clone()),
-					collection,
-					item,
+					product_id,
+					device_id,
 					metadata,
 					Some(mint_to.clone()),
 				)?;
@@ -191,69 +191,69 @@ impl<T: Config> Pallet<T> {
 	/// # Errors
 	///
 	/// This function returns a dispatch error in the following cases:
-	/// - If the collection ID is invalid ([`UnknownCollection`](crate::Error::UnknownCollection)).
-	/// - If the item is locked ([`ItemLocked`](crate::Error::ItemLocked)).
+	/// - If the collection ID is invalid ([`UnknownCollection`](crate::Error::UnknownProduct)).
+	/// - If the item is locked ([`ItemLocked`](crate::Error::DeviceLocked)).
 	pub fn do_burn(
-		collection: T::ProductId,
-		item: T::DeviceId,
-		with_details: impl FnOnce(&DeviceEntryFor<T>) -> DispatchResult,
+		product_id: T::ProductId,
+		device_id: T::DeviceId,
+		with_entry: impl FnOnce(&DeviceEntryFor<T>) -> DispatchResult,
 	) -> DispatchResult {
-		ensure!(!T::Locker::is_locked(collection, item), Error::<T>::ItemLocked);
+		ensure!(!T::Locker::is_locked(product_id, device_id), Error::<T>::DeviceLocked);
 		ensure!(
-			!Self::has_system_attribute(&collection, &item, PalletAttributes::TransferDisabled)?,
-			Error::<T>::ItemLocked
+			!Self::has_system_attribute(&product_id, &device_id, PalletAttributes::TransferDisabled)?,
+			Error::<T>::DeviceLocked
 		);
-		let item_config = Self::get_item_config(&collection, &item)?;
+		let device_config = Self::get_device_config(&product_id, &device_id)?;
 		// NOTE: if item's settings are not empty (e.g. item's metadata is locked)
 		// then we keep the config record and don't remove it
-		let remove_config = !item_config.has_disabled_settings();
-		let owner = Collection::<T>::try_mutate(
-			&collection,
-			|maybe_collection_details| -> Result<T::AccountId, DispatchError> {
-				let collection_details =
-					maybe_collection_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
-				let details = Item::<T>::get(&collection, &item)
-					.ok_or(Error::<T>::UnknownCollection)?;
-				with_details(&details)?;
+		let remove_config = !device_config.has_disabled_settings();
+		let owner = ProductCollection::<T>::try_mutate(
+			&product_id,
+			|maybe_product| -> Result<T::AccountId, DispatchError> {
+				let product =
+					maybe_product.as_mut().ok_or(Error::<T>::UnknownProduct)?;
+				let device = DeviceCollection::<T>::get(&product_id, &device_id)
+					.ok_or(Error::<T>::UnknownProduct)?;
+				with_entry(&device)?;
 
 				// Return the deposit.
-				T::Currency::unreserve(&details.deposit.account, details.deposit.amount);
-				collection_details.items.saturating_dec();
+				T::Currency::unreserve(&device.deposit.account, device.deposit.amount);
+				product.devices_count.saturating_dec();
 
 				if remove_config {
-					collection_details.item_configs.saturating_dec();
+					product.device_configs_count.saturating_dec();
 				}
 
 				// Clear the metadata if it's not locked.
-				if item_config.is_setting_enabled(ItemSetting::UnlockedMetadata) {
-					if let Some(metadata) = ItemMetadataOf::<T>::take(&collection, &item) {
+				if device_config.is_setting_enabled(DeviceSetting::UnlockedMetadata) {
+					if let Some(metadata) = DeviceMetadataOf::<T>::take(&product_id, &device_id) {
 						let depositor_account =
-							metadata.deposit.account.unwrap_or(collection_details.owner.clone());
+							metadata.deposit.account.unwrap_or(product.owner.clone());
 
 						T::Currency::unreserve(&depositor_account, metadata.deposit.amount);
-						collection_details.item_metadata.saturating_dec();
+						product.device_metadata_count.saturating_dec();
 
-						if depositor_account == collection_details.owner {
-							collection_details
+						if depositor_account == product.owner {
+							product
 								.owner_deposit
 								.saturating_reduce(metadata.deposit.amount);
 						}
 					}
 				}
 
-				Ok(details.owner)
+				Ok(device.owner)
 			},
 		)?;
 
-		Item::<T>::remove(&collection, &item);
-		Account::<T>::remove((&owner, &collection, &item));
-		ItemAttributesApprovalsOf::<T>::remove(&collection, &item);
+		DeviceCollection::<T>::remove(&product_id, &device_id);
+		Account::<T>::remove((&owner, &product_id, &device_id));
+		DeviceAttributesApprovalsOf::<T>::remove(&product_id, &device_id);
 
 		if remove_config {
-			ItemConfigOf::<T>::remove(&collection, &item);
+			DeviceConfigOf::<T>::remove(&product_id, &device_id);
 		}
 
-		Self::deposit_event(Event::Burned { collection, item, owner });
+		Self::deposit_event(Event::DeviceBurned { product_id, device_id, owner });
 		Ok(())
 	}
 }

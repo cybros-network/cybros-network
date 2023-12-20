@@ -36,22 +36,22 @@ impl<T: Config> Pallet<T> {
 	/// - `lock_settings`: The collection settings to be locked.
 	pub(crate) fn do_lock_collection(
 		origin: T::AccountId,
-		collection: T::ProductId,
+		product_id: T::ProductId,
 		lock_settings: ProductSettings,
 	) -> DispatchResult {
-		ensure!(Self::collection_owner(collection) == Some(origin), Error::<T>::NoPermission);
+		ensure!(Self::collection_owner(product_id) == Some(origin), Error::<T>::NoPermission);
 		ensure!(
 			!lock_settings.is_disabled(ProductSetting::DepositRequired),
 			Error::<T>::WrongSetting
 		);
-		CollectionConfigOf::<T>::try_mutate(collection, |maybe_config| {
+		ProductConfigOf::<T>::try_mutate(product_id, |maybe_config| {
 			let config = maybe_config.as_mut().ok_or(Error::<T>::NoConfig)?;
 
 			for setting in lock_settings.get_disabled() {
 				config.disable_setting(setting);
 			}
 
-			Self::deposit_event(Event::<T>::CollectionLocked { collection });
+			Self::deposit_event(Event::<T>::ProductLocked { product_id });
 			Ok(())
 		})
 	}
@@ -67,22 +67,22 @@ impl<T: Config> Pallet<T> {
 	/// - `collection`: The identifier of the collection to which the item belongs.
 	/// - `item`: The identifier of the item to be locked for transfer.
 	pub(crate) fn do_lock_item_transfer(
-        origin: T::AccountId,
-        collection: T::ProductId,
-        item: T::DeviceId,
+		origin: T::AccountId,
+		product_id: T::ProductId,
+		device_id: T::DeviceId,
 	) -> DispatchResult {
 		ensure!(
-			Self::has_role(&collection, &origin, ProductRole::Freezer),
+			Self::has_role(&product_id, &origin, ProductRole::Freezer),
 			Error::<T>::NoPermission
 		);
 
-		let mut config = Self::get_item_config(&collection, &item)?;
-		if !config.has_disabled_setting(ItemSetting::Transferable) {
-			config.disable_setting(ItemSetting::Transferable);
+		let mut config = Self::get_device_config(&product_id, &device_id)?;
+		if !config.has_disabled_setting(DeviceSetting::Transferable) {
+			config.disable_setting(DeviceSetting::Transferable);
 		}
-		ItemConfigOf::<T>::insert(&collection, &item, config);
+		DeviceConfigOf::<T>::insert(&product_id, &device_id, config);
 
-		Self::deposit_event(Event::<T>::ItemTransferLocked { collection, item });
+		Self::deposit_event(Event::<T>::DeviceTransferLocked { product_id, device_id });
 		Ok(())
 	}
 
@@ -97,22 +97,22 @@ impl<T: Config> Pallet<T> {
 	/// - `collection`: The identifier of the collection to which the item belongs.
 	/// - `item`: The identifier of the item to be unlocked for transfer.
 	pub(crate) fn do_unlock_item_transfer(
-        origin: T::AccountId,
-        collection: T::ProductId,
-        item: T::DeviceId,
+		origin: T::AccountId,
+		product_id: T::ProductId,
+		device_id: T::DeviceId,
 	) -> DispatchResult {
 		ensure!(
-			Self::has_role(&collection, &origin, ProductRole::Freezer),
+			Self::has_role(&product_id, &origin, ProductRole::Freezer),
 			Error::<T>::NoPermission
 		);
 
-		let mut config = Self::get_item_config(&collection, &item)?;
-		if config.has_disabled_setting(ItemSetting::Transferable) {
-			config.enable_setting(ItemSetting::Transferable);
+		let mut config = Self::get_device_config(&product_id, &device_id)?;
+		if config.has_disabled_setting(DeviceSetting::Transferable) {
+			config.enable_setting(DeviceSetting::Transferable);
 		}
-		ItemConfigOf::<T>::insert(&collection, &item, config);
+		DeviceConfigOf::<T>::insert(&product_id, &device_id, config);
 
-		Self::deposit_event(Event::<T>::ItemTransferUnlocked { collection, item });
+		Self::deposit_event(Event::<T>::DeviceTransferUnlocked { product_id, device_id });
 		Ok(())
 	}
 
@@ -132,32 +132,32 @@ impl<T: Config> Pallet<T> {
 	/// - `lock_metadata`: A boolean indicating whether to lock the metadata of the item.
 	/// - `lock_attributes`: A boolean indicating whether to lock the attributes of the item.
 	pub(crate) fn do_lock_item_properties(
-        maybe_check_origin: Option<T::AccountId>,
-        collection: T::ProductId,
-        item: T::DeviceId,
-        lock_metadata: bool,
-        lock_attributes: bool,
+		maybe_check_origin: Option<T::AccountId>,
+		product_id: T::ProductId,
+		device_id: T::DeviceId,
+		lock_metadata: bool,
+		lock_attributes: bool,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, ProductRole::Admin),
+				Self::has_role(&product_id, &check_origin, ProductRole::Admin),
 				Error::<T>::NoPermission
 			);
 		}
 
-		ItemConfigOf::<T>::try_mutate(collection, item, |maybe_config| {
-			let config = maybe_config.as_mut().ok_or(Error::<T>::UnknownItem)?;
+		DeviceConfigOf::<T>::try_mutate(product_id, device_id, |maybe_config| {
+			let config = maybe_config.as_mut().ok_or(Error::<T>::UnknownDevice)?;
 
 			if lock_metadata {
-				config.disable_setting(ItemSetting::UnlockedMetadata);
+				config.disable_setting(DeviceSetting::UnlockedMetadata);
 			}
 			if lock_attributes {
-				config.disable_setting(ItemSetting::UnlockedAttributes);
+				config.disable_setting(DeviceSetting::UnlockedAttributes);
 			}
 
-			Self::deposit_event(Event::<T>::ItemPropertiesLocked {
-				collection,
-				item,
+			Self::deposit_event(Event::<T>::DevicePropertiesLocked {
+				product_id,
+				device_id,
 				lock_metadata,
 				lock_attributes,
 			});

@@ -36,17 +36,17 @@ impl<T: Config> Pallet<T> {
 	/// `Some(account)`, but other roles can only be updated by the root or an account with an
 	/// existing role in the collection.
 	pub(crate) fn do_set_team(
-        maybe_check_owner: Option<T::AccountId>,
-        collection: T::ProductId,
-        issuer: Option<T::AccountId>,
-        admin: Option<T::AccountId>,
-        freezer: Option<T::AccountId>,
+		maybe_check_owner: Option<T::AccountId>,
+		product_id: T::ProductId,
+		issuer: Option<T::AccountId>,
+		admin: Option<T::AccountId>,
+		freezer: Option<T::AccountId>,
 	) -> DispatchResult {
-		Collection::<T>::try_mutate(collection, |maybe_details| {
-			let details = maybe_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
+		ProductCollection::<T>::try_mutate(product_id, |maybe_product| {
+			let product = maybe_product.as_mut().ok_or(Error::<T>::UnknownProduct)?;
 			let is_root = maybe_check_owner.is_none();
 			if let Some(check_origin) = maybe_check_owner {
-				ensure!(check_origin == details.owner, Error::<T>::NoPermission);
+				ensure!(check_origin == product.owner, Error::<T>::NoPermission);
 			}
 
 			let roles_map = [
@@ -60,7 +60,7 @@ impl<T: Config> Pallet<T> {
 				for (account, role) in roles_map.iter() {
 					if account.is_some() {
 						ensure!(
-							Self::find_account_by_role(&collection, *role).is_some(),
+							Self::find_account_by_role(&product_id, *role).is_some(),
 							Error::<T>::NoPermission
 						);
 					}
@@ -75,14 +75,14 @@ impl<T: Config> Pallet<T> {
 			let account_to_role = Self::group_roles_by_account(roles);
 
 			// Delete the previous records.
-			Self::clear_roles(&collection)?;
+			Self::clear_roles(&product_id)?;
 
 			// Insert new records.
 			for (account, roles) in account_to_role {
-				CollectionRoleOf::<T>::insert(&collection, &account, roles);
+				ProductRoleOf::<T>::insert(&product_id, &account, roles);
 			}
 
-			Self::deposit_event(Event::TeamChanged { collection, issuer, admin, freezer });
+			Self::deposit_event(Event::ProductTeamChanged { product_id, issuer, admin, freezer });
 			Ok(())
 		})
 	}
@@ -94,9 +94,9 @@ impl<T: Config> Pallet<T> {
 	/// This function clears all the roles associated with the given `collection_id`. It throws an
 	/// error if some of the roles were left in storage, indicating that the maximum number of roles
 	/// may need to be adjusted.
-	pub(crate) fn clear_roles(collection_id: &T::ProductId) -> Result<(), DispatchError> {
-		let res = CollectionRoleOf::<T>::clear_prefix(
-			&collection_id,
+	pub(crate) fn clear_roles(product_id: &T::ProductId) -> Result<(), DispatchError> {
+		let res = ProductRoleOf::<T>::clear_prefix(
+			&product_id,
 			ProductRoles::max_roles() as u32,
 			None,
 		);
@@ -112,11 +112,11 @@ impl<T: Config> Pallet<T> {
 	///
 	/// Returns `true` if the account has the specified role, `false` otherwise.
 	pub(crate) fn has_role(
-        collection_id: &T::ProductId,
-        account_id: &T::AccountId,
-        role: ProductRole,
+		product_id: &T::ProductId,
+		account_id: &T::AccountId,
+		role: ProductRole,
 	) -> bool {
-		CollectionRoleOf::<T>::get(&collection_id, &account_id)
+		ProductRoleOf::<T>::get(&product_id, &account_id)
 			.map_or(false, |roles| roles.has_role(role))
 	}
 
@@ -127,10 +127,10 @@ impl<T: Config> Pallet<T> {
 	///
 	/// Returns `Some(T::AccountId)` if the record was found, `None` otherwise.
 	pub(crate) fn find_account_by_role(
-        collection_id: &T::ProductId,
-        role: ProductRole,
+		product_id: &T::ProductId,
+		role: ProductRole,
 	) -> Option<T::AccountId> {
-		CollectionRoleOf::<T>::iter_prefix(&collection_id).into_iter().find_map(
+		ProductRoleOf::<T>::iter_prefix(&product_id).into_iter().find_map(
 			|(account, roles)| if roles.has_role(role) { Some(account.clone()) } else { None },
 		)
 	}

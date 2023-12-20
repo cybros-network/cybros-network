@@ -31,46 +31,46 @@ impl<T: Config> Pallet<T> {
 	///
 	/// # Errors
 	///
-	/// This function returns a [`CollectionIdInUse`](crate::Error::CollectionIdInUse) error if the
+	/// This function returns a [`CollectionIdInUse`](crate::Error::ProductIdInUse) error if the
 	/// collection ID is already in use.
 	pub fn do_create_collection(
-		collection: T::ProductId,
+		product_id: T::ProductId,
 		owner: T::AccountId,
 		admin: T::AccountId,
 		config: ProductConfig,
 		deposit: DepositBalanceOf<T>,
 		event: Event<T>,
 	) -> DispatchResult {
-		ensure!(!Collection::<T>::contains_key(collection), Error::<T>::CollectionIdInUse);
+		ensure!(!ProductCollection::<T>::contains_key(product_id), Error::<T>::ProductIdInUse);
 
 		T::Currency::reserve(&owner, deposit)?;
 
-		Collection::<T>::insert(
-            collection,
-            ProductEntry {
+		ProductCollection::<T>::insert(
+			product_id,
+			ProductEntry {
 				owner: owner.clone(),
 				owner_deposit: deposit,
-				items: 0,
-				item_metadata: 0,
-				item_configs: 0,
-				attributes: 0,
+				devices_count: 0,
+				device_metadata_count: 0,
+				device_configs_count: 0,
+				attributes_count: 0,
 			},
 		);
-		CollectionRoleOf::<T>::insert(
-			collection,
+		ProductRoleOf::<T>::insert(
+			product_id,
 			admin,
 			ProductRoles(
 				ProductRole::Admin | ProductRole::Freezer | ProductRole::Issuer,
 			),
 		);
 
-		CollectionConfigOf::<T>::insert(&collection, config);
-		CollectionAccount::<T>::insert(&owner, &collection, ());
+		ProductConfigOf::<T>::insert(&product_id, config);
+		ProductOwnerAccount::<T>::insert(&owner, &product_id, ());
 
 		Self::deposit_event(event);
 
 		if let Some(max_supply) = config.max_supply {
-			Self::deposit_event(Event::CollectionMaxSupplySet { collection, max_supply });
+			Self::deposit_event(Event::ProductMaxSupplySet { product_id, max_supply });
 		}
 
 		Ok(())
@@ -90,45 +90,45 @@ impl<T: Config> Pallet<T> {
 	///
 	/// This function returns a dispatch error in the following cases:
 	/// - If the collection ID is not found
-	///   ([`UnknownCollection`](crate::Error::UnknownCollection)).
+	///   ([`UnknownCollection`](crate::Error::UnknownProduct)).
 	/// - If the provided `maybe_check_owner` does not match the actual owner
 	///   ([`NoPermission`](crate::Error::NoPermission)).
 	/// - If the collection is not empty (contains items)
-	///   ([`CollectionNotEmpty`](crate::Error::CollectionNotEmpty)).
+	///   ([`CollectionNotEmpty`](crate::Error::ProductNotEmpty)).
 	/// - If the `witness` does not match the actual collection details
 	///   ([`BadWitness`](crate::Error::BadWitness)).
 	pub fn do_destroy_collection(
-        collection: T::ProductId,
-        witness: DestroyWitness,
-        maybe_check_owner: Option<T::AccountId>,
+		product_id: T::ProductId,
+		witness: DestroyWitness,
+		maybe_check_owner: Option<T::AccountId>,
 	) -> Result<DestroyWitness, DispatchError> {
-		Collection::<T>::try_mutate_exists(collection, |maybe_details| {
-			let collection_details =
-				maybe_details.take().ok_or(Error::<T>::UnknownCollection)?;
+		ProductCollection::<T>::try_mutate_exists(product_id, |maybe_product| {
+			let product =
+				maybe_product.take().ok_or(Error::<T>::UnknownProduct)?;
 			if let Some(check_owner) = maybe_check_owner {
-				ensure!(collection_details.owner == check_owner, Error::<T>::NoPermission);
+				ensure!(product.owner == check_owner, Error::<T>::NoPermission);
 			}
-			ensure!(collection_details.items == 0, Error::<T>::CollectionNotEmpty);
-			ensure!(collection_details.attributes == witness.attributes, Error::<T>::BadWitness);
+			ensure!(product.devices_count == 0, Error::<T>::ProductNotEmpty);
+			ensure!(product.attributes_count == witness.attributes_count, Error::<T>::BadWitness);
 			ensure!(
-				collection_details.item_metadata == witness.item_metadata,
+				product.device_metadata_count == witness.device_metadata_count,
 				Error::<T>::BadWitness
 			);
 			ensure!(
-				collection_details.item_configs == witness.item_configs,
+				product.device_configs_count == witness.device_configs_count,
 				Error::<T>::BadWitness
 			);
 
-			for (_, metadata) in ItemMetadataOf::<T>::drain_prefix(&collection) {
+			for (_, metadata) in DeviceMetadataOf::<T>::drain_prefix(&product_id) {
 				if let Some(depositor) = metadata.deposit.account {
 					T::Currency::unreserve(&depositor, metadata.deposit.amount);
 				}
 			}
 
-			CollectionMetadataOf::<T>::remove(&collection);
-			Self::clear_roles(&collection)?;
+			ProductMetadataOf::<T>::remove(&product_id);
+			Self::clear_roles(&product_id)?;
 
-			for (_, (_, deposit)) in Attribute::<T>::drain_prefix((&collection,)) {
+			for (_, (_, deposit)) in Attribute::<T>::drain_prefix((&product_id,)) {
 				if !deposit.amount.is_zero() {
 					if let Some(account) = deposit.account {
 						T::Currency::unreserve(&account, deposit.amount);
@@ -136,17 +136,17 @@ impl<T: Config> Pallet<T> {
 				}
 			}
 
-			CollectionAccount::<T>::remove(&collection_details.owner, &collection);
-			T::Currency::unreserve(&collection_details.owner, collection_details.owner_deposit);
-			CollectionConfigOf::<T>::remove(&collection);
-			let _ = ItemConfigOf::<T>::clear_prefix(&collection, witness.item_configs, None);
+			ProductOwnerAccount::<T>::remove(&product.owner, &product_id);
+			T::Currency::unreserve(&product.owner, product.owner_deposit);
+			ProductConfigOf::<T>::remove(&product_id);
+			let _ = DeviceConfigOf::<T>::clear_prefix(&product_id, witness.device_configs_count, None);
 
-			Self::deposit_event(Event::Destroyed { collection });
+			Self::deposit_event(Event::ProductDestroyed { product_id });
 
 			Ok(DestroyWitness {
-				item_metadata: collection_details.item_metadata,
-				item_configs: collection_details.item_configs,
-				attributes: collection_details.attributes,
+				device_metadata_count: product.device_metadata_count,
+				device_configs_count: product.device_configs_count,
+				attributes_count: product.attributes_count,
 			})
 		})
 	}

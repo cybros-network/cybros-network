@@ -39,34 +39,34 @@ impl<T: Config> Pallet<T> {
 	/// - `NoPermission`: The caller does not have the required permission to set the metadata.
 	/// - `DepositExceeded`: The deposit amount exceeds the maximum allowed value.
 	pub(crate) fn do_set_item_metadata(
-        maybe_check_origin: Option<T::AccountId>,
-        collection: T::ProductId,
-        item: T::DeviceId,
-        data: BoundedVec<u8, T::StringLimit>,
-        maybe_depositor: Option<T::AccountId>,
+		maybe_check_origin: Option<T::AccountId>,
+		product_id: T::ProductId,
+		device_id: T::DeviceId,
+		data: BoundedVec<u8, T::StringLimit>,
+		maybe_depositor: Option<T::AccountId>,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, ProductRole::Admin),
+				Self::has_role(&product_id, &check_origin, ProductRole::Admin),
 				Error::<T>::NoPermission
 			);
 		}
 
 		let is_root = maybe_check_origin.is_none();
-		let mut collection_details =
-			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
+		let mut product =
+			ProductCollection::<T>::get(&product_id).ok_or(Error::<T>::UnknownProduct)?;
 
-		let item_config = Self::get_item_config(&collection, &item)?;
+		let device_config = Self::get_device_config(&product_id, &device_id)?;
 		ensure!(
-			is_root || item_config.is_setting_enabled(ItemSetting::UnlockedMetadata),
-			Error::<T>::LockedItemMetadata
+			is_root || device_config.is_setting_enabled(DeviceSetting::UnlockedMetadata),
+			Error::<T>::LockedDeviceMetadata
 		);
 
-		let collection_config = Self::get_collection_config(&collection)?;
+		let product_config = Self::get_product_config(&product_id)?;
 
-		ItemMetadataOf::<T>::try_mutate_exists(collection, item, |metadata| {
+		DeviceMetadataOf::<T>::try_mutate_exists(product_id, device_id, |metadata| {
 			if metadata.is_none() {
-				collection_details.item_metadata.saturating_inc();
+				product.device_metadata_count.saturating_inc();
 			}
 
 			let old_deposit = metadata
@@ -74,15 +74,15 @@ impl<T: Config> Pallet<T> {
 				.map_or(DeviceMetadataDeposit { account: None, amount: Zero::zero() }, |m| m.deposit);
 
 			let mut deposit = Zero::zero();
-			if collection_config.is_setting_enabled(ProductSetting::DepositRequired) && !is_root
+			if product_config.is_setting_enabled(ProductSetting::DepositRequired) && !is_root
 			{
 				deposit = T::DepositPerByte::get()
 					.saturating_mul(((data.len()) as u32).into())
 					.saturating_add(T::MetadataDepositBase::get());
 			}
 
-			let depositor = maybe_depositor.clone().unwrap_or(collection_details.owner.clone());
-			let old_depositor = old_deposit.account.unwrap_or(collection_details.owner.clone());
+			let depositor = maybe_depositor.clone().unwrap_or(product.owner.clone());
+			let old_depositor = old_deposit.account.unwrap_or(product.owner.clone());
 
 			if depositor != old_depositor {
 				T::Currency::unreserve(&old_depositor, old_deposit.amount);
@@ -94,8 +94,8 @@ impl<T: Config> Pallet<T> {
 			}
 
 			if maybe_depositor.is_none() {
-				collection_details.owner_deposit.saturating_accrue(deposit);
-				collection_details.owner_deposit.saturating_reduce(old_deposit.amount);
+				product.owner_deposit.saturating_accrue(deposit);
+				product.owner_deposit.saturating_reduce(old_deposit.amount);
 			}
 
 			*metadata = Some(DeviceMetadata {
@@ -103,8 +103,8 @@ impl<T: Config> Pallet<T> {
 				data: data.clone(),
 			});
 
-			Collection::<T>::insert(&collection, &collection_details);
-			Self::deposit_event(Event::ItemMetadataSet { collection, item, data });
+			ProductCollection::<T>::insert(&product_id, &product);
+			Self::deposit_event(Event::DeviceMetadataSet { product_id, device_id, data });
 			Ok(())
 		})
 	}
@@ -123,41 +123,41 @@ impl<T: Config> Pallet<T> {
 	/// - `LockedItemMetadata`: The metadata for the item is locked and cannot be modified.
 	/// - `NoPermission`: The caller does not have the required permission to clear the metadata.
 	pub(crate) fn do_clear_item_metadata(
-        maybe_check_origin: Option<T::AccountId>,
-        collection: T::ProductId,
-        item: T::DeviceId,
+		maybe_check_origin: Option<T::AccountId>,
+		product_id: T::ProductId,
+		device_id: T::DeviceId,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, ProductRole::Admin),
+				Self::has_role(&product_id, &check_origin, ProductRole::Admin),
 				Error::<T>::NoPermission
 			);
 		}
 
 		let is_root = maybe_check_origin.is_none();
-		let metadata = ItemMetadataOf::<T>::take(collection, item)
+		let metadata = DeviceMetadataOf::<T>::take(product_id, device_id)
 			.ok_or(Error::<T>::MetadataNotFound)?;
-		let mut collection_details =
-			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
+		let mut product =
+			ProductCollection::<T>::get(&product_id).ok_or(Error::<T>::UnknownProduct)?;
 
 		let depositor_account =
-			metadata.deposit.account.unwrap_or(collection_details.owner.clone());
+			metadata.deposit.account.unwrap_or(product.owner.clone());
 
 		// NOTE: if the item was previously burned, the ItemConfigOf record might not exist
-		let is_locked = Self::get_item_config(&collection, &item)
-			.map_or(false, |c| c.has_disabled_setting(ItemSetting::UnlockedMetadata));
+		let is_locked = Self::get_device_config(&product_id, &device_id)
+			.map_or(false, |c| c.has_disabled_setting(DeviceSetting::UnlockedMetadata));
 
-		ensure!(is_root || !is_locked, Error::<T>::LockedItemMetadata);
+		ensure!(is_root || !is_locked, Error::<T>::LockedDeviceMetadata);
 
-		collection_details.item_metadata.saturating_dec();
+		product.device_metadata_count.saturating_dec();
 		T::Currency::unreserve(&depositor_account, metadata.deposit.amount);
 
-		if depositor_account == collection_details.owner {
-			collection_details.owner_deposit.saturating_reduce(metadata.deposit.amount);
+		if depositor_account == product.owner {
+			product.owner_deposit.saturating_reduce(metadata.deposit.amount);
 		}
 
-		Collection::<T>::insert(&collection, &collection_details);
-		Self::deposit_event(Event::ItemMetadataCleared { collection, item });
+		ProductCollection::<T>::insert(&product_id, &product);
+		Self::deposit_event(Event::DeviceMetadataCleared { product_id, device_id });
 
 		Ok(())
 	}
@@ -176,32 +176,32 @@ impl<T: Config> Pallet<T> {
 	///   modified.
 	/// - `NoPermission`: The caller does not have the required permission to set the metadata.
 	pub(crate) fn do_set_collection_metadata(
-        maybe_check_origin: Option<T::AccountId>,
-        collection: T::ProductId,
-        data: BoundedVec<u8, T::StringLimit>,
+		maybe_check_origin: Option<T::AccountId>,
+		product_id: T::ProductId,
+		data: BoundedVec<u8, T::StringLimit>,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, ProductRole::Admin),
+				Self::has_role(&product_id, &check_origin, ProductRole::Admin),
 				Error::<T>::NoPermission
 			);
 		}
 
 		let is_root = maybe_check_origin.is_none();
-		let collection_config = Self::get_collection_config(&collection)?;
+		let product_config = Self::get_product_config(&product_id)?;
 		ensure!(
-			is_root || collection_config.is_setting_enabled(ProductSetting::UnlockedMetadata),
-			Error::<T>::LockedCollectionMetadata
+			is_root || product_config.is_setting_enabled(ProductSetting::UnlockedMetadata),
+			Error::<T>::LockedProductMetadata
 		);
 
 		let mut details =
-			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
+			ProductCollection::<T>::get(&product_id).ok_or(Error::<T>::UnknownProduct)?;
 
-		CollectionMetadataOf::<T>::try_mutate_exists(collection, |metadata| {
+		ProductMetadataOf::<T>::try_mutate_exists(product_id, |metadata| {
 			let old_deposit = metadata.take().map_or(Zero::zero(), |m| m.deposit);
 			details.owner_deposit.saturating_reduce(old_deposit);
 			let mut deposit = Zero::zero();
-			if !is_root && collection_config.is_setting_enabled(ProductSetting::DepositRequired)
+			if !is_root && product_config.is_setting_enabled(ProductSetting::DepositRequired)
 			{
 				deposit = T::DepositPerByte::get()
 					.saturating_mul(((data.len()) as u32).into())
@@ -214,11 +214,11 @@ impl<T: Config> Pallet<T> {
 			}
 			details.owner_deposit.saturating_accrue(deposit);
 
-			Collection::<T>::insert(&collection, details);
+			ProductCollection::<T>::insert(&product_id, details);
 
 			*metadata = Some(ProductMetadata { deposit, data: data.clone() });
 
-			Self::deposit_event(Event::CollectionMetadataSet { collection, data });
+			Self::deposit_event(Event::ProductMetadataSet { product_id, data });
 			Ok(())
 		})
 	}
@@ -237,30 +237,30 @@ impl<T: Config> Pallet<T> {
 	///   modified.
 	/// - `NoPermission`: The caller does not have the required permission to clear the metadata.
 	pub(crate) fn do_clear_collection_metadata(
-        maybe_check_origin: Option<T::AccountId>,
-        collection: T::ProductId,
+		maybe_check_origin: Option<T::AccountId>,
+		product_id: T::ProductId,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, ProductRole::Admin),
+				Self::has_role(&product_id, &check_origin, ProductRole::Admin),
 				Error::<T>::NoPermission
 			);
 		}
 
-		let details =
-			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
-		let collection_config = Self::get_collection_config(&collection)?;
+		let product =
+			ProductCollection::<T>::get(&product_id).ok_or(Error::<T>::UnknownProduct)?;
+		let product_config = Self::get_product_config(&product_id)?;
 
 		ensure!(
 			maybe_check_origin.is_none() ||
-				collection_config.is_setting_enabled(ProductSetting::UnlockedMetadata),
-			Error::<T>::LockedCollectionMetadata
+				product_config.is_setting_enabled(ProductSetting::UnlockedMetadata),
+			Error::<T>::LockedProductMetadata
 		);
 
-		CollectionMetadataOf::<T>::try_mutate_exists(collection, |metadata| {
-			let deposit = metadata.take().ok_or(Error::<T>::UnknownCollection)?.deposit;
-			T::Currency::unreserve(&details.owner, deposit);
-			Self::deposit_event(Event::CollectionMetadataCleared { collection });
+		ProductMetadataOf::<T>::try_mutate_exists(product_id, |metadata| {
+			let deposit = metadata.take().ok_or(Error::<T>::UnknownProduct)?.deposit;
+			T::Currency::unreserve(&product.owner, deposit);
+			Self::deposit_event(Event::ProductMetadataCleared { product_id });
 			Ok(())
 		})
 	}

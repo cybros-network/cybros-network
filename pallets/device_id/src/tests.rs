@@ -43,10 +43,10 @@ fn account(id: u8) -> AccountIdOf<Test> {
 fn items() -> Vec<(AccountIdOf<Test>, u32, u32)> {
 	let mut r: Vec<_> = Account::<Test>::iter().map(|x| x.0).collect();
 	r.sort();
-	let mut s: Vec<_> = Item::<Test>::iter().map(|x| (x.2.owner, x.0, x.1)).collect();
+	let mut s: Vec<_> = DeviceCollection::<Test>::iter().map(|x| (x.2.owner, x.0, x.1)).collect();
 	s.sort();
 	assert_eq!(r, s);
-	for collection in Item::<Test>::iter()
+	for collection in DeviceCollection::<Test>::iter()
 		.map(|x| x.0)
 		.scan(None, |s, item| {
 			if s.map_or(false, |last| last == item) {
@@ -58,17 +58,17 @@ fn items() -> Vec<(AccountIdOf<Test>, u32, u32)> {
 		})
 		.flatten()
 	{
-		let details = Collection::<Test>::get(collection).unwrap();
-		let items = Item::<Test>::iter_prefix(collection).count() as u32;
-		assert_eq!(details.items, items);
+		let details = ProductCollection::<Test>::get(collection).unwrap();
+		let items = DeviceCollection::<Test>::iter_prefix(collection).count() as u32;
+		assert_eq!(details.devices_count, items);
 	}
 	r
 }
 
 fn collections() -> Vec<(AccountIdOf<Test>, u32)> {
-	let mut r: Vec<_> = CollectionAccount::<Test>::iter().map(|x| (x.0, x.1)).collect();
+	let mut r: Vec<_> = ProductOwnerAccount::<Test>::iter().map(|x| (x.0, x.1)).collect();
 	r.sort();
-	let mut s: Vec<_> = Collection::<Test>::iter().map(|x| (x.1.owner, x.0)).collect();
+	let mut s: Vec<_> = ProductCollection::<Test>::iter().map(|x| (x.1.owner, x.0)).collect();
 	s.sort();
 	assert_eq!(r, s);
 	r
@@ -94,7 +94,7 @@ fn attributes(
 }
 
 fn item_attributes_approvals(collection_id: u32, item_id: u32) -> Vec<AccountIdOf<Test>> {
-	let approvals = ItemAttributesApprovalsOf::<Test>::get(collection_id, item_id);
+	let approvals = DeviceAttributesApprovalsOf::<Test>::get(collection_id, item_id);
 	let s: Vec<_> = approvals.into_iter().collect();
 	s
 }
@@ -137,7 +137,7 @@ fn default_item_config() -> DeviceConfig {
 	DeviceConfig { settings: DeviceSettings::all_enabled() }
 }
 
-fn item_config_from_disabled_settings(settings: BitFlags<ItemSetting>) -> DeviceConfig {
+fn item_config_from_disabled_settings(settings: BitFlags<DeviceSetting>) -> DeviceConfig {
 	DeviceConfig { settings: DeviceSettings::from_disabled(settings) }
 }
 
@@ -189,7 +189,7 @@ fn lifecycle_should_work() {
 			bvec![0, 0]
 		));
 		assert_eq!(Balances::reserved_balance(&account(1)), 5);
-		assert!(CollectionMetadataOf::<Test>::contains_key(0));
+		assert!(ProductMetadataOf::<Test>::contains_key(0));
 
 		assert_ok!(DeviceId::force_mint(
 			RuntimeOrigin::signed(account(1)),
@@ -209,9 +209,9 @@ fn lifecycle_should_work() {
 		assert_eq!(Balances::reserved_balance(&account(1)), 7);
 		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 70, account(1)));
 		assert_eq!(items(), vec![(account(1), 0, 70), (account(10), 0, 42), (account(20), 0, 69)]);
-		assert_eq!(Collection::<Test>::get(0).unwrap().items, 3);
-		assert_eq!(Collection::<Test>::get(0).unwrap().item_metadata, 0);
-		assert_eq!(Collection::<Test>::get(0).unwrap().item_configs, 3);
+		assert_eq!(ProductCollection::<Test>::get(0).unwrap().devices_count, 3);
+		assert_eq!(ProductCollection::<Test>::get(0).unwrap().device_metadata_count, 0);
+		assert_eq!(ProductCollection::<Test>::get(0).unwrap().device_configs_count, 3);
 
 		assert_eq!(Balances::reserved_balance(&account(1)), 8);
 		assert_ok!(DeviceId::transfer(RuntimeOrigin::signed(account(1)), 0, 70, account(2)));
@@ -220,17 +220,17 @@ fn lifecycle_should_work() {
 
 		assert_ok!(DeviceId::set_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![42, 42]));
 		assert_eq!(Balances::reserved_balance(&account(1)), 11);
-		assert!(ItemMetadataOf::<Test>::contains_key(0, 42));
+		assert!(DeviceMetadataOf::<Test>::contains_key(0, 42));
 		assert_ok!(DeviceId::set_metadata(RuntimeOrigin::signed(account(1)), 0, 69, bvec![69, 69]));
 		assert_eq!(Balances::reserved_balance(&account(1)), 14);
-		assert!(ItemMetadataOf::<Test>::contains_key(0, 69));
-		assert!(ItemConfigOf::<Test>::contains_key(0, 69));
+		assert!(DeviceMetadataOf::<Test>::contains_key(0, 69));
+		assert!(DeviceConfigOf::<Test>::contains_key(0, 69));
 		let w = DeviceId::get_destroy_witness(&0).unwrap();
-		assert_eq!(w.item_metadata, 2);
-		assert_eq!(w.item_configs, 3);
+		assert_eq!(w.device_metadata_count, 2);
+		assert_eq!(w.device_configs_count, 3);
 		assert_noop!(
 			DeviceId::destroy(RuntimeOrigin::signed(account(1)), 0, w),
-			Error::<Test>::CollectionNotEmpty
+			Error::<Test>::ProductNotEmpty
 		);
 
 		assert_ok!(DeviceId::set_attribute(
@@ -246,20 +246,20 @@ fn lifecycle_should_work() {
 		assert_ok!(DeviceId::burn(RuntimeOrigin::root(), 0, 70));
 
 		let w = DeviceId::get_destroy_witness(&0).unwrap();
-		assert_eq!(w.attributes, 1);
-		assert_eq!(w.item_metadata, 0);
-		assert_eq!(w.item_configs, 0);
+		assert_eq!(w.attributes_count, 1);
+		assert_eq!(w.device_metadata_count, 0);
+		assert_eq!(w.device_configs_count, 0);
 		assert_ok!(DeviceId::destroy(RuntimeOrigin::signed(account(1)), 0, w));
 		assert_eq!(Balances::reserved_balance(&account(1)), 0);
 
-		assert!(!Collection::<Test>::contains_key(0));
-		assert!(!CollectionConfigOf::<Test>::contains_key(0));
-		assert!(!Item::<Test>::contains_key(0, 42));
-		assert!(!Item::<Test>::contains_key(0, 69));
-		assert!(!CollectionMetadataOf::<Test>::contains_key(0));
-		assert!(!ItemMetadataOf::<Test>::contains_key(0, 42));
-		assert!(!ItemMetadataOf::<Test>::contains_key(0, 69));
-		assert!(!ItemConfigOf::<Test>::contains_key(0, 69));
+		assert!(!ProductCollection::<Test>::contains_key(0));
+		assert!(!ProductConfigOf::<Test>::contains_key(0));
+		assert!(!DeviceCollection::<Test>::contains_key(0, 42));
+		assert!(!DeviceCollection::<Test>::contains_key(0, 69));
+		assert!(!ProductMetadataOf::<Test>::contains_key(0));
+		assert!(!DeviceMetadataOf::<Test>::contains_key(0, 42));
+		assert!(!DeviceMetadataOf::<Test>::contains_key(0, 69));
+		assert!(!DeviceConfigOf::<Test>::contains_key(0, 69));
 		assert_eq!(attributes(0), vec![]);
 		assert_eq!(collections(), vec![]);
 		assert_eq!(items(), vec![]);
@@ -276,12 +276,12 @@ fn destroy_with_bad_witness_should_not_work() {
 			collection_config_with_all_settings_enabled()
 		));
 
-		let w = Collection::<Test>::get(0).unwrap().destroy_witness();
+		let w = ProductCollection::<Test>::get(0).unwrap().destroy_witness();
 		assert_noop!(
 			DeviceId::destroy(
 				RuntimeOrigin::signed(account(1)),
 				0,
-				DestroyWitness { item_configs: 1, ..w }
+				DestroyWitness { device_configs_count: 1, ..w }
 			),
 			Error::<Test>::BadWitness
 		);
@@ -305,20 +305,20 @@ fn destroy_should_work() {
 				0,
 				DeviceId::get_destroy_witness(&0).unwrap()
 			),
-			Error::<Test>::CollectionNotEmpty
+			Error::<Test>::ProductNotEmpty
 		);
 		assert_ok!(DeviceId::lock_item_transfer(RuntimeOrigin::signed(account(1)), 0, 42));
 		assert_ok!(DeviceId::burn(RuntimeOrigin::signed(account(2)), 0, 42));
-		assert_eq!(Collection::<Test>::get(0).unwrap().item_configs, 1);
-		assert_eq!(ItemConfigOf::<Test>::iter_prefix(0).count() as u32, 1);
-		assert!(ItemConfigOf::<Test>::contains_key(0, 42));
+		assert_eq!(ProductCollection::<Test>::get(0).unwrap().device_configs_count, 1);
+		assert_eq!(DeviceConfigOf::<Test>::iter_prefix(0).count() as u32, 1);
+		assert!(DeviceConfigOf::<Test>::contains_key(0, 42));
 		assert_ok!(DeviceId::destroy(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			DeviceId::get_destroy_witness(&0).unwrap()
 		));
-		assert!(!ItemConfigOf::<Test>::contains_key(0, 42));
-		assert_eq!(ItemConfigOf::<Test>::iter_prefix(0).count() as u32, 0);
+		assert!(!DeviceConfigOf::<Test>::contains_key(0, 42));
+		assert_eq!(DeviceConfigOf::<Test>::iter_prefix(0).count() as u32, 0);
 	});
 }
 
@@ -380,7 +380,7 @@ fn transfer_should_work() {
 
 		assert_noop!(
 			DeviceId::transfer(RuntimeOrigin::signed(account(1)), collection_id, 42, account(3)),
-			Error::<Test>::ItemsNonTransferable
+			Error::<Test>::DevicesNonTransferable
 		);
 	});
 }
@@ -397,7 +397,7 @@ fn locking_transfer_should_work() {
 		assert_ok!(DeviceId::lock_item_transfer(RuntimeOrigin::signed(account(1)), 0, 42));
 		assert_noop!(
 			DeviceId::transfer(RuntimeOrigin::signed(account(1)), 0, 42, account(2)),
-			Error::<Test>::ItemLocked
+			Error::<Test>::DeviceLocked
 		);
 
 		assert_ok!(DeviceId::unlock_item_transfer(RuntimeOrigin::signed(account(1)), 0, 42));
@@ -408,7 +408,7 @@ fn locking_transfer_should_work() {
 		));
 		assert_noop!(
 			DeviceId::transfer(RuntimeOrigin::signed(account(1)), 0, 42, account(2)),
-			Error::<Test>::ItemsNonTransferable
+			Error::<Test>::DevicesNonTransferable
 		);
 
 		assert_ok!(DeviceId::force_collection_config(
@@ -635,7 +635,7 @@ fn set_collection_metadata_should_work() {
 			bvec![0u8; 20]
 		));
 		assert_eq!(Balances::free_balance(&account(1)), 9);
-		assert!(CollectionMetadataOf::<Test>::contains_key(0));
+		assert!(ProductMetadataOf::<Test>::contains_key(0));
 
 		// Force origin works, too.
 		assert_ok!(DeviceId::set_collection_metadata(RuntimeOrigin::root(), 0, bvec![0u8; 18]));
@@ -673,11 +673,11 @@ fn set_collection_metadata_should_work() {
 		));
 		assert_noop!(
 			DeviceId::set_collection_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![0u8; 15]),
-			Error::<Test>::LockedCollectionMetadata,
+			Error::<Test>::LockedProductMetadata,
 		);
 		assert_noop!(
 			DeviceId::clear_collection_metadata(RuntimeOrigin::signed(account(1)), 0),
-			Error::<Test>::LockedCollectionMetadata
+			Error::<Test>::LockedProductMetadata
 		);
 
 		// Clear Metadata
@@ -692,10 +692,10 @@ fn set_collection_metadata_should_work() {
 		);
 		assert_noop!(
 			DeviceId::clear_collection_metadata(RuntimeOrigin::signed(account(1)), 0),
-			Error::<Test>::LockedCollectionMetadata
+			Error::<Test>::LockedProductMetadata
 		);
 		assert_ok!(DeviceId::clear_collection_metadata(RuntimeOrigin::root(), 0));
-		assert!(!CollectionMetadataOf::<Test>::contains_key(0));
+		assert!(!ProductMetadataOf::<Test>::contains_key(0));
 	});
 }
 
@@ -720,7 +720,7 @@ fn set_item_metadata_should_work() {
 		// Successfully add metadata and take deposit
 		assert_ok!(DeviceId::set_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 20]));
 		assert_eq!(Balances::free_balance(&account(1)), 8);
-		assert!(ItemMetadataOf::<Test>::contains_key(0, 42));
+		assert!(DeviceMetadataOf::<Test>::contains_key(0, 42));
 
 		// Force origin works, too.
 		assert_ok!(DeviceId::set_metadata(RuntimeOrigin::root(), 0, 42, bvec![0u8; 18]));
@@ -748,11 +748,11 @@ fn set_item_metadata_should_work() {
 		));
 		assert_noop!(
 			DeviceId::set_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 15]),
-			Error::<Test>::LockedItemMetadata,
+			Error::<Test>::LockedDeviceMetadata,
 		);
 		assert_noop!(
 			DeviceId::clear_metadata(RuntimeOrigin::signed(account(1)), 0, 42),
-			Error::<Test>::LockedItemMetadata,
+			Error::<Test>::LockedDeviceMetadata,
 		);
 
 		// Clear Metadata
@@ -766,7 +766,7 @@ fn set_item_metadata_should_work() {
 			Error::<Test>::NoPermission,
 		);
 		assert_ok!(DeviceId::clear_metadata(RuntimeOrigin::root(), 0, 42));
-		assert!(!ItemMetadataOf::<Test>::contains_key(0, 42));
+		assert!(!DeviceMetadataOf::<Test>::contains_key(0, 42));
 	});
 }
 
@@ -815,7 +815,7 @@ fn set_collection_owner_attributes_should_work() {
 			]
 		);
 		assert_eq!(Balances::reserved_balance(account(1)), 10);
-		assert_eq!(Collection::<Test>::get(0).unwrap().owner_deposit, 9);
+		assert_eq!(ProductCollection::<Test>::get(0).unwrap().owner_deposit, 9);
 
 		assert_ok!(DeviceId::set_attribute(
 			RuntimeOrigin::signed(account(1)),
@@ -834,7 +834,7 @@ fn set_collection_owner_attributes_should_work() {
 			]
 		);
 		assert_eq!(Balances::reserved_balance(account(1)), 19);
-		assert_eq!(Collection::<Test>::get(0).unwrap().owner_deposit, 18);
+		assert_eq!(ProductCollection::<Test>::get(0).unwrap().owner_deposit, 18);
 
 		assert_ok!(DeviceId::clear_attribute(
 			RuntimeOrigin::signed(account(1)),
@@ -1353,7 +1353,7 @@ fn set_attribute_should_respect_lock() {
 			ProductSettings::from_disabled(ProductSetting::UnlockedAttributes.into())
 		));
 
-		let e = Error::<Test>::LockedCollectionAttributes;
+		let e = Error::<Test>::LockedProductAttributes;
 		assert_noop!(
 			DeviceId::set_attribute(
 				RuntimeOrigin::signed(account(1)),
@@ -1381,7 +1381,7 @@ fn set_attribute_should_respect_lock() {
 			false,
 			true
 		));
-		let e = Error::<Test>::LockedItemAttributes;
+		let e = Error::<Test>::LockedDeviceAttributes;
 		assert_noop!(
 			DeviceId::set_attribute(
 				RuntimeOrigin::signed(account(1)),
@@ -1419,19 +1419,19 @@ fn preserve_config_for_frozen_items() {
 
 		// if the item is not locked/frozen then the config gets deleted on item burn
 		assert_ok!(DeviceId::burn(RuntimeOrigin::signed(account(1)), 0, 1));
-		assert!(!ItemConfigOf::<Test>::contains_key(0, 1));
+		assert!(!DeviceConfigOf::<Test>::contains_key(0, 1));
 
 		// lock the item and ensure the config stays unchanged
 		assert_ok!(DeviceId::lock_item_properties(RuntimeOrigin::signed(account(1)), 0, 0, true, true));
 
 		let expect_config = item_config_from_disabled_settings(
-			ItemSetting::UnlockedAttributes | ItemSetting::UnlockedMetadata,
+			DeviceSetting::UnlockedAttributes | DeviceSetting::UnlockedMetadata,
 		);
-		let config = ItemConfigOf::<Test>::get(0, 0).unwrap();
+		let config = DeviceConfigOf::<Test>::get(0, 0).unwrap();
 		assert_eq!(config, expect_config);
 
 		assert_ok!(DeviceId::burn(RuntimeOrigin::signed(account(1)), 0, 0));
-		let config = ItemConfigOf::<Test>::get(0, 0).unwrap();
+		let config = DeviceConfigOf::<Test>::get(0, 0).unwrap();
 		assert_eq!(config, expect_config);
 
 		// can't mint with the different config
@@ -1443,7 +1443,7 @@ fn preserve_config_for_frozen_items() {
 				account(2),
 				default_item_config()
 			),
-			Error::<Test>::InconsistentItemConfig
+			Error::<Test>::InconsistentDeviceConfig
 		);
 
 		assert_ok!(DeviceId::update_mint_settings(
@@ -1451,7 +1451,7 @@ fn preserve_config_for_frozen_items() {
 			0,
 			MintSettings {
 				default_device_settings: DeviceSettings::from_disabled(
-					ItemSetting::UnlockedAttributes | ItemSetting::UnlockedMetadata
+					DeviceSetting::UnlockedAttributes | DeviceSetting::UnlockedMetadata
 				),
 				..Default::default()
 			}
@@ -1539,15 +1539,15 @@ fn force_update_collection_should_work() {
 			Some(account(4)),
 		));
 		assert_eq!(
-			CollectionRoleOf::<Test>::get(0, account(2)).unwrap(),
+			ProductRoleOf::<Test>::get(0, account(2)).unwrap(),
 			ProductRoles(ProductRole::Issuer.into())
 		);
 		assert_eq!(
-			CollectionRoleOf::<Test>::get(0, account(3)).unwrap(),
+			ProductRoleOf::<Test>::get(0, account(3)).unwrap(),
 			ProductRoles(ProductRole::Admin.into())
 		);
 		assert_eq!(
-			CollectionRoleOf::<Test>::get(0, account(4)).unwrap(),
+			ProductRoleOf::<Test>::get(0, account(4)).unwrap(),
 			ProductRoles(ProductRole::Freezer.into())
 		);
 
@@ -1560,11 +1560,11 @@ fn force_update_collection_should_work() {
 		));
 
 		assert_eq!(
-			CollectionRoleOf::<Test>::get(0, account(2)).unwrap(),
+			ProductRoleOf::<Test>::get(0, account(2)).unwrap(),
 			ProductRoles(ProductRole::Admin.into())
 		);
 		assert_eq!(
-			CollectionRoleOf::<Test>::get(0, account(3)).unwrap(),
+			ProductRoleOf::<Test>::get(0, account(3)).unwrap(),
 			ProductRoles(ProductRole::Issuer | ProductRole::Freezer)
 		);
 	});
@@ -1589,7 +1589,7 @@ fn burn_works() {
 
 		assert_noop!(
 			DeviceId::burn(RuntimeOrigin::signed(account(5)), 0, 42),
-			Error::<Test>::UnknownItem
+			Error::<Test>::UnknownDevice
 		);
 
 		assert_ok!(DeviceId::force_mint(
@@ -1632,9 +1632,9 @@ fn max_supply_should_work() {
 			user_id.clone(),
 			default_collection_config()
 		));
-		assert_eq!(CollectionConfigOf::<Test>::get(collection_id).unwrap().max_supply, None);
-		assert!(!events().contains(&Event::<Test>::CollectionMaxSupplySet {
-			collection: collection_id,
+		assert_eq!(ProductConfigOf::<Test>::get(collection_id).unwrap().max_supply, None);
+		assert!(!events().contains(&Event::<Test>::ProductMaxSupplySet {
+			product_id: collection_id,
 			max_supply,
 		}));
 
@@ -1644,12 +1644,12 @@ fn max_supply_should_work() {
 			max_supply
 		));
 		assert_eq!(
-			CollectionConfigOf::<Test>::get(collection_id).unwrap().max_supply,
+			ProductConfigOf::<Test>::get(collection_id).unwrap().max_supply,
 			Some(max_supply)
 		);
 
-		assert!(events().contains(&Event::<Test>::CollectionMaxSupplySet {
-			collection: collection_id,
+		assert!(events().contains(&Event::<Test>::ProductMaxSupplySet {
+			product_id: collection_id,
 			max_supply,
 		}));
 
@@ -1703,11 +1703,11 @@ fn max_supply_should_work() {
 			ProductConfig { max_supply: Some(max_supply), ..default_collection_config() }
 		));
 		assert_eq!(
-			CollectionConfigOf::<Test>::get(collection_id).unwrap().max_supply,
+			ProductConfigOf::<Test>::get(collection_id).unwrap().max_supply,
 			Some(max_supply)
 		);
-		assert!(events().contains(&Event::<Test>::CollectionMaxSupplySet {
-			collection: collection_id,
+		assert!(events().contains(&Event::<Test>::ProductMaxSupplySet {
+			product_id: collection_id,
 			max_supply,
 		}));
 	});
@@ -1732,7 +1732,7 @@ fn mint_settings_should_work() {
 			user_id.clone()
 		));
 		assert_eq!(
-			ItemConfigOf::<Test>::get(collection_id, item_id)
+			DeviceConfigOf::<Test>::get(collection_id, item_id)
 				.unwrap()
 				.settings
 				.get_disabled(),
@@ -1746,7 +1746,7 @@ fn mint_settings_should_work() {
 			ProductConfig {
 				mint_settings: MintSettings {
 					default_device_settings: DeviceSettings::from_disabled(
-						ItemSetting::Transferable | ItemSetting::UnlockedMetadata
+						DeviceSetting::Transferable | DeviceSetting::UnlockedMetadata
 					),
 					..Default::default()
 				},
@@ -1760,11 +1760,11 @@ fn mint_settings_should_work() {
 			user_id.clone()
 		));
 		assert_eq!(
-			ItemConfigOf::<Test>::get(collection_id, item_id)
+			DeviceConfigOf::<Test>::get(collection_id, item_id)
 				.unwrap()
 				.settings
 				.get_disabled(),
-			DeviceSettings::from_disabled(ItemSetting::Transferable | ItemSetting::UnlockedMetadata)
+			DeviceSettings::from_disabled(DeviceSetting::Transferable | DeviceSetting::UnlockedMetadata)
 				.get_disabled()
 		);
 	});
@@ -1778,7 +1778,7 @@ fn various_collection_settings() {
 			collection_config_from_disabled_settings(ProductSetting::TransferableItems.into());
 		assert_ok!(DeviceId::force_create(RuntimeOrigin::root(), account(1), config));
 
-		let config = CollectionConfigOf::<Test>::get(0).unwrap();
+		let config = ProductConfigOf::<Test>::get(0).unwrap();
 		assert!(!config.is_setting_enabled(ProductSetting::TransferableItems));
 		assert!(config.is_setting_enabled(ProductSetting::UnlockedMetadata));
 
@@ -1788,7 +1788,7 @@ fn various_collection_settings() {
 		);
 		assert_ok!(DeviceId::force_create(RuntimeOrigin::root(), account(1), config));
 
-		let config = CollectionConfigOf::<Test>::get(1).unwrap();
+		let config = ProductConfigOf::<Test>::get(1).unwrap();
 		assert!(!config.is_setting_enabled(ProductSetting::TransferableItems));
 		assert!(!config.is_setting_enabled(ProductSetting::UnlockedMetadata));
 
@@ -1833,7 +1833,7 @@ fn collection_locking_should_work() {
 			lock_config.settings,
 		));
 
-		let stored_config = CollectionConfigOf::<Test>::get(collection_id).unwrap();
+		let stored_config = ProductConfigOf::<Test>::get(collection_id).unwrap();
 		assert_eq!(stored_config, lock_config);
 
 		// validate full lock
@@ -1843,7 +1843,7 @@ fn collection_locking_should_work() {
 			ProductSettings::from_disabled(ProductSetting::UnlockedMetadata.into()),
 		));
 
-		let stored_config = CollectionConfigOf::<Test>::get(collection_id).unwrap();
+		let stored_config = ProductConfigOf::<Test>::get(collection_id).unwrap();
 		let full_lock_config = collection_config_from_disabled_settings(
 			ProductSetting::TransferableItems |
 				ProductSetting::UnlockedMetadata |
@@ -1957,8 +1957,8 @@ fn validate_signature() {
 		let user_1_signer = MultiSigner::Sr25519(user_1_pair.public());
 		let user_1 = user_1_signer.clone().into_account();
 		let mint_data: PreSignedMint<u32, u32, AccountId, u32> = PreSignedMint {
-			collection: 0,
-			item: 0,
+			product_id: 0,
+			device_id: 0,
 			attributes: vec![],
 			metadata: vec![],
 			only_account: None,
@@ -1986,8 +1986,8 @@ fn pre_signed_mints_should_work() {
 		let user_1_signer = MultiSigner::Sr25519(user_1_pair.public());
 		let user_1 = user_1_signer.clone().into_account();
 		let mint_data = PreSignedMint {
-			collection: 0,
-			item: 0,
+			product_id: 0,
+			device_id: 0,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3])],
 			metadata: vec![0, 1],
 			only_account: None,
@@ -2013,7 +2013,7 @@ fn pre_signed_mints_should_work() {
 			user_1.clone(),
 		));
 		assert_eq!(items(), vec![(user_2.clone(), 0, 0)]);
-		let metadata = ItemMetadataOf::<Test>::get(0, 0).unwrap();
+		let metadata = DeviceMetadataOf::<Test>::get(0, 0).unwrap();
 		assert_eq!(
 			metadata.deposit,
 			DeviceMetadataDeposit { account: Some(user_2.clone()), amount: 3 }
@@ -2056,8 +2056,8 @@ fn pre_signed_mints_should_work() {
 
 		// validate the `only_account` field
 		let mint_data = PreSignedMint {
-			collection: 0,
-			item: 0,
+			product_id: 0,
+			device_id: 0,
 			attributes: vec![],
 			metadata: vec![],
 			only_account: Some(account(2)),
@@ -2103,8 +2103,8 @@ fn pre_signed_mints_should_work() {
 
 		// validate the collection
 		let mint_data = PreSignedMint {
-			collection: 1,
-			item: 0,
+			product_id: 1,
+			device_id: 0,
 			attributes: vec![],
 			metadata: vec![],
 			only_account: Some(account(2)),
@@ -2125,8 +2125,8 @@ fn pre_signed_mints_should_work() {
 
 		// validate max attributes limit
 		let mint_data = PreSignedMint {
-			collection: 0,
-			item: 0,
+			product_id: 0,
+			device_id: 0,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3]), (vec![2], vec![3])],
 			metadata: vec![0, 1],
 			only_account: None,
@@ -2176,8 +2176,8 @@ fn pre_signed_attributes_should_work() {
 
 		// validate the CollectionOwner namespace
 		let pre_signed_data = PreSignedAttributes {
-			collection: 0,
-			item: 0,
+			product_id: 0,
+			device_id: 0,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3])],
 			namespace: AttributeNamespace::ProductOwner,
 			deadline: 10000000,
@@ -2235,8 +2235,8 @@ fn pre_signed_attributes_should_work() {
 		// validate we don't partially modify the state
 		assert_eq!(item_attributes_approvals(collection_id, item_id), vec![]);
 		let pre_signed_data = PreSignedAttributes {
-			collection: 0,
-			item: 0,
+			product_id: 0,
+			device_id: 0,
 			attributes: vec![(vec![0], vec![1]), (vec![2; 51], vec![3])],
 			namespace: AttributeNamespace::Account(user_3.clone()),
 			deadline: 10000000,
@@ -2268,8 +2268,8 @@ fn pre_signed_attributes_should_work() {
 
 		// validate the Account namespace
 		let pre_signed_data = PreSignedAttributes {
-			collection: 0,
-			item: 0,
+			product_id: 0,
+			device_id: 0,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3])],
 			namespace: AttributeNamespace::Account(user_3.clone()),
 			deadline: 10000000,
@@ -2356,8 +2356,8 @@ fn pre_signed_attributes_should_work() {
 		// can't update the CollectionOwner namespace if the signer is not an owner of that
 		// collection
 		let pre_signed_data = PreSignedAttributes {
-			collection: 0,
-			item: 0,
+			product_id: 0,
+			device_id: 0,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3])],
 			namespace: AttributeNamespace::ProductOwner,
 			deadline: 10000000,
@@ -2390,8 +2390,8 @@ fn pre_signed_attributes_should_work() {
 
 		// validate item & collection
 		let pre_signed_data = PreSignedAttributes {
-			collection: 1,
-			item: 1,
+			product_id: 1,
+			device_id: 1,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3])],
 			namespace: AttributeNamespace::ProductOwner,
 			deadline: 10000000,
@@ -2406,13 +2406,13 @@ fn pre_signed_attributes_should_work() {
 				signature.clone(),
 				user_1.clone(),
 			),
-			Error::<Test>::UnknownItem
+			Error::<Test>::UnknownDevice
 		);
 
 		// validate max attributes limit
 		let pre_signed_data = PreSignedAttributes {
-			collection: 1,
-			item: 1,
+			product_id: 1,
+			device_id: 1,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3]), (vec![2], vec![3])],
 			namespace: AttributeNamespace::ProductOwner,
 			deadline: 10000000,
@@ -2432,8 +2432,8 @@ fn pre_signed_attributes_should_work() {
 
 		// validate the attribute's value length
 		let pre_signed_data = PreSignedAttributes {
-			collection: 0,
-			item: 0,
+			product_id: 0,
+			device_id: 0,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3; 51])],
 			namespace: AttributeNamespace::ProductOwner,
 			deadline: 10000000,
@@ -2486,7 +2486,7 @@ fn basic_create_collection_with_id_should_work() {
 				&account(2),
 				&collection_config_with_all_settings_enabled(),
 			),
-			Error::<Test>::CollectionIdInUse
+			Error::<Test>::ProductIdInUse
 		);
 	});
 }

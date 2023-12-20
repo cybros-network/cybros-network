@@ -16,8 +16,8 @@
 // limitations under the License.
 
 pub mod attributes;
-pub mod create_delete_collection;
-pub mod create_delete_item;
+pub mod create_delete_product;
+pub mod create_delete_device;
 pub mod lock;
 pub mod metadata;
 pub mod roles;

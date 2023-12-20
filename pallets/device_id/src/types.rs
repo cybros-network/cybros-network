@@ -74,13 +74,13 @@ pub struct ProductEntry<AccountId, DepositBalance> {
 	/// collection. Used by `destroy`.
 	pub(super) owner_deposit: DepositBalance,
 	/// The total number of outstanding items of this collection.
-	pub(super) items: u32,
+	pub(super) devices_count: u32,
 	/// The total number of outstanding item metadata of this collection.
-	pub(super) item_metadata: u32,
+	pub(super) device_metadata_count: u32,
 	/// The total number of outstanding item configs of this collection.
-	pub(super) item_configs: u32,
+	pub(super) device_configs_count: u32,
 	/// The total number of attributes for this collection.
-	pub(super) attributes: u32,
+	pub(super) attributes_count: u32,
 }
 
 /// Witness data for the destroy transactions.
@@ -88,21 +88,21 @@ pub struct ProductEntry<AccountId, DepositBalance> {
 pub struct DestroyWitness {
 	/// The total number of items in this collection that have outstanding item metadata.
 	#[codec(compact)]
-	pub item_metadata: u32,
+	pub device_metadata_count: u32,
 	/// The total number of outstanding item configs of this collection.
 	#[codec(compact)]
-	pub item_configs: u32,
+	pub device_configs_count: u32,
 	/// The total number of attributes for this collection.
 	#[codec(compact)]
-	pub attributes: u32,
+	pub attributes_count: u32,
 }
 
 impl<AccountId, DepositBalance> ProductEntry<AccountId, DepositBalance> {
 	pub fn destroy_witness(&self) -> DestroyWitness {
 		DestroyWitness {
-			item_metadata: self.item_metadata,
-			item_configs: self.item_configs,
-			attributes: self.attributes,
+			device_metadata_count: self.device_metadata_count,
+			device_configs_count: self.device_configs_count,
+			attributes_count: self.attributes_count,
 		}
 	}
 }
@@ -299,7 +299,7 @@ impl ProductConfig {
 #[bitflags]
 #[repr(u64)]
 #[derive(Copy, Clone, RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
-pub enum ItemSetting {
+pub enum DeviceSetting {
 	/// This item is transferable.
 	Transferable,
 	/// The metadata of this item can be modified.
@@ -310,24 +310,24 @@ pub enum ItemSetting {
 
 /// Wrapper type for `BitFlags<ItemSetting>` that implements `Codec`.
 #[derive(Clone, Copy, PartialEq, Eq, Default, RuntimeDebug)]
-pub struct DeviceSettings(pub BitFlags<ItemSetting>);
+pub struct DeviceSettings(pub BitFlags<DeviceSetting>);
 
 impl DeviceSettings {
 	pub fn all_enabled() -> Self {
 		Self(BitFlags::EMPTY)
 	}
-	pub fn get_disabled(&self) -> BitFlags<ItemSetting> {
+	pub fn get_disabled(&self) -> BitFlags<DeviceSetting> {
 		self.0
 	}
-	pub fn is_disabled(&self, setting: ItemSetting) -> bool {
+	pub fn is_disabled(&self, setting: DeviceSetting) -> bool {
 		self.0.contains(setting)
 	}
-	pub fn from_disabled(settings: BitFlags<ItemSetting>) -> Self {
+	pub fn from_disabled(settings: BitFlags<DeviceSetting>) -> Self {
 		Self(settings)
 	}
 }
 
-impl_codec_bitflags!(DeviceSettings, u64, ItemSetting);
+impl_codec_bitflags!(DeviceSettings, u64, DeviceSetting);
 
 /// Item's configuration.
 #[derive(
@@ -339,19 +339,19 @@ pub struct DeviceConfig {
 }
 
 impl DeviceConfig {
-	pub fn is_setting_enabled(&self, setting: ItemSetting) -> bool {
+	pub fn is_setting_enabled(&self, setting: DeviceSetting) -> bool {
 		!self.settings.is_disabled(setting)
 	}
-	pub fn has_disabled_setting(&self, setting: ItemSetting) -> bool {
+	pub fn has_disabled_setting(&self, setting: DeviceSetting) -> bool {
 		self.settings.is_disabled(setting)
 	}
 	pub fn has_disabled_settings(&self) -> bool {
 		!self.settings.get_disabled().is_empty()
 	}
-	pub fn enable_setting(&mut self, setting: ItemSetting) {
+	pub fn enable_setting(&mut self, setting: DeviceSetting) {
 		self.settings.0.remove(setting);
 	}
-	pub fn disable_setting(&mut self, setting: ItemSetting) {
+	pub fn disable_setting(&mut self, setting: DeviceSetting) {
 		self.settings.0.insert(setting);
 	}
 }
@@ -391,11 +391,11 @@ impl ProductRoles {
 impl_codec_bitflags!(ProductRoles, u8, ProductRole);
 
 #[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct PreSignedMint<CollectionId, ItemId, AccountId, Deadline> {
+pub struct PreSignedMint<ProductId, DeviceId, AccountId, Deadline> {
 	/// A collection of the item to be minted.
-	pub(super) collection: CollectionId,
+	pub(super) product_id: ProductId,
 	/// Item's ID.
-	pub(super) item: ItemId,
+	pub(super) device_id: DeviceId,
 	/// Additional item's key-value attributes.
 	pub(super) attributes: Vec<(Vec<u8>, Vec<u8>)>,
 	/// Additional item's metadata.
@@ -407,11 +407,11 @@ pub struct PreSignedMint<CollectionId, ItemId, AccountId, Deadline> {
 }
 
 #[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct PreSignedAttributes<CollectionId, ItemId, AccountId, Deadline> {
+pub struct PreSignedAttributes<ProductId, DeviceId, AccountId, Deadline> {
 	/// Collection's ID.
-	pub(super) collection: CollectionId,
+	pub(super) product_id: ProductId,
 	/// Item's ID.
-	pub(super) item: ItemId,
+	pub(super) device_id: DeviceId,
 	/// Key-value attributes.
 	pub(super) attributes: Vec<(Vec<u8>, Vec<u8>)>,
 	/// Attributes' namespace.
