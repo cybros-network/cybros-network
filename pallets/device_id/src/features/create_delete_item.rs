@@ -42,12 +42,12 @@ impl<T: Config> Pallet<T> {
 	///   ([`MaxSupplyReached`](crate::Error::MaxSupplyReached)).
 	/// - If any error occurs in the `with_details_and_config` closure.
 	pub fn do_mint(
-		collection: T::ProductId,
-		item: T::ItemId,
-		maybe_depositor: Option<T::AccountId>,
-		mint_to: T::AccountId,
-		item_config: ItemConfig,
-		with_details_and_config: impl FnOnce(
+        collection: T::ProductId,
+        item: T::DeviceId,
+        maybe_depositor: Option<T::AccountId>,
+        mint_to: T::AccountId,
+        item_config: ItemConfig,
+        with_details_and_config: impl FnOnce(
 			&CollectionDetailsFor<T>,
 			&CollectionConfig,
 		) -> DispatchResult,
@@ -194,9 +194,9 @@ impl<T: Config> Pallet<T> {
 	/// - If the collection ID is invalid ([`UnknownCollection`](crate::Error::UnknownCollection)).
 	/// - If the item is locked ([`ItemLocked`](crate::Error::ItemLocked)).
 	pub fn do_burn(
-		collection: T::ProductId,
-		item: T::ItemId,
-		with_details: impl FnOnce(&ItemDetailsFor<T>) -> DispatchResult,
+        collection: T::ProductId,
+        item: T::DeviceId,
+        with_details: impl FnOnce(&ItemDetailsFor<T>) -> DispatchResult,
 	) -> DispatchResult {
 		ensure!(!T::Locker::is_locked(collection, item), Error::<T>::ItemLocked);
 		ensure!(

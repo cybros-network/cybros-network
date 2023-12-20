@@ -116,7 +116,7 @@ pub mod pallet {
         type ProductId: Member + Parameter + MaxEncodedLen + Copy + Incrementable;
 
         /// The type used to identify a unique item within a collection.
-        type ItemId: Member + Parameter + MaxEncodedLen + Copy;
+        type DeviceId: Member + Parameter + MaxEncodedLen + Copy;
 
         /// The currency mechanism, used for paying for reserves.
         type Currency: ReservableCurrency<Self::AccountId>;
@@ -134,7 +134,7 @@ pub mod pallet {
         >;
 
         /// Locker trait to enable Locking mechanism downstream.
-        type Locker: Locker<Self::ProductId, Self::ItemId>;
+        type Locker: Locker<Self::ProductId, Self::DeviceId>;
 
         /// The basic amount of funds that must be reserved for collection.
         #[pallet::constant]
@@ -189,7 +189,7 @@ pub mod pallet {
 
         #[cfg(feature = "runtime-benchmarks")]
         /// A set of helper functions for benchmarking.
-        type Helper: BenchmarkHelper<Self::ProductId, Self::ItemId>;
+        type Helper: BenchmarkHelper<Self::ProductId, Self::DeviceId>;
 
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -217,7 +217,7 @@ pub mod pallet {
         (
             NMapKey<Blake2_128Concat, T::AccountId>, // owner
             NMapKey<Blake2_128Concat, T::ProductId>,
-            NMapKey<Blake2_128Concat, T::ItemId>,
+            NMapKey<Blake2_128Concat, T::DeviceId>,
         ),
         (),
         OptionQuery,
@@ -256,7 +256,7 @@ pub mod pallet {
         Blake2_128Concat,
         T::ProductId,
         Blake2_128Concat,
-        T::ItemId,
+        T::DeviceId,
         ItemDetails<T::AccountId, ItemDepositOf<T>>,
         OptionQuery,
     >;
@@ -278,7 +278,7 @@ pub mod pallet {
         Blake2_128Concat,
         T::ProductId,
         Blake2_128Concat,
-        T::ItemId,
+        T::DeviceId,
         ItemMetadata<ItemMetadataDepositOf<T>, T::StringLimit>,
         OptionQuery,
     >;
@@ -289,7 +289,7 @@ pub mod pallet {
         _,
         (
             NMapKey<Blake2_128Concat, T::ProductId>,
-            NMapKey<Blake2_128Concat, Option<T::ItemId>>,
+            NMapKey<Blake2_128Concat, Option<T::DeviceId>>,
             NMapKey<Blake2_128Concat, AttributeNamespace<T::AccountId>>,
             NMapKey<Blake2_128Concat, BoundedVec<u8, T::KeyLimit>>,
         ),
@@ -304,7 +304,7 @@ pub mod pallet {
         Blake2_128Concat,
         T::ProductId,
         Blake2_128Concat,
-        T::ItemId,
+        T::DeviceId,
         ItemAttributesApprovals<T>,
         ValueQuery,
     >;
@@ -327,7 +327,7 @@ pub mod pallet {
         Blake2_128Concat,
         T::ProductId,
         Blake2_128Concat,
-        T::ItemId,
+        T::DeviceId,
         ItemConfig,
         OptionQuery,
     >;
@@ -342,24 +342,24 @@ pub mod pallet {
         /// A `collection` was destroyed.
         Destroyed { collection: T::ProductId },
         /// An `item` was issued.
-        Issued { collection: T::ProductId, item: T::ItemId, owner: T::AccountId },
+        Issued { collection: T::ProductId, item: T::DeviceId, owner: T::AccountId },
         /// An `item` was transferred.
         Transferred {
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             from: T::AccountId,
             to: T::AccountId,
         },
         /// An `item` was destroyed.
-        Burned { collection: T::ProductId, item: T::ItemId, owner: T::AccountId },
+        Burned { collection: T::ProductId, item: T::DeviceId, owner: T::AccountId },
         /// An `item` became non-transferable.
-        ItemTransferLocked { collection: T::ProductId, item: T::ItemId },
+        ItemTransferLocked { collection: T::ProductId, item: T::DeviceId },
         /// An `item` became transferable.
-        ItemTransferUnlocked { collection: T::ProductId, item: T::ItemId },
+        ItemTransferUnlocked { collection: T::ProductId, item: T::DeviceId },
         /// `item` metadata or attributes were locked.
         ItemPropertiesLocked {
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             lock_metadata: bool,
             lock_attributes: bool,
         },
@@ -383,15 +383,15 @@ pub mod pallet {
         /// New metadata has been set for an item.
         ItemMetadataSet {
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             data: BoundedVec<u8, T::StringLimit>,
         },
         /// Metadata has been cleared for an item.
-        ItemMetadataCleared { collection: T::ProductId, item: T::ItemId },
+        ItemMetadataCleared { collection: T::ProductId, item: T::DeviceId },
         /// New attribute metadata has been set for a `collection` or `item`.
         AttributeSet {
             collection: T::ProductId,
-            maybe_item: Option<T::ItemId>,
+            maybe_item: Option<T::DeviceId>,
             key: BoundedVec<u8, T::KeyLimit>,
             value: BoundedVec<u8, T::ValueLimit>,
             namespace: AttributeNamespace<T::AccountId>,
@@ -399,20 +399,20 @@ pub mod pallet {
         /// Attribute metadata has been cleared for a `collection` or `item`.
         AttributeCleared {
             collection: T::ProductId,
-            maybe_item: Option<T::ItemId>,
+            maybe_item: Option<T::DeviceId>,
             key: BoundedVec<u8, T::KeyLimit>,
             namespace: AttributeNamespace<T::AccountId>,
         },
         /// A new approval to modify item attributes was added.
         ItemAttributesApprovalAdded {
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             delegate: T::AccountId,
         },
         /// A new approval to modify item attributes was removed.
         ItemAttributesApprovalRemoved {
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             delegate: T::AccountId,
         },
         /// Ownership acceptance has changed for an account.
@@ -426,14 +426,14 @@ pub mod pallet {
         /// New attributes have been set for an `item` of the `collection`.
         PreSignedAttributesSet {
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             namespace: AttributeNamespace<T::AccountId>,
         },
         /// A new attribute in the `Pallet` namespace was set for the `collection` or an `item`
         /// within that `collection`.
         PalletAttributeSet {
             collection: T::ProductId,
-            item: Option<T::ItemId>,
+            item: Option<T::DeviceId>,
             attribute: PalletAttributes,
             value: BoundedVec<u8, T::ValueLimit>,
         },
@@ -667,7 +667,7 @@ pub mod pallet {
         pub fn mint(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             mint_to: AccountIdLookupOf<T>,
         ) -> DispatchResult {
             let caller = ensure_signed(origin)?;
@@ -717,7 +717,7 @@ pub mod pallet {
         pub fn force_mint(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             mint_to: AccountIdLookupOf<T>,
             item_config: ItemConfig,
         ) -> DispatchResult {
@@ -751,7 +751,7 @@ pub mod pallet {
         pub fn burn(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
@@ -784,7 +784,7 @@ pub mod pallet {
         pub fn transfer(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             dest: AccountIdLookupOf<T>,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
@@ -811,7 +811,7 @@ pub mod pallet {
         pub fn lock_item_transfer(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
             Self::do_lock_item_transfer(origin, collection, item)
@@ -832,7 +832,7 @@ pub mod pallet {
         pub fn unlock_item_transfer(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
             Self::do_unlock_item_transfer(origin, collection, item)
@@ -983,7 +983,7 @@ pub mod pallet {
         pub fn lock_item_properties(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             lock_metadata: bool,
             lock_attributes: bool,
         ) -> DispatchResult {
@@ -1026,7 +1026,7 @@ pub mod pallet {
         pub fn set_attribute(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            maybe_item: Option<T::ItemId>,
+            maybe_item: Option<T::DeviceId>,
             namespace: AttributeNamespace<T::AccountId>,
             key: BoundedVec<u8, T::KeyLimit>,
             value: BoundedVec<u8, T::ValueLimit>,
@@ -1063,7 +1063,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             set_as: Option<T::AccountId>,
             collection: T::ProductId,
-            maybe_item: Option<T::ItemId>,
+            maybe_item: Option<T::DeviceId>,
             namespace: AttributeNamespace<T::AccountId>,
             key: BoundedVec<u8, T::KeyLimit>,
             value: BoundedVec<u8, T::ValueLimit>,
@@ -1092,7 +1092,7 @@ pub mod pallet {
         pub fn clear_attribute(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            maybe_item: Option<T::ItemId>,
+            maybe_item: Option<T::DeviceId>,
             namespace: AttributeNamespace<T::AccountId>,
             key: BoundedVec<u8, T::KeyLimit>,
         ) -> DispatchResult {
@@ -1116,7 +1116,7 @@ pub mod pallet {
         pub fn approve_item_attributes(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             delegate: AccountIdLookupOf<T>,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
@@ -1141,7 +1141,7 @@ pub mod pallet {
         pub fn cancel_item_attributes_approval(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             delegate: AccountIdLookupOf<T>,
             witness: CancelAttributesApprovalWitness,
         ) -> DispatchResult {
@@ -1171,7 +1171,7 @@ pub mod pallet {
         pub fn set_metadata(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
             data: BoundedVec<u8, T::StringLimit>,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
@@ -1198,7 +1198,7 @@ pub mod pallet {
         pub fn clear_metadata(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            item: T::ItemId,
+            item: T::DeviceId,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)

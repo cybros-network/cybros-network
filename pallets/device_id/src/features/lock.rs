@@ -67,9 +67,9 @@ impl<T: Config> Pallet<T> {
 	/// - `collection`: The identifier of the collection to which the item belongs.
 	/// - `item`: The identifier of the item to be locked for transfer.
 	pub(crate) fn do_lock_item_transfer(
-		origin: T::AccountId,
-		collection: T::ProductId,
-		item: T::ItemId,
+        origin: T::AccountId,
+        collection: T::ProductId,
+        item: T::DeviceId,
 	) -> DispatchResult {
 		ensure!(
 			Self::has_role(&collection, &origin, CollectionRole::Freezer),
@@ -97,9 +97,9 @@ impl<T: Config> Pallet<T> {
 	/// - `collection`: The identifier of the collection to which the item belongs.
 	/// - `item`: The identifier of the item to be unlocked for transfer.
 	pub(crate) fn do_unlock_item_transfer(
-		origin: T::AccountId,
-		collection: T::ProductId,
-		item: T::ItemId,
+        origin: T::AccountId,
+        collection: T::ProductId,
+        item: T::DeviceId,
 	) -> DispatchResult {
 		ensure!(
 			Self::has_role(&collection, &origin, CollectionRole::Freezer),
@@ -132,11 +132,11 @@ impl<T: Config> Pallet<T> {
 	/// - `lock_metadata`: A boolean indicating whether to lock the metadata of the item.
 	/// - `lock_attributes`: A boolean indicating whether to lock the attributes of the item.
 	pub(crate) fn do_lock_item_properties(
-		maybe_check_origin: Option<T::AccountId>,
-		collection: T::ProductId,
-		item: T::ItemId,
-		lock_metadata: bool,
-		lock_attributes: bool,
+        maybe_check_origin: Option<T::AccountId>,
+        collection: T::ProductId,
+        item: T::DeviceId,
+        lock_metadata: bool,
+        lock_attributes: bool,
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(

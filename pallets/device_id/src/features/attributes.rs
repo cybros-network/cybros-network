@@ -48,7 +48,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_set_attribute(
         origin: T::AccountId,
         collection: T::ProductId,
-        maybe_item: Option<T::ItemId>,
+        maybe_item: Option<T::DeviceId>,
         namespace: AttributeNamespace<T::AccountId>,
         key: BoundedVec<u8, T::KeyLimit>,
         value: BoundedVec<u8, T::ValueLimit>,
@@ -169,7 +169,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_force_set_attribute(
         set_as: Option<T::AccountId>,
         collection: T::ProductId,
-        maybe_item: Option<T::ItemId>,
+        maybe_item: Option<T::DeviceId>,
         namespace: AttributeNamespace<T::AccountId>,
         key: BoundedVec<u8, T::KeyLimit>,
         value: BoundedVec<u8, T::ValueLimit>,
@@ -278,7 +278,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_clear_attribute(
         maybe_check_origin: Option<T::AccountId>,
         collection: T::ProductId,
-        maybe_item: Option<T::ItemId>,
+        maybe_item: Option<T::DeviceId>,
         namespace: AttributeNamespace<T::AccountId>,
         key: BoundedVec<u8, T::KeyLimit>,
 	) -> DispatchResult {
@@ -365,7 +365,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_approve_item_attributes(
         check_origin: T::AccountId,
         collection: T::ProductId,
-        item: T::ItemId,
+        item: T::DeviceId,
         delegate: T::AccountId,
 	) -> DispatchResult {
 		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
@@ -400,7 +400,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_cancel_item_attributes_approval(
         check_origin: T::AccountId,
         collection: T::ProductId,
-        item: T::ItemId,
+        item: T::DeviceId,
         delegate: T::AccountId,
         witness: CancelAttributesApprovalWitness,
 	) -> DispatchResult {
@@ -440,7 +440,7 @@ impl<T: Config> Pallet<T> {
         origin: &T::AccountId,
         namespace: &AttributeNamespace<T::AccountId>,
         collection: &T::ProductId,
-        maybe_item: &Option<T::ItemId>,
+        maybe_item: &Option<T::DeviceId>,
 	) -> Result<bool, DispatchError> {
 		let mut result = false;
 		match namespace {
@@ -494,7 +494,7 @@ impl<T: Config> Pallet<T> {
 	/// provided pallet attribute is too long.
 	pub fn has_system_attribute(
         collection: &T::ProductId,
-        item: &T::ItemId,
+        item: &T::DeviceId,
         attribute_key: PalletAttributes,
 	) -> Result<bool, DispatchError> {
 		let attribute = (

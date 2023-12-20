@@ -71,7 +71,7 @@ fn add_collection_metadata<T: Config>() -> (T::AccountId, AccountIdLookupOf<T>) 
 
 fn mint_item<T: Config>(
 	index: u16,
-) -> (T::ItemId, T::AccountId, AccountIdLookupOf<T>) {
+) -> (T::DeviceId, T::AccountId, AccountIdLookupOf<T>) {
 	let item = T::Helper::item(index);
 	let collection = T::Helper::collection(0);
 	let caller = Collection::<T>::get(collection).unwrap().owner;
@@ -104,7 +104,7 @@ fn mint_item<T: Config>(
 
 fn lock_item<T: Config>(
 	index: u16,
-) -> (T::ItemId, T::AccountId, AccountIdLookupOf<T>) {
+) -> (T::DeviceId, T::AccountId, AccountIdLookupOf<T>) {
 	let caller = Collection::<T>::get(T::Helper::collection(0)).unwrap().owner;
 	if caller != whitelisted_caller() {
 		whitelist_account!(caller);
@@ -121,7 +121,7 @@ fn lock_item<T: Config>(
 
 fn burn_item<T: Config>(
 	index: u16,
-) -> (T::ItemId, T::AccountId, AccountIdLookupOf<T>) {
+) -> (T::DeviceId, T::AccountId, AccountIdLookupOf<T>) {
 	let caller = Collection::<T>::get(T::Helper::collection(0)).unwrap().owner;
 	if caller != whitelisted_caller() {
 		whitelist_account!(caller);
@@ -137,7 +137,7 @@ fn burn_item<T: Config>(
 }
 
 fn add_item_metadata<T: Config>(
-	item: T::ItemId,
+	item: T::DeviceId,
 ) -> (T::AccountId, AccountIdLookupOf<T>) {
 	let caller = Collection::<T>::get(T::Helper::collection(0)).unwrap().owner;
 	if caller != whitelisted_caller() {
@@ -154,7 +154,7 @@ fn add_item_metadata<T: Config>(
 }
 
 fn add_item_attribute<T: Config>(
-	item: T::ItemId,
+	item: T::DeviceId,
 ) -> (BoundedVec<u8, T::KeyLimit>, T::AccountId, AccountIdLookupOf<T>) {
 	let caller = Collection::<T>::get(T::Helper::collection(0)).unwrap().owner;
 	if caller != whitelisted_caller() {

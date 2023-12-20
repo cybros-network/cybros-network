@@ -28,7 +28,7 @@ use sp_runtime::{DispatchError, DispatchResult};
 use sp_std::prelude::*;
 
 impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
-	type ItemId = T::ItemId;
+	type ItemId = T::DeviceId;
 	type CollectionId = T::ProductId;
 
 	fn owner(
@@ -107,7 +107,7 @@ impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 			let key = BoundedSlice::<_, _>::try_from(key).ok()?;
 			Attribute::<T>::get((
 				collection,
-				Option::<T::ItemId>::None,
+				Option::<T::DeviceId>::None,
 				AttributeNamespace::CollectionOwner,
 				key,
 			))
@@ -444,10 +444,10 @@ impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
 
 impl<T: Config> InspectEnumerable<T::AccountId> for Pallet<T> {
 	type CollectionsIterator = KeyPrefixIterator<<T as Config>::ProductId>;
-	type ItemsIterator = KeyPrefixIterator<<T as Config>::ItemId>;
+	type ItemsIterator = KeyPrefixIterator<<T as Config>::DeviceId>;
 	type OwnedIterator =
-		KeyPrefixIterator<(<T as Config>::ProductId, <T as Config>::ItemId)>;
-	type OwnedInCollectionIterator = KeyPrefixIterator<<T as Config>::ItemId>;
+		KeyPrefixIterator<(<T as Config>::ProductId, <T as Config>::DeviceId)>;
+	type OwnedInCollectionIterator = KeyPrefixIterator<<T as Config>::DeviceId>;
 
 	/// Returns an iterator of the collections in existence.
 	///
