@@ -1375,3 +1375,5 @@ pub mod pallet {
         }
     }
 }
+
+sp_core::generate_feature_enabled_macro!(runtime_benchmarks_enabled, feature = "runtime-benchmarks", $);

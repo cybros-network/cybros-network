@@ -22,7 +22,7 @@
 use super::*;
 use enumflags2::{BitFlag, BitFlags};
 use frame_benchmarking::v1::{
-	account, benchmarks_instance_pallet, whitelist_account, whitelisted_caller, BenchmarkError,
+	account, benchmarks, whitelist_account, whitelisted_caller, BenchmarkError,
 };
 use frame_support::{
 	assert_ok,
@@ -33,7 +33,7 @@ use frame_system::{RawOrigin as SystemOrigin};
 use sp_io::crypto::{sr25519_generate, sr25519_sign};
 use sp_runtime::{
 	traits::{Bounded, IdentifyAccount, One},
-	MultiSignature, MultiSigner,
+	AccountId32, MultiSignature, MultiSigner,
 };
 use sp_std::prelude::*;
 
@@ -227,10 +227,11 @@ fn make_filled_vec(value: u16, length: usize) -> Vec<u8> {
 	vec
 }
 
-benchmarks_instance_pallet! {
+benchmarks! {
 	where_clause {
 		where
 			T::OffchainSignature: From<MultiSignature>,
+			T::AccountId: From<AccountId32>,
 	}
 
 	create {
@@ -285,7 +286,7 @@ benchmarks_instance_pallet! {
 	mint {
 		let (collection, caller, caller_lookup) = create_collection::<T>();
 		let item = T::Helper::item(0);
-	}: _(SystemOrigin::Signed(caller.clone()), collection, item, caller_lookup, None)
+	}: _(SystemOrigin::Signed(caller.clone()), collection, item, caller_lookup)
 	verify {
 		assert_last_event::<T>(Event::Issued { collection, item, owner: caller }.into());
 	}
