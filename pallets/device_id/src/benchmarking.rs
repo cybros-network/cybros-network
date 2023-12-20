@@ -318,20 +318,6 @@ benchmarks_instance_pallet! {
 		assert_last_event::<T>(Event::Transferred { collection, item, from: caller, to: target }.into());
 	}
 
-	redeposit {
-		let i in 0 .. 5_000;
-		let (collection, caller, _) = create_collection::<T>();
-		let items = (0..i).map(|x| mint_item::<T>(x as u16).0).collect::<Vec<_>>();
-		ThePallet::<T>::force_collection_config(
-			SystemOrigin::Root.into(),
-			collection,
-			make_collection_config::<T>(CollectionSetting::DepositRequired.into()),
-		)?;
-	}: _(SystemOrigin::Signed(caller.clone()), collection, items.clone())
-	verify {
-		assert_last_event::<T>(Event::Redeposited { collection, successful_items: items }.into());
-	}
-
 	lock_item_transfer {
 		let (collection, caller, _) = create_collection::<T>();
 		let (item, ..) = mint_item::<T>(0);

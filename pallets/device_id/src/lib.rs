@@ -400,8 +400,6 @@ pub mod pallet {
         },
         /// Metadata has been cleared for an item.
         ItemMetadataCleared { collection: T::CollectionId, item: T::ItemId },
-        /// The deposit for a set of `item`s within a `collection` has been updated.
-        Redeposited { collection: T::CollectionId, successful_items: Vec<T::ItemId> },
         /// New attribute metadata has been set for a `collection` or `item`.
         AttributeSet {
             collection: T::CollectionId,
@@ -823,73 +821,6 @@ pub mod pallet {
                 ensure!(details.owner == origin, Error::<T>::NoPermission);
                 Ok(())
             })
-        }
-
-        /// Re-evaluate the deposits on some items.
-        ///
-        /// Origin must be Signed and the sender should be the Owner of the `collection`.
-        ///
-        /// - `collection`: The collection of the items to be reevaluated.
-        /// - `items`: The items of the collection whose deposits will be reevaluated.
-        ///
-        /// NOTE: This exists as a best-effort function. Any items which are unknown or
-        /// in the case that the owner account does not have reservable funds to pay for a
-        /// deposit increase are ignored. Generally the owner isn't going to call this on items
-        /// whose existing deposit is less than the refreshed deposit as it would only cost them,
-        /// so it's of little consequence.
-        ///
-        /// It will still return an error in the case that the collection is unknown or the signer
-        /// is not permitted to call it.
-        ///
-        /// Weight: `O(items.len())`
-        #[pallet::call_index(7)]
-        #[pallet::weight(T::WeightInfo::redeposit(items.len() as u32))]
-        pub fn redeposit(
-            origin: OriginFor<T>,
-            collection: T::CollectionId,
-            items: Vec<T::ItemId>,
-        ) -> DispatchResult {
-            let origin = ensure_signed(origin)?;
-
-            let collection_details =
-                Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
-            ensure!(collection_details.owner == origin, Error::<T>::NoPermission);
-
-            let config = Self::get_collection_config(&collection)?;
-            let deposit = match config.is_setting_enabled(CollectionSetting::DepositRequired) {
-                true => T::ItemDeposit::get(),
-                false => Zero::zero(),
-            };
-
-            let mut successful = Vec::with_capacity(items.len());
-            for item in items.into_iter() {
-                let mut details = match Item::<T>::get(&collection, &item) {
-                    Some(x) => x,
-                    None => continue,
-                };
-                let old = details.deposit.amount;
-                if old > deposit {
-                    T::Currency::unreserve(&details.deposit.account, old - deposit);
-                } else if deposit > old {
-                    if T::Currency::reserve(&details.deposit.account, deposit - old).is_err() {
-                        // NOTE: No alterations made to collection_details in this iteration so far,
-                        // so this is OK to do.
-                        continue
-                    }
-                } else {
-                    continue
-                }
-                details.deposit.amount = deposit;
-                Item::<T>::insert(&collection, &item, &details);
-                successful.push(item);
-            }
-
-            Self::deposit_event(Event::<T>::Redeposited {
-                collection,
-                successful_items: successful,
-            });
-
-            Ok(())
         }
 
         /// Disallow further unprivileged transfer of an item.

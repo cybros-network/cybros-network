@@ -1540,13 +1540,6 @@ fn force_update_collection_should_work() {
 		assert_eq!(Balances::reserved_balance(account(1)), 2);
 		assert_eq!(Balances::reserved_balance(account(5)), 63);
 
-		assert_ok!(DeviceId::redeposit(
-			RuntimeOrigin::signed(account(5)),
-			0,
-			bvec![0, 42, 50, 69, 100]
-		));
-		assert_eq!(Balances::reserved_balance(account(1)), 0);
-
 		assert_ok!(DeviceId::set_metadata(RuntimeOrigin::signed(account(5)), 0, 42, bvec![0; 20]));
 		assert_eq!(Balances::reserved_balance(account(5)), 42);
 
