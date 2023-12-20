@@ -169,21 +169,9 @@ pub mod pallet {
         #[pallet::constant]
         type ValueLimit: Get<u32>;
 
-        /// The maximum approvals an item could have.
-        #[pallet::constant]
-        type ApprovalsLimit: Get<u32>;
-
         /// The maximum attributes approvals an item could have.
         #[pallet::constant]
         type ItemAttributesApprovalsLimit: Get<u32>;
-
-        /// The max number of tips a user could send.
-        #[pallet::constant]
-        type MaxTips: Get<u32>;
-
-        /// The max duration in blocks for deadlines.
-        #[pallet::constant]
-        type MaxDeadlineDuration: Get<BlockNumberFor<Self>>;
 
         /// The max number of attributes a user could set per call.
         #[pallet::constant]
@@ -219,7 +207,7 @@ pub mod pallet {
     /// The collection, if any, of which an account is willing to take ownership.
     #[pallet::storage]
     pub type OwnershipAcceptance<T: Config> =
-    StorageMap<_, Blake2_128Concat, T::AccountId, T::CollectionId>;
+        StorageMap<_, Blake2_128Concat, T::AccountId, T::CollectionId>;
 
     /// The items held by any given account; set out this way so that items owned by a single
     /// account can be enumerated.
@@ -499,8 +487,6 @@ pub mod pallet {
         ReachedApprovalLimit,
         /// The deadline has already expired.
         DeadlineExpired,
-        /// The duration provided should be less than or equal to `MaxDeadlineDuration`.
-        WrongDuration,
         /// The provided setting can't be set.
         WrongSetting,
         /// Item's config already exists and should be equal to the provided one.
