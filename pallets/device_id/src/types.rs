@@ -33,23 +33,23 @@ use scale_info::{build::Fields, meta_type, Path, Type, TypeInfo, TypeParameter};
 pub(super) type DepositBalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 /// A type alias representing the details of a collection.
-pub(super) type CollectionDetailsFor<T> =
-	CollectionDetails<<T as frame_system::Config>::AccountId, DepositBalanceOf<T>>;
+pub(super) type ProductEntryFor<T> =
+	ProductEntry<<T as frame_system::Config>::AccountId, DepositBalanceOf<T>>;
 /// A type alias for keeping track of approvals for an item's attributes.
-pub(super) type ItemAttributesApprovals<T> =
+pub(super) type DeviceAttributesApprovals<T> =
 	BoundedBTreeSet<<T as frame_system::Config>::AccountId, <T as Config>::DeviceAttributesApprovalsLimit>;
 /// A type that holds the deposit for a single item.
-pub(super) type ItemDepositOf<T> =
-	ItemDeposit<DepositBalanceOf<T>, <T as frame_system::Config>::AccountId>;
+pub(super) type DeviceEntryDepositOf<T> =
+	DeviceEntryDeposit<DepositBalanceOf<T>, <T as frame_system::Config>::AccountId>;
 /// A type that holds the deposit amount for an item's attribute.
 pub(super) type AttributeDepositOf<T> =
 	AttributeDeposit<DepositBalanceOf<T>, <T as frame_system::Config>::AccountId>;
 /// A type that holds the deposit amount for an item's metadata.
-pub(super) type ItemMetadataDepositOf<T> =
-	ItemMetadataDeposit<DepositBalanceOf<T>, <T as frame_system::Config>::AccountId>;
+pub(super) type DeviceMetadataDepositOf<T> =
+	DeviceMetadataDeposit<DepositBalanceOf<T>, <T as frame_system::Config>::AccountId>;
 /// A type that holds the details of a single item.
-pub(super) type ItemDetailsFor<T> =
-	ItemDetails<<T as frame_system::Config>::AccountId, ItemDepositOf<T>>;
+pub(super) type DeviceEntryFor<T> =
+	DeviceEntry<<T as frame_system::Config>::AccountId, DeviceEntryDepositOf<T>>;
 /// A type alias for the pre-signed minting configuration for a specified collection.
 pub(super) type PreSignedMintOf<T> = PreSignedMint<
 	<T as Config>::ProductId,
@@ -67,7 +67,7 @@ pub(super) type PreSignedAttributesOf<T> = PreSignedAttributes<
 
 /// Information about a collection.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct CollectionDetails<AccountId, DepositBalance> {
+pub struct ProductEntry<AccountId, DepositBalance> {
 	/// Collection's owner.
 	pub(super) owner: AccountId,
 	/// The total balance deposited by the owner for all the storage data associated with this
@@ -97,7 +97,7 @@ pub struct DestroyWitness {
 	pub attributes: u32,
 }
 
-impl<AccountId, DepositBalance> CollectionDetails<AccountId, DepositBalance> {
+impl<AccountId, DepositBalance> ProductEntry<AccountId, DepositBalance> {
 	pub fn destroy_witness(&self) -> DestroyWitness {
 		DestroyWitness {
 			item_metadata: self.item_metadata,
@@ -109,7 +109,7 @@ impl<AccountId, DepositBalance> CollectionDetails<AccountId, DepositBalance> {
 
 /// Information concerning the ownership of a single unique item.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
-pub struct ItemDetails<AccountId, Deposit> {
+pub struct DeviceEntry<AccountId, Deposit> {
 	/// The owner of this item.
 	pub(super) owner: AccountId,
 	/// The amount held in the pallet's default account for this item. Free-hold items will have
@@ -119,7 +119,7 @@ pub struct ItemDetails<AccountId, Deposit> {
 
 /// Information about the reserved item deposit.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct ItemDeposit<DepositBalance, AccountId> {
+pub struct DeviceEntryDeposit<DepositBalance, AccountId> {
 	/// A depositor account.
 	pub(super) account: AccountId,
 	/// An amount that gets reserved.
@@ -130,7 +130,7 @@ pub struct ItemDeposit<DepositBalance, AccountId> {
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(StringLimit))]
 #[codec(mel_bound(Deposit: MaxEncodedLen))]
-pub struct CollectionMetadata<Deposit, StringLimit: Get<u32>> {
+pub struct ProductMetadata<Deposit, StringLimit: Get<u32>> {
 	/// The balance deposited for this metadata.
 	///
 	/// This pays for the data stored in this struct.
@@ -144,7 +144,7 @@ pub struct CollectionMetadata<Deposit, StringLimit: Get<u32>> {
 /// Information about the item's metadata.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(StringLimit))]
-pub struct ItemMetadata<Deposit, StringLimit: Get<u32>> {
+pub struct DeviceMetadata<Deposit, StringLimit: Get<u32>> {
 	/// The balance deposited for this metadata.
 	///
 	/// This pays for the data stored in this struct.
@@ -166,7 +166,7 @@ pub struct AttributeDeposit<DepositBalance, AccountId> {
 
 /// Information about the reserved item's metadata deposit.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct ItemMetadataDeposit<DepositBalance, AccountId> {
+pub struct DeviceMetadataDeposit<DepositBalance, AccountId> {
 	/// A depositor account, None means the deposit is collection's owner.
 	pub(super) account: Option<AccountId>,
 	/// An amount that gets reserved.
@@ -177,7 +177,7 @@ pub struct ItemMetadataDeposit<DepositBalance, AccountId> {
 #[bitflags]
 #[repr(u64)]
 #[derive(Copy, Clone, RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
-pub enum CollectionSetting {
+pub enum ProductSetting {
 	/// Items in this collection are transferable.
 	TransferableItems,
 	/// The metadata of this collection can be modified.
@@ -192,24 +192,24 @@ pub enum CollectionSetting {
 
 /// Wrapper type for `BitFlags<CollectionSetting>` that implements `Codec`.
 #[derive(Clone, Copy, PartialEq, Eq, Default, RuntimeDebug)]
-pub struct CollectionSettings(pub BitFlags<CollectionSetting>);
+pub struct ProductSettings(pub BitFlags<ProductSetting>);
 
-impl CollectionSettings {
+impl ProductSettings {
 	pub fn all_enabled() -> Self {
 		Self(BitFlags::EMPTY)
 	}
-	pub fn get_disabled(&self) -> BitFlags<CollectionSetting> {
+	pub fn get_disabled(&self) -> BitFlags<ProductSetting> {
 		self.0
 	}
-	pub fn is_disabled(&self, setting: CollectionSetting) -> bool {
+	pub fn is_disabled(&self, setting: ProductSetting) -> bool {
 		self.0.contains(setting)
 	}
-	pub fn from_disabled(settings: BitFlags<CollectionSetting>) -> Self {
+	pub fn from_disabled(settings: BitFlags<ProductSetting>) -> Self {
 		Self(settings)
 	}
 }
 
-impl_codec_bitflags!(CollectionSettings, u64, CollectionSetting);
+impl_codec_bitflags!(ProductSettings, u64, ProductSetting);
 
 /// Mint type. Can the NFT be create by anyone, or only the creator of the collection,
 /// or only by wallets that already hold an NFT from a certain collection?
@@ -226,14 +226,14 @@ pub struct MintSettings {
 	/// Whether anyone can mint or if minters are restricted to some subset.
 	pub mint_type: MintType,
 	/// Default settings each item will get during the mint.
-	pub default_item_settings: ItemSettings,
+	pub default_device_settings: DeviceSettings,
 }
 
 impl Default for MintSettings {
 	fn default() -> Self {
 		Self {
 			mint_type: MintType::Issuer,
-			default_item_settings: ItemSettings::all_enabled(),
+			default_device_settings: DeviceSettings::all_enabled(),
 		}
 	}
 }
@@ -246,9 +246,9 @@ pub enum AttributeNamespace<AccountId> {
 	/// An attribute was set by the pallet.
 	Pallet,
 	/// An attribute was set by collection's owner.
-	CollectionOwner,
+	ProductOwner,
 	/// An attribute was set by item's owner.
-	ItemOwner,
+	DeviceOwner,
 	/// An attribute was set by pre-approved account.
 	Account(AccountId),
 }
@@ -271,26 +271,26 @@ pub enum PalletAttributes {
 #[derive(
 	Clone, Copy, Decode, Default, Encode, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo,
 )]
-pub struct CollectionConfig {
+pub struct ProductConfig {
 	/// Collection's settings.
-	pub settings: CollectionSettings,
+	pub settings: ProductSettings,
 	/// Collection's max supply.
 	pub max_supply: Option<u32>,
 	/// Default settings each item will get during the mint.
 	pub mint_settings: MintSettings,
 }
 
-impl CollectionConfig {
-	pub fn is_setting_enabled(&self, setting: CollectionSetting) -> bool {
+impl ProductConfig {
+	pub fn is_setting_enabled(&self, setting: ProductSetting) -> bool {
 		!self.settings.is_disabled(setting)
 	}
-	pub fn has_disabled_setting(&self, setting: CollectionSetting) -> bool {
+	pub fn has_disabled_setting(&self, setting: ProductSetting) -> bool {
 		self.settings.is_disabled(setting)
 	}
-	pub fn enable_setting(&mut self, setting: CollectionSetting) {
+	pub fn enable_setting(&mut self, setting: ProductSetting) {
 		self.settings.0.remove(setting);
 	}
-	pub fn disable_setting(&mut self, setting: CollectionSetting) {
+	pub fn disable_setting(&mut self, setting: ProductSetting) {
 		self.settings.0.insert(setting);
 	}
 }
@@ -310,9 +310,9 @@ pub enum ItemSetting {
 
 /// Wrapper type for `BitFlags<ItemSetting>` that implements `Codec`.
 #[derive(Clone, Copy, PartialEq, Eq, Default, RuntimeDebug)]
-pub struct ItemSettings(pub BitFlags<ItemSetting>);
+pub struct DeviceSettings(pub BitFlags<ItemSetting>);
 
-impl ItemSettings {
+impl DeviceSettings {
 	pub fn all_enabled() -> Self {
 		Self(BitFlags::EMPTY)
 	}
@@ -327,18 +327,18 @@ impl ItemSettings {
 	}
 }
 
-impl_codec_bitflags!(ItemSettings, u64, ItemSetting);
+impl_codec_bitflags!(DeviceSettings, u64, ItemSetting);
 
 /// Item's configuration.
 #[derive(
 	Encode, Decode, Default, PartialEq, RuntimeDebug, Clone, Copy, MaxEncodedLen, TypeInfo,
 )]
-pub struct ItemConfig {
+pub struct DeviceConfig {
 	/// Item's settings.
-	pub settings: ItemSettings,
+	pub settings: DeviceSettings,
 }
 
-impl ItemConfig {
+impl DeviceConfig {
 	pub fn is_setting_enabled(&self, setting: ItemSetting) -> bool {
 		!self.settings.is_disabled(setting)
 	}
@@ -360,7 +360,7 @@ impl ItemConfig {
 #[bitflags]
 #[repr(u8)]
 #[derive(Copy, Clone, RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
-pub enum CollectionRole {
+pub enum ProductRole {
 	/// Can mint items.
 	Issuer,
 	/// Can freeze items.
@@ -371,24 +371,24 @@ pub enum CollectionRole {
 
 /// A wrapper type that implements `Codec`.
 #[derive(Clone, Copy, PartialEq, Eq, Default, RuntimeDebug)]
-pub struct CollectionRoles(pub BitFlags<CollectionRole>);
+pub struct ProductRoles(pub BitFlags<ProductRole>);
 
-impl CollectionRoles {
+impl ProductRoles {
 	pub fn none() -> Self {
 		Self(BitFlags::EMPTY)
 	}
-	pub fn has_role(&self, role: CollectionRole) -> bool {
+	pub fn has_role(&self, role: ProductRole) -> bool {
 		self.0.contains(role)
 	}
-	pub fn add_role(&mut self, role: CollectionRole) {
+	pub fn add_role(&mut self, role: ProductRole) {
 		self.0.insert(role);
 	}
 	pub fn max_roles() -> u8 {
-		let all: BitFlags<CollectionRole> = BitFlags::all();
+		let all: BitFlags<ProductRole> = BitFlags::all();
 		all.len() as u8
 	}
 }
-impl_codec_bitflags!(CollectionRoles, u8, CollectionRole);
+impl_codec_bitflags!(ProductRoles, u8, ProductRole);
 
 #[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct PreSignedMint<CollectionId, ItemId, AccountId, Deadline> {

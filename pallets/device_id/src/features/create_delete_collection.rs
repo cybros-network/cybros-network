@@ -34,20 +34,20 @@ impl<T: Config> Pallet<T> {
 	/// This function returns a [`CollectionIdInUse`](crate::Error::CollectionIdInUse) error if the
 	/// collection ID is already in use.
 	pub fn do_create_collection(
-        collection: T::ProductId,
-        owner: T::AccountId,
-        admin: T::AccountId,
-        config: CollectionConfig,
-        deposit: DepositBalanceOf<T>,
-        event: Event<T>,
+		collection: T::ProductId,
+		owner: T::AccountId,
+		admin: T::AccountId,
+		config: ProductConfig,
+		deposit: DepositBalanceOf<T>,
+		event: Event<T>,
 	) -> DispatchResult {
 		ensure!(!Collection::<T>::contains_key(collection), Error::<T>::CollectionIdInUse);
 
 		T::Currency::reserve(&owner, deposit)?;
 
 		Collection::<T>::insert(
-			collection,
-			CollectionDetails {
+            collection,
+            ProductEntry {
 				owner: owner.clone(),
 				owner_deposit: deposit,
 				items: 0,
@@ -59,8 +59,8 @@ impl<T: Config> Pallet<T> {
 		CollectionRoleOf::<T>::insert(
 			collection,
 			admin,
-			CollectionRoles(
-				CollectionRole::Admin | CollectionRole::Freezer | CollectionRole::Issuer,
+			ProductRoles(
+				ProductRole::Admin | ProductRole::Freezer | ProductRole::Issuer,
 			),
 		);
 

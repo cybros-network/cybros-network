@@ -30,7 +30,7 @@ impl<T: Config> Pallet<T> {
 	/// It updates the collection configuration and emits a `CollectionConfigChanged` event.
 	pub(crate) fn do_force_collection_config(
 		collection: T::ProductId,
-		config: CollectionConfig,
+		config: ProductConfig,
 	) -> DispatchResult {
 		ensure!(Collection::<T>::contains_key(&collection), Error::<T>::UnknownCollection);
 		CollectionConfigOf::<T>::insert(&collection, config);
@@ -61,7 +61,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		let collection_config = Self::get_collection_config(&collection)?;
 		ensure!(
-			collection_config.is_setting_enabled(CollectionSetting::UnlockedMaxSupply),
+			collection_config.is_setting_enabled(ProductSetting::UnlockedMaxSupply),
 			Error::<T>::MaxSupplyLocked
 		);
 
@@ -100,7 +100,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, CollectionRole::Issuer),
+				Self::has_role(&collection, &check_origin, ProductRole::Issuer),
 				Error::<T>::NoPermission
 			);
 		}
@@ -122,7 +122,7 @@ impl<T: Config> Pallet<T> {
 	/// otherwise, it returns a `DispatchError` with `Error::NoConfig`.
 	pub(crate) fn get_collection_config(
 		collection_id: &T::ProductId,
-	) -> Result<CollectionConfig, DispatchError> {
+	) -> Result<ProductConfig, DispatchError> {
 		let config =
 			CollectionConfigOf::<T>::get(&collection_id).ok_or(Error::<T>::NoConfig)?;
 		Ok(config)
@@ -139,7 +139,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn get_item_config(
 		collection_id: &T::ProductId,
 		item_id: &T::DeviceId,
-	) -> Result<ItemConfig, DispatchError> {
+	) -> Result<DeviceConfig, DispatchError> {
 		let config = ItemConfigOf::<T>::get(&collection_id, &item_id)
 			.ok_or(Error::<T>::UnknownItem)?;
 		Ok(config)
@@ -155,8 +155,8 @@ impl<T: Config> Pallet<T> {
 	/// `Error::NoConfig`.
 	pub(crate) fn get_default_item_settings(
 		collection_id: &T::ProductId,
-	) -> Result<ItemSettings, DispatchError> {
+	) -> Result<DeviceSettings, DispatchError> {
 		let collection_config = Self::get_collection_config(collection_id)?;
-		Ok(collection_config.mint_settings.default_item_settings)
+		Ok(collection_config.mint_settings.default_device_settings)
 	}
 }

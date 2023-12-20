@@ -42,14 +42,14 @@ impl<T: Config> Pallet<T> {
 	///   ([`MaxSupplyReached`](crate::Error::MaxSupplyReached)).
 	/// - If any error occurs in the `with_details_and_config` closure.
 	pub fn do_mint(
-        collection: T::ProductId,
-        item: T::DeviceId,
-        maybe_depositor: Option<T::AccountId>,
-        mint_to: T::AccountId,
-        item_config: ItemConfig,
-        with_details_and_config: impl FnOnce(
-			&CollectionDetailsFor<T>,
-			&CollectionConfig,
+		collection: T::ProductId,
+		item: T::DeviceId,
+		maybe_depositor: Option<T::AccountId>,
+		mint_to: T::AccountId,
+		item_config: DeviceConfig,
+		with_details_and_config: impl FnOnce(
+			&ProductEntryFor<T>,
+			&ProductConfig,
 		) -> DispatchResult,
 	) -> DispatchResult {
 		ensure!(!Item::<T>::contains_key(collection, item), Error::<T>::AlreadyExists);
@@ -71,7 +71,7 @@ impl<T: Config> Pallet<T> {
 
 				let collection_config = Self::get_collection_config(&collection)?;
 				let deposit_amount = match collection_config
-					.is_setting_enabled(CollectionSetting::DepositRequired)
+					.is_setting_enabled(ProductSetting::DepositRequired)
 				{
 					true => T::DeviceEntryDeposit::get(),
 					false => Zero::zero(),
@@ -93,8 +93,8 @@ impl<T: Config> Pallet<T> {
 
 				T::Currency::reserve(&deposit_account, deposit_amount)?;
 
-				let deposit = ItemDeposit { account: deposit_account, amount: deposit_amount };
-				let details = ItemDetails {
+				let deposit = DeviceEntryDeposit { account: deposit_account, amount: deposit_amount };
+				let details = DeviceEntry {
 					owner: item_owner,
 					deposit,
 				};
@@ -147,11 +147,11 @@ impl<T: Config> Pallet<T> {
 		ensure!(deadline >= now, Error::<T>::DeadlineExpired);
 
 		ensure!(
-			Self::has_role(&collection, &signer, CollectionRole::Issuer),
+			Self::has_role(&collection, &signer, ProductRole::Issuer),
 			Error::<T>::NoPermission
 		);
 
-		let item_config = ItemConfig { settings: Self::get_default_item_settings(&collection)? };
+		let item_config = DeviceConfig { settings: Self::get_default_item_settings(&collection)? };
 		Self::do_mint(
 			collection,
 			item,
@@ -160,14 +160,14 @@ impl<T: Config> Pallet<T> {
 			item_config,
 			|_, _| Ok(()),
 		)?;
-		let admin_account = Self::find_account_by_role(&collection, CollectionRole::Admin);
+		let admin_account = Self::find_account_by_role(&collection, ProductRole::Admin);
 		if let Some(admin_account) = admin_account {
 			for (key, value) in attributes {
 				Self::do_set_attribute(
 					admin_account.clone(),
 					collection,
 					Some(item),
-					AttributeNamespace::CollectionOwner,
+					AttributeNamespace::ProductOwner,
 					Self::construct_attribute_key(key)?,
 					Self::construct_attribute_value(value)?,
 					mint_to.clone(),
@@ -194,9 +194,9 @@ impl<T: Config> Pallet<T> {
 	/// - If the collection ID is invalid ([`UnknownCollection`](crate::Error::UnknownCollection)).
 	/// - If the item is locked ([`ItemLocked`](crate::Error::ItemLocked)).
 	pub fn do_burn(
-        collection: T::ProductId,
-        item: T::DeviceId,
-        with_details: impl FnOnce(&ItemDetailsFor<T>) -> DispatchResult,
+		collection: T::ProductId,
+		item: T::DeviceId,
+		with_details: impl FnOnce(&DeviceEntryFor<T>) -> DispatchResult,
 	) -> DispatchResult {
 		ensure!(!T::Locker::is_locked(collection, item), Error::<T>::ItemLocked);
 		ensure!(

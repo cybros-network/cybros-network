@@ -48,8 +48,8 @@ impl<T: Config> Pallet<T> {
 		item: T::DeviceId,
 		dest: T::AccountId,
 		with_details: impl FnOnce(
-			&CollectionDetailsFor<T>,
-			&mut ItemDetailsFor<T>,
+			&ProductEntryFor<T>,
+			&mut DeviceEntryFor<T>,
 		) -> DispatchResult,
 	) -> DispatchResult {
 		// Retrieve collection details.
@@ -68,7 +68,7 @@ impl<T: Config> Pallet<T> {
 		// Retrieve collection config and check if items are transferable.
 		let collection_config = Self::get_collection_config(&collection)?;
 		ensure!(
-			collection_config.is_setting_enabled(CollectionSetting::TransferableItems),
+			collection_config.is_setting_enabled(ProductSetting::TransferableItems),
 			Error::<T>::ItemsNonTransferable
 		);
 

@@ -56,7 +56,7 @@ impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 			// We make the empty key map to the item metadata value.
 			ItemMetadataOf::<T>::get(collection, item).map(|m| m.data.into())
 		} else {
-			let namespace = AttributeNamespace::CollectionOwner;
+			let namespace = AttributeNamespace::ProductOwner;
 			let key = BoundedSlice::<_, _>::try_from(key).ok()?;
 			Attribute::<T>::get((collection, Some(item), namespace, key)).map(|a| a.0.into())
 		}
@@ -72,7 +72,7 @@ impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 		key: &[u8],
 	) -> Option<Vec<u8>> {
 		let namespace = Account::<T>::get((account, collection, item))
-			.map(|_| AttributeNamespace::ItemOwner)
+			.map(|_| AttributeNamespace::DeviceOwner)
 			.unwrap_or_else(|| AttributeNamespace::Account(account.clone()));
 
 		let key = BoundedSlice::<_, _>::try_from(key).ok()?;
@@ -108,7 +108,7 @@ impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 			Attribute::<T>::get((
 				collection,
 				Option::<T::DeviceId>::None,
-				AttributeNamespace::CollectionOwner,
+				AttributeNamespace::ProductOwner,
 				key,
 			))
 			.map(|a| a.0.into())
@@ -129,7 +129,7 @@ impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 			ItemConfigOf::<T>::get(collection, item),
 		) {
 			(Some(cc), Some(ic))
-				if cc.is_setting_enabled(CollectionSetting::TransferableItems) &&
+				if cc.is_setting_enabled(ProductSetting::TransferableItems) &&
 					ic.is_setting_enabled(ItemSetting::Transferable) =>
 				true,
 			_ => false,
@@ -139,28 +139,28 @@ impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 
 impl<T: Config> InspectRole<<T as frame_system::Config>::AccountId> for Pallet<T> {
 	fn is_issuer(collection: &Self::CollectionId, who: &<T as frame_system::Config>::AccountId) -> bool {
-		Self::has_role(collection, who, CollectionRole::Issuer)
+		Self::has_role(collection, who, ProductRole::Issuer)
 	}
 	fn is_admin(collection: &Self::CollectionId, who: &<T as frame_system::Config>::AccountId) -> bool {
-		Self::has_role(collection, who, CollectionRole::Admin)
+		Self::has_role(collection, who, ProductRole::Admin)
 	}
 	fn is_freezer(collection: &Self::CollectionId, who: &<T as frame_system::Config>::AccountId) -> bool {
-		Self::has_role(collection, who, CollectionRole::Freezer)
+		Self::has_role(collection, who, ProductRole::Freezer)
 	}
 }
 
-impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfig>
+impl<T: Config> Create<<T as frame_system::Config>::AccountId, ProductConfig>
 	for Pallet<T>
 {
 	/// Create a `collection` of nonfungible items to be owned by `who` and managed by `admin`.
 	fn create_collection(
 		who: &T::AccountId,
 		admin: &T::AccountId,
-		config: &CollectionConfig,
+		config: &ProductConfig,
 	) -> Result<T::ProductId, DispatchError> {
 		// DepositRequired can be disabled by calling the force_create() only
 		ensure!(
-			!config.has_disabled_setting(CollectionSetting::DepositRequired),
+			!config.has_disabled_setting(ProductSetting::DepositRequired),
 			Error::<T>::WrongSetting
 		);
 
@@ -193,11 +193,11 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfig>
 		collection: T::ProductId,
 		who: &T::AccountId,
 		admin: &T::AccountId,
-		config: &CollectionConfig,
+		config: &ProductConfig,
 	) -> Result<(), DispatchError> {
 		// DepositRequired can be disabled by calling the force_create() only
 		ensure!(
-			!config.has_disabled_setting(CollectionSetting::DepositRequired),
+			!config.has_disabled_setting(ProductSetting::DepositRequired),
 			Error::<T>::WrongSetting
 		);
 
@@ -228,12 +228,12 @@ impl<T: Config> Destroy<<T as frame_system::Config>::AccountId> for Pallet<T> {
 	}
 }
 
-impl<T: Config> Mutate<<T as frame_system::Config>::AccountId, ItemConfig> for Pallet<T> {
+impl<T: Config> Mutate<<T as frame_system::Config>::AccountId, DeviceConfig> for Pallet<T> {
 	fn mint_into(
 		collection: &Self::CollectionId,
 		item: &Self::ItemId,
 		who: &T::AccountId,
-		item_config: &ItemConfig,
+		item_config: &DeviceConfig,
 		deposit_collection_owner: bool,
 	) -> DispatchResult {
 		Self::do_mint(
@@ -288,7 +288,7 @@ impl<T: Config> Mutate<<T as frame_system::Config>::AccountId, ItemConfig> for P
 	) -> DispatchResult {
 		key.using_encoded(|k| {
 			value.using_encoded(|v| {
-				<Self as Mutate<T::AccountId, ItemConfig>>::set_attribute(collection, item, k, v)
+				<Self as Mutate<T::AccountId, DeviceConfig>>::set_attribute(collection, item, k, v)
 			})
 		})
 	}
@@ -315,7 +315,7 @@ impl<T: Config> Mutate<<T as frame_system::Config>::AccountId, ItemConfig> for P
 	) -> DispatchResult {
 		key.using_encoded(|k| {
 			value.using_encoded(|v| {
-				<Self as Mutate<T::AccountId, ItemConfig>>::set_collection_attribute(
+				<Self as Mutate<T::AccountId, DeviceConfig>>::set_collection_attribute(
 					collection, k, v,
 				)
 			})
@@ -369,7 +369,7 @@ impl<T: Config> Mutate<<T as frame_system::Config>::AccountId, ItemConfig> for P
 		key: &K,
 	) -> DispatchResult {
 		key.using_encoded(|k| {
-			<Self as Mutate<T::AccountId, ItemConfig>>::clear_attribute(collection, item, k)
+			<Self as Mutate<T::AccountId, DeviceConfig>>::clear_attribute(collection, item, k)
 		})
 	}
 
@@ -388,7 +388,7 @@ impl<T: Config> Mutate<<T as frame_system::Config>::AccountId, ItemConfig> for P
 		key: &K,
 	) -> DispatchResult {
 		key.using_encoded(|k| {
-			<Self as Mutate<T::AccountId, ItemConfig>>::clear_collection_attribute(collection, k)
+			<Self as Mutate<T::AccountId, DeviceConfig>>::clear_collection_attribute(collection, k)
 		})
 	}
 
@@ -425,7 +425,7 @@ impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
 			return Err(Error::<T>::ItemLocked.into())
 		}
 
-		<Self as Mutate<T::AccountId, ItemConfig>>::set_attribute(
+		<Self as Mutate<T::AccountId, DeviceConfig>>::set_attribute(
 			collection,
 			item,
 			&PalletAttributes::TransferDisabled.encode(),
@@ -434,7 +434,7 @@ impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
 	}
 
 	fn enable_transfer(collection: &Self::CollectionId, item: &Self::ItemId) -> DispatchResult {
-		<Self as Mutate<T::AccountId, ItemConfig>>::clear_attribute(
+		<Self as Mutate<T::AccountId, DeviceConfig>>::clear_attribute(
 			collection,
 			item,
 			&PalletAttributes::TransferDisabled.encode(),

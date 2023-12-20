@@ -201,7 +201,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         T::ProductId,
-        CollectionDetails<T::AccountId, DepositBalanceOf<T>>,
+        ProductEntry<T::AccountId, DepositBalanceOf<T>>,
     >;
 
     /// The collection, if any, of which an account is willing to take ownership.
@@ -245,7 +245,7 @@ pub mod pallet {
         T::ProductId,
         Blake2_128Concat,
         T::AccountId,
-        CollectionRoles,
+        ProductRoles,
         OptionQuery,
     >;
 
@@ -257,7 +257,7 @@ pub mod pallet {
         T::ProductId,
         Blake2_128Concat,
         T::DeviceId,
-        ItemDetails<T::AccountId, ItemDepositOf<T>>,
+        DeviceEntry<T::AccountId, DeviceEntryDepositOf<T>>,
         OptionQuery,
     >;
 
@@ -267,7 +267,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         T::ProductId,
-        CollectionMetadata<DepositBalanceOf<T>, T::StringLimit>,
+        ProductMetadata<DepositBalanceOf<T>, T::StringLimit>,
         OptionQuery,
     >;
 
@@ -279,7 +279,7 @@ pub mod pallet {
         T::ProductId,
         Blake2_128Concat,
         T::DeviceId,
-        ItemMetadata<ItemMetadataDepositOf<T>, T::StringLimit>,
+        DeviceMetadata<DeviceMetadataDepositOf<T>, T::StringLimit>,
         OptionQuery,
     >;
 
@@ -305,7 +305,7 @@ pub mod pallet {
         T::ProductId,
         Blake2_128Concat,
         T::DeviceId,
-        ItemAttributesApprovals<T>,
+        DeviceAttributesApprovals<T>,
         ValueQuery,
     >;
 
@@ -318,7 +318,7 @@ pub mod pallet {
     /// Config of a collection.
     #[pallet::storage]
     pub type CollectionConfigOf<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::ProductId, CollectionConfig, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, T::ProductId, ProductConfig, OptionQuery>;
 
     /// Config of an item.
     #[pallet::storage]
@@ -328,7 +328,7 @@ pub mod pallet {
         T::ProductId,
         Blake2_128Concat,
         T::DeviceId,
-        ItemConfig,
+        DeviceConfig,
         OptionQuery,
     >;
 
@@ -537,7 +537,7 @@ pub mod pallet {
         pub fn create(
             origin: OriginFor<T>,
             admin: AccountIdLookupOf<T>,
-            config: CollectionConfig,
+            config: ProductConfig,
         ) -> DispatchResult {
             let collection = NextCollectionId::<T>::get()
                 .or(T::ProductId::initial_value())
@@ -548,7 +548,7 @@ pub mod pallet {
 
             // DepositRequired can be disabled by calling the force_create() only
             ensure!(
-				!config.has_disabled_setting(CollectionSetting::DepositRequired),
+				!config.has_disabled_setting(ProductSetting::DepositRequired),
 				Error::<T>::WrongSetting
 			);
 
@@ -585,7 +585,7 @@ pub mod pallet {
         pub fn force_create(
             origin: OriginFor<T>,
             owner: AccountIdLookupOf<T>,
-            config: CollectionConfig,
+            config: ProductConfig,
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
             let owner = T::Lookup::lookup(owner)?;
@@ -673,7 +673,7 @@ pub mod pallet {
             let caller = ensure_signed(origin)?;
             let mint_to = T::Lookup::lookup(mint_to)?;
             let item_config =
-                ItemConfig { settings: Self::get_default_item_settings(&collection)? };
+                DeviceConfig { settings: Self::get_default_item_settings(&collection)? };
 
             Self::do_mint(
                 collection,
@@ -687,7 +687,7 @@ pub mod pallet {
                     match mint_settings.mint_type {
                         MintType::Issuer => {
                             ensure!(
-								Self::has_role(&collection, &caller, CollectionRole::Issuer),
+								Self::has_role(&collection, &caller, ProductRole::Issuer),
 								Error::<T>::NoPermission
 							);
                         },
@@ -719,7 +719,7 @@ pub mod pallet {
             collection: T::ProductId,
             item: T::DeviceId,
             mint_to: AccountIdLookupOf<T>,
-            item_config: ItemConfig,
+            item_config: DeviceConfig,
         ) -> DispatchResult {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
@@ -728,7 +728,7 @@ pub mod pallet {
 
             if let Some(check_origin) = maybe_check_origin {
                 ensure!(
-					Self::has_role(&collection, &check_origin, CollectionRole::Issuer),
+					Self::has_role(&collection, &check_origin, ProductRole::Issuer),
 					Error::<T>::NoPermission
 				);
             }
@@ -855,7 +855,7 @@ pub mod pallet {
         pub fn lock_collection(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            lock_settings: CollectionSettings,
+            lock_settings: ProductSettings,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
             Self::do_lock_collection(origin, collection, lock_settings)
@@ -955,7 +955,7 @@ pub mod pallet {
         pub fn force_collection_config(
             origin: OriginFor<T>,
             collection: T::ProductId,
-            config: CollectionConfig,
+            config: ProductConfig,
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
             Self::do_force_collection_config(collection, config)
@@ -1033,7 +1033,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
             let depositor = match namespace {
-                AttributeNamespace::CollectionOwner =>
+                AttributeNamespace::ProductOwner =>
                     Self::collection_owner(collection).ok_or(Error::<T>::UnknownCollection)?,
                 _ => origin.clone(),
             };

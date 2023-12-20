@@ -50,9 +50,9 @@ impl<T: Config> Pallet<T> {
 			}
 
 			let roles_map = [
-				(issuer.clone(), CollectionRole::Issuer),
-				(admin.clone(), CollectionRole::Admin),
-				(freezer.clone(), CollectionRole::Freezer),
+				(issuer.clone(), ProductRole::Issuer),
+				(admin.clone(), ProductRole::Admin),
+				(freezer.clone(), ProductRole::Freezer),
 			];
 
 			// only root can change the role from `None` to `Some(account)`
@@ -97,7 +97,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn clear_roles(collection_id: &T::ProductId) -> Result<(), DispatchError> {
 		let res = CollectionRoleOf::<T>::clear_prefix(
 			&collection_id,
-			CollectionRoles::max_roles() as u32,
+			ProductRoles::max_roles() as u32,
 			None,
 		);
 		ensure!(res.maybe_cursor.is_none(), Error::<T>::RolesNotCleared);
@@ -114,7 +114,7 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn has_role(
         collection_id: &T::ProductId,
         account_id: &T::AccountId,
-        role: CollectionRole,
+        role: ProductRole,
 	) -> bool {
 		CollectionRoleOf::<T>::get(&collection_id, &account_id)
 			.map_or(false, |roles| roles.has_role(role))
@@ -128,7 +128,7 @@ impl<T: Config> Pallet<T> {
 	/// Returns `Some(T::AccountId)` if the record was found, `None` otherwise.
 	pub(crate) fn find_account_by_role(
         collection_id: &T::ProductId,
-        role: CollectionRole,
+        role: ProductRole,
 	) -> Option<T::AccountId> {
 		CollectionRoleOf::<T>::iter_prefix(&collection_id).into_iter().find_map(
 			|(account, roles)| if roles.has_role(role) { Some(account.clone()) } else { None },
@@ -141,11 +141,11 @@ impl<T: Config> Pallet<T> {
 	///
 	/// Returns a grouped vector of `(Account, Roles)` tuples.
 	pub fn group_roles_by_account(
-		input: Vec<(T::AccountId, CollectionRole)>,
-	) -> Vec<(T::AccountId, CollectionRoles)> {
+        input: Vec<(T::AccountId, ProductRole)>,
+	) -> Vec<(T::AccountId, ProductRoles)> {
 		let mut result = BTreeMap::new();
 		for (account, role) in input.into_iter() {
-			result.entry(account).or_insert(CollectionRoles::none()).add_role(role);
+			result.entry(account).or_insert(ProductRoles::none()).add_role(role);
 		}
 		result.into_iter().collect()
 	}

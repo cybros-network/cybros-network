@@ -47,7 +47,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, CollectionRole::Admin),
+				Self::has_role(&collection, &check_origin, ProductRole::Admin),
 				Error::<T>::NoPermission
 			);
 		}
@@ -71,10 +71,10 @@ impl<T: Config> Pallet<T> {
 
 			let old_deposit = metadata
 				.take()
-				.map_or(ItemMetadataDeposit { account: None, amount: Zero::zero() }, |m| m.deposit);
+				.map_or(DeviceMetadataDeposit { account: None, amount: Zero::zero() }, |m| m.deposit);
 
 			let mut deposit = Zero::zero();
-			if collection_config.is_setting_enabled(CollectionSetting::DepositRequired) && !is_root
+			if collection_config.is_setting_enabled(ProductSetting::DepositRequired) && !is_root
 			{
 				deposit = T::DepositPerByte::get()
 					.saturating_mul(((data.len()) as u32).into())
@@ -98,8 +98,8 @@ impl<T: Config> Pallet<T> {
 				collection_details.owner_deposit.saturating_reduce(old_deposit.amount);
 			}
 
-			*metadata = Some(ItemMetadata {
-				deposit: ItemMetadataDeposit { account: maybe_depositor, amount: deposit },
+			*metadata = Some(DeviceMetadata {
+				deposit: DeviceMetadataDeposit { account: maybe_depositor, amount: deposit },
 				data: data.clone(),
 			});
 
@@ -129,7 +129,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, CollectionRole::Admin),
+				Self::has_role(&collection, &check_origin, ProductRole::Admin),
 				Error::<T>::NoPermission
 			);
 		}
@@ -182,7 +182,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, CollectionRole::Admin),
+				Self::has_role(&collection, &check_origin, ProductRole::Admin),
 				Error::<T>::NoPermission
 			);
 		}
@@ -190,7 +190,7 @@ impl<T: Config> Pallet<T> {
 		let is_root = maybe_check_origin.is_none();
 		let collection_config = Self::get_collection_config(&collection)?;
 		ensure!(
-			is_root || collection_config.is_setting_enabled(CollectionSetting::UnlockedMetadata),
+			is_root || collection_config.is_setting_enabled(ProductSetting::UnlockedMetadata),
 			Error::<T>::LockedCollectionMetadata
 		);
 
@@ -201,7 +201,7 @@ impl<T: Config> Pallet<T> {
 			let old_deposit = metadata.take().map_or(Zero::zero(), |m| m.deposit);
 			details.owner_deposit.saturating_reduce(old_deposit);
 			let mut deposit = Zero::zero();
-			if !is_root && collection_config.is_setting_enabled(CollectionSetting::DepositRequired)
+			if !is_root && collection_config.is_setting_enabled(ProductSetting::DepositRequired)
 			{
 				deposit = T::DepositPerByte::get()
 					.saturating_mul(((data.len()) as u32).into())
@@ -216,7 +216,7 @@ impl<T: Config> Pallet<T> {
 
 			Collection::<T>::insert(&collection, details);
 
-			*metadata = Some(CollectionMetadata { deposit, data: data.clone() });
+			*metadata = Some(ProductMetadata { deposit, data: data.clone() });
 
 			Self::deposit_event(Event::CollectionMetadataSet { collection, data });
 			Ok(())
@@ -242,7 +242,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, CollectionRole::Admin),
+				Self::has_role(&collection, &check_origin, ProductRole::Admin),
 				Error::<T>::NoPermission
 			);
 		}
@@ -253,7 +253,7 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(
 			maybe_check_origin.is_none() ||
-				collection_config.is_setting_enabled(CollectionSetting::UnlockedMetadata),
+				collection_config.is_setting_enabled(ProductSetting::UnlockedMetadata),
 			Error::<T>::LockedCollectionMetadata
 		);
 

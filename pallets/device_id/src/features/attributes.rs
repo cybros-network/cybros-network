@@ -62,10 +62,10 @@ impl<T: Config> Pallet<T> {
 		let collection_config = Self::get_collection_config(&collection)?;
 		// for the `CollectionOwner` namespace we need to check if the collection/item is not locked
 		match namespace {
-			AttributeNamespace::CollectionOwner => match maybe_item {
+			AttributeNamespace::ProductOwner => match maybe_item {
 				None => {
 					ensure!(
-						collection_config.is_setting_enabled(CollectionSetting::UnlockedAttributes),
+						collection_config.is_setting_enabled(ProductSetting::UnlockedAttributes),
 						Error::<T>::LockedCollectionAttributes
 					)
 				},
@@ -92,15 +92,15 @@ impl<T: Config> Pallet<T> {
 
 		let mut deposit = Zero::zero();
 		// disabled DepositRequired setting only affects the CollectionOwner namespace
-		if collection_config.is_setting_enabled(CollectionSetting::DepositRequired) ||
-			namespace != AttributeNamespace::CollectionOwner
+		if collection_config.is_setting_enabled(ProductSetting::DepositRequired) ||
+			namespace != AttributeNamespace::ProductOwner
 		{
 			deposit = T::DepositPerByte::get()
 				.saturating_mul(((key.len() + value.len()) as u32).into())
 				.saturating_add(T::AttributeDepositBase::get());
 		}
 
-		let is_collection_owner_namespace = namespace == AttributeNamespace::CollectionOwner;
+		let is_collection_owner_namespace = namespace == AttributeNamespace::ProductOwner;
 		let is_depositor_collection_owner =
 			is_collection_owner_namespace && collection_details.owner == depositor;
 
@@ -228,7 +228,7 @@ impl<T: Config> Pallet<T> {
 		// Only the CollectionOwner and Account() namespaces could be updated in this way.
 		// For the Account() namespace we check and set the approval if it wasn't set before.
 		match &namespace {
-			AttributeNamespace::CollectionOwner => {},
+			AttributeNamespace::ProductOwner => {},
 			AttributeNamespace::Account(account) => {
 				ensure!(account == &signer, Error::<T>::NoPermission);
 				let approvals = ItemAttributesApprovalsOf::<T>::get(&collection, &item);
@@ -297,12 +297,12 @@ impl<T: Config> Pallet<T> {
 
 			// can't clear `CollectionOwner` type attributes if the collection/item is locked
 			match namespace {
-				AttributeNamespace::CollectionOwner => match maybe_item {
+				AttributeNamespace::ProductOwner => match maybe_item {
 					None => {
 						let collection_config = Self::get_collection_config(&collection)?;
 						ensure!(
 							collection_config
-								.is_setting_enabled(CollectionSetting::UnlockedAttributes),
+								.is_setting_enabled(ProductSetting::UnlockedAttributes),
 							Error::<T>::LockedCollectionAttributes
 						)
 					},
@@ -319,7 +319,7 @@ impl<T: Config> Pallet<T> {
 							// e.g. in off-chain mints, the attribute's depositor will be the item's
 							// owner, that's why we need to do this extra check.
 							ensure!(
-								Self::has_role(&collection, &check_origin, CollectionRole::Admin),
+								Self::has_role(&collection, &check_origin, ProductRole::Admin),
 								Error::<T>::NoPermission
 							);
 						}
@@ -338,7 +338,7 @@ impl<T: Config> Pallet<T> {
 			Some(deposit_account) => {
 				T::Currency::unreserve(&deposit_account, deposit.amount);
 			},
-			None if namespace == AttributeNamespace::CollectionOwner => {
+			None if namespace == AttributeNamespace::ProductOwner => {
 				collection_details.owner_deposit.saturating_reduce(deposit.amount);
 				T::Currency::unreserve(&collection_details.owner, deposit.amount);
 			},
@@ -444,9 +444,9 @@ impl<T: Config> Pallet<T> {
 	) -> Result<bool, DispatchError> {
 		let mut result = false;
 		match namespace {
-			AttributeNamespace::CollectionOwner =>
-				result = Self::has_role(&collection, &origin, CollectionRole::Admin),
-			AttributeNamespace::ItemOwner =>
+			AttributeNamespace::ProductOwner =>
+				result = Self::has_role(&collection, &origin, ProductRole::Admin),
+			AttributeNamespace::DeviceOwner =>
 				if let Some(item) = maybe_item {
 					let item_details =
 						Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;

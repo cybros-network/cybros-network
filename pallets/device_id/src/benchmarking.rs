@@ -166,7 +166,7 @@ fn add_item_attribute<T: Config>(
 		SystemOrigin::Signed(caller.clone()).into(),
 		T::Helper::product(0),
 		Some(item),
-		AttributeNamespace::CollectionOwner,
+		AttributeNamespace::ProductOwner,
 		key.clone(),
 		vec![0; T::ValueLimit::get() as usize].try_into().unwrap(),
 	));
@@ -186,7 +186,7 @@ fn add_collection_attribute<T: Config>(
 		SystemOrigin::Signed(caller.clone()).into(),
 		T::Helper::product(0),
 		None,
-		AttributeNamespace::CollectionOwner,
+		AttributeNamespace::ProductOwner,
 		key.clone(),
 		vec![0; T::ValueLimit::get() as usize].try_into().unwrap(),
 	));
@@ -202,21 +202,21 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
 }
 
 fn make_collection_config<T: Config>(
-	disable_settings: BitFlags<CollectionSetting>,
-) -> CollectionConfig {
-	CollectionConfig {
-		settings: CollectionSettings::from_disabled(disable_settings),
+	disable_settings: BitFlags<ProductSetting>,
+) -> ProductConfig {
+	ProductConfig {
+		settings: ProductSettings::from_disabled(disable_settings),
 		max_supply: None,
 		mint_settings: MintSettings::default(),
 	}
 }
 
-fn default_collection_config<T: Config>() -> CollectionConfig {
-	make_collection_config::<T>(CollectionSetting::empty())
+fn default_collection_config<T: Config>() -> ProductConfig {
+	make_collection_config::<T>(ProductSetting::empty())
 }
 
-fn default_item_config() -> ItemConfig {
-	ItemConfig { settings: ItemSettings::all_enabled() }
+fn default_item_config() -> DeviceConfig {
+	DeviceConfig { settings: DeviceSettings::all_enabled() }
 }
 
 fn make_filled_vec(value: u16, length: usize) -> Vec<u8> {
@@ -342,11 +342,11 @@ benchmarks! {
 
 	lock_collection {
 		let (collection, caller, _) = create_collection::<T>();
-		let lock_settings = CollectionSettings::from_disabled(
-			CollectionSetting::TransferableItems |
-				CollectionSetting::UnlockedMetadata |
-				CollectionSetting::UnlockedAttributes |
-				CollectionSetting::UnlockedMaxSupply,
+		let lock_settings = ProductSettings::from_disabled(
+			ProductSetting::TransferableItems |
+				ProductSetting::UnlockedMetadata |
+				ProductSetting::UnlockedAttributes |
+				ProductSetting::UnlockedMaxSupply,
 		);
 	}: _(SystemOrigin::Signed(caller.clone()), collection, lock_settings)
 	verify {
@@ -402,7 +402,7 @@ benchmarks! {
 			T::ForceOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
 		let call = Call::<T>::force_collection_config {
 			collection,
-			config: make_collection_config::<T>(CollectionSetting::DepositRequired.into()),
+			config: make_collection_config::<T>(ProductSetting::DepositRequired.into()),
 		};
 	}: { call.dispatch_bypass_filter(origin)? }
 	verify {
@@ -425,13 +425,13 @@ benchmarks! {
 
 		let (collection, caller, _) = create_collection::<T>();
 		let (item, ..) = mint_item::<T>(0);
-	}: _(SystemOrigin::Signed(caller), collection, Some(item), AttributeNamespace::CollectionOwner, key.clone(), value.clone())
+	}: _(SystemOrigin::Signed(caller), collection, Some(item), AttributeNamespace::ProductOwner, key.clone(), value.clone())
 	verify {
 		assert_last_event::<T>(
 			Event::AttributeSet {
 				collection,
 				maybe_item: Some(item),
-				namespace: AttributeNamespace::CollectionOwner,
+				namespace: AttributeNamespace::ProductOwner,
 				key,
 				value,
 			}
@@ -445,13 +445,13 @@ benchmarks! {
 
 		let (collection, caller, _) = create_collection::<T>();
 		let (item, ..) = mint_item::<T>(0);
-	}: _(SystemOrigin::Root, Some(caller), collection, Some(item), AttributeNamespace::CollectionOwner, key.clone(), value.clone())
+	}: _(SystemOrigin::Root, Some(caller), collection, Some(item), AttributeNamespace::ProductOwner, key.clone(), value.clone())
 	verify {
 		assert_last_event::<T>(
 			Event::AttributeSet {
 				collection,
 				maybe_item: Some(item),
-				namespace: AttributeNamespace::CollectionOwner,
+				namespace: AttributeNamespace::ProductOwner,
 				key,
 				value,
 			}
@@ -464,13 +464,13 @@ benchmarks! {
 		let (item, ..) = mint_item::<T>(0);
 		add_item_metadata::<T>(item);
 		let (key, ..) = add_item_attribute::<T>(item);
-	}: _(SystemOrigin::Signed(caller), collection, Some(item), AttributeNamespace::CollectionOwner, key.clone())
+	}: _(SystemOrigin::Signed(caller), collection, Some(item), AttributeNamespace::ProductOwner, key.clone())
 	verify {
 		assert_last_event::<T>(
 			Event::AttributeCleared {
 				collection,
 				maybe_item: Some(item),
-				namespace: AttributeNamespace::CollectionOwner,
+				namespace: AttributeNamespace::ProductOwner,
 				key,
 			}.into(),
 		);
@@ -594,7 +594,7 @@ benchmarks! {
 		let (collection, caller, _) = create_collection::<T>();
 		let mint_settings = MintSettings {
 			mint_type: MintType::Issuer,
-			default_item_settings: ItemSettings::all_enabled(),
+			default_device_settings: DeviceSettings::all_enabled(),
 		};
 	}: _(SystemOrigin::Signed(caller.clone()), collection, mint_settings)
 	verify {

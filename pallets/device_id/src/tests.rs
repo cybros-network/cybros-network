@@ -112,33 +112,33 @@ fn events() -> Vec<Event<Test>> {
 }
 
 fn collection_config_from_disabled_settings(
-	settings: BitFlags<CollectionSetting>,
-) -> CollectionConfig {
-	CollectionConfig {
-		settings: CollectionSettings::from_disabled(settings),
+	settings: BitFlags<ProductSetting>,
+) -> ProductConfig {
+	ProductConfig {
+		settings: ProductSettings::from_disabled(settings),
 		max_supply: None,
 		mint_settings: MintSettings::default(),
 	}
 }
 
-fn collection_config_with_all_settings_enabled() -> CollectionConfig {
-	CollectionConfig {
-		settings: CollectionSettings::all_enabled(),
+fn collection_config_with_all_settings_enabled() -> ProductConfig {
+	ProductConfig {
+		settings: ProductSettings::all_enabled(),
 		max_supply: None,
 		mint_settings: MintSettings::default(),
 	}
 }
 
-fn default_collection_config() -> CollectionConfig {
-	collection_config_from_disabled_settings(CollectionSetting::DepositRequired.into())
+fn default_collection_config() -> ProductConfig {
+	collection_config_from_disabled_settings(ProductSetting::DepositRequired.into())
 }
 
-fn default_item_config() -> ItemConfig {
-	ItemConfig { settings: ItemSettings::all_enabled() }
+fn default_item_config() -> DeviceConfig {
+	DeviceConfig { settings: DeviceSettings::all_enabled() }
 }
 
-fn item_config_from_disabled_settings(settings: BitFlags<ItemSetting>) -> ItemConfig {
-	ItemConfig { settings: ItemSettings::from_disabled(settings) }
+fn item_config_from_disabled_settings(settings: BitFlags<ItemSetting>) -> DeviceConfig {
+	DeviceConfig { settings: DeviceSettings::from_disabled(settings) }
 }
 
 #[test]
@@ -237,7 +237,7 @@ fn lifecycle_should_work() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(69),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![0],
 		));
@@ -366,7 +366,7 @@ fn transfer_should_work() {
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_from_disabled_settings(
-				CollectionSetting::TransferableItems | CollectionSetting::DepositRequired
+				ProductSetting::TransferableItems | ProductSetting::DepositRequired
 			)
 		));
 
@@ -404,7 +404,7 @@ fn locking_transfer_should_work() {
 		assert_ok!(DeviceId::lock_collection(
 			RuntimeOrigin::signed(account(1)),
 			0,
-			CollectionSettings::from_disabled(CollectionSetting::TransferableItems.into())
+			ProductSettings::from_disabled(ProductSetting::TransferableItems.into())
 		));
 		assert_noop!(
 			DeviceId::transfer(RuntimeOrigin::signed(account(1)), 0, 42, account(2)),
@@ -669,7 +669,7 @@ fn set_collection_metadata_should_work() {
 		assert_ok!(DeviceId::lock_collection(
 			RuntimeOrigin::signed(account(1)),
 			0,
-			CollectionSettings::from_disabled(CollectionSetting::UnlockedMetadata.into())
+			ProductSettings::from_disabled(ProductSetting::UnlockedMetadata.into())
 		));
 		assert_noop!(
 			DeviceId::set_collection_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![0u8; 15]),
@@ -786,7 +786,7 @@ fn set_collection_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			None,
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![0],
 		));
@@ -794,7 +794,7 @@ fn set_collection_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![0],
 		));
@@ -802,16 +802,16 @@ fn set_collection_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![1],
 			bvec![0],
 		));
 		assert_eq!(
 			attributes(0),
 			vec![
-				(None, AttributeNamespace::CollectionOwner, bvec![0], bvec![0]),
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![0], bvec![0]),
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![1], bvec![0]),
+				(None, AttributeNamespace::ProductOwner, bvec![0], bvec![0]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![0], bvec![0]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![1], bvec![0]),
 			]
 		);
 		assert_eq!(Balances::reserved_balance(account(1)), 10);
@@ -821,16 +821,16 @@ fn set_collection_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			None,
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![0; 10],
 		));
 		assert_eq!(
 			attributes(0),
 			vec![
-				(None, AttributeNamespace::CollectionOwner, bvec![0], bvec![0; 10]),
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![0], bvec![0]),
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![1], bvec![0]),
+				(None, AttributeNamespace::ProductOwner, bvec![0], bvec![0; 10]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![0], bvec![0]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![1], bvec![0]),
 			]
 		);
 		assert_eq!(Balances::reserved_balance(account(1)), 19);
@@ -840,14 +840,14 @@ fn set_collection_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![1],
 		));
 		assert_eq!(
 			attributes(0),
 			vec![
-				(None, AttributeNamespace::CollectionOwner, bvec![0], bvec![0; 10]),
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![0], bvec![0]),
+				(None, AttributeNamespace::ProductOwner, bvec![0], bvec![0; 10]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![0], bvec![0]),
 			]
 		);
 		assert_eq!(Balances::reserved_balance(account(1)), 16);
@@ -876,7 +876,7 @@ fn set_collection_system_attributes_should_work() {
 		let attribute_key = [0u8];
 		let attribute_value = [0u8];
 
-		assert_ok!(<DeviceId as Mutate<AccountIdOf<Test>, ItemConfig>>::set_collection_attribute(
+		assert_ok!(<DeviceId as Mutate<AccountIdOf<Test>, DeviceConfig >>::set_collection_attribute(
 			&collection_id,
 			&attribute_key,
 			&attribute_value
@@ -900,7 +900,7 @@ fn set_collection_system_attributes_should_work() {
 		let typed_attribute_value = TypedAttributeValue(42);
 
 		assert_ok!(
-			<DeviceId as Mutate<AccountIdOf<Test>, ItemConfig>>::set_typed_collection_attribute(
+			<DeviceId as Mutate<AccountIdOf<Test>, DeviceConfig >>::set_typed_collection_attribute(
 				&collection_id,
 				&typed_attribute_key,
 				&typed_attribute_value
@@ -966,7 +966,7 @@ fn set_item_owner_attributes_should_work() {
 				RuntimeOrigin::signed(account(2)),
 				0,
 				None,
-				AttributeNamespace::ItemOwner,
+				AttributeNamespace::DeviceOwner,
 				bvec![0],
 				bvec![0],
 			),
@@ -978,7 +978,7 @@ fn set_item_owner_attributes_should_work() {
 				RuntimeOrigin::signed(account(1)),
 				0,
 				Some(0),
-				AttributeNamespace::ItemOwner,
+				AttributeNamespace::DeviceOwner,
 				bvec![0],
 				bvec![0],
 			),
@@ -988,7 +988,7 @@ fn set_item_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
-			AttributeNamespace::ItemOwner,
+			AttributeNamespace::DeviceOwner,
 			bvec![0],
 			bvec![0],
 		));
@@ -996,7 +996,7 @@ fn set_item_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
-			AttributeNamespace::ItemOwner,
+			AttributeNamespace::DeviceOwner,
 			bvec![1],
 			bvec![0],
 		));
@@ -1004,16 +1004,16 @@ fn set_item_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
-			AttributeNamespace::ItemOwner,
+			AttributeNamespace::DeviceOwner,
 			bvec![2],
 			bvec![0],
 		));
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::ItemOwner, bvec![0], bvec![0]),
-				(Some(0), AttributeNamespace::ItemOwner, bvec![1], bvec![0]),
-				(Some(0), AttributeNamespace::ItemOwner, bvec![2], bvec![0]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![0], bvec![0]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![1], bvec![0]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![2], bvec![0]),
 			]
 		);
 		assert_eq!(Balances::reserved_balance(account(2)), 9);
@@ -1023,16 +1023,16 @@ fn set_item_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
-			AttributeNamespace::ItemOwner,
+			AttributeNamespace::DeviceOwner,
 			bvec![0],
 			bvec![0; 10],
 		));
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::ItemOwner, bvec![0], bvec![0; 10]),
-				(Some(0), AttributeNamespace::ItemOwner, bvec![1], bvec![0]),
-				(Some(0), AttributeNamespace::ItemOwner, bvec![2], bvec![0]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![0], bvec![0; 10]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![1], bvec![0]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![2], bvec![0]),
 			]
 		);
 		assert_eq!(Balances::reserved_balance(account(2)), 18);
@@ -1043,7 +1043,7 @@ fn set_item_owner_attributes_should_work() {
 				RuntimeOrigin::signed(account(1)),
 				0,
 				Some(0),
-				AttributeNamespace::ItemOwner,
+				AttributeNamespace::DeviceOwner,
 				bvec![1],
 			),
 			Error::<Test>::NoPermission,
@@ -1052,14 +1052,14 @@ fn set_item_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
-			AttributeNamespace::ItemOwner,
+			AttributeNamespace::DeviceOwner,
 			bvec![1],
 		));
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::ItemOwner, bvec![0], bvec![0; 10]),
-				(Some(0), AttributeNamespace::ItemOwner, bvec![2], bvec![0])
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![0], bvec![0; 10]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![2], bvec![0])
 			]
 		);
 		assert_eq!(Balances::reserved_balance(account(2)), 15);
@@ -1071,13 +1071,13 @@ fn set_item_owner_attributes_should_work() {
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::ItemOwner, bvec![0], bvec![0; 10]),
-				(Some(0), AttributeNamespace::ItemOwner, bvec![2], bvec![0])
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![0], bvec![0; 10]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![2], bvec![0])
 			]
 		);
 		let key: BoundedVec<_, _> = bvec![0];
 		let (_, deposit) =
-			Attribute::<Test>::get((0, Some(0), AttributeNamespace::ItemOwner, &key)).unwrap();
+			Attribute::<Test>::get((0, Some(0), AttributeNamespace::DeviceOwner, &key)).unwrap();
 		assert_eq!(deposit.account, Some(account(2)));
 		assert_eq!(deposit.amount, 12);
 
@@ -1086,12 +1086,12 @@ fn set_item_owner_attributes_should_work() {
 			RuntimeOrigin::signed(account(3)),
 			0,
 			Some(0),
-			AttributeNamespace::ItemOwner,
+			AttributeNamespace::DeviceOwner,
 			bvec![0],
 			bvec![0; 11],
 		));
 		let (_, deposit) =
-			Attribute::<Test>::get((0, Some(0), AttributeNamespace::ItemOwner, &key)).unwrap();
+			Attribute::<Test>::get((0, Some(0), AttributeNamespace::DeviceOwner, &key)).unwrap();
 		assert_eq!(deposit.account, Some(account(3)));
 		assert_eq!(deposit.amount, 13);
 		assert_eq!(Balances::reserved_balance(account(2)), 3);
@@ -1102,22 +1102,22 @@ fn set_item_owner_attributes_should_work() {
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::ItemOwner, bvec![0], bvec![0; 11]),
-				(Some(0), AttributeNamespace::ItemOwner, bvec![2], bvec![0])
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![0], bvec![0; 11]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![2], bvec![0])
 			]
 		);
 		assert_ok!(DeviceId::clear_attribute(
 			RuntimeOrigin::signed(account(3)),
 			0,
 			Some(0),
-			AttributeNamespace::ItemOwner,
+			AttributeNamespace::DeviceOwner,
 			bvec![0],
 		));
 		assert_ok!(DeviceId::clear_attribute(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
-			AttributeNamespace::ItemOwner,
+			AttributeNamespace::DeviceOwner,
 			bvec![2],
 		));
 		assert_eq!(Balances::reserved_balance(account(2)), 0);
@@ -1242,7 +1242,7 @@ fn validate_deposit_required_setting() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![0],
 		));
@@ -1250,7 +1250,7 @@ fn validate_deposit_required_setting() {
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
-			AttributeNamespace::ItemOwner,
+			AttributeNamespace::DeviceOwner,
 			bvec![1],
 			bvec![0],
 		));
@@ -1262,7 +1262,7 @@ fn validate_deposit_required_setting() {
 			bvec![2],
 			bvec![0],
 		));
-		assert_ok!(<DeviceId as Mutate<<Test as frame_system::Config>::AccountId, ItemConfig>>::set_attribute(
+		assert_ok!(<DeviceId as Mutate<<Test as frame_system::Config>::AccountId, DeviceConfig >>::set_attribute(
 			&0,
 			&0,
 			&[3],
@@ -1271,8 +1271,8 @@ fn validate_deposit_required_setting() {
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![0], bvec![0]),
-				(Some(0), AttributeNamespace::ItemOwner, bvec![1], bvec![0]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![0], bvec![0]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![1], bvec![0]),
 				(Some(0), AttributeNamespace::Account(account(3)), bvec![2], bvec![0]),
 				(Some(0), AttributeNamespace::Pallet, bvec![3], bvec![0]),
 			]
@@ -1282,7 +1282,7 @@ fn validate_deposit_required_setting() {
 		assert_eq!(Balances::reserved_balance(account(3)), 3);
 
 		assert_ok!(
-			<DeviceId as Mutate<<Test as frame_system::Config>::AccountId, ItemConfig>>::clear_attribute(
+			<DeviceId as Mutate<<Test as frame_system::Config>::AccountId, DeviceConfig >>::clear_attribute(
 				&0,
 				&0,
 				&[3],
@@ -1291,8 +1291,8 @@ fn validate_deposit_required_setting() {
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![0], bvec![0]),
-				(Some(0), AttributeNamespace::ItemOwner, bvec![1], bvec![0]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![0], bvec![0]),
+				(Some(0), AttributeNamespace::DeviceOwner, bvec![1], bvec![0]),
 				(Some(0), AttributeNamespace::Account(account(3)), bvec![2], bvec![0]),
 			]
 		);
@@ -1316,7 +1316,7 @@ fn set_attribute_should_respect_lock() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			None,
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![0],
 		));
@@ -1324,7 +1324,7 @@ fn set_attribute_should_respect_lock() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![0],
 		));
@@ -1332,16 +1332,16 @@ fn set_attribute_should_respect_lock() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(1),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![0],
 		));
 		assert_eq!(
 			attributes(0),
 			vec![
-				(None, AttributeNamespace::CollectionOwner, bvec![0], bvec![0]),
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![0], bvec![0]),
-				(Some(1), AttributeNamespace::CollectionOwner, bvec![0], bvec![0]),
+				(None, AttributeNamespace::ProductOwner, bvec![0], bvec![0]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![0], bvec![0]),
+				(Some(1), AttributeNamespace::ProductOwner, bvec![0], bvec![0]),
 			]
 		);
 		assert_eq!(Balances::reserved_balance(account(1)), 11);
@@ -1350,7 +1350,7 @@ fn set_attribute_should_respect_lock() {
 		assert_ok!(DeviceId::lock_collection(
 			RuntimeOrigin::signed(account(1)),
 			0,
-			CollectionSettings::from_disabled(CollectionSetting::UnlockedAttributes.into())
+			ProductSettings::from_disabled(ProductSetting::UnlockedAttributes.into())
 		));
 
 		let e = Error::<Test>::LockedCollectionAttributes;
@@ -1359,7 +1359,7 @@ fn set_attribute_should_respect_lock() {
 				RuntimeOrigin::signed(account(1)),
 				0,
 				None,
-				AttributeNamespace::CollectionOwner,
+				AttributeNamespace::ProductOwner,
 				bvec![0],
 				bvec![0],
 			),
@@ -1369,7 +1369,7 @@ fn set_attribute_should_respect_lock() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![1],
 		));
@@ -1387,7 +1387,7 @@ fn set_attribute_should_respect_lock() {
 				RuntimeOrigin::signed(account(1)),
 				0,
 				Some(0),
-				AttributeNamespace::CollectionOwner,
+				AttributeNamespace::ProductOwner,
 				bvec![0],
 				bvec![1],
 			),
@@ -1397,7 +1397,7 @@ fn set_attribute_should_respect_lock() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(1),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![1],
 		));
@@ -1450,7 +1450,7 @@ fn preserve_config_for_frozen_items() {
 			RuntimeOrigin::signed(account(1)),
 			0,
 			MintSettings {
-				default_item_settings: ItemSettings::from_disabled(
+				default_device_settings: DeviceSettings::from_disabled(
 					ItemSetting::UnlockedAttributes | ItemSetting::UnlockedMetadata
 				),
 				..Default::default()
@@ -1491,7 +1491,7 @@ fn force_update_collection_should_work() {
 		assert_ok!(DeviceId::force_collection_config(
 			RuntimeOrigin::root(),
 			0,
-			collection_config_from_disabled_settings(CollectionSetting::DepositRequired.into()),
+			collection_config_from_disabled_settings(ProductSetting::DepositRequired.into()),
 		));
 		assert_ok!(DeviceId::mint(RuntimeOrigin::signed(account(1)), 0, 142, account(1)));
 		assert_ok!(DeviceId::force_mint(
@@ -1540,15 +1540,15 @@ fn force_update_collection_should_work() {
 		));
 		assert_eq!(
 			CollectionRoleOf::<Test>::get(0, account(2)).unwrap(),
-			CollectionRoles(CollectionRole::Issuer.into())
+			ProductRoles(ProductRole::Issuer.into())
 		);
 		assert_eq!(
 			CollectionRoleOf::<Test>::get(0, account(3)).unwrap(),
-			CollectionRoles(CollectionRole::Admin.into())
+			ProductRoles(ProductRole::Admin.into())
 		);
 		assert_eq!(
 			CollectionRoleOf::<Test>::get(0, account(4)).unwrap(),
-			CollectionRoles(CollectionRole::Freezer.into())
+			ProductRoles(ProductRole::Freezer.into())
 		);
 
 		assert_ok!(DeviceId::set_team(
@@ -1561,11 +1561,11 @@ fn force_update_collection_should_work() {
 
 		assert_eq!(
 			CollectionRoleOf::<Test>::get(0, account(2)).unwrap(),
-			CollectionRoles(CollectionRole::Admin.into())
+			ProductRoles(ProductRole::Admin.into())
 		);
 		assert_eq!(
 			CollectionRoleOf::<Test>::get(0, account(3)).unwrap(),
-			CollectionRoles(CollectionRole::Issuer | CollectionRole::Freezer)
+			ProductRoles(ProductRole::Issuer | ProductRole::Freezer)
 		);
 	});
 }
@@ -1661,7 +1661,7 @@ fn max_supply_should_work() {
 		assert_ok!(DeviceId::lock_collection(
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
-			CollectionSettings::from_disabled(CollectionSetting::UnlockedMaxSupply.into())
+			ProductSettings::from_disabled(ProductSetting::UnlockedMaxSupply.into())
 		));
 		assert_noop!(
 			DeviceId::set_collection_max_supply(
@@ -1700,7 +1700,7 @@ fn max_supply_should_work() {
 		assert_ok!(DeviceId::force_create(
 			RuntimeOrigin::root(),
 			user_id.clone(),
-			CollectionConfig { max_supply: Some(max_supply), ..default_collection_config() }
+			ProductConfig { max_supply: Some(max_supply), ..default_collection_config() }
 		));
 		assert_eq!(
 			CollectionConfigOf::<Test>::get(collection_id).unwrap().max_supply,
@@ -1736,16 +1736,16 @@ fn mint_settings_should_work() {
 				.unwrap()
 				.settings
 				.get_disabled(),
-			ItemSettings::all_enabled().get_disabled()
+			DeviceSettings::all_enabled().get_disabled()
 		);
 
 		let collection_id = 1;
 		assert_ok!(DeviceId::force_create(
 			RuntimeOrigin::root(),
 			user_id.clone(),
-			CollectionConfig {
+			ProductConfig {
 				mint_settings: MintSettings {
-					default_item_settings: ItemSettings::from_disabled(
+					default_device_settings: DeviceSettings::from_disabled(
 						ItemSetting::Transferable | ItemSetting::UnlockedMetadata
 					),
 					..Default::default()
@@ -1764,7 +1764,7 @@ fn mint_settings_should_work() {
 				.unwrap()
 				.settings
 				.get_disabled(),
-			ItemSettings::from_disabled(ItemSetting::Transferable | ItemSetting::UnlockedMetadata)
+			DeviceSettings::from_disabled(ItemSetting::Transferable | ItemSetting::UnlockedMetadata)
 				.get_disabled()
 		);
 	});
@@ -1775,22 +1775,22 @@ fn various_collection_settings() {
 	new_test_ext().execute_with(|| {
 		// when we set only one value it's required to call .into() on it
 		let config =
-			collection_config_from_disabled_settings(CollectionSetting::TransferableItems.into());
+			collection_config_from_disabled_settings(ProductSetting::TransferableItems.into());
 		assert_ok!(DeviceId::force_create(RuntimeOrigin::root(), account(1), config));
 
 		let config = CollectionConfigOf::<Test>::get(0).unwrap();
-		assert!(!config.is_setting_enabled(CollectionSetting::TransferableItems));
-		assert!(config.is_setting_enabled(CollectionSetting::UnlockedMetadata));
+		assert!(!config.is_setting_enabled(ProductSetting::TransferableItems));
+		assert!(config.is_setting_enabled(ProductSetting::UnlockedMetadata));
 
 		// no need to call .into() for multiple values
 		let config = collection_config_from_disabled_settings(
-			CollectionSetting::UnlockedMetadata | CollectionSetting::TransferableItems,
+			ProductSetting::UnlockedMetadata | ProductSetting::TransferableItems,
 		);
 		assert_ok!(DeviceId::force_create(RuntimeOrigin::root(), account(1), config));
 
 		let config = CollectionConfigOf::<Test>::get(1).unwrap();
-		assert!(!config.is_setting_enabled(CollectionSetting::TransferableItems));
-		assert!(!config.is_setting_enabled(CollectionSetting::UnlockedMetadata));
+		assert!(!config.is_setting_enabled(ProductSetting::TransferableItems));
+		assert!(!config.is_setting_enabled(ProductSetting::UnlockedMetadata));
 
 		assert_ok!(DeviceId::force_create(
 			RuntimeOrigin::root(),
@@ -1813,7 +1813,7 @@ fn collection_locking_should_work() {
 		));
 
 		let lock_config =
-			collection_config_from_disabled_settings(CollectionSetting::DepositRequired.into());
+			collection_config_from_disabled_settings(ProductSetting::DepositRequired.into());
 		assert_noop!(
 			DeviceId::lock_collection(
 				RuntimeOrigin::signed(user_id.clone()),
@@ -1825,7 +1825,7 @@ fn collection_locking_should_work() {
 
 		// validate partial lock
 		let lock_config = collection_config_from_disabled_settings(
-			CollectionSetting::TransferableItems | CollectionSetting::UnlockedAttributes,
+			ProductSetting::TransferableItems | ProductSetting::UnlockedAttributes,
 		);
 		assert_ok!(DeviceId::lock_collection(
 			RuntimeOrigin::signed(user_id.clone()),
@@ -1840,14 +1840,14 @@ fn collection_locking_should_work() {
 		assert_ok!(DeviceId::lock_collection(
 			RuntimeOrigin::signed(user_id),
 			collection_id,
-			CollectionSettings::from_disabled(CollectionSetting::UnlockedMetadata.into()),
+			ProductSettings::from_disabled(ProductSetting::UnlockedMetadata.into()),
 		));
 
 		let stored_config = CollectionConfigOf::<Test>::get(collection_id).unwrap();
 		let full_lock_config = collection_config_from_disabled_settings(
-			CollectionSetting::TransferableItems |
-				CollectionSetting::UnlockedMetadata |
-				CollectionSetting::UnlockedAttributes,
+			ProductSetting::TransferableItems |
+				ProductSetting::UnlockedMetadata |
+				ProductSetting::UnlockedAttributes,
 		);
 		assert_eq!(stored_config, full_lock_config);
 	});
@@ -1859,25 +1859,25 @@ fn group_roles_by_account_should_work() {
 		assert_eq!(DeviceId::group_roles_by_account(vec![]), vec![]);
 
 		let account_to_role = DeviceId::group_roles_by_account(vec![
-			(account(3), CollectionRole::Freezer),
-			(account(1), CollectionRole::Issuer),
-			(account(2), CollectionRole::Admin),
+			(account(3), ProductRole::Freezer),
+			(account(1), ProductRole::Issuer),
+			(account(2), ProductRole::Admin),
 		]);
 		let expect = vec![
-			(account(1), CollectionRoles(CollectionRole::Issuer.into())),
-			(account(2), CollectionRoles(CollectionRole::Admin.into())),
-			(account(3), CollectionRoles(CollectionRole::Freezer.into())),
+			(account(1), ProductRoles(ProductRole::Issuer.into())),
+			(account(2), ProductRoles(ProductRole::Admin.into())),
+			(account(3), ProductRoles(ProductRole::Freezer.into())),
 		];
 		assert_eq!(account_to_role, expect);
 
 		let account_to_role = DeviceId::group_roles_by_account(vec![
-			(account(3), CollectionRole::Freezer),
-			(account(2), CollectionRole::Issuer),
-			(account(2), CollectionRole::Admin),
+			(account(3), ProductRole::Freezer),
+			(account(2), ProductRole::Issuer),
+			(account(2), ProductRole::Admin),
 		]);
 		let expect = vec![
-			(account(2), CollectionRoles(CollectionRole::Issuer | CollectionRole::Admin)),
-			(account(3), CollectionRoles(CollectionRole::Freezer.into())),
+			(account(2), ProductRoles(ProductRole::Issuer | ProductRole::Admin)),
+			(account(3), ProductRoles(ProductRole::Freezer.into())),
 		];
 		assert_eq!(account_to_role, expect);
 	})
@@ -2016,22 +2016,22 @@ fn pre_signed_mints_should_work() {
 		let metadata = ItemMetadataOf::<Test>::get(0, 0).unwrap();
 		assert_eq!(
 			metadata.deposit,
-			ItemMetadataDeposit { account: Some(user_2.clone()), amount: 3 }
+			DeviceMetadataDeposit { account: Some(user_2.clone()), amount: 3 }
 		);
 		assert_eq!(metadata.data, vec![0, 1]);
 
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![0], bvec![1]),
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![2], bvec![3]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![0], bvec![1]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![2], bvec![3]),
 			]
 		);
 		let attribute_key: BoundedVec<_, _> = bvec![0];
 		let (_, deposit) = Attribute::<Test>::get((
 			0,
 			Some(0),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			&attribute_key,
 		))
 		.unwrap();
@@ -2179,7 +2179,7 @@ fn pre_signed_attributes_should_work() {
 			collection: 0,
 			item: 0,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3])],
-			namespace: AttributeNamespace::CollectionOwner,
+			namespace: AttributeNamespace::ProductOwner,
 			deadline: 10000000,
 		};
 		let message = Encode::encode(&pre_signed_data);
@@ -2195,15 +2195,15 @@ fn pre_signed_attributes_should_work() {
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![0], bvec![1]),
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![2], bvec![3]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![0], bvec![1]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![2], bvec![3]),
 			]
 		);
 		let attribute_key: BoundedVec<_, _> = bvec![0];
 		let (_, deposit) = Attribute::<Test>::get((
 			0,
 			Some(0),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			&attribute_key,
 		))
 		.unwrap();
@@ -2218,14 +2218,14 @@ fn pre_signed_attributes_should_work() {
 			RuntimeOrigin::signed(user_1.clone()),
 			collection_id,
 			Some(item_id),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			bvec![0],
 			bvec![1],
 		));
 		let (_, deposit) = Attribute::<Test>::get((
 			0,
 			Some(0),
-			AttributeNamespace::CollectionOwner,
+			AttributeNamespace::ProductOwner,
 			&attribute_key,
 		))
 		.unwrap();
@@ -2261,8 +2261,8 @@ fn pre_signed_attributes_should_work() {
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![0], bvec![1]),
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![2], bvec![3]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![0], bvec![1]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![2], bvec![3]),
 			]
 		);
 
@@ -2287,9 +2287,9 @@ fn pre_signed_attributes_should_work() {
 		assert_eq!(
 			attributes(0),
 			vec![
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![0], bvec![1]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![0], bvec![1]),
 				(Some(0), AttributeNamespace::Account(user_3.clone()), bvec![0], bvec![1]),
-				(Some(0), AttributeNamespace::CollectionOwner, bvec![2], bvec![3]),
+				(Some(0), AttributeNamespace::ProductOwner, bvec![2], bvec![3]),
 				(Some(0), AttributeNamespace::Account(user_3.clone()), bvec![2], bvec![3]),
 			]
 		);
@@ -2359,7 +2359,7 @@ fn pre_signed_attributes_should_work() {
 			collection: 0,
 			item: 0,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3])],
-			namespace: AttributeNamespace::CollectionOwner,
+			namespace: AttributeNamespace::ProductOwner,
 			deadline: 10000000,
 		};
 		let message = Encode::encode(&pre_signed_data);
@@ -2393,7 +2393,7 @@ fn pre_signed_attributes_should_work() {
 			collection: 1,
 			item: 1,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3])],
-			namespace: AttributeNamespace::CollectionOwner,
+			namespace: AttributeNamespace::ProductOwner,
 			deadline: 10000000,
 		};
 		let message = Encode::encode(&pre_signed_data);
@@ -2414,7 +2414,7 @@ fn pre_signed_attributes_should_work() {
 			collection: 1,
 			item: 1,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3]), (vec![2], vec![3])],
-			namespace: AttributeNamespace::CollectionOwner,
+			namespace: AttributeNamespace::ProductOwner,
 			deadline: 10000000,
 		};
 		let message = Encode::encode(&pre_signed_data);
@@ -2435,7 +2435,7 @@ fn pre_signed_attributes_should_work() {
 			collection: 0,
 			item: 0,
 			attributes: vec![(vec![0], vec![1]), (vec![2], vec![3; 51])],
-			namespace: AttributeNamespace::CollectionOwner,
+			namespace: AttributeNamespace::ProductOwner,
 			deadline: 10000000,
 		};
 		let message = Encode::encode(&pre_signed_data);

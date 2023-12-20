@@ -37,11 +37,11 @@ impl<T: Config> Pallet<T> {
 	pub(crate) fn do_lock_collection(
 		origin: T::AccountId,
 		collection: T::ProductId,
-		lock_settings: CollectionSettings,
+		lock_settings: ProductSettings,
 	) -> DispatchResult {
 		ensure!(Self::collection_owner(collection) == Some(origin), Error::<T>::NoPermission);
 		ensure!(
-			!lock_settings.is_disabled(CollectionSetting::DepositRequired),
+			!lock_settings.is_disabled(ProductSetting::DepositRequired),
 			Error::<T>::WrongSetting
 		);
 		CollectionConfigOf::<T>::try_mutate(collection, |maybe_config| {
@@ -72,7 +72,7 @@ impl<T: Config> Pallet<T> {
         item: T::DeviceId,
 	) -> DispatchResult {
 		ensure!(
-			Self::has_role(&collection, &origin, CollectionRole::Freezer),
+			Self::has_role(&collection, &origin, ProductRole::Freezer),
 			Error::<T>::NoPermission
 		);
 
@@ -102,7 +102,7 @@ impl<T: Config> Pallet<T> {
         item: T::DeviceId,
 	) -> DispatchResult {
 		ensure!(
-			Self::has_role(&collection, &origin, CollectionRole::Freezer),
+			Self::has_role(&collection, &origin, ProductRole::Freezer),
 			Error::<T>::NoPermission
 		);
 
@@ -140,7 +140,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
-				Self::has_role(&collection, &check_origin, CollectionRole::Admin),
+				Self::has_role(&collection, &check_origin, ProductRole::Admin),
 				Error::<T>::NoPermission
 			);
 		}
