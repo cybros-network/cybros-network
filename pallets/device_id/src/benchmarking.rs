@@ -45,7 +45,7 @@ fn create_collection<T: Config>(
 ) -> (T::ProductId, T::AccountId, AccountIdLookupOf<T>) {
 	let caller: T::AccountId = whitelisted_caller();
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
-	let collection = T::Helper::collection(0);
+	let collection = T::Helper::product(0);
 	T::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
 	assert_ok!(ThePallet::<T>::force_create(
 		SystemOrigin::Root.into(),
@@ -56,14 +56,14 @@ fn create_collection<T: Config>(
 }
 
 fn add_collection_metadata<T: Config>() -> (T::AccountId, AccountIdLookupOf<T>) {
-	let caller = Collection::<T>::get(T::Helper::collection(0)).unwrap().owner;
+	let caller = Collection::<T>::get(T::Helper::product(0)).unwrap().owner;
 	if caller != whitelisted_caller() {
 		whitelist_account!(caller);
 	}
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
 	assert_ok!(ThePallet::<T>::set_collection_metadata(
 		SystemOrigin::Signed(caller.clone()).into(),
-		T::Helper::collection(0),
+		T::Helper::product(0),
 		vec![0; T::StringLimit::get() as usize].try_into().unwrap(),
 	));
 	(caller, caller_lookup)
@@ -72,8 +72,8 @@ fn add_collection_metadata<T: Config>() -> (T::AccountId, AccountIdLookupOf<T>) 
 fn mint_item<T: Config>(
 	index: u16,
 ) -> (T::DeviceId, T::AccountId, AccountIdLookupOf<T>) {
-	let item = T::Helper::item(index);
-	let collection = T::Helper::collection(0);
+	let item = T::Helper::device(index);
+	let collection = T::Helper::product(0);
 	let caller = Collection::<T>::get(collection).unwrap().owner;
 	if caller != whitelisted_caller() {
 		whitelist_account!(caller);
@@ -105,15 +105,15 @@ fn mint_item<T: Config>(
 fn lock_item<T: Config>(
 	index: u16,
 ) -> (T::DeviceId, T::AccountId, AccountIdLookupOf<T>) {
-	let caller = Collection::<T>::get(T::Helper::collection(0)).unwrap().owner;
+	let caller = Collection::<T>::get(T::Helper::product(0)).unwrap().owner;
 	if caller != whitelisted_caller() {
 		whitelist_account!(caller);
 	}
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
-	let item = T::Helper::item(index);
+	let item = T::Helper::device(index);
 	assert_ok!(ThePallet::<T>::lock_item_transfer(
 		SystemOrigin::Signed(caller.clone()).into(),
-		T::Helper::collection(0),
+		T::Helper::product(0),
 		item,
 	));
 	(item, caller, caller_lookup)
@@ -122,15 +122,15 @@ fn lock_item<T: Config>(
 fn burn_item<T: Config>(
 	index: u16,
 ) -> (T::DeviceId, T::AccountId, AccountIdLookupOf<T>) {
-	let caller = Collection::<T>::get(T::Helper::collection(0)).unwrap().owner;
+	let caller = Collection::<T>::get(T::Helper::product(0)).unwrap().owner;
 	if caller != whitelisted_caller() {
 		whitelist_account!(caller);
 	}
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
-	let item = T::Helper::item(index);
+	let item = T::Helper::device(index);
 	assert_ok!(ThePallet::<T>::burn(
 		SystemOrigin::Signed(caller.clone()).into(),
-		T::Helper::collection(0),
+		T::Helper::product(0),
 		item,
 	));
 	(item, caller, caller_lookup)
@@ -139,14 +139,14 @@ fn burn_item<T: Config>(
 fn add_item_metadata<T: Config>(
 	item: T::DeviceId,
 ) -> (T::AccountId, AccountIdLookupOf<T>) {
-	let caller = Collection::<T>::get(T::Helper::collection(0)).unwrap().owner;
+	let caller = Collection::<T>::get(T::Helper::product(0)).unwrap().owner;
 	if caller != whitelisted_caller() {
 		whitelist_account!(caller);
 	}
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
 	assert_ok!(ThePallet::<T>::set_metadata(
 		SystemOrigin::Signed(caller.clone()).into(),
-		T::Helper::collection(0),
+		T::Helper::product(0),
 		item,
 		vec![0; T::StringLimit::get() as usize].try_into().unwrap(),
 	));
@@ -156,7 +156,7 @@ fn add_item_metadata<T: Config>(
 fn add_item_attribute<T: Config>(
 	item: T::DeviceId,
 ) -> (BoundedVec<u8, T::KeyLimit>, T::AccountId, AccountIdLookupOf<T>) {
-	let caller = Collection::<T>::get(T::Helper::collection(0)).unwrap().owner;
+	let caller = Collection::<T>::get(T::Helper::product(0)).unwrap().owner;
 	if caller != whitelisted_caller() {
 		whitelist_account!(caller);
 	}
@@ -164,7 +164,7 @@ fn add_item_attribute<T: Config>(
 	let key: BoundedVec<_, _> = vec![0; T::KeyLimit::get() as usize].try_into().unwrap();
 	assert_ok!(ThePallet::<T>::set_attribute(
 		SystemOrigin::Signed(caller.clone()).into(),
-		T::Helper::collection(0),
+		T::Helper::product(0),
 		Some(item),
 		AttributeNamespace::CollectionOwner,
 		key.clone(),
@@ -176,7 +176,7 @@ fn add_item_attribute<T: Config>(
 fn add_collection_attribute<T: Config>(
 	i: u16,
 ) -> (BoundedVec<u8, T::KeyLimit>, T::AccountId, AccountIdLookupOf<T>) {
-	let caller = Collection::<T>::get(T::Helper::collection(0)).unwrap().owner;
+	let caller = Collection::<T>::get(T::Helper::product(0)).unwrap().owner;
 	if caller != whitelisted_caller() {
 		whitelist_account!(caller);
 	}
@@ -184,7 +184,7 @@ fn add_collection_attribute<T: Config>(
 	let key: BoundedVec<_, _> = make_filled_vec(i, T::KeyLimit::get() as usize).try_into().unwrap();
 	assert_ok!(ThePallet::<T>::set_attribute(
 		SystemOrigin::Signed(caller.clone()).into(),
-		T::Helper::collection(0),
+		T::Helper::product(0),
 		None,
 		AttributeNamespace::CollectionOwner,
 		key.clone(),
@@ -235,7 +235,7 @@ benchmarks! {
 	}
 
 	create {
-		let collection = T::Helper::collection(0);
+		let collection = T::Helper::product(0);
 		let origin = T::CreateOrigin::try_successful_origin(&collection)
 			.map_err(|_| BenchmarkError::Weightless)?;
 		let caller = T::CreateOrigin::ensure_origin(origin.clone(), &collection).unwrap();
@@ -245,7 +245,7 @@ benchmarks! {
 		let call = Call::<T>::create { admin, config: default_collection_config::<T>() };
 	}: { call.dispatch_bypass_filter(origin)? }
 	verify {
-		assert_last_event::<T>(Event::NextCollectionIdIncremented { next_id: Some(T::Helper::collection(1)) }.into());
+		assert_last_event::<T>(Event::NextCollectionIdIncremented { next_id: Some(T::Helper::product(1)) }.into());
 	}
 
 	force_create {
@@ -253,7 +253,7 @@ benchmarks! {
 		let caller_lookup = T::Lookup::unlookup(caller.clone());
 	}: _(SystemOrigin::Root, caller_lookup, default_collection_config::<T>())
 	verify {
-		assert_last_event::<T>(Event::NextCollectionIdIncremented { next_id: Some(T::Helper::collection(1)) }.into());
+		assert_last_event::<T>(Event::NextCollectionIdIncremented { next_id: Some(T::Helper::product(1)) }.into());
 	}
 
 	destroy {
@@ -265,7 +265,7 @@ benchmarks! {
 		add_collection_metadata::<T>();
 		for i in 0..m {
 			mint_item::<T>(i as u16);
-			add_item_metadata::<T>(T::Helper::item(i as u16));
+			add_item_metadata::<T>(T::Helper::device(i as u16));
 			lock_item::<T>(i as u16);
 			burn_item::<T>(i as u16);
 		}
@@ -285,7 +285,7 @@ benchmarks! {
 
 	mint {
 		let (collection, caller, caller_lookup) = create_collection::<T>();
-		let item = T::Helper::item(0);
+		let item = T::Helper::device(0);
 	}: _(SystemOrigin::Signed(caller.clone()), collection, item, caller_lookup)
 	verify {
 		assert_last_event::<T>(Event::Issued { collection, item, owner: caller }.into());
@@ -293,7 +293,7 @@ benchmarks! {
 
 	force_mint {
 		let (collection, caller, caller_lookup) = create_collection::<T>();
-		let item = T::Helper::item(0);
+		let item = T::Helper::device(0);
 	}: _(SystemOrigin::Signed(caller.clone()), collection, item, caller_lookup, default_item_config())
 	verify {
 		assert_last_event::<T>(Event::Issued { collection, item, owner: caller }.into());
@@ -322,9 +322,9 @@ benchmarks! {
 	lock_item_transfer {
 		let (collection, caller, _) = create_collection::<T>();
 		let (item, ..) = mint_item::<T>(0);
-	}: _(SystemOrigin::Signed(caller.clone()), T::Helper::collection(0), T::Helper::item(0))
+	}: _(SystemOrigin::Signed(caller.clone()), T::Helper::product(0), T::Helper::device(0))
 	verify {
-		assert_last_event::<T>(Event::ItemTransferLocked { collection: T::Helper::collection(0), item: T::Helper::item(0) }.into());
+		assert_last_event::<T>(Event::ItemTransferLocked { collection: T::Helper::product(0), item: T::Helper::device(0) }.into());
 	}
 
 	unlock_item_transfer {
@@ -512,7 +512,7 @@ benchmarks! {
 			let key = make_filled_vec(i as u16, T::KeyLimit::get() as usize);
 			ThePallet::<T>::set_attribute(
 				SystemOrigin::Signed(target.clone()).into(),
-				T::Helper::collection(0),
+				T::Helper::product(0),
 				Some(item),
 				AttributeNamespace::Account(target.clone()),
 				key.try_into().unwrap(),
@@ -571,7 +571,7 @@ benchmarks! {
 	set_accept_ownership {
 		let caller: T::AccountId = whitelisted_caller();
 		T::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
-		let collection = T::Helper::collection(0);
+		let collection = T::Helper::product(0);
 	}: _(SystemOrigin::Signed(caller.clone()), Some(collection))
 	verify {
 		assert_last_event::<T>(Event::OwnershipAcceptanceChanged {
@@ -608,8 +608,8 @@ benchmarks! {
 		T::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
 		let caller_lookup = T::Lookup::unlookup(caller.clone());
 
-		let collection = T::Helper::collection(0);
-		let item = T::Helper::item(0);
+		let collection = T::Helper::product(0);
+		let item = T::Helper::device(0);
 		assert_ok!(ThePallet::<T>::force_create(
 			SystemOrigin::Root.into(),
 			caller_lookup.clone(),
@@ -655,7 +655,7 @@ benchmarks! {
 
 		T::Currency::make_free_balance_be(&item_owner, DepositBalanceOf::<T>::max_value());
 
-		let item = T::Helper::item(0);
+		let item = T::Helper::device(0);
 		assert_ok!(ThePallet::<T>::force_mint(
 			SystemOrigin::Root.into(),
 			collection,

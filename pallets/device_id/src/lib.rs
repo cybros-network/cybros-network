@@ -83,16 +83,16 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[cfg(feature = "runtime-benchmarks")]
-    pub trait BenchmarkHelper<CollectionId, ItemId> {
-        fn collection(i: u16) -> CollectionId;
-        fn item(i: u16) -> ItemId;
+    pub trait BenchmarkHelper<ProductId, DeviceId> {
+        fn product(i: u16) -> ProductId;
+        fn device(i: u16) -> DeviceId;
     }
     #[cfg(feature = "runtime-benchmarks")]
-    impl<CollectionId: From<u16>, ItemId: From<u16>> BenchmarkHelper<CollectionId, ItemId> for () {
-        fn collection(i: u16) -> CollectionId {
+    impl<ProductId: From<u16>, DeviceId: From<u16>> BenchmarkHelper<ProductId, DeviceId> for () {
+        fn product(i: u16) -> ProductId {
             i.into()
         }
-        fn item(i: u16) -> ItemId {
+        fn device(i: u16) -> DeviceId {
             i.into()
         }
     }
