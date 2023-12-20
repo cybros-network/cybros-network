@@ -23,7 +23,7 @@
 use crate::*;
 use frame_support::pallet_prelude::*;
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Sets the attribute of an item or a collection.
 	///
 	/// This function is used to set an attribute for an item or a collection. It checks the
@@ -58,12 +58,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	) -> DispatchResult {
 		ensure!(
 			Self::is_pallet_feature_enabled(PalletFeature::Attributes),
-			Error::<T, I>::MethodDisabled
+			Error::<T>::MethodDisabled
 		);
 
 		ensure!(
 			Self::is_valid_namespace(&origin, &namespace, &collection, &maybe_item)?,
-			Error::<T, I>::NoPermission
+			Error::<T>::NoPermission
 		);
 
 		let collection_config = Self::get_collection_config(&collection)?;
@@ -73,22 +73,22 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 				None => {
 					ensure!(
 						collection_config.is_setting_enabled(CollectionSetting::UnlockedAttributes),
-						Error::<T, I>::LockedCollectionAttributes
+						Error::<T>::LockedCollectionAttributes
 					)
 				},
 				Some(item) => {
 					let maybe_is_locked = Self::get_item_config(&collection, &item)
 						.map(|c| c.has_disabled_setting(ItemSetting::UnlockedAttributes))?;
-					ensure!(!maybe_is_locked, Error::<T, I>::LockedItemAttributes);
+					ensure!(!maybe_is_locked, Error::<T>::LockedItemAttributes);
 				},
 			},
 			_ => (),
 		}
 
 		let mut collection_details =
-			Collection::<T, I>::get(&collection).ok_or(Error::<T, I>::UnknownCollection)?;
+			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
 
-		let attribute = Attribute::<T, I>::get((collection, maybe_item, &namespace, &key));
+		let attribute = Attribute::<T>::get((collection, maybe_item, &namespace, &key));
 		let attribute_exists = attribute.is_some();
 		if !attribute_exists {
 			collection_details.attributes.saturating_inc();
@@ -146,12 +146,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			true => None,
 			false => Some(depositor),
 		};
-		Attribute::<T, I>::insert(
+		Attribute::<T>::insert(
 			(&collection, maybe_item, &namespace, &key),
 			(&value, AttributeDeposit { account: new_deposit_owner, amount: deposit }),
 		);
 
-		Collection::<T, I>::insert(collection, &collection_details);
+		Collection::<T>::insert(collection, &collection_details);
 		Self::deposit_event(Event::AttributeSet { collection, maybe_item, key, value, namespace });
 		Ok(())
 	}
@@ -182,9 +182,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		value: BoundedVec<u8, T::ValueLimit>,
 	) -> DispatchResult {
 		let mut collection_details =
-			Collection::<T, I>::get(&collection).ok_or(Error::<T, I>::UnknownCollection)?;
+			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
 
-		let attribute = Attribute::<T, I>::get((collection, maybe_item, &namespace, &key));
+		let attribute = Attribute::<T>::get((collection, maybe_item, &namespace, &key));
 		if let Some((_, deposit)) = attribute {
 			if deposit.account != set_as && deposit.amount != Zero::zero() {
 				if let Some(deposit_account) = deposit.account {
@@ -195,11 +195,11 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			collection_details.attributes.saturating_inc();
 		}
 
-		Attribute::<T, I>::insert(
+		Attribute::<T>::insert(
 			(&collection, maybe_item, &namespace, &key),
 			(&value, AttributeDeposit { account: set_as, amount: Zero::zero() }),
 		);
-		Collection::<T, I>::insert(collection, &collection_details);
+		Collection::<T>::insert(collection, &collection_details);
 		Self::deposit_event(Event::AttributeSet { collection, maybe_item, key, value, namespace });
 		Ok(())
 	}
@@ -215,30 +215,30 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	/// - `signer`: The account of the pre-signed attributes signer.
 	pub(crate) fn do_set_attributes_pre_signed(
 		origin: T::AccountId,
-		data: PreSignedAttributesOf<T, I>,
+		data: PreSignedAttributesOf<T>,
 		signer: T::AccountId,
 	) -> DispatchResult {
 		let PreSignedAttributes { collection, item, attributes, namespace, deadline } = data;
 
 		ensure!(
 			attributes.len() <= T::MaxAttributesPerCall::get() as usize,
-			Error::<T, I>::MaxAttributesLimitReached
+			Error::<T>::MaxAttributesLimitReached
 		);
 
 		let now = frame_system::Pallet::<T>::block_number();
-		ensure!(deadline >= now, Error::<T, I>::DeadlineExpired);
+		ensure!(deadline >= now, Error::<T>::DeadlineExpired);
 
 		let item_details =
-			Item::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::UnknownItem)?;
-		ensure!(item_details.owner == origin, Error::<T, I>::NoPermission);
+			Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
+		ensure!(item_details.owner == origin, Error::<T>::NoPermission);
 
 		// Only the CollectionOwner and Account() namespaces could be updated in this way.
 		// For the Account() namespace we check and set the approval if it wasn't set before.
 		match &namespace {
 			AttributeNamespace::CollectionOwner => {},
 			AttributeNamespace::Account(account) => {
-				ensure!(account == &signer, Error::<T, I>::NoPermission);
-				let approvals = ItemAttributesApprovalsOf::<T, I>::get(&collection, &item);
+				ensure!(account == &signer, Error::<T>::NoPermission);
+				let approvals = ItemAttributesApprovalsOf::<T>::get(&collection, &item);
 				if !approvals.contains(account) {
 					Self::do_approve_item_attributes(
 						origin.clone(),
@@ -248,7 +248,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 					)?;
 				}
 			},
-			_ => return Err(Error::<T, I>::WrongNamespace.into()),
+			_ => return Err(Error::<T>::WrongNamespace.into()),
 		}
 
 		for (key, value) in attributes {
@@ -289,8 +289,8 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		namespace: AttributeNamespace<T::AccountId>,
 		key: BoundedVec<u8, T::KeyLimit>,
 	) -> DispatchResult {
-		let (_, deposit) = Attribute::<T, I>::take((collection, maybe_item, &namespace, &key))
-			.ok_or(Error::<T, I>::AttributeNotFound)?;
+		let (_, deposit) = Attribute::<T>::take((collection, maybe_item, &namespace, &key))
+			.ok_or(Error::<T>::AttributeNotFound)?;
 
 		if let Some(check_origin) = &maybe_check_origin {
 			// validate the provided namespace when it's not a root call and the caller is not
@@ -298,7 +298,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			if deposit.account != maybe_check_origin {
 				ensure!(
 					Self::is_valid_namespace(&check_origin, &namespace, &collection, &maybe_item)?,
-					Error::<T, I>::NoPermission
+					Error::<T>::NoPermission
 				);
 			}
 
@@ -310,7 +310,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 						ensure!(
 							collection_config
 								.is_setting_enabled(CollectionSetting::UnlockedAttributes),
-							Error::<T, I>::LockedCollectionAttributes
+							Error::<T>::LockedCollectionAttributes
 						)
 					},
 					Some(item) => {
@@ -321,13 +321,13 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 								Some(c.has_disabled_setting(ItemSetting::UnlockedAttributes))
 							});
 						if let Some(is_locked) = maybe_is_locked {
-							ensure!(!is_locked, Error::<T, I>::LockedItemAttributes);
+							ensure!(!is_locked, Error::<T>::LockedItemAttributes);
 							// Only the collection's admin can clear attributes in that namespace.
 							// e.g. in off-chain mints, the attribute's depositor will be the item's
 							// owner, that's why we need to do this extra check.
 							ensure!(
 								Self::has_role(&collection, &check_origin, CollectionRole::Admin),
-								Error::<T, I>::NoPermission
+								Error::<T>::NoPermission
 							);
 						}
 					},
@@ -337,7 +337,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		}
 
 		let mut collection_details =
-			Collection::<T, I>::get(&collection).ok_or(Error::<T, I>::UnknownCollection)?;
+			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
 
 		collection_details.attributes.saturating_dec();
 
@@ -352,7 +352,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			_ => (),
 		}
 
-		Collection::<T, I>::insert(collection, &collection_details);
+		Collection::<T>::insert(collection, &collection_details);
 		Self::deposit_event(Event::AttributeCleared { collection, maybe_item, key, namespace });
 
 		Ok(())
@@ -377,16 +377,16 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	) -> DispatchResult {
 		ensure!(
 			Self::is_pallet_feature_enabled(PalletFeature::Attributes),
-			Error::<T, I>::MethodDisabled
+			Error::<T>::MethodDisabled
 		);
 
-		let details = Item::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::UnknownItem)?;
-		ensure!(check_origin == details.owner, Error::<T, I>::NoPermission);
+		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
+		ensure!(check_origin == details.owner, Error::<T>::NoPermission);
 
-		ItemAttributesApprovalsOf::<T, I>::try_mutate(collection, item, |approvals| {
+		ItemAttributesApprovalsOf::<T>::try_mutate(collection, item, |approvals| {
 			approvals
 				.try_insert(delegate.clone())
-				.map_err(|_| Error::<T, I>::ReachedApprovalLimit)?;
+				.map_err(|_| Error::<T>::ReachedApprovalLimit)?;
 
 			Self::deposit_event(Event::ItemAttributesApprovalAdded { collection, item, delegate });
 			Ok(())
@@ -418,18 +418,18 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	) -> DispatchResult {
 		ensure!(
 			Self::is_pallet_feature_enabled(PalletFeature::Attributes),
-			Error::<T, I>::MethodDisabled
+			Error::<T>::MethodDisabled
 		);
 
-		let details = Item::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::UnknownItem)?;
-		ensure!(check_origin == details.owner, Error::<T, I>::NoPermission);
+		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
+		ensure!(check_origin == details.owner, Error::<T>::NoPermission);
 
-		ItemAttributesApprovalsOf::<T, I>::try_mutate(collection, item, |approvals| {
+		ItemAttributesApprovalsOf::<T>::try_mutate(collection, item, |approvals| {
 			approvals.remove(&delegate);
 
 			let mut attributes: u32 = 0;
-			let mut deposited: DepositBalanceOf<T, I> = Zero::zero();
-			for (_, (_, deposit)) in Attribute::<T, I>::drain_prefix((
+			let mut deposited: DepositBalanceOf<T> = Zero::zero();
+			for (_, (_, deposit)) in Attribute::<T>::drain_prefix((
 				&collection,
 				Some(item),
 				AttributeNamespace::Account(delegate.clone()),
@@ -437,7 +437,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 				attributes.saturating_inc();
 				deposited = deposited.saturating_add(deposit.amount);
 			}
-			ensure!(attributes <= witness.account_attributes, Error::<T, I>::BadWitness);
+			ensure!(attributes <= witness.account_attributes, Error::<T>::BadWitness);
 
 			if !deposited.is_zero() {
 				T::Currency::unreserve(&delegate, deposited);
@@ -466,12 +466,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			AttributeNamespace::ItemOwner =>
 				if let Some(item) = maybe_item {
 					let item_details =
-						Item::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::UnknownItem)?;
+						Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
 					result = origin == &item_details.owner
 				},
 			AttributeNamespace::Account(account_id) =>
 				if let Some(item) = maybe_item {
-					let approvals = ItemAttributesApprovalsOf::<T, I>::get(&collection, &item);
+					let approvals = ItemAttributesApprovalsOf::<T>::get(&collection, &item);
 					result = account_id == origin && approvals.contains(&origin)
 				},
 			_ => (),
@@ -488,7 +488,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	pub fn construct_attribute_key(
 		key: Vec<u8>,
 	) -> Result<BoundedVec<u8, T::KeyLimit>, DispatchError> {
-		Ok(BoundedVec::try_from(key).map_err(|_| Error::<T, I>::IncorrectData)?)
+		Ok(BoundedVec::try_from(key).map_err(|_| Error::<T>::IncorrectData)?)
 	}
 
 	/// A helper method to construct an attribute's value.
@@ -500,7 +500,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	pub fn construct_attribute_value(
 		value: Vec<u8>,
 	) -> Result<BoundedVec<u8, T::ValueLimit>, DispatchError> {
-		Ok(BoundedVec::try_from(value).map_err(|_| Error::<T, I>::IncorrectData)?)
+		Ok(BoundedVec::try_from(value).map_err(|_| Error::<T>::IncorrectData)?)
 	}
 
 	/// A helper method to check whether a system attribute is set for a given item.
@@ -520,6 +520,6 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			AttributeNamespace::Pallet,
 			&Self::construct_attribute_key(attribute_key.encode())?,
 		);
-		Ok(Attribute::<T, I>::contains_key(attribute))
+		Ok(Attribute::<T>::contains_key(attribute))
 	}
 }

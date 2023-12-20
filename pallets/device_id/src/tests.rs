@@ -17,7 +17,7 @@
 
 //! Tests for the pallet.
 
-use crate::{mock::*, Event, SystemConfig, *};
+use crate::{mock::*, Event, *};
 use enumflags2::BitFlags;
 use frame_support::{
 	assert_noop, assert_ok,
@@ -784,7 +784,7 @@ fn set_collection_metadata_should_work() {
 		// Cannot over-reserve
 		assert_noop!(
 			DeviceId::set_collection_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![0u8; 40]),
-			BalancesError::<Test, _>::InsufficientBalance,
+			BalancesError::<Test>::InsufficientBalance,
 		);
 
 		// Can't set or clear metadata once frozen
@@ -800,7 +800,7 @@ fn set_collection_metadata_should_work() {
 		));
 		assert_noop!(
 			DeviceId::set_collection_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![0u8; 15]),
-			Error::<Test, _>::LockedCollectionMetadata,
+			Error::<Test>::LockedCollectionMetadata,
 		);
 		assert_noop!(
 			DeviceId::clear_collection_metadata(RuntimeOrigin::signed(account(1)), 0),
@@ -861,7 +861,7 @@ fn set_item_metadata_should_work() {
 		// Cannot over-reserve
 		assert_noop!(
 			DeviceId::set_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 40]),
-			BalancesError::<Test, _>::InsufficientBalance,
+			BalancesError::<Test>::InsufficientBalance,
 		);
 
 		// Can't set or clear metadata once frozen
@@ -875,7 +875,7 @@ fn set_item_metadata_should_work() {
 		));
 		assert_noop!(
 			DeviceId::set_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 15]),
-			Error::<Test, _>::LockedItemMetadata,
+			Error::<Test>::LockedItemMetadata,
 		);
 		assert_noop!(
 			DeviceId::clear_metadata(RuntimeOrigin::signed(account(1)), 0, 42),
@@ -1389,7 +1389,7 @@ fn validate_deposit_required_setting() {
 			bvec![2],
 			bvec![0],
 		));
-		assert_ok!(<DeviceId as Mutate<<Test as SystemConfig>::AccountId, ItemConfig>>::set_attribute(
+		assert_ok!(<DeviceId as Mutate<<Test as frame_system::Config>::AccountId, ItemConfig>>::set_attribute(
 			&0,
 			&0,
 			&[3],
@@ -1409,7 +1409,7 @@ fn validate_deposit_required_setting() {
 		assert_eq!(Balances::reserved_balance(account(3)), 3);
 
 		assert_ok!(
-			<DeviceId as Mutate<<Test as SystemConfig>::AccountId, ItemConfig>>::clear_attribute(
+			<DeviceId as Mutate<<Test as frame_system::Config>::AccountId, ItemConfig>>::clear_attribute(
 				&0,
 				&0,
 				&[3],

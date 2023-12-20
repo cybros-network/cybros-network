@@ -21,7 +21,7 @@
 use crate::*;
 use frame_support::pallet_prelude::*;
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Create a new collection with the given `collection`, `owner`, `admin`, `config`, `deposit`,
 	/// and `event`.
 	///
@@ -37,15 +37,15 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		collection: T::CollectionId,
 		owner: T::AccountId,
 		admin: T::AccountId,
-		config: CollectionConfigFor<T, I>,
-		deposit: DepositBalanceOf<T, I>,
-		event: Event<T, I>,
+		config: CollectionConfigFor<T>,
+		deposit: DepositBalanceOf<T>,
+		event: Event<T>,
 	) -> DispatchResult {
-		ensure!(!Collection::<T, I>::contains_key(collection), Error::<T, I>::CollectionIdInUse);
+		ensure!(!Collection::<T>::contains_key(collection), Error::<T>::CollectionIdInUse);
 
 		T::Currency::reserve(&owner, deposit)?;
 
-		Collection::<T, I>::insert(
+		Collection::<T>::insert(
 			collection,
 			CollectionDetails {
 				owner: owner.clone(),
@@ -56,7 +56,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 				attributes: 0,
 			},
 		);
-		CollectionRoleOf::<T, I>::insert(
+		CollectionRoleOf::<T>::insert(
 			collection,
 			admin,
 			CollectionRoles(
@@ -64,8 +64,8 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			),
 		);
 
-		CollectionConfigOf::<T, I>::insert(&collection, config);
-		CollectionAccount::<T, I>::insert(&owner, &collection, ());
+		CollectionConfigOf::<T>::insert(&collection, config);
+		CollectionAccount::<T>::insert(&owner, &collection, ());
 
 		Self::deposit_event(event);
 
@@ -102,33 +102,33 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		witness: DestroyWitness,
 		maybe_check_owner: Option<T::AccountId>,
 	) -> Result<DestroyWitness, DispatchError> {
-		Collection::<T, I>::try_mutate_exists(collection, |maybe_details| {
+		Collection::<T>::try_mutate_exists(collection, |maybe_details| {
 			let collection_details =
-				maybe_details.take().ok_or(Error::<T, I>::UnknownCollection)?;
+				maybe_details.take().ok_or(Error::<T>::UnknownCollection)?;
 			if let Some(check_owner) = maybe_check_owner {
-				ensure!(collection_details.owner == check_owner, Error::<T, I>::NoPermission);
+				ensure!(collection_details.owner == check_owner, Error::<T>::NoPermission);
 			}
-			ensure!(collection_details.items == 0, Error::<T, I>::CollectionNotEmpty);
-			ensure!(collection_details.attributes == witness.attributes, Error::<T, I>::BadWitness);
+			ensure!(collection_details.items == 0, Error::<T>::CollectionNotEmpty);
+			ensure!(collection_details.attributes == witness.attributes, Error::<T>::BadWitness);
 			ensure!(
 				collection_details.item_metadatas == witness.item_metadatas,
-				Error::<T, I>::BadWitness
+				Error::<T>::BadWitness
 			);
 			ensure!(
 				collection_details.item_configs == witness.item_configs,
-				Error::<T, I>::BadWitness
+				Error::<T>::BadWitness
 			);
 
-			for (_, metadata) in ItemMetadataOf::<T, I>::drain_prefix(&collection) {
+			for (_, metadata) in ItemMetadataOf::<T>::drain_prefix(&collection) {
 				if let Some(depositor) = metadata.deposit.account {
 					T::Currency::unreserve(&depositor, metadata.deposit.amount);
 				}
 			}
 
-			CollectionMetadataOf::<T, I>::remove(&collection);
+			CollectionMetadataOf::<T>::remove(&collection);
 			Self::clear_roles(&collection)?;
 
-			for (_, (_, deposit)) in Attribute::<T, I>::drain_prefix((&collection,)) {
+			for (_, (_, deposit)) in Attribute::<T>::drain_prefix((&collection,)) {
 				if !deposit.amount.is_zero() {
 					if let Some(account) = deposit.account {
 						T::Currency::unreserve(&account, deposit.amount);
@@ -136,10 +136,10 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 				}
 			}
 
-			CollectionAccount::<T, I>::remove(&collection_details.owner, &collection);
+			CollectionAccount::<T>::remove(&collection_details.owner, &collection);
 			T::Currency::unreserve(&collection_details.owner, collection_details.owner_deposit);
-			CollectionConfigOf::<T, I>::remove(&collection);
-			let _ = ItemConfigOf::<T, I>::clear_prefix(&collection, witness.item_configs, None);
+			CollectionConfigOf::<T>::remove(&collection);
+			let _ = ItemConfigOf::<T>::clear_prefix(&collection, witness.item_configs, None);
 
 			Self::deposit_event(Event::Destroyed { collection });
 

@@ -27,19 +27,19 @@ use frame_support::{
 use sp_runtime::{DispatchError, DispatchResult};
 use sp_std::prelude::*;
 
-impl<T: Config<I>, I: 'static> Inspect<<T as SystemConfig>::AccountId> for Pallet<T, I> {
+impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 	type ItemId = T::ItemId;
 	type CollectionId = T::CollectionId;
 
 	fn owner(
 		collection: &Self::CollectionId,
 		item: &Self::ItemId,
-	) -> Option<<T as SystemConfig>::AccountId> {
-		Item::<T, I>::get(collection, item).map(|a| a.owner)
+	) -> Option<<T as frame_system::Config>::AccountId> {
+		Item::<T>::get(collection, item).map(|a| a.owner)
 	}
 
-	fn collection_owner(collection: &Self::CollectionId) -> Option<<T as SystemConfig>::AccountId> {
-		Collection::<T, I>::get(collection).map(|a| a.owner)
+	fn collection_owner(collection: &Self::CollectionId) -> Option<<T as frame_system::Config>::AccountId> {
+		Collection::<T>::get(collection).map(|a| a.owner)
 	}
 
 	/// Returns the attribute value of `item` of `collection` corresponding to `key`.
@@ -54,11 +54,11 @@ impl<T: Config<I>, I: 'static> Inspect<<T as SystemConfig>::AccountId> for Palle
 	) -> Option<Vec<u8>> {
 		if key.is_empty() {
 			// We make the empty key map to the item metadata value.
-			ItemMetadataOf::<T, I>::get(collection, item).map(|m| m.data.into())
+			ItemMetadataOf::<T>::get(collection, item).map(|m| m.data.into())
 		} else {
 			let namespace = AttributeNamespace::CollectionOwner;
 			let key = BoundedSlice::<_, _>::try_from(key).ok()?;
-			Attribute::<T, I>::get((collection, Some(item), namespace, key)).map(|a| a.0.into())
+			Attribute::<T>::get((collection, Some(item), namespace, key)).map(|a| a.0.into())
 		}
 	}
 
@@ -71,12 +71,12 @@ impl<T: Config<I>, I: 'static> Inspect<<T as SystemConfig>::AccountId> for Palle
 		item: &Self::ItemId,
 		key: &[u8],
 	) -> Option<Vec<u8>> {
-		let namespace = Account::<T, I>::get((account, collection, item))
+		let namespace = Account::<T>::get((account, collection, item))
 			.map(|_| AttributeNamespace::ItemOwner)
 			.unwrap_or_else(|| AttributeNamespace::Account(account.clone()));
 
 		let key = BoundedSlice::<_, _>::try_from(key).ok()?;
-		Attribute::<T, I>::get((collection, Some(item), namespace, key)).map(|a| a.0.into())
+		Attribute::<T>::get((collection, Some(item), namespace, key)).map(|a| a.0.into())
 	}
 
 	/// Returns the system attribute value of `item` of `collection` corresponding to `key` if
@@ -91,7 +91,7 @@ impl<T: Config<I>, I: 'static> Inspect<<T as SystemConfig>::AccountId> for Palle
 	) -> Option<Vec<u8>> {
 		let namespace = AttributeNamespace::Pallet;
 		let key = BoundedSlice::<_, _>::try_from(key).ok()?;
-		Attribute::<T, I>::get((collection, item, namespace, key)).map(|a| a.0.into())
+		Attribute::<T>::get((collection, item, namespace, key)).map(|a| a.0.into())
 	}
 
 	/// Returns the attribute value of `item` of `collection` corresponding to `key`.
@@ -102,10 +102,10 @@ impl<T: Config<I>, I: 'static> Inspect<<T as SystemConfig>::AccountId> for Palle
 	fn collection_attribute(collection: &Self::CollectionId, key: &[u8]) -> Option<Vec<u8>> {
 		if key.is_empty() {
 			// We make the empty key map to the item metadata value.
-			CollectionMetadataOf::<T, I>::get(collection).map(|m| m.data.into())
+			CollectionMetadataOf::<T>::get(collection).map(|m| m.data.into())
 		} else {
 			let key = BoundedSlice::<_, _>::try_from(key).ok()?;
-			Attribute::<T, I>::get((
+			Attribute::<T>::get((
 				collection,
 				Option::<T::ItemId>::None,
 				AttributeNamespace::CollectionOwner,
@@ -125,8 +125,8 @@ impl<T: Config<I>, I: 'static> Inspect<<T as SystemConfig>::AccountId> for Palle
 			_ => (),
 		}
 		match (
-			CollectionConfigOf::<T, I>::get(collection),
-			ItemConfigOf::<T, I>::get(collection, item),
+			CollectionConfigOf::<T>::get(collection),
+			ItemConfigOf::<T>::get(collection, item),
 		) {
 			(Some(cc), Some(ic))
 				if cc.is_setting_enabled(CollectionSetting::TransferableItems) &&
@@ -137,36 +137,36 @@ impl<T: Config<I>, I: 'static> Inspect<<T as SystemConfig>::AccountId> for Palle
 	}
 }
 
-impl<T: Config<I>, I: 'static> InspectRole<<T as SystemConfig>::AccountId> for Pallet<T, I> {
-	fn is_issuer(collection: &Self::CollectionId, who: &<T as SystemConfig>::AccountId) -> bool {
+impl<T: Config> InspectRole<<T as frame_system::Config>::AccountId> for Pallet<T> {
+	fn is_issuer(collection: &Self::CollectionId, who: &<T as frame_system::Config>::AccountId) -> bool {
 		Self::has_role(collection, who, CollectionRole::Issuer)
 	}
-	fn is_admin(collection: &Self::CollectionId, who: &<T as SystemConfig>::AccountId) -> bool {
+	fn is_admin(collection: &Self::CollectionId, who: &<T as frame_system::Config>::AccountId) -> bool {
 		Self::has_role(collection, who, CollectionRole::Admin)
 	}
-	fn is_freezer(collection: &Self::CollectionId, who: &<T as SystemConfig>::AccountId) -> bool {
+	fn is_freezer(collection: &Self::CollectionId, who: &<T as frame_system::Config>::AccountId) -> bool {
 		Self::has_role(collection, who, CollectionRole::Freezer)
 	}
 }
 
-impl<T: Config<I>, I: 'static> Create<<T as SystemConfig>::AccountId, CollectionConfigFor<T, I>>
-	for Pallet<T, I>
+impl<T: Config> Create<<T as frame_system::Config>::AccountId, CollectionConfigFor<T>>
+	for Pallet<T>
 {
 	/// Create a `collection` of nonfungible items to be owned by `who` and managed by `admin`.
 	fn create_collection(
 		who: &T::AccountId,
 		admin: &T::AccountId,
-		config: &CollectionConfigFor<T, I>,
+		config: &CollectionConfigFor<T>,
 	) -> Result<T::CollectionId, DispatchError> {
 		// DepositRequired can be disabled by calling the force_create() only
 		ensure!(
 			!config.has_disabled_setting(CollectionSetting::DepositRequired),
-			Error::<T, I>::WrongSetting
+			Error::<T>::WrongSetting
 		);
 
-		let collection = NextCollectionId::<T, I>::get()
+		let collection = NextCollectionId::<T>::get()
 			.or(T::CollectionId::initial_value())
-			.ok_or(Error::<T, I>::UnknownCollection)?;
+			.ok_or(Error::<T>::UnknownCollection)?;
 
 		Self::do_create_collection(
 			collection,
@@ -193,12 +193,12 @@ impl<T: Config<I>, I: 'static> Create<<T as SystemConfig>::AccountId, Collection
 		collection: T::CollectionId,
 		who: &T::AccountId,
 		admin: &T::AccountId,
-		config: &CollectionConfigFor<T, I>,
+		config: &CollectionConfigFor<T>,
 	) -> Result<(), DispatchError> {
 		// DepositRequired can be disabled by calling the force_create() only
 		ensure!(
 			!config.has_disabled_setting(CollectionSetting::DepositRequired),
-			Error::<T, I>::WrongSetting
+			Error::<T>::WrongSetting
 		);
 
 		Self::do_create_collection(
@@ -212,11 +212,11 @@ impl<T: Config<I>, I: 'static> Create<<T as SystemConfig>::AccountId, Collection
 	}
 }
 
-impl<T: Config<I>, I: 'static> Destroy<<T as SystemConfig>::AccountId> for Pallet<T, I> {
+impl<T: Config> Destroy<<T as frame_system::Config>::AccountId> for Pallet<T> {
 	type DestroyWitness = DestroyWitness;
 
 	fn get_destroy_witness(collection: &Self::CollectionId) -> Option<DestroyWitness> {
-		Collection::<T, I>::get(collection).map(|a| a.destroy_witness())
+		Collection::<T>::get(collection).map(|a| a.destroy_witness())
 	}
 
 	fn destroy(
@@ -228,7 +228,7 @@ impl<T: Config<I>, I: 'static> Destroy<<T as SystemConfig>::AccountId> for Palle
 	}
 }
 
-impl<T: Config<I>, I: 'static> Mutate<<T as SystemConfig>::AccountId, ItemConfig> for Pallet<T, I> {
+impl<T: Config> Mutate<<T as frame_system::Config>::AccountId, ItemConfig> for Pallet<T> {
 	fn mint_into(
 		collection: &Self::CollectionId,
 		item: &Self::ItemId,
@@ -257,7 +257,7 @@ impl<T: Config<I>, I: 'static> Mutate<<T as SystemConfig>::AccountId, ItemConfig
 		Self::do_burn(*collection, *item, |d| {
 			if let Some(check_owner) = maybe_check_owner {
 				if &d.owner != check_owner {
-					return Err(Error::<T, I>::NoPermission.into())
+					return Err(Error::<T>::NoPermission.into())
 				}
 			}
 			Ok(())
@@ -408,7 +408,7 @@ impl<T: Config<I>, I: 'static> Mutate<<T as SystemConfig>::AccountId, ItemConfig
 	}
 }
 
-impl<T: Config<I>, I: 'static> Transfer<T::AccountId> for Pallet<T, I> {
+impl<T: Config> Transfer<T::AccountId> for Pallet<T> {
 	fn transfer(
 		collection: &Self::CollectionId,
 		item: &Self::ItemId,
@@ -422,7 +422,7 @@ impl<T: Config<I>, I: 'static> Transfer<T::AccountId> for Pallet<T, I> {
 			Self::has_system_attribute(&collection, &item, PalletAttributes::TransferDisabled)?;
 		// Can't lock the item twice
 		if transfer_disabled {
-			return Err(Error::<T, I>::ItemLocked.into())
+			return Err(Error::<T>::ItemLocked.into())
 		}
 
 		<Self as Mutate<T::AccountId, ItemConfig>>::set_attribute(
@@ -442,12 +442,12 @@ impl<T: Config<I>, I: 'static> Transfer<T::AccountId> for Pallet<T, I> {
 	}
 }
 
-impl<T: Config<I>, I: 'static> Trading<T::AccountId, ItemPrice<T, I>> for Pallet<T, I> {
+impl<T: Config> Trading<T::AccountId, ItemPrice<T>> for Pallet<T> {
 	fn buy_item(
 		collection: &Self::CollectionId,
 		item: &Self::ItemId,
 		buyer: &T::AccountId,
-		bid_price: &ItemPrice<T, I>,
+		bid_price: &ItemPrice<T>,
 	) -> DispatchResult {
 		Self::do_buy_item(*collection, *item, buyer.clone(), *bid_price)
 	}
@@ -456,43 +456,43 @@ impl<T: Config<I>, I: 'static> Trading<T::AccountId, ItemPrice<T, I>> for Pallet
 		collection: &Self::CollectionId,
 		item: &Self::ItemId,
 		sender: &T::AccountId,
-		price: Option<ItemPrice<T, I>>,
+		price: Option<ItemPrice<T>>,
 		whitelisted_buyer: Option<T::AccountId>,
 	) -> DispatchResult {
 		Self::do_set_price(*collection, *item, sender.clone(), price, whitelisted_buyer)
 	}
 
-	fn item_price(collection: &Self::CollectionId, item: &Self::ItemId) -> Option<ItemPrice<T, I>> {
-		ItemPriceOf::<T, I>::get(collection, item).map(|a| a.0)
+	fn item_price(collection: &Self::CollectionId, item: &Self::ItemId) -> Option<ItemPrice<T>> {
+		ItemPriceOf::<T>::get(collection, item).map(|a| a.0)
 	}
 }
 
-impl<T: Config<I>, I: 'static> InspectEnumerable<T::AccountId> for Pallet<T, I> {
-	type CollectionsIterator = KeyPrefixIterator<<T as Config<I>>::CollectionId>;
-	type ItemsIterator = KeyPrefixIterator<<T as Config<I>>::ItemId>;
+impl<T: Config> InspectEnumerable<T::AccountId> for Pallet<T> {
+	type CollectionsIterator = KeyPrefixIterator<<T as Config>::CollectionId>;
+	type ItemsIterator = KeyPrefixIterator<<T as Config>::ItemId>;
 	type OwnedIterator =
-		KeyPrefixIterator<(<T as Config<I>>::CollectionId, <T as Config<I>>::ItemId)>;
-	type OwnedInCollectionIterator = KeyPrefixIterator<<T as Config<I>>::ItemId>;
+		KeyPrefixIterator<(<T as Config>::CollectionId, <T as Config>::ItemId)>;
+	type OwnedInCollectionIterator = KeyPrefixIterator<<T as Config>::ItemId>;
 
 	/// Returns an iterator of the collections in existence.
 	///
 	/// NOTE: iterating this list invokes a storage read per item.
 	fn collections() -> Self::CollectionsIterator {
-		Collection::<T, I>::iter_keys()
+		Collection::<T>::iter_keys()
 	}
 
 	/// Returns an iterator of the items of a `collection` in existence.
 	///
 	/// NOTE: iterating this list invokes a storage read per item.
 	fn items(collection: &Self::CollectionId) -> Self::ItemsIterator {
-		Item::<T, I>::iter_key_prefix(collection)
+		Item::<T>::iter_key_prefix(collection)
 	}
 
 	/// Returns an iterator of the items of all collections owned by `who`.
 	///
 	/// NOTE: iterating this list invokes a storage read per item.
 	fn owned(who: &T::AccountId) -> Self::OwnedIterator {
-		Account::<T, I>::iter_key_prefix((who,))
+		Account::<T>::iter_key_prefix((who,))
 	}
 
 	/// Returns an iterator of the items of `collection` owned by `who`.
@@ -502,6 +502,6 @@ impl<T: Config<I>, I: 'static> InspectEnumerable<T::AccountId> for Pallet<T, I> 
 		collection: &Self::CollectionId,
 		who: &T::AccountId,
 	) -> Self::OwnedInCollectionIterator {
-		Account::<T, I>::iter_key_prefix((who, collection))
+		Account::<T>::iter_key_prefix((who, collection))
 	}
 }

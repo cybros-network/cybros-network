@@ -21,7 +21,7 @@
 use crate::*;
 use frame_support::pallet_prelude::*;
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Transfer an NFT to the specified destination account.
 	///
 	/// - `collection`: The ID of the collection to which the NFT belongs.
@@ -48,47 +48,47 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		item: T::ItemId,
 		dest: T::AccountId,
 		with_details: impl FnOnce(
-			&CollectionDetailsFor<T, I>,
-			&mut ItemDetailsFor<T, I>,
+			&CollectionDetailsFor<T>,
+			&mut ItemDetailsFor<T>,
 		) -> DispatchResult,
 	) -> DispatchResult {
 		// Retrieve collection details.
 		let collection_details =
-			Collection::<T, I>::get(&collection).ok_or(Error::<T, I>::UnknownCollection)?;
+			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
 
 		// Ensure the item is not locked.
-		ensure!(!T::Locker::is_locked(collection, item), Error::<T, I>::ItemLocked);
+		ensure!(!T::Locker::is_locked(collection, item), Error::<T>::ItemLocked);
 
 		// Ensure the item is not transfer disabled on the system level attribute.
 		ensure!(
 			!Self::has_system_attribute(&collection, &item, PalletAttributes::TransferDisabled)?,
-			Error::<T, I>::ItemLocked
+			Error::<T>::ItemLocked
 		);
 
 		// Retrieve collection config and check if items are transferable.
 		let collection_config = Self::get_collection_config(&collection)?;
 		ensure!(
 			collection_config.is_setting_enabled(CollectionSetting::TransferableItems),
-			Error::<T, I>::ItemsNonTransferable
+			Error::<T>::ItemsNonTransferable
 		);
 
 		// Retrieve item config and check if the item is transferable.
 		let item_config = Self::get_item_config(&collection, &item)?;
 		ensure!(
 			item_config.is_setting_enabled(ItemSetting::Transferable),
-			Error::<T, I>::ItemLocked
+			Error::<T>::ItemLocked
 		);
 
 		// Retrieve the item details.
 		let mut details =
-			Item::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::UnknownItem)?;
+			Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
 
 		// Perform the transfer with custom details using the provided closure.
 		with_details(&collection_details, &mut details)?;
 
 		// Update account ownership information.
-		Account::<T, I>::remove((&details.owner, &collection, &item));
-		Account::<T, I>::insert((&dest, &collection, &item), ());
+		Account::<T>::remove((&details.owner, &collection, &item));
+		Account::<T>::insert((&dest, &collection, &item), ());
 		let origin = details.owner;
 		details.owner = dest;
 
@@ -98,9 +98,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		details.approvals.clear();
 
 		// Update item details.
-		Item::<T, I>::insert(&collection, &item, &details);
-		ItemPriceOf::<T, I>::remove(&collection, &item);
-		PendingSwapOf::<T, I>::remove(&collection, &item);
+		Item::<T>::insert(&collection, &item, &details);
+		ItemPriceOf::<T>::remove(&collection, &item);
+		PendingSwapOf::<T>::remove(&collection, &item);
 
 		// Emit `Transferred` event.
 		Self::deposit_event(Event::Transferred {
@@ -127,14 +127,14 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		new_owner: T::AccountId,
 	) -> DispatchResult {
 		// Check if the new owner is acceptable based on the collection's acceptance settings.
-		let acceptable_collection = OwnershipAcceptance::<T, I>::get(&new_owner);
-		ensure!(acceptable_collection.as_ref() == Some(&collection), Error::<T, I>::Unaccepted);
+		let acceptable_collection = OwnershipAcceptance::<T>::get(&new_owner);
+		ensure!(acceptable_collection.as_ref() == Some(&collection), Error::<T>::Unaccepted);
 
 		// Try to retrieve and mutate the collection details.
-		Collection::<T, I>::try_mutate(collection, |maybe_details| {
-			let details = maybe_details.as_mut().ok_or(Error::<T, I>::UnknownCollection)?;
+		Collection::<T>::try_mutate(collection, |maybe_details| {
+			let details = maybe_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
 			// Check if the `origin` is the current owner of the collection.
-			ensure!(origin == details.owner, Error::<T, I>::NoPermission);
+			ensure!(origin == details.owner, Error::<T>::NoPermission);
 			if details.owner == new_owner {
 				return Ok(())
 			}
@@ -148,11 +148,11 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			)?;
 
 			// Update account ownership information.
-			CollectionAccount::<T, I>::remove(&details.owner, &collection);
-			CollectionAccount::<T, I>::insert(&new_owner, &collection, ());
+			CollectionAccount::<T>::remove(&details.owner, &collection);
+			CollectionAccount::<T>::insert(&new_owner, &collection, ());
 
 			details.owner = new_owner.clone();
-			OwnershipAcceptance::<T, I>::remove(&new_owner);
+			OwnershipAcceptance::<T>::remove(&new_owner);
 			frame_system::Pallet::<T>::dec_consumers(&new_owner);
 
 			// Emit `OwnerChanged` event.
@@ -173,7 +173,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		who: T::AccountId,
 		maybe_collection: Option<T::CollectionId>,
 	) -> DispatchResult {
-		let exists = OwnershipAcceptance::<T, I>::contains_key(&who);
+		let exists = OwnershipAcceptance::<T>::contains_key(&who);
 		match (exists, maybe_collection.is_some()) {
 			(false, true) => {
 				frame_system::Pallet::<T>::inc_consumers(&who)?;
@@ -184,9 +184,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			_ => {},
 		}
 		if let Some(collection) = maybe_collection.as_ref() {
-			OwnershipAcceptance::<T, I>::insert(&who, collection);
+			OwnershipAcceptance::<T>::insert(&who, collection);
 		} else {
-			OwnershipAcceptance::<T, I>::remove(&who);
+			OwnershipAcceptance::<T>::remove(&who);
 		}
 
 		// Emit `OwnershipAcceptanceChanged` event.
@@ -207,8 +207,8 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		owner: T::AccountId,
 	) -> DispatchResult {
 		// Try to retrieve and mutate the collection details.
-		Collection::<T, I>::try_mutate(collection, |maybe_details| {
-			let details = maybe_details.as_mut().ok_or(Error::<T, I>::UnknownCollection)?;
+		Collection::<T>::try_mutate(collection, |maybe_details| {
+			let details = maybe_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
 			if details.owner == owner {
 				return Ok(())
 			}
@@ -222,8 +222,8 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			)?;
 
 			// Update collection accounts and set the new owner.
-			CollectionAccount::<T, I>::remove(&details.owner, &collection);
-			CollectionAccount::<T, I>::insert(&owner, &collection, ());
+			CollectionAccount::<T>::remove(&details.owner, &collection);
+			CollectionAccount::<T>::insert(&owner, &collection, ());
 			details.owner = owner.clone();
 
 			// Emit `OwnerChanged` event.

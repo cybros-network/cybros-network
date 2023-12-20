@@ -21,7 +21,7 @@
 use crate::*;
 use frame_support::{pallet_prelude::*, traits::ExistenceRequirement};
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Mint a new unique item with the given `collection`, `item`, and other minting configuration
 	/// details.
 	///
@@ -48,23 +48,23 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		mint_to: T::AccountId,
 		item_config: ItemConfig,
 		with_details_and_config: impl FnOnce(
-			&CollectionDetailsFor<T, I>,
-			&CollectionConfigFor<T, I>,
+			&CollectionDetailsFor<T>,
+			&CollectionConfigFor<T>,
 		) -> DispatchResult,
 	) -> DispatchResult {
-		ensure!(!Item::<T, I>::contains_key(collection, item), Error::<T, I>::AlreadyExists);
+		ensure!(!Item::<T>::contains_key(collection, item), Error::<T>::AlreadyExists);
 
-		Collection::<T, I>::try_mutate(
+		Collection::<T>::try_mutate(
 			&collection,
 			|maybe_collection_details| -> DispatchResult {
 				let collection_details =
-					maybe_collection_details.as_mut().ok_or(Error::<T, I>::UnknownCollection)?;
+					maybe_collection_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
 
 				let collection_config = Self::get_collection_config(&collection)?;
 				with_details_and_config(collection_details, &collection_config)?;
 
 				if let Some(max_supply) = collection_config.max_supply {
-					ensure!(collection_details.items < max_supply, Error::<T, I>::MaxSupplyReached);
+					ensure!(collection_details.items < max_supply, Error::<T>::MaxSupplyReached);
 				}
 
 				collection_details.items.saturating_inc();
@@ -82,12 +82,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 				};
 
 				let item_owner = mint_to.clone();
-				Account::<T, I>::insert((&item_owner, &collection, &item), ());
+				Account::<T>::insert((&item_owner, &collection, &item), ());
 
-				if let Ok(existing_config) = ItemConfigOf::<T, I>::try_get(&collection, &item) {
-					ensure!(existing_config == item_config, Error::<T, I>::InconsistentItemConfig);
+				if let Ok(existing_config) = ItemConfigOf::<T>::try_get(&collection, &item) {
+					ensure!(existing_config == item_config, Error::<T>::InconsistentItemConfig);
 				} else {
-					ItemConfigOf::<T, I>::insert(&collection, &item, item_config);
+					ItemConfigOf::<T>::insert(&collection, &item, item_config);
 					collection_details.item_configs.saturating_inc();
 				}
 
@@ -96,10 +96,10 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 				let deposit = ItemDeposit { account: deposit_account, amount: deposit_amount };
 				let details = ItemDetails {
 					owner: item_owner,
-					approvals: ApprovalsOf::<T, I>::default(),
+					approvals: ApprovalsOf::<T>::default(),
 					deposit,
 				};
-				Item::<T, I>::insert(&collection, &item, details);
+				Item::<T>::insert(&collection, &item, details);
 				Ok(())
 			},
 		)?;
@@ -123,7 +123,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	/// - `signer`: The account that is authorized to mint the item using the pre-signed message.
 	pub(crate) fn do_mint_pre_signed(
 		mint_to: T::AccountId,
-		mint_data: PreSignedMintOf<T, I>,
+		mint_data: PreSignedMintOf<T>,
 		signer: T::AccountId,
 	) -> DispatchResult {
 		let PreSignedMint {
@@ -139,18 +139,18 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 		ensure!(
 			attributes.len() <= T::MaxAttributesPerCall::get() as usize,
-			Error::<T, I>::MaxAttributesLimitReached
+			Error::<T>::MaxAttributesLimitReached
 		);
 		if let Some(account) = only_account {
-			ensure!(account == mint_to, Error::<T, I>::WrongOrigin);
+			ensure!(account == mint_to, Error::<T>::WrongOrigin);
 		}
 
 		let now = frame_system::Pallet::<T>::block_number();
-		ensure!(deadline >= now, Error::<T, I>::DeadlineExpired);
+		ensure!(deadline >= now, Error::<T>::DeadlineExpired);
 
 		ensure!(
 			Self::has_role(&collection, &signer, CollectionRole::Issuer),
-			Error::<T, I>::NoPermission
+			Error::<T>::NoPermission
 		);
 
 		let item_config = ItemConfig { settings: Self::get_default_item_settings(&collection)? };
@@ -208,24 +208,24 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	pub fn do_burn(
 		collection: T::CollectionId,
 		item: T::ItemId,
-		with_details: impl FnOnce(&ItemDetailsFor<T, I>) -> DispatchResult,
+		with_details: impl FnOnce(&ItemDetailsFor<T>) -> DispatchResult,
 	) -> DispatchResult {
-		ensure!(!T::Locker::is_locked(collection, item), Error::<T, I>::ItemLocked);
+		ensure!(!T::Locker::is_locked(collection, item), Error::<T>::ItemLocked);
 		ensure!(
 			!Self::has_system_attribute(&collection, &item, PalletAttributes::TransferDisabled)?,
-			Error::<T, I>::ItemLocked
+			Error::<T>::ItemLocked
 		);
 		let item_config = Self::get_item_config(&collection, &item)?;
 		// NOTE: if item's settings are not empty (e.g. item's metadata is locked)
 		// then we keep the config record and don't remove it
 		let remove_config = !item_config.has_disabled_settings();
-		let owner = Collection::<T, I>::try_mutate(
+		let owner = Collection::<T>::try_mutate(
 			&collection,
 			|maybe_collection_details| -> Result<T::AccountId, DispatchError> {
 				let collection_details =
-					maybe_collection_details.as_mut().ok_or(Error::<T, I>::UnknownCollection)?;
-				let details = Item::<T, I>::get(&collection, &item)
-					.ok_or(Error::<T, I>::UnknownCollection)?;
+					maybe_collection_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
+				let details = Item::<T>::get(&collection, &item)
+					.ok_or(Error::<T>::UnknownCollection)?;
 				with_details(&details)?;
 
 				// Return the deposit.
@@ -238,7 +238,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 				// Clear the metadata if it's not locked.
 				if item_config.is_setting_enabled(ItemSetting::UnlockedMetadata) {
-					if let Some(metadata) = ItemMetadataOf::<T, I>::take(&collection, &item) {
+					if let Some(metadata) = ItemMetadataOf::<T>::take(&collection, &item) {
 						let depositor_account =
 							metadata.deposit.account.unwrap_or(collection_details.owner.clone());
 
@@ -257,14 +257,14 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			},
 		)?;
 
-		Item::<T, I>::remove(&collection, &item);
-		Account::<T, I>::remove((&owner, &collection, &item));
-		ItemPriceOf::<T, I>::remove(&collection, &item);
-		PendingSwapOf::<T, I>::remove(&collection, &item);
-		ItemAttributesApprovalsOf::<T, I>::remove(&collection, &item);
+		Item::<T>::remove(&collection, &item);
+		Account::<T>::remove((&owner, &collection, &item));
+		ItemPriceOf::<T>::remove(&collection, &item);
+		PendingSwapOf::<T>::remove(&collection, &item);
+		ItemAttributesApprovalsOf::<T>::remove(&collection, &item);
 
 		if remove_config {
-			ItemConfigOf::<T, I>::remove(&collection, &item);
+			ItemConfigOf::<T>::remove(&collection, &item);
 		}
 
 		Self::deposit_event(Event::Burned { collection, item, owner });

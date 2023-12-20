@@ -26,7 +26,7 @@ use frame_support::{
 	traits::{Currency, ExistenceRequirement::KeepAlive},
 };
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Creates a new swap offer for the specified item.
 	///
 	/// This function is used to create a new swap offer for the specified item. The `caller`
@@ -52,34 +52,34 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		offered_item_id: T::ItemId,
 		desired_collection_id: T::CollectionId,
 		maybe_desired_item_id: Option<T::ItemId>,
-		maybe_price: Option<PriceWithDirection<ItemPrice<T, I>>>,
+		maybe_price: Option<PriceWithDirection<ItemPrice<T>>>,
 		duration: frame_system::pallet_prelude::BlockNumberFor<T>,
 	) -> DispatchResult {
 		ensure!(
 			Self::is_pallet_feature_enabled(PalletFeature::Swaps),
-			Error::<T, I>::MethodDisabled
+			Error::<T>::MethodDisabled
 		);
-		ensure!(duration <= T::MaxDeadlineDuration::get(), Error::<T, I>::WrongDuration);
+		ensure!(duration <= T::MaxDeadlineDuration::get(), Error::<T>::WrongDuration);
 
-		let item = Item::<T, I>::get(&offered_collection_id, &offered_item_id)
-			.ok_or(Error::<T, I>::UnknownItem)?;
-		ensure!(item.owner == caller, Error::<T, I>::NoPermission);
+		let item = Item::<T>::get(&offered_collection_id, &offered_item_id)
+			.ok_or(Error::<T>::UnknownItem)?;
+		ensure!(item.owner == caller, Error::<T>::NoPermission);
 
 		match maybe_desired_item_id {
 			Some(desired_item_id) => ensure!(
-				Item::<T, I>::contains_key(&desired_collection_id, &desired_item_id),
-				Error::<T, I>::UnknownItem
+				Item::<T>::contains_key(&desired_collection_id, &desired_item_id),
+				Error::<T>::UnknownItem
 			),
 			None => ensure!(
-				Collection::<T, I>::contains_key(&desired_collection_id),
-				Error::<T, I>::UnknownCollection
+				Collection::<T>::contains_key(&desired_collection_id),
+				Error::<T>::UnknownCollection
 			),
 		};
 
 		let now = frame_system::Pallet::<T>::block_number();
 		let deadline = duration.saturating_add(now);
 
-		PendingSwapOf::<T, I>::insert(
+		PendingSwapOf::<T>::insert(
 			&offered_collection_id,
 			&offered_item_id,
 			PendingSwap {
@@ -116,17 +116,17 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		offered_collection_id: T::CollectionId,
 		offered_item_id: T::ItemId,
 	) -> DispatchResult {
-		let swap = PendingSwapOf::<T, I>::get(&offered_collection_id, &offered_item_id)
-			.ok_or(Error::<T, I>::UnknownSwap)?;
+		let swap = PendingSwapOf::<T>::get(&offered_collection_id, &offered_item_id)
+			.ok_or(Error::<T>::UnknownSwap)?;
 
 		let now = frame_system::Pallet::<T>::block_number();
 		if swap.deadline > now {
-			let item = Item::<T, I>::get(&offered_collection_id, &offered_item_id)
-				.ok_or(Error::<T, I>::UnknownItem)?;
-			ensure!(item.owner == caller, Error::<T, I>::NoPermission);
+			let item = Item::<T>::get(&offered_collection_id, &offered_item_id)
+				.ok_or(Error::<T>::UnknownItem)?;
+			ensure!(item.owner == caller, Error::<T>::NoPermission);
 		}
 
-		PendingSwapOf::<T, I>::remove(&offered_collection_id, &offered_item_id);
+		PendingSwapOf::<T>::remove(&offered_collection_id, &offered_item_id);
 
 		Self::deposit_event(Event::SwapCancelled {
 			offered_collection: offered_collection_id,
@@ -163,32 +163,32 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		send_item_id: T::ItemId,
 		receive_collection_id: T::CollectionId,
 		receive_item_id: T::ItemId,
-		witness_price: Option<PriceWithDirection<ItemPrice<T, I>>>,
+		witness_price: Option<PriceWithDirection<ItemPrice<T>>>,
 	) -> DispatchResult {
 		ensure!(
 			Self::is_pallet_feature_enabled(PalletFeature::Swaps),
-			Error::<T, I>::MethodDisabled
+			Error::<T>::MethodDisabled
 		);
 
-		let send_item = Item::<T, I>::get(&send_collection_id, &send_item_id)
-			.ok_or(Error::<T, I>::UnknownItem)?;
-		let receive_item = Item::<T, I>::get(&receive_collection_id, &receive_item_id)
-			.ok_or(Error::<T, I>::UnknownItem)?;
-		let swap = PendingSwapOf::<T, I>::get(&receive_collection_id, &receive_item_id)
-			.ok_or(Error::<T, I>::UnknownSwap)?;
+		let send_item = Item::<T>::get(&send_collection_id, &send_item_id)
+			.ok_or(Error::<T>::UnknownItem)?;
+		let receive_item = Item::<T>::get(&receive_collection_id, &receive_item_id)
+			.ok_or(Error::<T>::UnknownItem)?;
+		let swap = PendingSwapOf::<T>::get(&receive_collection_id, &receive_item_id)
+			.ok_or(Error::<T>::UnknownSwap)?;
 
-		ensure!(send_item.owner == caller, Error::<T, I>::NoPermission);
+		ensure!(send_item.owner == caller, Error::<T>::NoPermission);
 		ensure!(
 			swap.desired_collection == send_collection_id && swap.price == witness_price,
-			Error::<T, I>::UnknownSwap
+			Error::<T>::UnknownSwap
 		);
 
 		if let Some(desired_item) = swap.desired_item {
-			ensure!(desired_item == send_item_id, Error::<T, I>::UnknownSwap);
+			ensure!(desired_item == send_item_id, Error::<T>::UnknownSwap);
 		}
 
 		let now = frame_system::Pallet::<T>::block_number();
-		ensure!(now <= swap.deadline, Error::<T, I>::DeadlineExpired);
+		ensure!(now <= swap.deadline, Error::<T>::DeadlineExpired);
 
 		if let Some(ref price) = swap.price {
 			match price.direction {

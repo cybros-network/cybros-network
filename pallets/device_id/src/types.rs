@@ -30,60 +30,60 @@ use frame_system::pallet_prelude::BlockNumberFor;
 use scale_info::{build::Fields, meta_type, Path, Type, TypeInfo, TypeParameter};
 
 /// A type alias for handling balance deposits.
-pub(super) type DepositBalanceOf<T, I = ()> =
-	<<T as Config<I>>::Currency as Currency<<T as SystemConfig>::AccountId>>::Balance;
+pub(super) type DepositBalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 /// A type alias representing the details of a collection.
-pub(super) type CollectionDetailsFor<T, I> =
-	CollectionDetails<<T as SystemConfig>::AccountId, DepositBalanceOf<T, I>>;
+pub(super) type CollectionDetailsFor<T> =
+	CollectionDetails<<T as frame_system::Config>::AccountId, DepositBalanceOf<T>>;
 /// A type alias for keeping track of approvals used by a single item.
-pub(super) type ApprovalsOf<T, I = ()> = BoundedBTreeMap<
-	<T as SystemConfig>::AccountId,
+pub(super) type ApprovalsOf<T> = BoundedBTreeMap<
+	<T as frame_system::Config>::AccountId,
 	Option<BlockNumberFor<T>>,
-	<T as Config<I>>::ApprovalsLimit,
+	<T as Config>::ApprovalsLimit,
 >;
 /// A type alias for keeping track of approvals for an item's attributes.
-pub(super) type ItemAttributesApprovals<T, I = ()> =
-	BoundedBTreeSet<<T as SystemConfig>::AccountId, <T as Config<I>>::ItemAttributesApprovalsLimit>;
+pub(super) type ItemAttributesApprovals<T> =
+	BoundedBTreeSet<<T as frame_system::Config>::AccountId, <T as Config>::ItemAttributesApprovalsLimit>;
 /// A type that holds the deposit for a single item.
-pub(super) type ItemDepositOf<T, I> =
-	ItemDeposit<DepositBalanceOf<T, I>, <T as SystemConfig>::AccountId>;
+pub(super) type ItemDepositOf<T> =
+	ItemDeposit<DepositBalanceOf<T>, <T as frame_system::Config>::AccountId>;
 /// A type that holds the deposit amount for an item's attribute.
-pub(super) type AttributeDepositOf<T, I> =
-	AttributeDeposit<DepositBalanceOf<T, I>, <T as SystemConfig>::AccountId>;
+pub(super) type AttributeDepositOf<T> =
+	AttributeDeposit<DepositBalanceOf<T>, <T as frame_system::Config>::AccountId>;
 /// A type that holds the deposit amount for an item's metadata.
-pub(super) type ItemMetadataDepositOf<T, I> =
-	ItemMetadataDeposit<DepositBalanceOf<T, I>, <T as SystemConfig>::AccountId>;
+pub(super) type ItemMetadataDepositOf<T> =
+	ItemMetadataDeposit<DepositBalanceOf<T>, <T as frame_system::Config>::AccountId>;
 /// A type that holds the details of a single item.
-pub(super) type ItemDetailsFor<T, I> =
-	ItemDetails<<T as SystemConfig>::AccountId, ItemDepositOf<T, I>, ApprovalsOf<T, I>>;
+pub(super) type ItemDetailsFor<T> =
+	ItemDetails<<T as frame_system::Config>::AccountId, ItemDepositOf<T>, ApprovalsOf<T>>;
 /// A type alias for an accounts balance.
-pub(super) type BalanceOf<T, I = ()> =
-	<<T as Config<I>>::Currency as Currency<<T as SystemConfig>::AccountId>>::Balance;
+pub(super) type BalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 /// A type alias to represent the price of an item.
-pub(super) type ItemPrice<T, I = ()> = BalanceOf<T, I>;
+pub(super) type ItemPrice<T> = BalanceOf<T>;
 /// A type alias for the tips held by a single item.
-pub(super) type ItemTipOf<T, I = ()> = ItemTip<
-	<T as Config<I>>::CollectionId,
-	<T as Config<I>>::ItemId,
-	<T as SystemConfig>::AccountId,
-	BalanceOf<T, I>,
+pub(super) type ItemTipOf<T> = ItemTip<
+	<T as Config>::CollectionId,
+	<T as Config>::ItemId,
+	<T as frame_system::Config>::AccountId,
+	BalanceOf<T>,
 >;
 /// A type alias for the settings configuration of a collection.
-pub(super) type CollectionConfigFor<T, I = ()> =
-	CollectionConfig<BalanceOf<T, I>, BlockNumberFor<T>, <T as Config<I>>::CollectionId>;
+pub(super) type CollectionConfigFor<T> =
+	CollectionConfig<BalanceOf<T>, BlockNumberFor<T>, <T as Config>::CollectionId>;
 /// A type alias for the pre-signed minting configuration for a specified collection.
-pub(super) type PreSignedMintOf<T, I = ()> = PreSignedMint<
-	<T as Config<I>>::CollectionId,
-	<T as Config<I>>::ItemId,
-	<T as SystemConfig>::AccountId,
+pub(super) type PreSignedMintOf<T> = PreSignedMint<
+	<T as Config>::CollectionId,
+	<T as Config>::ItemId,
+	<T as frame_system::Config>::AccountId,
 	BlockNumberFor<T>,
-	BalanceOf<T, I>,
+	BalanceOf<T>,
 >;
 /// A type alias for the pre-signed minting configuration on the attribute level of an item.
-pub(super) type PreSignedAttributesOf<T, I = ()> = PreSignedAttributes<
-	<T as Config<I>>::CollectionId,
-	<T as Config<I>>::ItemId,
-	<T as SystemConfig>::AccountId,
+pub(super) type PreSignedAttributesOf<T> = PreSignedAttributes<
+	<T as Config>::CollectionId,
+	<T as Config>::ItemId,
+	<T as frame_system::Config>::AccountId,
 	BlockNumberFor<T>,
 >;
 

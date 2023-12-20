@@ -21,7 +21,7 @@
 use crate::*;
 use frame_support::pallet_prelude::*;
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Locks a collection with specified settings.
 	///
 	/// The origin must be the owner of the collection to lock it. This function disables certain
@@ -39,19 +39,19 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		collection: T::CollectionId,
 		lock_settings: CollectionSettings,
 	) -> DispatchResult {
-		ensure!(Self::collection_owner(collection) == Some(origin), Error::<T, I>::NoPermission);
+		ensure!(Self::collection_owner(collection) == Some(origin), Error::<T>::NoPermission);
 		ensure!(
 			!lock_settings.is_disabled(CollectionSetting::DepositRequired),
-			Error::<T, I>::WrongSetting
+			Error::<T>::WrongSetting
 		);
-		CollectionConfigOf::<T, I>::try_mutate(collection, |maybe_config| {
-			let config = maybe_config.as_mut().ok_or(Error::<T, I>::NoConfig)?;
+		CollectionConfigOf::<T>::try_mutate(collection, |maybe_config| {
+			let config = maybe_config.as_mut().ok_or(Error::<T>::NoConfig)?;
 
 			for setting in lock_settings.get_disabled() {
 				config.disable_setting(setting);
 			}
 
-			Self::deposit_event(Event::<T, I>::CollectionLocked { collection });
+			Self::deposit_event(Event::<T>::CollectionLocked { collection });
 			Ok(())
 		})
 	}
@@ -73,16 +73,16 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	) -> DispatchResult {
 		ensure!(
 			Self::has_role(&collection, &origin, CollectionRole::Freezer),
-			Error::<T, I>::NoPermission
+			Error::<T>::NoPermission
 		);
 
 		let mut config = Self::get_item_config(&collection, &item)?;
 		if !config.has_disabled_setting(ItemSetting::Transferable) {
 			config.disable_setting(ItemSetting::Transferable);
 		}
-		ItemConfigOf::<T, I>::insert(&collection, &item, config);
+		ItemConfigOf::<T>::insert(&collection, &item, config);
 
-		Self::deposit_event(Event::<T, I>::ItemTransferLocked { collection, item });
+		Self::deposit_event(Event::<T>::ItemTransferLocked { collection, item });
 		Ok(())
 	}
 
@@ -103,16 +103,16 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	) -> DispatchResult {
 		ensure!(
 			Self::has_role(&collection, &origin, CollectionRole::Freezer),
-			Error::<T, I>::NoPermission
+			Error::<T>::NoPermission
 		);
 
 		let mut config = Self::get_item_config(&collection, &item)?;
 		if config.has_disabled_setting(ItemSetting::Transferable) {
 			config.enable_setting(ItemSetting::Transferable);
 		}
-		ItemConfigOf::<T, I>::insert(&collection, &item, config);
+		ItemConfigOf::<T>::insert(&collection, &item, config);
 
-		Self::deposit_event(Event::<T, I>::ItemTransferUnlocked { collection, item });
+		Self::deposit_event(Event::<T>::ItemTransferUnlocked { collection, item });
 		Ok(())
 	}
 
@@ -141,12 +141,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
 				Self::has_role(&collection, &check_origin, CollectionRole::Admin),
-				Error::<T, I>::NoPermission
+				Error::<T>::NoPermission
 			);
 		}
 
-		ItemConfigOf::<T, I>::try_mutate(collection, item, |maybe_config| {
-			let config = maybe_config.as_mut().ok_or(Error::<T, I>::UnknownItem)?;
+		ItemConfigOf::<T>::try_mutate(collection, item, |maybe_config| {
+			let config = maybe_config.as_mut().ok_or(Error::<T>::UnknownItem)?;
 
 			if lock_metadata {
 				config.disable_setting(ItemSetting::UnlockedMetadata);
@@ -155,7 +155,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 				config.disable_setting(ItemSetting::UnlockedAttributes);
 			}
 
-			Self::deposit_event(Event::<T, I>::ItemPropertiesLocked {
+			Self::deposit_event(Event::<T>::ItemPropertiesLocked {
 				collection,
 				item,
 				lock_metadata,

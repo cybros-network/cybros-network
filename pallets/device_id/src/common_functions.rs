@@ -20,15 +20,15 @@
 use crate::*;
 use frame_support::pallet_prelude::*;
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Get the owner of the item, if the item exists.
 	pub fn owner(collection: T::CollectionId, item: T::ItemId) -> Option<T::AccountId> {
-		Item::<T, I>::get(collection, item).map(|i| i.owner)
+		Item::<T>::get(collection, item).map(|i| i.owner)
 	}
 
 	/// Get the owner of the collection, if the collection exists.
 	pub fn collection_owner(collection: T::CollectionId) -> Option<T::AccountId> {
-		Collection::<T, I>::get(collection).map(|i| i.owner)
+		Collection::<T>::get(collection).map(|i| i.owner)
 	}
 
 	/// Validates the signature of the given data with the provided signer's account ID.
@@ -55,25 +55,25 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		wrapped.extend(data);
 		wrapped.extend(suffix);
 
-		ensure!(signature.verify(&*wrapped, &signer), Error::<T, I>::WrongSignature);
+		ensure!(signature.verify(&*wrapped, &signer), Error::<T>::WrongSignature);
 
 		Ok(())
 	}
 
 	pub(crate) fn set_next_collection_id(collection: T::CollectionId) {
 		let next_id = collection.increment();
-		NextCollectionId::<T, I>::set(next_id);
+		NextCollectionId::<T>::set(next_id);
 		Self::deposit_event(Event::NextCollectionIdIncremented { next_id });
 	}
 
 	#[cfg(any(test, feature = "runtime-benchmarks"))]
 	pub fn set_next_id(id: T::CollectionId) {
-		NextCollectionId::<T, I>::set(Some(id));
+		NextCollectionId::<T>::set(Some(id));
 	}
 
 	#[cfg(test)]
 	pub fn get_next_id() -> T::CollectionId {
-		NextCollectionId::<T, I>::get()
+		NextCollectionId::<T>::get()
 			.or(T::CollectionId::initial_value())
 			.expect("Failed to get next collection ID")
 	}

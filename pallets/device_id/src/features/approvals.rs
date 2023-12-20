@@ -22,7 +22,7 @@
 use crate::*;
 use frame_support::pallet_prelude::*;
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Approves the transfer of an item to a delegate.
 	///
 	/// This function is used to approve the transfer of the specified `item` in the `collection` to
@@ -50,19 +50,19 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	) -> DispatchResult {
 		ensure!(
 			Self::is_pallet_feature_enabled(PalletFeature::Approvals),
-			Error::<T, I>::MethodDisabled
+			Error::<T>::MethodDisabled
 		);
 		let mut details =
-			Item::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::UnknownItem)?;
+			Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
 
 		let collection_config = Self::get_collection_config(&collection)?;
 		ensure!(
 			collection_config.is_setting_enabled(CollectionSetting::TransferableItems),
-			Error::<T, I>::ItemsNonTransferable
+			Error::<T>::ItemsNonTransferable
 		);
 
 		if let Some(check_origin) = maybe_check_origin {
-			ensure!(check_origin == details.owner, Error::<T, I>::NoPermission);
+			ensure!(check_origin == details.owner, Error::<T>::NoPermission);
 		}
 
 		let now = frame_system::Pallet::<T>::block_number();
@@ -71,8 +71,8 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		details
 			.approvals
 			.try_insert(delegate.clone(), deadline)
-			.map_err(|_| Error::<T, I>::ReachedApprovalLimit)?;
-		Item::<T, I>::insert(&collection, &item, &details);
+			.map_err(|_| Error::<T>::ReachedApprovalLimit)?;
+		Item::<T>::insert(&collection, &item, &details);
 
 		Self::deposit_event(Event::TransferApproved {
 			collection,
@@ -106,9 +106,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		delegate: T::AccountId,
 	) -> DispatchResult {
 		let mut details =
-			Item::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::UnknownItem)?;
+			Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
 
-		let maybe_deadline = details.approvals.get(&delegate).ok_or(Error::<T, I>::NotDelegate)?;
+		let maybe_deadline = details.approvals.get(&delegate).ok_or(Error::<T>::NotDelegate)?;
 
 		let is_past_deadline = if let Some(deadline) = maybe_deadline {
 			let now = frame_system::Pallet::<T>::block_number();
@@ -119,12 +119,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 		if !is_past_deadline {
 			if let Some(check_origin) = maybe_check_origin {
-				ensure!(check_origin == details.owner, Error::<T, I>::NoPermission);
+				ensure!(check_origin == details.owner, Error::<T>::NoPermission);
 			}
 		}
 
 		details.approvals.remove(&delegate);
-		Item::<T, I>::insert(&collection, &item, &details);
+		Item::<T>::insert(&collection, &item, &details);
 
 		Self::deposit_event(Event::ApprovalCancelled {
 			collection,
@@ -155,14 +155,14 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		item: T::ItemId,
 	) -> DispatchResult {
 		let mut details =
-			Item::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::UnknownCollection)?;
+			Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownCollection)?;
 
 		if let Some(check_origin) = maybe_check_origin {
-			ensure!(check_origin == details.owner, Error::<T, I>::NoPermission);
+			ensure!(check_origin == details.owner, Error::<T>::NoPermission);
 		}
 
 		details.approvals.clear();
-		Item::<T, I>::insert(&collection, &item, &details);
+		Item::<T>::insert(&collection, &item, &details);
 
 		Self::deposit_event(Event::AllApprovalsCancelled {
 			collection,

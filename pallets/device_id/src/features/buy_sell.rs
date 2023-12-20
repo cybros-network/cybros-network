@@ -26,7 +26,7 @@ use frame_support::{
 	traits::{Currency, ExistenceRequirement, ExistenceRequirement::KeepAlive},
 };
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Pays the specified tips to the corresponding receivers.
 	///
 	/// This function is used to pay tips from the `sender` account to multiple receivers. The tips
@@ -39,7 +39,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	///   `collection`, `item`, `receiver`, and `amount`.
 	pub(crate) fn do_pay_tips(
 		sender: T::AccountId,
-		tips: BoundedVec<ItemTipOf<T, I>, T::MaxTips>,
+		tips: BoundedVec<ItemTipOf<T>, T::MaxTips>,
 	) -> DispatchResult {
 		for tip in tips {
 			let ItemTip { collection, item, receiver, amount } = tip;
@@ -73,31 +73,31 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		collection: T::CollectionId,
 		item: T::ItemId,
 		sender: T::AccountId,
-		price: Option<ItemPrice<T, I>>,
+		price: Option<ItemPrice<T>>,
 		whitelisted_buyer: Option<T::AccountId>,
 	) -> DispatchResult {
 		ensure!(
 			Self::is_pallet_feature_enabled(PalletFeature::Trading),
-			Error::<T, I>::MethodDisabled
+			Error::<T>::MethodDisabled
 		);
 
-		let details = Item::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::UnknownItem)?;
-		ensure!(details.owner == sender, Error::<T, I>::NoPermission);
+		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
+		ensure!(details.owner == sender, Error::<T>::NoPermission);
 
 		let collection_config = Self::get_collection_config(&collection)?;
 		ensure!(
 			collection_config.is_setting_enabled(CollectionSetting::TransferableItems),
-			Error::<T, I>::ItemsNonTransferable
+			Error::<T>::ItemsNonTransferable
 		);
 
 		let item_config = Self::get_item_config(&collection, &item)?;
 		ensure!(
 			item_config.is_setting_enabled(ItemSetting::Transferable),
-			Error::<T, I>::ItemLocked
+			Error::<T>::ItemLocked
 		);
 
 		if let Some(ref price) = price {
-			ItemPriceOf::<T, I>::insert(&collection, &item, (price, whitelisted_buyer.clone()));
+			ItemPriceOf::<T>::insert(&collection, &item, (price, whitelisted_buyer.clone()));
 			Self::deposit_event(Event::ItemPriceSet {
 				collection,
 				item,
@@ -105,7 +105,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 				whitelisted_buyer,
 			});
 		} else {
-			ItemPriceOf::<T, I>::remove(&collection, &item);
+			ItemPriceOf::<T>::remove(&collection, &item);
 			Self::deposit_event(Event::ItemPriceRemoved { collection, item });
 		}
 
@@ -129,23 +129,23 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		collection: T::CollectionId,
 		item: T::ItemId,
 		buyer: T::AccountId,
-		bid_price: ItemPrice<T, I>,
+		bid_price: ItemPrice<T>,
 	) -> DispatchResult {
 		ensure!(
 			Self::is_pallet_feature_enabled(PalletFeature::Trading),
-			Error::<T, I>::MethodDisabled
+			Error::<T>::MethodDisabled
 		);
 
-		let details = Item::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::UnknownItem)?;
-		ensure!(details.owner != buyer, Error::<T, I>::NoPermission);
+		let details = Item::<T>::get(&collection, &item).ok_or(Error::<T>::UnknownItem)?;
+		ensure!(details.owner != buyer, Error::<T>::NoPermission);
 
 		let price_info =
-			ItemPriceOf::<T, I>::get(&collection, &item).ok_or(Error::<T, I>::NotForSale)?;
+			ItemPriceOf::<T>::get(&collection, &item).ok_or(Error::<T>::NotForSale)?;
 
-		ensure!(bid_price >= price_info.0, Error::<T, I>::BidTooLow);
+		ensure!(bid_price >= price_info.0, Error::<T>::BidTooLow);
 
 		if let Some(only_buyer) = price_info.1 {
-			ensure!(only_buyer == buyer, Error::<T, I>::NoPermission);
+			ensure!(only_buyer == buyer, Error::<T>::NoPermission);
 		}
 
 		T::Currency::transfer(

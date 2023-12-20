@@ -20,7 +20,7 @@
 use crate::*;
 use frame_support::pallet_prelude::*;
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Forcefully change the configuration of a collection.
 	///
 	/// - `collection`: The ID of the collection for which to update the configuration.
@@ -30,10 +30,10 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	/// It updates the collection configuration and emits a `CollectionConfigChanged` event.
 	pub(crate) fn do_force_collection_config(
 		collection: T::CollectionId,
-		config: CollectionConfigFor<T, I>,
+		config: CollectionConfigFor<T>,
 	) -> DispatchResult {
-		ensure!(Collection::<T, I>::contains_key(&collection), Error::<T, I>::UnknownCollection);
-		CollectionConfigOf::<T, I>::insert(&collection, config);
+		ensure!(Collection::<T>::contains_key(&collection), Error::<T>::UnknownCollection);
+		CollectionConfigOf::<T>::insert(&collection, config);
 		Self::deposit_event(Event::CollectionConfigChanged { collection });
 		Ok(())
 	}
@@ -62,19 +62,19 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		let collection_config = Self::get_collection_config(&collection)?;
 		ensure!(
 			collection_config.is_setting_enabled(CollectionSetting::UnlockedMaxSupply),
-			Error::<T, I>::MaxSupplyLocked
+			Error::<T>::MaxSupplyLocked
 		);
 
 		let details =
-			Collection::<T, I>::get(&collection).ok_or(Error::<T, I>::UnknownCollection)?;
+			Collection::<T>::get(&collection).ok_or(Error::<T>::UnknownCollection)?;
 		if let Some(check_owner) = &maybe_check_owner {
-			ensure!(check_owner == &details.owner, Error::<T, I>::NoPermission);
+			ensure!(check_owner == &details.owner, Error::<T>::NoPermission);
 		}
 
-		ensure!(details.items <= max_supply, Error::<T, I>::MaxSupplyTooSmall);
+		ensure!(details.items <= max_supply, Error::<T>::MaxSupplyTooSmall);
 
-		CollectionConfigOf::<T, I>::try_mutate(collection, |maybe_config| {
-			let config = maybe_config.as_mut().ok_or(Error::<T, I>::NoConfig)?;
+		CollectionConfigOf::<T>::try_mutate(collection, |maybe_config| {
+			let config = maybe_config.as_mut().ok_or(Error::<T>::NoConfig)?;
 			config.max_supply = Some(max_supply);
 			Self::deposit_event(Event::CollectionMaxSupplySet { collection, max_supply });
 			Ok(())
@@ -97,7 +97,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		maybe_check_origin: Option<T::AccountId>,
 		collection: T::CollectionId,
 		mint_settings: MintSettings<
-			BalanceOf<T, I>,
+			BalanceOf<T>,
 			frame_system::pallet_prelude::BlockNumberFor<T>,
 			T::CollectionId,
 		>,
@@ -105,12 +105,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		if let Some(check_origin) = &maybe_check_origin {
 			ensure!(
 				Self::has_role(&collection, &check_origin, CollectionRole::Issuer),
-				Error::<T, I>::NoPermission
+				Error::<T>::NoPermission
 			);
 		}
 
-		CollectionConfigOf::<T, I>::try_mutate(collection, |maybe_config| {
-			let config = maybe_config.as_mut().ok_or(Error::<T, I>::NoConfig)?;
+		CollectionConfigOf::<T>::try_mutate(collection, |maybe_config| {
+			let config = maybe_config.as_mut().ok_or(Error::<T>::NoConfig)?;
 			config.mint_settings = mint_settings;
 			Self::deposit_event(Event::CollectionMintSettingsUpdated { collection });
 			Ok(())
@@ -126,9 +126,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	/// otherwise, it returns a `DispatchError` with `Error::NoConfig`.
 	pub(crate) fn get_collection_config(
 		collection_id: &T::CollectionId,
-	) -> Result<CollectionConfigFor<T, I>, DispatchError> {
+	) -> Result<CollectionConfigFor<T>, DispatchError> {
 		let config =
-			CollectionConfigOf::<T, I>::get(&collection_id).ok_or(Error::<T, I>::NoConfig)?;
+			CollectionConfigOf::<T>::get(&collection_id).ok_or(Error::<T>::NoConfig)?;
 		Ok(config)
 	}
 
@@ -144,8 +144,8 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		collection_id: &T::CollectionId,
 		item_id: &T::ItemId,
 	) -> Result<ItemConfig, DispatchError> {
-		let config = ItemConfigOf::<T, I>::get(&collection_id, &item_id)
-			.ok_or(Error::<T, I>::UnknownItem)?;
+		let config = ItemConfigOf::<T>::get(&collection_id, &item_id)
+			.ok_or(Error::<T>::UnknownItem)?;
 		Ok(config)
 	}
 

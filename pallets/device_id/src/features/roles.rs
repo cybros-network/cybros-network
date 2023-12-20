@@ -21,7 +21,7 @@ use crate::*;
 use frame_support::pallet_prelude::*;
 use sp_std::collections::btree_map::BTreeMap;
 
-impl<T: Config<I>, I: 'static> Pallet<T, I> {
+impl<T: Config> Pallet<T> {
 	/// Set the team roles for a specific collection.
 	///
 	/// - `maybe_check_owner`: An optional account ID used to check ownership permission. If `None`,
@@ -42,11 +42,11 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		admin: Option<T::AccountId>,
 		freezer: Option<T::AccountId>,
 	) -> DispatchResult {
-		Collection::<T, I>::try_mutate(collection, |maybe_details| {
-			let details = maybe_details.as_mut().ok_or(Error::<T, I>::UnknownCollection)?;
+		Collection::<T>::try_mutate(collection, |maybe_details| {
+			let details = maybe_details.as_mut().ok_or(Error::<T>::UnknownCollection)?;
 			let is_root = maybe_check_owner.is_none();
 			if let Some(check_origin) = maybe_check_owner {
-				ensure!(check_origin == details.owner, Error::<T, I>::NoPermission);
+				ensure!(check_origin == details.owner, Error::<T>::NoPermission);
 			}
 
 			let roles_map = [
@@ -61,7 +61,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 					if account.is_some() {
 						ensure!(
 							Self::find_account_by_role(&collection, *role).is_some(),
-							Error::<T, I>::NoPermission
+							Error::<T>::NoPermission
 						);
 					}
 				}
@@ -79,7 +79,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 
 			// Insert new records.
 			for (account, roles) in account_to_role {
-				CollectionRoleOf::<T, I>::insert(&collection, &account, roles);
+				CollectionRoleOf::<T>::insert(&collection, &account, roles);
 			}
 
 			Self::deposit_event(Event::TeamChanged { collection, issuer, admin, freezer });
@@ -95,12 +95,12 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 	/// error if some of the roles were left in storage, indicating that the maximum number of roles
 	/// may need to be adjusted.
 	pub(crate) fn clear_roles(collection_id: &T::CollectionId) -> Result<(), DispatchError> {
-		let res = CollectionRoleOf::<T, I>::clear_prefix(
+		let res = CollectionRoleOf::<T>::clear_prefix(
 			&collection_id,
 			CollectionRoles::max_roles() as u32,
 			None,
 		);
-		ensure!(res.maybe_cursor.is_none(), Error::<T, I>::RolesNotCleared);
+		ensure!(res.maybe_cursor.is_none(), Error::<T>::RolesNotCleared);
 		Ok(())
 	}
 
@@ -116,7 +116,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		account_id: &T::AccountId,
 		role: CollectionRole,
 	) -> bool {
-		CollectionRoleOf::<T, I>::get(&collection_id, &account_id)
+		CollectionRoleOf::<T>::get(&collection_id, &account_id)
 			.map_or(false, |roles| roles.has_role(role))
 	}
 
@@ -130,7 +130,7 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		collection_id: &T::CollectionId,
 		role: CollectionRole,
 	) -> Option<T::AccountId> {
-		CollectionRoleOf::<T, I>::iter_prefix(&collection_id).into_iter().find_map(
+		CollectionRoleOf::<T>::iter_prefix(&collection_id).into_iter().find_map(
 			|(account, roles)| if roles.has_role(role) { Some(account.clone()) } else { None },
 		)
 	}
