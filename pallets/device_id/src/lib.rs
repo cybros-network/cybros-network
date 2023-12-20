@@ -269,7 +269,7 @@ pub mod pallet {
         T::CollectionId,
         Blake2_128Concat,
         T::ItemId,
-        ItemDetails<T::AccountId, ItemDepositOf<T>, ApprovalsOf<T>>,
+        ItemDetails<T::AccountId, ItemDepositOf<T>>,
         OptionQuery,
     >;
 

@@ -96,7 +96,6 @@ impl<T: Config> Pallet<T> {
 				let deposit = ItemDeposit { account: deposit_account, amount: deposit_amount };
 				let details = ItemDetails {
 					owner: item_owner,
-					approvals: ApprovalsOf::<T>::default(),
 					deposit,
 				};
 				Item::<T>::insert(&collection, &item, details);

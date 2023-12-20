@@ -24,7 +24,7 @@ use enumflags2::{bitflags, BitFlags};
 use frame_support::{
 	pallet_prelude::{BoundedVec, MaxEncodedLen},
 	traits::Get,
-	BoundedBTreeMap, BoundedBTreeSet,
+	BoundedBTreeSet,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use scale_info::{build::Fields, meta_type, Path, Type, TypeInfo, TypeParameter};
@@ -35,12 +35,6 @@ pub(super) type DepositBalanceOf<T> =
 /// A type alias representing the details of a collection.
 pub(super) type CollectionDetailsFor<T> =
 	CollectionDetails<<T as frame_system::Config>::AccountId, DepositBalanceOf<T>>;
-/// A type alias for keeping track of approvals used by a single item.
-pub(super) type ApprovalsOf<T> = BoundedBTreeMap<
-	<T as frame_system::Config>::AccountId,
-	Option<BlockNumberFor<T>>,
-	<T as Config>::ApprovalsLimit,
->;
 /// A type alias for keeping track of approvals for an item's attributes.
 pub(super) type ItemAttributesApprovals<T> =
 	BoundedBTreeSet<<T as frame_system::Config>::AccountId, <T as Config>::ItemAttributesApprovalsLimit>;
@@ -55,7 +49,7 @@ pub(super) type ItemMetadataDepositOf<T> =
 	ItemMetadataDeposit<DepositBalanceOf<T>, <T as frame_system::Config>::AccountId>;
 /// A type that holds the details of a single item.
 pub(super) type ItemDetailsFor<T> =
-	ItemDetails<<T as frame_system::Config>::AccountId, ItemDepositOf<T>, ApprovalsOf<T>>;
+	ItemDetails<<T as frame_system::Config>::AccountId, ItemDepositOf<T>>;
 /// A type alias for the settings configuration of a collection.
 pub(super) type CollectionConfigFor<T> =
 	CollectionConfig<BlockNumberFor<T>>;
@@ -118,11 +112,9 @@ impl<AccountId, DepositBalance> CollectionDetails<AccountId, DepositBalance> {
 
 /// Information concerning the ownership of a single unique item.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
-pub struct ItemDetails<AccountId, Deposit, Approvals> {
+pub struct ItemDetails<AccountId, Deposit> {
 	/// The owner of this item.
 	pub(super) owner: AccountId,
-	/// The approved transferrer of this item, if one is set.
-	pub(super) approvals: Approvals,
 	/// The amount held in the pallet's default account for this item. Free-hold items will have
 	/// this as zero.
 	pub(super) deposit: Deposit,
