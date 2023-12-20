@@ -59,15 +59,6 @@ pub(super) type ItemDetailsFor<T> =
 /// A type alias for an accounts balance.
 pub(super) type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-/// A type alias to represent the price of an item.
-pub(super) type ItemPrice<T> = BalanceOf<T>;
-/// A type alias for the tips held by a single item.
-pub(super) type ItemTipOf<T> = ItemTip<
-	<T as Config>::CollectionId,
-	<T as Config>::ItemId,
-	<T as frame_system::Config>::AccountId,
-	BalanceOf<T>,
->;
 /// A type alias for the settings configuration of a collection.
 pub(super) type CollectionConfigFor<T> =
 	CollectionConfig<BalanceOf<T>, BlockNumberFor<T>, <T as Config>::CollectionId>;
@@ -186,32 +177,6 @@ pub struct ItemMetadata<Deposit, StringLimit: Get<u32>> {
 	/// generally be either a JSON dump or the hash of some JSON which can be found on a
 	/// hash-addressable global publication system such as IPFS.
 	pub(super) data: BoundedVec<u8, StringLimit>,
-}
-
-/// Information about the tip.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct ItemTip<CollectionId, ItemId, AccountId, Amount> {
-	/// The collection of the item.
-	pub(super) collection: CollectionId,
-	/// An item of which the tip is sent for.
-	pub(super) item: ItemId,
-	/// A sender of the tip.
-	pub(super) receiver: AccountId,
-	/// An amount the sender is willing to tip.
-	pub(super) amount: Amount,
-}
-
-/// Information about the pending swap.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo, MaxEncodedLen)]
-pub struct PendingSwap<CollectionId, ItemId, ItemPriceWithDirection, Deadline> {
-	/// The collection that contains the item that the user wants to receive.
-	pub(super) desired_collection: CollectionId,
-	/// The item the user wants to receive.
-	pub(super) desired_item: Option<ItemId>,
-	/// A price for the desired `item` with the direction.
-	pub(super) price: Option<ItemPriceWithDirection>,
-	/// A deadline for the swap.
-	pub(super) deadline: Deadline,
 }
 
 /// Information about the reserved attribute deposit.
@@ -453,8 +418,6 @@ impl ItemConfig {
 #[repr(u64)]
 #[derive(Copy, Clone, RuntimeDebug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum PalletFeature {
-	/// Enable/disable trading operations.
-	Trading,
 	/// Allow/disallow setting attributes.
 	Attributes,
 	/// Allow/disallow transfer approvals.

@@ -99,8 +99,6 @@ impl<T: Config> Pallet<T> {
 
 		// Update item details.
 		Item::<T>::insert(&collection, &item, &details);
-		ItemPriceOf::<T>::remove(&collection, &item);
-		PendingSwapOf::<T>::remove(&collection, &item);
 
 		// Emit `Transferred` event.
 		Self::deposit_event(Event::Transferred {

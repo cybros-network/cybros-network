@@ -259,8 +259,6 @@ impl<T: Config> Pallet<T> {
 
 		Item::<T>::remove(&collection, &item);
 		Account::<T>::remove((&owner, &collection, &item));
-		ItemPriceOf::<T>::remove(&collection, &item);
-		PendingSwapOf::<T>::remove(&collection, &item);
 		ItemAttributesApprovalsOf::<T>::remove(&collection, &item);
 
 		if remove_config {
