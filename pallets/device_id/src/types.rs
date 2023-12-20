@@ -85,7 +85,7 @@ pub struct CollectionDetails<AccountId, DepositBalance> {
 	/// The total number of outstanding items of this collection.
 	pub(super) items: u32,
 	/// The total number of outstanding item metadata of this collection.
-	pub(super) item_metadatas: u32,
+	pub(super) item_metadata: u32,
 	/// The total number of outstanding item configs of this collection.
 	pub(super) item_configs: u32,
 	/// The total number of attributes for this collection.
@@ -97,7 +97,7 @@ pub struct CollectionDetails<AccountId, DepositBalance> {
 pub struct DestroyWitness {
 	/// The total number of items in this collection that have outstanding item metadata.
 	#[codec(compact)]
-	pub item_metadatas: u32,
+	pub item_metadata: u32,
 	/// The total number of outstanding item configs of this collection.
 	#[codec(compact)]
 	pub item_configs: u32,
@@ -109,20 +109,11 @@ pub struct DestroyWitness {
 impl<AccountId, DepositBalance> CollectionDetails<AccountId, DepositBalance> {
 	pub fn destroy_witness(&self) -> DestroyWitness {
 		DestroyWitness {
-			item_metadatas: self.item_metadatas,
+			item_metadata: self.item_metadata,
 			item_configs: self.item_configs,
 			attributes: self.attributes,
 		}
 	}
-}
-
-/// Witness data for items mint transactions.
-#[derive(Clone, Encode, Decode, Default, Eq, PartialEq, RuntimeDebug, TypeInfo)]
-pub struct MintWitness<ItemId, Balance> {
-	/// Provide the id of the item in a required collection.
-	pub owned_item: Option<ItemId>,
-	/// The price specified in mint settings.
-	pub mint_price: Option<Balance>,
 }
 
 /// Information concerning the ownership of a single unique item.

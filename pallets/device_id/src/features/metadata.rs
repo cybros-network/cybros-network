@@ -66,7 +66,7 @@ impl<T: Config> Pallet<T> {
 
 		ItemMetadataOf::<T>::try_mutate_exists(collection, item, |metadata| {
 			if metadata.is_none() {
-				collection_details.item_metadatas.saturating_inc();
+				collection_details.item_metadata.saturating_inc();
 			}
 
 			let old_deposit = metadata
@@ -149,7 +149,7 @@ impl<T: Config> Pallet<T> {
 
 		ensure!(is_root || !is_locked, Error::<T>::LockedItemMetadata);
 
-		collection_details.item_metadatas.saturating_dec();
+		collection_details.item_metadata.saturating_dec();
 		T::Currency::unreserve(&depositor_account, metadata.deposit.amount);
 
 		if depositor_account == collection_details.owner {

@@ -51,7 +51,7 @@ impl<T: Config> Pallet<T> {
 				owner: owner.clone(),
 				owner_deposit: deposit,
 				items: 0,
-				item_metadatas: 0,
+				item_metadata: 0,
 				item_configs: 0,
 				attributes: 0,
 			},
@@ -111,7 +111,7 @@ impl<T: Config> Pallet<T> {
 			ensure!(collection_details.items == 0, Error::<T>::CollectionNotEmpty);
 			ensure!(collection_details.attributes == witness.attributes, Error::<T>::BadWitness);
 			ensure!(
-				collection_details.item_metadatas == witness.item_metadatas,
+				collection_details.item_metadata == witness.item_metadata,
 				Error::<T>::BadWitness
 			);
 			ensure!(
@@ -144,7 +144,7 @@ impl<T: Config> Pallet<T> {
 			Self::deposit_event(Event::Destroyed { collection });
 
 			Ok(DestroyWitness {
-				item_metadatas: collection_details.item_metadatas,
+				item_metadata: collection_details.item_metadata,
 				item_configs: collection_details.item_configs,
 				attributes: collection_details.attributes,
 			})

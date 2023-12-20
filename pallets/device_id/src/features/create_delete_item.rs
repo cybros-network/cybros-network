@@ -232,7 +232,7 @@ impl<T: Config> Pallet<T> {
 							metadata.deposit.account.unwrap_or(collection_details.owner.clone());
 
 						T::Currency::unreserve(&depositor_account, metadata.deposit.amount);
-						collection_details.item_metadatas.saturating_dec();
+						collection_details.item_metadata.saturating_dec();
 
 						if depositor_account == collection_details.owner {
 							collection_details

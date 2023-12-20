@@ -646,9 +646,9 @@ pub mod pallet {
         /// - `a = witness.attributes`
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::destroy(
-        witness.item_metadatas,
-        witness.item_configs,
-        witness.attributes,
+            witness.item_metadata,
+            witness.item_configs,
+            witness.attributes,
         ))]
         pub fn destroy(
             origin: OriginFor<T>,
@@ -661,7 +661,7 @@ pub mod pallet {
             let details = Self::do_destroy_collection(collection, witness, maybe_check_owner)?;
 
             Ok(Some(T::WeightInfo::destroy(
-                details.item_metadatas,
+                details.item_metadata,
                 details.item_configs,
                 details.attributes,
             ))
