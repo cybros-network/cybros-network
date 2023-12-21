@@ -18,7 +18,7 @@
 //! Test environment for the pallet.
 
 use super::*;
-use crate as pallet_device_id;
+use crate as pallet_device_ids;
 
 use frame_support::{
 	construct_runtime, derive_impl,
@@ -37,7 +37,7 @@ construct_runtime!(
 	{
 		System: frame_system,
 		Balances: pallet_balances,
-		DeviceId: pallet_device_id,
+		DeviceIds: pallet_device_ids,
 	}
 );
 
@@ -75,7 +75,7 @@ impl pallet_balances::Config for Test {
 	type MaxHolds = ConstU32<2>;
 }
 
-impl pallet_device_id::Config for Test {
+impl pallet_device_ids::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type ProductId = u32;
 	type DeviceId = u32;

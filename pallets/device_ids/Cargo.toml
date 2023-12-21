@@ -1,5 +1,5 @@
 [package]
-name = "pallet-device_id"
+name = "pallet-device_ids"
 version = "0.0.1-dev"
 description = "Substrate pallet for device identity."
 readme = "README.md"

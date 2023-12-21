@@ -103,7 +103,7 @@ fn events() -> Vec<Event<Test>> {
 	let result = System::events()
 		.into_iter()
 		.map(|r| r.event)
-		.filter_map(|e| if let mock::RuntimeEvent::DeviceId(inner) = e { Some(inner) } else { None })
+		.filter_map(|e| if let mock::RuntimeEvent::DeviceIds(inner) = e { Some(inner) } else { None })
 		.collect::<Vec<_>>();
 
 	System::reset_events();
@@ -151,22 +151,22 @@ fn basic_setup_works() {
 #[test]
 fn basic_mint_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			default_collection_config()
 		));
 		assert_eq!(collections(), vec![(account(1), 0)]);
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 		assert_eq!(items(), vec![(account(1), 0, 42)]);
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(2),
 			default_collection_config()
 		));
 		assert_eq!(collections(), vec![(account(1), 0), (account(2), 1)]);
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(2)), 1, 69, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(2)), 1, 69, account(1)));
 		assert_eq!(items(), vec![(account(1), 0, 42), (account(1), 1, 69)]);
 	});
 }
@@ -174,13 +174,13 @@ fn basic_mint_should_work() {
 #[test]
 fn mint_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			default_collection_config()
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
-		assert_eq!(DeviceId::owner(0, 42).unwrap(), account(1));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
+		assert_eq!(DeviceIds::owner(0, 42).unwrap(), account(1));
 		assert_eq!(collections(), vec![(account(1), 0)]);
 		assert_eq!(items(), vec![(account(1), 0, 42)]);
 	});
@@ -191,14 +191,14 @@ fn lifecycle_should_work() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&account(1), 100);
 		Balances::make_free_balance_be(&account(2), 100);
-		assert_ok!(DeviceId::create_product(
+		assert_ok!(DeviceIds::create_product(
 			RuntimeOrigin::signed(account(1)),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
 		assert_eq!(Balances::reserved_balance(&account(1)), 2);
 		assert_eq!(collections(), vec![(account(1), 0)]);
-		assert_ok!(DeviceId::set_product_metadata(
+		assert_ok!(DeviceIds::set_product_metadata(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			bvec![0, 0]
@@ -206,7 +206,7 @@ fn lifecycle_should_work() {
 		assert_eq!(Balances::reserved_balance(&account(1)), 5);
 		assert!(ProductMetadataOf::<Test>::contains_key(0));
 
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			42,
@@ -214,7 +214,7 @@ fn lifecycle_should_work() {
 			default_item_config()
 		));
 		assert_eq!(Balances::reserved_balance(&account(1)), 6);
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			69,
@@ -222,33 +222,33 @@ fn lifecycle_should_work() {
 			default_item_config()
 		));
 		assert_eq!(Balances::reserved_balance(&account(1)), 7);
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 70, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 70, account(1)));
 		assert_eq!(items(), vec![(account(1), 0, 70), (account(10), 0, 42), (account(20), 0, 69)]);
 		assert_eq!(ProductCollection::<Test>::get(0).unwrap().devices_count, 3);
 		assert_eq!(ProductCollection::<Test>::get(0).unwrap().device_metadata_count, 0);
 		assert_eq!(ProductCollection::<Test>::get(0).unwrap().device_configs_count, 3);
 
 		assert_eq!(Balances::reserved_balance(&account(1)), 8);
-		assert_ok!(DeviceId::transfer_device(RuntimeOrigin::signed(account(1)), 0, 70, account(2)));
+		assert_ok!(DeviceIds::transfer_device(RuntimeOrigin::signed(account(1)), 0, 70, account(2)));
 		assert_eq!(Balances::reserved_balance(&account(1)), 8);
 		assert_eq!(Balances::reserved_balance(&account(2)), 0);
 
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![42, 42]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![42, 42]));
 		assert_eq!(Balances::reserved_balance(&account(1)), 11);
 		assert!(DeviceMetadataOf::<Test>::contains_key(0, 42));
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 69, bvec![69, 69]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 69, bvec![69, 69]));
 		assert_eq!(Balances::reserved_balance(&account(1)), 14);
 		assert!(DeviceMetadataOf::<Test>::contains_key(0, 69));
 		assert!(DeviceConfigOf::<Test>::contains_key(0, 69));
-		let w = DeviceId::get_destroy_witness(&0).unwrap();
+		let w = DeviceIds::get_destroy_witness(&0).unwrap();
 		assert_eq!(w.device_metadata_count, 2);
 		assert_eq!(w.device_configs_count, 3);
 		assert_noop!(
-			DeviceId::destroy_product(RuntimeOrigin::signed(account(1)), 0, w),
+			DeviceIds::destroy_product(RuntimeOrigin::signed(account(1)), 0, w),
 			Error::<Test>::ProductNotEmpty
 		);
 
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(69),
@@ -256,15 +256,15 @@ fn lifecycle_should_work() {
 			bvec![0],
 			bvec![0],
 		));
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::signed(account(10)), 0, 42));
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::signed(account(20)), 0, 69));
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::root(), 0, 70));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::signed(account(10)), 0, 42));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::signed(account(20)), 0, 69));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::root(), 0, 70));
 
-		let w = DeviceId::get_destroy_witness(&0).unwrap();
+		let w = DeviceIds::get_destroy_witness(&0).unwrap();
 		assert_eq!(w.attributes_count, 1);
 		assert_eq!(w.device_metadata_count, 0);
 		assert_eq!(w.device_configs_count, 0);
-		assert_ok!(DeviceId::destroy_product(RuntimeOrigin::signed(account(1)), 0, w));
+		assert_ok!(DeviceIds::destroy_product(RuntimeOrigin::signed(account(1)), 0, w));
 		assert_eq!(Balances::reserved_balance(&account(1)), 0);
 
 		assert!(!ProductCollection::<Test>::contains_key(0));
@@ -285,7 +285,7 @@ fn lifecycle_should_work() {
 fn destroy_product_with_bad_witness_should_not_work() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&account(1), 100);
-		assert_ok!(DeviceId::create_product(
+		assert_ok!(DeviceIds::create_product(
 			RuntimeOrigin::signed(account(1)),
 			account(1),
 			collection_config_with_all_settings_enabled()
@@ -293,7 +293,7 @@ fn destroy_product_with_bad_witness_should_not_work() {
 
 		let w = ProductCollection::<Test>::get(0).unwrap().destroy_witness();
 		assert_noop!(
-			DeviceId::destroy_product(
+			DeviceIds::destroy_product(
 				RuntimeOrigin::signed(account(1)),
 				0,
 				DestroyWitness { device_configs_count: 1, ..w }
@@ -307,30 +307,30 @@ fn destroy_product_with_bad_witness_should_not_work() {
 fn destroy_product_should_work() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&account(1), 100);
-		assert_ok!(DeviceId::create_product(
+		assert_ok!(DeviceIds::create_product(
 			RuntimeOrigin::signed(account(1)),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
 
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(2)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(2)));
 		assert_noop!(
-			DeviceId::destroy_product(
+			DeviceIds::destroy_product(
 				RuntimeOrigin::signed(account(1)),
 				0,
-				DeviceId::get_destroy_witness(&0).unwrap()
+				DeviceIds::get_destroy_witness(&0).unwrap()
 			),
 			Error::<Test>::ProductNotEmpty
 		);
-		assert_ok!(DeviceId::lock_device_transfer(RuntimeOrigin::signed(account(1)), 0, 42));
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::signed(account(2)), 0, 42));
+		assert_ok!(DeviceIds::lock_device_transfer(RuntimeOrigin::signed(account(1)), 0, 42));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::signed(account(2)), 0, 42));
 		assert_eq!(ProductCollection::<Test>::get(0).unwrap().device_configs_count, 1);
 		assert_eq!(DeviceConfigOf::<Test>::iter_prefix(0).count() as u32, 1);
 		assert!(DeviceConfigOf::<Test>::contains_key(0, 42));
-		assert_ok!(DeviceId::destroy_product(
+		assert_ok!(DeviceIds::destroy_product(
 			RuntimeOrigin::signed(account(1)),
 			0,
-			DeviceId::get_destroy_witness(&0).unwrap()
+			DeviceIds::get_destroy_witness(&0).unwrap()
 		));
 		assert!(!DeviceConfigOf::<Test>::contains_key(0, 42));
 		assert_eq!(DeviceConfigOf::<Test>::iter_prefix(0).count() as u32, 0);
@@ -340,12 +340,12 @@ fn destroy_product_should_work() {
 #[test]
 fn transfer_device_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			default_collection_config()
 		));
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			42,
@@ -353,16 +353,16 @@ fn transfer_device_should_work() {
 			default_item_config()
 		));
 
-		assert_ok!(DeviceId::transfer_device(RuntimeOrigin::signed(account(2)), 0, 42, account(3)));
+		assert_ok!(DeviceIds::transfer_device(RuntimeOrigin::signed(account(2)), 0, 42, account(3)));
 		assert_eq!(items(), vec![(account(3), 0, 42)]);
 		assert_noop!(
-			DeviceId::transfer_device(RuntimeOrigin::signed(account(2)), 0, 42, account(4)),
+			DeviceIds::transfer_device(RuntimeOrigin::signed(account(2)), 0, 42, account(4)),
 			Error::<Test>::NoPermission
 		);
 
 		// validate we can't transfer non-transferable items
 		let collection_id = 1;
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_from_disabled_settings(
@@ -370,7 +370,7 @@ fn transfer_device_should_work() {
 			)
 		));
 
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(1)),
 			1,
 			1,
@@ -379,7 +379,7 @@ fn transfer_device_should_work() {
 		));
 
 		assert_noop!(
-			DeviceId::transfer_device(RuntimeOrigin::signed(account(1)), collection_id, 42, account(3)),
+			DeviceIds::transfer_device(RuntimeOrigin::signed(account(1)), collection_id, 42, account(3)),
 			Error::<Test>::DevicesNonTransferable
 		);
 	});
@@ -388,56 +388,56 @@ fn transfer_device_should_work() {
 #[test]
 fn lock_device_transfer_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			default_collection_config()
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
-		assert_ok!(DeviceId::lock_device_transfer(RuntimeOrigin::signed(account(1)), 0, 42));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
+		assert_ok!(DeviceIds::lock_device_transfer(RuntimeOrigin::signed(account(1)), 0, 42));
 		assert_noop!(
-			DeviceId::transfer_device(RuntimeOrigin::signed(account(1)), 0, 42, account(2)),
+			DeviceIds::transfer_device(RuntimeOrigin::signed(account(1)), 0, 42, account(2)),
 			Error::<Test>::DeviceLocked
 		);
 
-		assert_ok!(DeviceId::unlock_device_transfer(RuntimeOrigin::signed(account(1)), 0, 42));
-		assert_ok!(DeviceId::lock_product(
+		assert_ok!(DeviceIds::unlock_device_transfer(RuntimeOrigin::signed(account(1)), 0, 42));
+		assert_ok!(DeviceIds::lock_product(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			ProductSettings::from_disabled(ProductSetting::TransferableItems.into())
 		));
 		assert_noop!(
-			DeviceId::transfer_device(RuntimeOrigin::signed(account(1)), 0, 42, account(2)),
+			DeviceIds::transfer_device(RuntimeOrigin::signed(account(1)), 0, 42, account(2)),
 			Error::<Test>::DevicesNonTransferable
 		);
 
-		assert_ok!(DeviceId::force_set_product_config(
+		assert_ok!(DeviceIds::force_set_product_config(
 			RuntimeOrigin::root(),
 			0,
 			collection_config_with_all_settings_enabled(),
 		));
-		assert_ok!(DeviceId::transfer_device(RuntimeOrigin::signed(account(1)), 0, 42, account(2)));
+		assert_ok!(DeviceIds::transfer_device(RuntimeOrigin::signed(account(1)), 0, 42, account(2)));
 	});
 }
 
 #[test]
 fn origin_guards_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			default_collection_config()
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 
 		Balances::make_free_balance_be(&account(2), 100);
-		assert_ok!(DeviceId::accept_product_ownership(RuntimeOrigin::signed(account(2)), Some(0)));
+		assert_ok!(DeviceIds::accept_product_ownership(RuntimeOrigin::signed(account(2)), Some(0)));
 		assert_noop!(
-			DeviceId::transfer_product_ownership(RuntimeOrigin::signed(account(2)), 0, account(2)),
+			DeviceIds::transfer_product_ownership(RuntimeOrigin::signed(account(2)), 0, account(2)),
 			Error::<Test>::NoPermission
 		);
 		assert_noop!(
-			DeviceId::set_product_team(
+			DeviceIds::set_product_team(
 				RuntimeOrigin::signed(account(2)),
 				0,
 				Some(account(2)),
@@ -447,25 +447,25 @@ fn origin_guards_should_work() {
 			Error::<Test>::NoPermission
 		);
 		assert_noop!(
-			DeviceId::lock_device_transfer(RuntimeOrigin::signed(account(2)), 0, 42),
+			DeviceIds::lock_device_transfer(RuntimeOrigin::signed(account(2)), 0, 42),
 			Error::<Test>::NoPermission
 		);
 		assert_noop!(
-			DeviceId::unlock_device_transfer(RuntimeOrigin::signed(account(2)), 0, 42),
+			DeviceIds::unlock_device_transfer(RuntimeOrigin::signed(account(2)), 0, 42),
 			Error::<Test>::NoPermission
 		);
 		assert_noop!(
-			DeviceId::mint_device(RuntimeOrigin::signed(account(2)), 0, 69, account(2)),
+			DeviceIds::mint_device(RuntimeOrigin::signed(account(2)), 0, 69, account(2)),
 			Error::<Test>::NoPermission
 		);
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 43, account(2)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 43, account(2)));
 		assert_noop!(
-			DeviceId::burn_device(RuntimeOrigin::signed(account(1)), 0, 43),
+			DeviceIds::burn_device(RuntimeOrigin::signed(account(1)), 0, 43),
 			Error::<Test>::NoPermission
 		);
-		let w = DeviceId::get_destroy_witness(&0).unwrap();
+		let w = DeviceIds::get_destroy_witness(&0).unwrap();
 		assert_noop!(
-			DeviceId::destroy_product(RuntimeOrigin::signed(account(2)), 0, w),
+			DeviceIds::destroy_product(RuntimeOrigin::signed(account(2)), 0, w),
 			Error::<Test>::NoPermission
 		);
 	});
@@ -477,22 +477,22 @@ fn transfer_product_owner_should_work() {
 		Balances::make_free_balance_be(&account(1), 100);
 		Balances::make_free_balance_be(&account(2), 100);
 		Balances::make_free_balance_be(&account(3), 100);
-		assert_ok!(DeviceId::create_product(
+		assert_ok!(DeviceIds::create_product(
 			RuntimeOrigin::signed(account(1)),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
 		assert_eq!(collections(), vec![(account(1), 0)]);
 		assert_noop!(
-			DeviceId::transfer_product_ownership(RuntimeOrigin::signed(account(1)), 0, account(2)),
+			DeviceIds::transfer_product_ownership(RuntimeOrigin::signed(account(1)), 0, account(2)),
 			Error::<Test>::Unaccepted
 		);
 		assert_eq!(System::consumers(&account(2)), 0);
 
-		assert_ok!(DeviceId::accept_product_ownership(RuntimeOrigin::signed(account(2)), Some(0)));
+		assert_ok!(DeviceIds::accept_product_ownership(RuntimeOrigin::signed(account(2)), Some(0)));
 		assert_eq!(System::consumers(&account(2)), 1);
 
-		assert_ok!(DeviceId::transfer_product_ownership(RuntimeOrigin::signed(account(1)), 0, account(2)));
+		assert_ok!(DeviceIds::transfer_product_ownership(RuntimeOrigin::signed(account(1)), 0, account(2)));
 		assert_eq!(System::consumers(&account(2)), 1); // one consumer is added due to deposit repatriation
 
 		assert_eq!(collections(), vec![(account(2), 0)]);
@@ -501,30 +501,30 @@ fn transfer_product_owner_should_work() {
 		assert_eq!(Balances::reserved_balance(&account(1)), 0);
 		assert_eq!(Balances::reserved_balance(&account(2)), 2);
 
-		assert_ok!(DeviceId::accept_product_ownership(RuntimeOrigin::signed(account(1)), Some(0)));
+		assert_ok!(DeviceIds::accept_product_ownership(RuntimeOrigin::signed(account(1)), Some(0)));
 		assert_noop!(
-			DeviceId::transfer_product_ownership(RuntimeOrigin::signed(account(1)), 0, account(1)),
+			DeviceIds::transfer_product_ownership(RuntimeOrigin::signed(account(1)), 0, account(1)),
 			Error::<Test>::NoPermission
 		);
 
 		// Mint and set metadata now and make sure that deposit gets transferred back.
-		assert_ok!(DeviceId::set_product_metadata(
+		assert_ok!(DeviceIds::set_product_metadata(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			bvec![0u8; 20],
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 		assert_eq!(Balances::reserved_balance(&account(1)), 1);
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 20]));
-		assert_ok!(DeviceId::accept_product_ownership(RuntimeOrigin::signed(account(3)), Some(0)));
-		assert_ok!(DeviceId::transfer_product_ownership(RuntimeOrigin::signed(account(2)), 0, account(3)));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 20]));
+		assert_ok!(DeviceIds::accept_product_ownership(RuntimeOrigin::signed(account(3)), Some(0)));
+		assert_ok!(DeviceIds::transfer_product_ownership(RuntimeOrigin::signed(account(2)), 0, account(3)));
 		assert_eq!(collections(), vec![(account(3), 0)]);
 		assert_eq!(Balances::total_balance(&account(2)), 58);
 		assert_eq!(Balances::total_balance(&account(3)), 144);
 		assert_eq!(Balances::reserved_balance(&account(2)), 0);
 		assert_eq!(Balances::reserved_balance(&account(3)), 44);
 
-		assert_ok!(DeviceId::transfer_device(RuntimeOrigin::signed(account(1)), 0, 42, account(2)));
+		assert_ok!(DeviceIds::transfer_device(RuntimeOrigin::signed(account(1)), 0, 42, account(2)));
 		// reserved_balance of accounts 1 & 2 should be unchanged:
 		assert_eq!(Balances::reserved_balance(&account(1)), 1);
 		assert_eq!(Balances::reserved_balance(&account(2)), 0);
@@ -532,7 +532,7 @@ fn transfer_product_owner_should_work() {
 		// 2's acceptance from before is reset when it became an owner, so it cannot be transferred
 		// without a fresh acceptance.
 		assert_noop!(
-			DeviceId::transfer_product_ownership(RuntimeOrigin::signed(account(3)), 0, account(2)),
+			DeviceIds::transfer_product_ownership(RuntimeOrigin::signed(account(3)), 0, account(2)),
 			Error::<Test>::Unaccepted
 		);
 	});
@@ -541,12 +541,12 @@ fn transfer_product_owner_should_work() {
 #[test]
 fn set_product_team_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			default_collection_config(),
 		));
-		assert_ok!(DeviceId::set_product_team(
+		assert_ok!(DeviceIds::set_product_team(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(account(2)),
@@ -554,23 +554,23 @@ fn set_product_team_should_work() {
 			Some(account(4)),
 		));
 
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(2)), 0, 42, account(2)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(2)), 0, 42, account(2)));
 
 		// admin can't transfer/burn items he doesn't own
 		assert_noop!(
-			DeviceId::transfer_device(RuntimeOrigin::signed(account(3)), 0, 42, account(3)),
+			DeviceIds::transfer_device(RuntimeOrigin::signed(account(3)), 0, 42, account(3)),
 			Error::<Test>::NoPermission
 		);
 		assert_noop!(
-			DeviceId::burn_device(RuntimeOrigin::signed(account(3)), 0, 42),
+			DeviceIds::burn_device(RuntimeOrigin::signed(account(3)), 0, 42),
 			Error::<Test>::NoPermission
 		);
 
-		assert_ok!(DeviceId::lock_device_transfer(RuntimeOrigin::signed(account(4)), 0, 42));
-		assert_ok!(DeviceId::unlock_device_transfer(RuntimeOrigin::signed(account(4)), 0, 42));
+		assert_ok!(DeviceIds::lock_device_transfer(RuntimeOrigin::signed(account(4)), 0, 42));
+		assert_ok!(DeviceIds::unlock_device_transfer(RuntimeOrigin::signed(account(4)), 0, 42));
 
 		// validate we can set any role to None
-		assert_ok!(DeviceId::set_product_team(
+		assert_ok!(DeviceIds::set_product_team(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(account(2)),
@@ -578,16 +578,16 @@ fn set_product_team_should_work() {
 			None,
 		));
 		assert_noop!(
-			DeviceId::lock_device_transfer(RuntimeOrigin::signed(account(4)), 0, 42),
+			DeviceIds::lock_device_transfer(RuntimeOrigin::signed(account(4)), 0, 42),
 			Error::<Test>::NoPermission
 		);
 
 		// set all the roles to None
-		assert_ok!(DeviceId::set_product_team(RuntimeOrigin::signed(account(1)), 0, None, None, None,));
+		assert_ok!(DeviceIds::set_product_team(RuntimeOrigin::signed(account(1)), 0, None, None, None,));
 
 		// validate we can't set the roles back
 		assert_noop!(
-			DeviceId::set_product_team(
+			DeviceIds::set_product_team(
 				RuntimeOrigin::signed(account(1)),
 				0,
 				Some(account(2)),
@@ -598,7 +598,7 @@ fn set_product_team_should_work() {
 		);
 
 		// only the root account can change the roles from None to Some()
-		assert_ok!(DeviceId::set_product_team(
+		assert_ok!(DeviceIds::set_product_team(
 			RuntimeOrigin::root(),
 			0,
 			Some(account(2)),
@@ -613,23 +613,23 @@ fn set_product_metadata_should_work() {
 	new_test_ext().execute_with(|| {
 		// Cannot add metadata to unknown item
 		assert_noop!(
-			DeviceId::set_product_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![0u8; 20]),
+			DeviceIds::set_product_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![0u8; 20]),
 			Error::<Test>::NoPermission,
 		);
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
 		// Cannot add metadata to unowned item
 		assert_noop!(
-			DeviceId::set_product_metadata(RuntimeOrigin::signed(account(2)), 0, bvec![0u8; 20]),
+			DeviceIds::set_product_metadata(RuntimeOrigin::signed(account(2)), 0, bvec![0u8; 20]),
 			Error::<Test>::NoPermission,
 		);
 
 		// Successfully add metadata and take deposit
 		Balances::make_free_balance_be(&account(1), 30);
-		assert_ok!(DeviceId::set_product_metadata(
+		assert_ok!(DeviceIds::set_product_metadata(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			bvec![0u8; 20]
@@ -638,16 +638,16 @@ fn set_product_metadata_should_work() {
 		assert!(ProductMetadataOf::<Test>::contains_key(0));
 
 		// Force origin works, too.
-		assert_ok!(DeviceId::set_product_metadata(RuntimeOrigin::root(), 0, bvec![0u8; 18]));
+		assert_ok!(DeviceIds::set_product_metadata(RuntimeOrigin::root(), 0, bvec![0u8; 18]));
 
 		// Update deposit
-		assert_ok!(DeviceId::set_product_metadata(
+		assert_ok!(DeviceIds::set_product_metadata(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			bvec![0u8; 15]
 		));
 		assert_eq!(Balances::free_balance(&account(1)), 14);
-		assert_ok!(DeviceId::set_product_metadata(
+		assert_ok!(DeviceIds::set_product_metadata(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			bvec![0u8; 25]
@@ -656,45 +656,45 @@ fn set_product_metadata_should_work() {
 
 		// Cannot over-reserve
 		assert_noop!(
-			DeviceId::set_product_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![0u8; 40]),
+			DeviceIds::set_product_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![0u8; 40]),
 			BalancesError::<Test>::InsufficientBalance,
 		);
 
 		// Can't set or clear metadata once frozen
-		assert_ok!(DeviceId::set_product_metadata(
+		assert_ok!(DeviceIds::set_product_metadata(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			bvec![0u8; 15]
 		));
-		assert_ok!(DeviceId::lock_product(
+		assert_ok!(DeviceIds::lock_product(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			ProductSettings::from_disabled(ProductSetting::UnlockedMetadata.into())
 		));
 		assert_noop!(
-			DeviceId::set_product_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![0u8; 15]),
+			DeviceIds::set_product_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![0u8; 15]),
 			Error::<Test>::LockedProductMetadata,
 		);
 		assert_noop!(
-			DeviceId::clear_product_metadata(RuntimeOrigin::signed(account(1)), 0),
+			DeviceIds::clear_product_metadata(RuntimeOrigin::signed(account(1)), 0),
 			Error::<Test>::LockedProductMetadata
 		);
 
 		// Clear Metadata
-		assert_ok!(DeviceId::set_product_metadata(RuntimeOrigin::root(), 0, bvec![0u8; 15]));
+		assert_ok!(DeviceIds::set_product_metadata(RuntimeOrigin::root(), 0, bvec![0u8; 15]));
 		assert_noop!(
-			DeviceId::clear_product_metadata(RuntimeOrigin::signed(account(2)), 0),
+			DeviceIds::clear_product_metadata(RuntimeOrigin::signed(account(2)), 0),
 			Error::<Test>::NoPermission
 		);
 		assert_noop!(
-			DeviceId::clear_product_metadata(RuntimeOrigin::signed(account(1)), 1),
+			DeviceIds::clear_product_metadata(RuntimeOrigin::signed(account(1)), 1),
 			Error::<Test>::NoPermission
 		);
 		assert_noop!(
-			DeviceId::clear_product_metadata(RuntimeOrigin::signed(account(1)), 0),
+			DeviceIds::clear_product_metadata(RuntimeOrigin::signed(account(1)), 0),
 			Error::<Test>::LockedProductMetadata
 		);
-		assert_ok!(DeviceId::clear_product_metadata(RuntimeOrigin::root(), 0));
+		assert_ok!(DeviceIds::clear_product_metadata(RuntimeOrigin::root(), 0));
 		assert!(!ProductMetadataOf::<Test>::contains_key(0));
 	});
 }
@@ -705,41 +705,41 @@ fn set_device_metadata_should_work() {
 		Balances::make_free_balance_be(&account(1), 30);
 
 		// Cannot add metadata to unknown item
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
 		// Cannot add metadata to unowned item
 		assert_noop!(
-			DeviceId::set_device_metadata(RuntimeOrigin::signed(account(2)), 0, 42, bvec![0u8; 20]),
+			DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(2)), 0, 42, bvec![0u8; 20]),
 			Error::<Test>::NoPermission,
 		);
 
 		// Successfully add metadata and take deposit
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 20]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 20]));
 		assert_eq!(Balances::free_balance(&account(1)), 8);
 		assert!(DeviceMetadataOf::<Test>::contains_key(0, 42));
 
 		// Force origin works, too.
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::root(), 0, 42, bvec![0u8; 18]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::root(), 0, 42, bvec![0u8; 18]));
 
 		// Update deposit
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 15]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 15]));
 		assert_eq!(Balances::free_balance(&account(1)), 13);
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 25]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 25]));
 		assert_eq!(Balances::free_balance(&account(1)), 3);
 
 		// Cannot over-reserve
 		assert_noop!(
-			DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 40]),
+			DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 40]),
 			BalancesError::<Test>::InsufficientBalance,
 		);
 
 		// Can't set or clear metadata once frozen
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 15]));
-		assert_ok!(DeviceId::lock_device_properties(
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 15]));
+		assert_ok!(DeviceIds::lock_device_properties(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			42,
@@ -747,25 +747,25 @@ fn set_device_metadata_should_work() {
 			false
 		));
 		assert_noop!(
-			DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 15]),
+			DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0u8; 15]),
 			Error::<Test>::LockedDeviceMetadata,
 		);
 		assert_noop!(
-			DeviceId::clear_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42),
+			DeviceIds::clear_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42),
 			Error::<Test>::LockedDeviceMetadata,
 		);
 
 		// Clear Metadata
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::root(), 0, 42, bvec![0u8; 15]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::root(), 0, 42, bvec![0u8; 15]));
 		assert_noop!(
-			DeviceId::clear_device_metadata(RuntimeOrigin::signed(account(2)), 0, 42),
+			DeviceIds::clear_device_metadata(RuntimeOrigin::signed(account(2)), 0, 42),
 			Error::<Test>::NoPermission,
 		);
 		assert_noop!(
-			DeviceId::clear_device_metadata(RuntimeOrigin::signed(account(1)), 1, 42),
+			DeviceIds::clear_device_metadata(RuntimeOrigin::signed(account(1)), 1, 42),
 			Error::<Test>::NoPermission,
 		);
-		assert_ok!(DeviceId::clear_device_metadata(RuntimeOrigin::root(), 0, 42));
+		assert_ok!(DeviceIds::clear_device_metadata(RuntimeOrigin::root(), 0, 42));
 		assert!(!DeviceMetadataOf::<Test>::contains_key(0, 42));
 	});
 }
@@ -775,14 +775,14 @@ fn set_product_owner_attributes_should_work() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&account(1), 100);
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
 
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			None,
@@ -790,7 +790,7 @@ fn set_product_owner_attributes_should_work() {
 			bvec![0],
 			bvec![0],
 		));
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
@@ -798,7 +798,7 @@ fn set_product_owner_attributes_should_work() {
 			bvec![0],
 			bvec![0],
 		));
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
@@ -817,7 +817,7 @@ fn set_product_owner_attributes_should_work() {
 		assert_eq!(Balances::reserved_balance(account(1)), 10);
 		assert_eq!(ProductCollection::<Test>::get(0).unwrap().owner_deposit, 9);
 
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			None,
@@ -836,7 +836,7 @@ fn set_product_owner_attributes_should_work() {
 		assert_eq!(Balances::reserved_balance(account(1)), 19);
 		assert_eq!(ProductCollection::<Test>::get(0).unwrap().owner_deposit, 18);
 
-		assert_ok!(DeviceId::clear_attribute(
+		assert_ok!(DeviceIds::clear_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
@@ -852,9 +852,9 @@ fn set_product_owner_attributes_should_work() {
 		);
 		assert_eq!(Balances::reserved_balance(account(1)), 16);
 
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::root(), 0, 0));
-		let w = DeviceId::get_destroy_witness(&0).unwrap();
-		assert_ok!(DeviceId::destroy_product(RuntimeOrigin::signed(account(1)), 0, w));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::root(), 0, 0));
+		let w = DeviceIds::get_destroy_witness(&0).unwrap();
+		assert_ok!(DeviceIds::destroy_product(RuntimeOrigin::signed(account(1)), 0, w));
 		assert_eq!(attributes(0), vec![]);
 		assert_eq!(Balances::reserved_balance(account(1)), 0);
 	});
@@ -865,18 +865,18 @@ fn set_product_system_attributes_should_work() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&account(1), 100);
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
 
 		let collection_id = 0;
 		let attribute_key = [0u8];
 		let attribute_value = [0u8];
 
-		assert_ok!(<DeviceId as Mutate<AccountIdOf<Test>, DeviceConfig >>::set_collection_attribute(
+		assert_ok!(<DeviceIds as Mutate<AccountIdOf<Test>, DeviceConfig >>::set_collection_attribute(
 			&collection_id,
 			&attribute_key,
 			&attribute_value
@@ -885,7 +885,7 @@ fn set_product_system_attributes_should_work() {
 		assert_eq!(attributes(0), vec![(None, AttributeNamespace::Pallet, bvec![0], bvec![0])]);
 
 		assert_eq!(
-			<DeviceId as Inspect<AccountIdOf<Test>>>::system_attribute(
+			<DeviceIds as Inspect<AccountIdOf<Test>>>::system_attribute(
 				&collection_id,
 				None,
 				&attribute_key
@@ -900,7 +900,7 @@ fn set_product_system_attributes_should_work() {
 		let typed_attribute_value = TypedAttributeValue(42);
 
 		assert_ok!(
-			<DeviceId as Mutate<AccountIdOf<Test>, DeviceConfig >>::set_typed_collection_attribute(
+			<DeviceIds as Mutate<AccountIdOf<Test>, DeviceConfig >>::set_typed_collection_attribute(
 				&collection_id,
 				&typed_attribute_key,
 				&typed_attribute_value
@@ -908,7 +908,7 @@ fn set_product_system_attributes_should_work() {
 		);
 
 		assert_eq!(
-			<DeviceId as Inspect<AccountIdOf<Test>>>::typed_system_attribute(
+			<DeviceIds as Inspect<AccountIdOf<Test>>>::typed_system_attribute(
 				&collection_id,
 				None,
 				&typed_attribute_key
@@ -933,9 +933,9 @@ fn set_product_system_attributes_should_work() {
 			]
 		);
 
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::root(), collection_id, 0));
-		let w = DeviceId::get_destroy_witness(&0).unwrap();
-		assert_ok!(DeviceId::destroy_product(RuntimeOrigin::signed(account(1)), collection_id, w));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::root(), collection_id, 0));
+		let w = DeviceIds::get_destroy_witness(&0).unwrap();
+		assert_ok!(DeviceIds::destroy_product(RuntimeOrigin::signed(account(1)), collection_id, w));
 		assert_eq!(attributes(collection_id), vec![]);
 	})
 }
@@ -947,12 +947,12 @@ fn set_device_owner_attributes_should_work() {
 		Balances::make_free_balance_be(&account(2), 100);
 		Balances::make_free_balance_be(&account(3), 100);
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			0,
@@ -962,7 +962,7 @@ fn set_device_owner_attributes_should_work() {
 
 		// can't set for the collection
 		assert_noop!(
-			DeviceId::set_attribute(
+			DeviceIds::set_attribute(
 				RuntimeOrigin::signed(account(2)),
 				0,
 				None,
@@ -974,7 +974,7 @@ fn set_device_owner_attributes_should_work() {
 		);
 		// can't set for the non-owned item
 		assert_noop!(
-			DeviceId::set_attribute(
+			DeviceIds::set_attribute(
 				RuntimeOrigin::signed(account(1)),
 				0,
 				Some(0),
@@ -984,7 +984,7 @@ fn set_device_owner_attributes_should_work() {
 			),
 			Error::<Test>::NoPermission,
 		);
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
@@ -992,7 +992,7 @@ fn set_device_owner_attributes_should_work() {
 			bvec![0],
 			bvec![0],
 		));
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
@@ -1000,7 +1000,7 @@ fn set_device_owner_attributes_should_work() {
 			bvec![1],
 			bvec![0],
 		));
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
@@ -1019,7 +1019,7 @@ fn set_device_owner_attributes_should_work() {
 		assert_eq!(Balances::reserved_balance(account(2)), 9);
 
 		// validate an attribute can be updated
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
@@ -1039,7 +1039,7 @@ fn set_device_owner_attributes_should_work() {
 
 		// validate only item's owner (or the root) can remove an attribute
 		assert_noop!(
-			DeviceId::clear_attribute(
+			DeviceIds::clear_attribute(
 				RuntimeOrigin::signed(account(1)),
 				0,
 				Some(0),
@@ -1048,7 +1048,7 @@ fn set_device_owner_attributes_should_work() {
 			),
 			Error::<Test>::NoPermission,
 		);
-		assert_ok!(DeviceId::clear_attribute(
+		assert_ok!(DeviceIds::clear_attribute(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
@@ -1065,7 +1065,7 @@ fn set_device_owner_attributes_should_work() {
 		assert_eq!(Balances::reserved_balance(account(2)), 15);
 
 		// transfer item
-		assert_ok!(DeviceId::transfer_device(RuntimeOrigin::signed(account(2)), 0, 0, account(3)));
+		assert_ok!(DeviceIds::transfer_device(RuntimeOrigin::signed(account(2)), 0, 0, account(3)));
 
 		// validate the attribute are still here & the deposit belongs to the previous owner
 		assert_eq!(
@@ -1082,7 +1082,7 @@ fn set_device_owner_attributes_should_work() {
 		assert_eq!(deposit.amount, 12);
 
 		// on attribute update the deposit should be returned to the previous owner
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(3)),
 			0,
 			Some(0),
@@ -1098,7 +1098,7 @@ fn set_device_owner_attributes_should_work() {
 		assert_eq!(Balances::reserved_balance(account(3)), 13);
 
 		// validate attributes on item deletion
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::signed(account(3)), 0, 0));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::signed(account(3)), 0, 0));
 		assert_eq!(
 			attributes(0),
 			vec![
@@ -1106,14 +1106,14 @@ fn set_device_owner_attributes_should_work() {
 				(Some(0), AttributeNamespace::DeviceOwner, bvec![2], bvec![0])
 			]
 		);
-		assert_ok!(DeviceId::clear_attribute(
+		assert_ok!(DeviceIds::clear_attribute(
 			RuntimeOrigin::signed(account(3)),
 			0,
 			Some(0),
 			AttributeNamespace::DeviceOwner,
 			bvec![0],
 		));
-		assert_ok!(DeviceId::clear_attribute(
+		assert_ok!(DeviceIds::clear_attribute(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
@@ -1131,19 +1131,19 @@ fn set_external_account_attributes_should_work() {
 		Balances::make_free_balance_be(&account(1), 100);
 		Balances::make_free_balance_be(&account(2), 100);
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			0,
 			account(1),
 			default_item_config()
 		));
-		assert_ok!(DeviceId::approve_device_attributes(
+		assert_ok!(DeviceIds::approve_device_attributes(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			0,
@@ -1151,7 +1151,7 @@ fn set_external_account_attributes_should_work() {
 		));
 
 		assert_noop!(
-			DeviceId::set_attribute(
+			DeviceIds::set_attribute(
 				RuntimeOrigin::signed(account(2)),
 				0,
 				Some(0),
@@ -1161,7 +1161,7 @@ fn set_external_account_attributes_should_work() {
 			),
 			Error::<Test>::NoPermission,
 		);
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
@@ -1169,7 +1169,7 @@ fn set_external_account_attributes_should_work() {
 			bvec![0],
 			bvec![0],
 		));
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
@@ -1187,7 +1187,7 @@ fn set_external_account_attributes_should_work() {
 		assert_eq!(Balances::reserved_balance(account(2)), 6);
 
 		// remove permission to set attributes
-		assert_ok!(DeviceId::cancel_device_attributes_approval(
+		assert_ok!(DeviceIds::cancel_device_attributes_approval(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			0,
@@ -1197,7 +1197,7 @@ fn set_external_account_attributes_should_work() {
 		assert_eq!(attributes(0), vec![]);
 		assert_eq!(Balances::reserved_balance(account(2)), 0);
 		assert_noop!(
-			DeviceId::set_attribute(
+			DeviceIds::set_attribute(
 				RuntimeOrigin::signed(account(2)),
 				0,
 				Some(0),
@@ -1219,26 +1219,26 @@ fn validate_deposit_required_setting() {
 
 		// with the disabled DepositRequired setting, only the collection's owner can set the
 		// attributes for free.
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			default_collection_config()
 		));
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			0,
 			account(2),
 			default_item_config()
 		));
-		assert_ok!(DeviceId::approve_device_attributes(
+		assert_ok!(DeviceIds::approve_device_attributes(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			0,
 			account(3)
 		));
 
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
@@ -1246,7 +1246,7 @@ fn validate_deposit_required_setting() {
 			bvec![0],
 			bvec![0],
 		));
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			Some(0),
@@ -1254,7 +1254,7 @@ fn validate_deposit_required_setting() {
 			bvec![1],
 			bvec![0],
 		));
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(3)),
 			0,
 			Some(0),
@@ -1262,7 +1262,7 @@ fn validate_deposit_required_setting() {
 			bvec![2],
 			bvec![0],
 		));
-		assert_ok!(<DeviceId as Mutate<<Test as frame_system::Config>::AccountId, DeviceConfig >>::set_attribute(
+		assert_ok!(<DeviceIds as Mutate<<Test as frame_system::Config>::AccountId, DeviceConfig >>::set_attribute(
 			&0,
 			&0,
 			&[3],
@@ -1282,7 +1282,7 @@ fn validate_deposit_required_setting() {
 		assert_eq!(Balances::reserved_balance(account(3)), 3);
 
 		assert_ok!(
-			<DeviceId as Mutate<<Test as frame_system::Config>::AccountId, DeviceConfig >>::clear_attribute(
+			<DeviceIds as Mutate<<Test as frame_system::Config>::AccountId, DeviceConfig >>::clear_attribute(
 				&0,
 				&0,
 				&[3],
@@ -1304,15 +1304,15 @@ fn set_device_attribute_should_respect_lock() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&account(1), 100);
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_with_all_settings_enabled(),
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 1, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 1, account(1)));
 
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			None,
@@ -1320,7 +1320,7 @@ fn set_device_attribute_should_respect_lock() {
 			bvec![0],
 			bvec![0],
 		));
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
@@ -1328,7 +1328,7 @@ fn set_device_attribute_should_respect_lock() {
 			bvec![0],
 			bvec![0],
 		));
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(1),
@@ -1346,8 +1346,8 @@ fn set_device_attribute_should_respect_lock() {
 		);
 		assert_eq!(Balances::reserved_balance(account(1)), 11);
 
-		assert_ok!(DeviceId::set_product_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![]));
-		assert_ok!(DeviceId::lock_product(
+		assert_ok!(DeviceIds::set_product_metadata(RuntimeOrigin::signed(account(1)), 0, bvec![]));
+		assert_ok!(DeviceIds::lock_product(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			ProductSettings::from_disabled(ProductSetting::UnlockedAttributes.into())
@@ -1355,7 +1355,7 @@ fn set_device_attribute_should_respect_lock() {
 
 		let e = Error::<Test>::LockedProductAttributes;
 		assert_noop!(
-			DeviceId::set_attribute(
+			DeviceIds::set_attribute(
 				RuntimeOrigin::signed(account(1)),
 				0,
 				None,
@@ -1365,7 +1365,7 @@ fn set_device_attribute_should_respect_lock() {
 			),
 			e
 		);
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(0),
@@ -1374,7 +1374,7 @@ fn set_device_attribute_should_respect_lock() {
 			bvec![1],
 		));
 
-		assert_ok!(DeviceId::lock_device_properties(
+		assert_ok!(DeviceIds::lock_device_properties(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			0,
@@ -1383,7 +1383,7 @@ fn set_device_attribute_should_respect_lock() {
 		));
 		let e = Error::<Test>::LockedDeviceAttributes;
 		assert_noop!(
-			DeviceId::set_attribute(
+			DeviceIds::set_attribute(
 				RuntimeOrigin::signed(account(1)),
 				0,
 				Some(0),
@@ -1393,7 +1393,7 @@ fn set_device_attribute_should_respect_lock() {
 			),
 			e
 		);
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(1),
@@ -1409,20 +1409,20 @@ fn preserve_product_config_for_frozen_items() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&account(1), 100);
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 1, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 1, account(1)));
 
 		// if the item is not locked/frozen then the config gets deleted on item burn
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::signed(account(1)), 0, 1));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::signed(account(1)), 0, 1));
 		assert!(!DeviceConfigOf::<Test>::contains_key(0, 1));
 
 		// lock the item and ensure the config stays unchanged
-		assert_ok!(DeviceId::lock_device_properties(RuntimeOrigin::signed(account(1)), 0, 0, true, true));
+		assert_ok!(DeviceIds::lock_device_properties(RuntimeOrigin::signed(account(1)), 0, 0, true, true));
 
 		let expect_config = item_config_from_disabled_settings(
 			DeviceSetting::UnlockedAttributes | DeviceSetting::UnlockedMetadata,
@@ -1430,13 +1430,13 @@ fn preserve_product_config_for_frozen_items() {
 		let config = DeviceConfigOf::<Test>::get(0, 0).unwrap();
 		assert_eq!(config, expect_config);
 
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::signed(account(1)), 0, 0));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::signed(account(1)), 0, 0));
 		let config = DeviceConfigOf::<Test>::get(0, 0).unwrap();
 		assert_eq!(config, expect_config);
 
 		// can't mint with the different config
 		assert_noop!(
-			DeviceId::force_mint_device(
+			DeviceIds::force_mint_device(
 				RuntimeOrigin::signed(account(1)),
 				0,
 				0,
@@ -1446,7 +1446,7 @@ fn preserve_product_config_for_frozen_items() {
 			Error::<Test>::InconsistentDeviceConfig
 		);
 
-		assert_ok!(DeviceId::update_product_mint_settings(
+		assert_ok!(DeviceIds::update_product_mint_settings(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			MintSettings {
@@ -1456,7 +1456,7 @@ fn preserve_product_config_for_frozen_items() {
 				..Default::default()
 			}
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 0, account(1)));
 	});
 }
 
@@ -1465,48 +1465,48 @@ fn force_update_product_should_work() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&account(1), 100);
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 42, account(1)));
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			69,
 			account(2),
 			default_item_config(),
 		));
-		assert_ok!(DeviceId::set_product_metadata(
+		assert_ok!(DeviceIds::set_product_metadata(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			bvec![0; 20]
 		));
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0; 20]));
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 69, bvec![0; 20]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 42, bvec![0; 20]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 69, bvec![0; 20]));
 		assert_eq!(Balances::reserved_balance(account(1)), 65);
 
 		// force item status to be free holding
-		assert_ok!(DeviceId::force_set_product_config(
+		assert_ok!(DeviceIds::force_set_product_config(
 			RuntimeOrigin::root(),
 			0,
 			collection_config_from_disabled_settings(ProductSetting::DepositRequired.into()),
 		));
-		assert_ok!(DeviceId::mint_device(RuntimeOrigin::signed(account(1)), 0, 142, account(1)));
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::mint_device(RuntimeOrigin::signed(account(1)), 0, 142, account(1)));
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			169,
 			account(2),
 			default_item_config(),
 		));
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 142, bvec![0; 20]));
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 169, bvec![0; 20]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 142, bvec![0; 20]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(1)), 0, 169, bvec![0; 20]));
 
 		Balances::make_free_balance_be(&account(5), 100);
-		assert_ok!(DeviceId::force_set_product_owner(RuntimeOrigin::root(), 0, account(5)));
-		assert_ok!(DeviceId::set_product_team(
+		assert_ok!(DeviceIds::force_set_product_owner(RuntimeOrigin::root(), 0, account(5)));
+		assert_ok!(DeviceIds::set_product_team(
 			RuntimeOrigin::root(),
 			0,
 			Some(account(2)),
@@ -1517,13 +1517,13 @@ fn force_update_product_should_work() {
 		assert_eq!(Balances::reserved_balance(account(1)), 2);
 		assert_eq!(Balances::reserved_balance(account(5)), 63);
 
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(5)), 0, 42, bvec![0; 20]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(5)), 0, 42, bvec![0; 20]));
 		assert_eq!(Balances::reserved_balance(account(5)), 42);
 
-		assert_ok!(DeviceId::set_device_metadata(RuntimeOrigin::signed(account(5)), 0, 69, bvec![0; 20]));
+		assert_ok!(DeviceIds::set_device_metadata(RuntimeOrigin::signed(account(5)), 0, 69, bvec![0; 20]));
 		assert_eq!(Balances::reserved_balance(account(5)), 21);
 
-		assert_ok!(DeviceId::set_product_metadata(
+		assert_ok!(DeviceIds::set_product_metadata(
 			RuntimeOrigin::signed(account(5)),
 			0,
 			bvec![0; 20]
@@ -1531,7 +1531,7 @@ fn force_update_product_should_work() {
 		assert_eq!(Balances::reserved_balance(account(5)), 0);
 
 		// validate new roles
-		assert_ok!(DeviceId::set_product_team(
+		assert_ok!(DeviceIds::set_product_team(
 			RuntimeOrigin::root(),
 			0,
 			Some(account(2)),
@@ -1551,7 +1551,7 @@ fn force_update_product_should_work() {
 			ProductRoles(ProductRole::Freezer.into())
 		);
 
-		assert_ok!(DeviceId::set_product_team(
+		assert_ok!(DeviceIds::set_product_team(
 			RuntimeOrigin::root(),
 			0,
 			Some(account(3)),
@@ -1574,12 +1574,12 @@ fn force_update_product_should_work() {
 fn burn_device_works() {
 	new_test_ext().execute_with(|| {
 		Balances::make_free_balance_be(&account(1), 100);
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			collection_config_with_all_settings_enabled()
 		));
-		assert_ok!(DeviceId::set_product_team(
+		assert_ok!(DeviceIds::set_product_team(
 			RuntimeOrigin::signed(account(1)),
 			0,
 			Some(account(2)),
@@ -1588,18 +1588,18 @@ fn burn_device_works() {
 		));
 
 		assert_noop!(
-			DeviceId::burn_device(RuntimeOrigin::signed(account(5)), 0, 42),
+			DeviceIds::burn_device(RuntimeOrigin::signed(account(5)), 0, 42),
 			Error::<Test>::UnknownDevice
 		);
 
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			42,
 			account(5),
 			default_item_config()
 		));
-		assert_ok!(DeviceId::force_mint_device(
+		assert_ok!(DeviceIds::force_mint_device(
 			RuntimeOrigin::signed(account(2)),
 			0,
 			69,
@@ -1609,12 +1609,12 @@ fn burn_device_works() {
 		assert_eq!(Balances::reserved_balance(account(1)), 2);
 
 		assert_noop!(
-			DeviceId::burn_device(RuntimeOrigin::signed(account(0)), 0, 42),
+			DeviceIds::burn_device(RuntimeOrigin::signed(account(0)), 0, 42),
 			Error::<Test>::NoPermission
 		);
 
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::signed(account(5)), 0, 42));
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::signed(account(5)), 0, 69));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::signed(account(5)), 0, 42));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::signed(account(5)), 0, 69));
 		assert_eq!(Balances::reserved_balance(account(1)), 0);
 	});
 }
@@ -1627,7 +1627,7 @@ fn max_supply_should_work() {
 		let max_supply = 1;
 
 		// validate set_collection_max_supply
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			user_id.clone(),
 			default_collection_config()
@@ -1638,7 +1638,7 @@ fn max_supply_should_work() {
 			max_supply,
 		}));
 
-		assert_ok!(DeviceId::set_product_max_supply(
+		assert_ok!(DeviceIds::set_product_max_supply(
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			max_supply
@@ -1653,18 +1653,18 @@ fn max_supply_should_work() {
 			max_supply,
 		}));
 
-		assert_ok!(DeviceId::set_product_max_supply(
+		assert_ok!(DeviceIds::set_product_max_supply(
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			max_supply + 1
 		));
-		assert_ok!(DeviceId::lock_product(
+		assert_ok!(DeviceIds::lock_product(
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			ProductSettings::from_disabled(ProductSetting::UnlockedMaxSupply.into())
 		));
 		assert_noop!(
-			DeviceId::set_product_max_supply(
+			DeviceIds::set_product_max_supply(
 				RuntimeOrigin::signed(user_id.clone()),
 				collection_id,
 				max_supply + 2
@@ -1673,20 +1673,20 @@ fn max_supply_should_work() {
 		);
 
 		// validate we can't mint more to max supply
-		assert_ok!(DeviceId::mint_device(
+		assert_ok!(DeviceIds::mint_device(
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			0,
 			user_id.clone()
 		));
-		assert_ok!(DeviceId::mint_device(
+		assert_ok!(DeviceIds::mint_device(
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			1,
 			user_id.clone()
 		));
 		assert_noop!(
-			DeviceId::mint_device(
+			DeviceIds::mint_device(
 				RuntimeOrigin::signed(user_id.clone()),
 				collection_id,
 				2,
@@ -1697,7 +1697,7 @@ fn max_supply_should_work() {
 
 		// validate the event gets emitted when we set the max supply on collection create
 		let collection_id = 1;
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			user_id.clone(),
 			ProductConfig { max_supply: Some(max_supply), ..default_collection_config() }
@@ -1720,12 +1720,12 @@ fn mint_settings_should_work() {
 		let user_id = account(1);
 		let item_id = 0;
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			user_id.clone(),
 			default_collection_config()
 		));
-		assert_ok!(DeviceId::mint_device(
+		assert_ok!(DeviceIds::mint_device(
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			item_id,
@@ -1740,7 +1740,7 @@ fn mint_settings_should_work() {
 		);
 
 		let collection_id = 1;
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			user_id.clone(),
 			ProductConfig {
@@ -1753,7 +1753,7 @@ fn mint_settings_should_work() {
 				..default_collection_config()
 			}
 		));
-		assert_ok!(DeviceId::mint_device(
+		assert_ok!(DeviceIds::mint_device(
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			item_id,
@@ -1776,7 +1776,7 @@ fn various_product_settings() {
 		// when we set only one value it's required to call .into() on it
 		let config =
 			collection_config_from_disabled_settings(ProductSetting::TransferableItems.into());
-		assert_ok!(DeviceId::force_create_product(RuntimeOrigin::root(), account(1), config));
+		assert_ok!(DeviceIds::force_create_product(RuntimeOrigin::root(), account(1), config));
 
 		let config = ProductConfigOf::<Test>::get(0).unwrap();
 		assert!(!config.is_setting_enabled(ProductSetting::TransferableItems));
@@ -1786,13 +1786,13 @@ fn various_product_settings() {
 		let config = collection_config_from_disabled_settings(
 			ProductSetting::UnlockedMetadata | ProductSetting::TransferableItems,
 		);
-		assert_ok!(DeviceId::force_create_product(RuntimeOrigin::root(), account(1), config));
+		assert_ok!(DeviceIds::force_create_product(RuntimeOrigin::root(), account(1), config));
 
 		let config = ProductConfigOf::<Test>::get(1).unwrap();
 		assert!(!config.is_setting_enabled(ProductSetting::TransferableItems));
 		assert!(!config.is_setting_enabled(ProductSetting::UnlockedMetadata));
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			account(1),
 			default_collection_config()
@@ -1806,7 +1806,7 @@ fn lock_product_should_work() {
 		let user_id = account(1);
 		let collection_id = 0;
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			user_id.clone(),
 			collection_config_with_all_settings_enabled()
@@ -1815,7 +1815,7 @@ fn lock_product_should_work() {
 		let lock_config =
 			collection_config_from_disabled_settings(ProductSetting::DepositRequired.into());
 		assert_noop!(
-			DeviceId::lock_product(
+			DeviceIds::lock_product(
 				RuntimeOrigin::signed(user_id.clone()),
 				collection_id,
 				lock_config.settings,
@@ -1827,7 +1827,7 @@ fn lock_product_should_work() {
 		let lock_config = collection_config_from_disabled_settings(
 			ProductSetting::TransferableItems | ProductSetting::UnlockedAttributes,
 		);
-		assert_ok!(DeviceId::lock_product(
+		assert_ok!(DeviceIds::lock_product(
 			RuntimeOrigin::signed(user_id.clone()),
 			collection_id,
 			lock_config.settings,
@@ -1837,7 +1837,7 @@ fn lock_product_should_work() {
 		assert_eq!(stored_config, lock_config);
 
 		// validate full lock
-		assert_ok!(DeviceId::lock_product(
+		assert_ok!(DeviceIds::lock_product(
 			RuntimeOrigin::signed(user_id),
 			collection_id,
 			ProductSettings::from_disabled(ProductSetting::UnlockedMetadata.into()),
@@ -1856,9 +1856,9 @@ fn lock_product_should_work() {
 #[test]
 fn group_roles_by_account_should_work() {
 	new_test_ext().execute_with(|| {
-		assert_eq!(DeviceId::group_roles_by_account(vec![]), vec![]);
+		assert_eq!(DeviceIds::group_roles_by_account(vec![]), vec![]);
 
-		let account_to_role = DeviceId::group_roles_by_account(vec![
+		let account_to_role = DeviceIds::group_roles_by_account(vec![
 			(account(3), ProductRole::Freezer),
 			(account(1), ProductRole::Issuer),
 			(account(2), ProductRole::Admin),
@@ -1870,7 +1870,7 @@ fn group_roles_by_account_should_work() {
 		];
 		assert_eq!(account_to_role, expect);
 
-		let account_to_role = DeviceId::group_roles_by_account(vec![
+		let account_to_role = DeviceIds::group_roles_by_account(vec![
 			(account(3), ProductRole::Freezer),
 			(account(2), ProductRole::Issuer),
 			(account(2), ProductRole::Admin),
@@ -1893,18 +1893,18 @@ fn add_remove_device_attributes_approval_should_work() {
 		let collection_id = 0;
 		let item_id = 0;
 
-		assert_ok!(DeviceId::force_create_product(
+		assert_ok!(DeviceIds::force_create_product(
 			RuntimeOrigin::root(),
 			user_1.clone(),
 			default_collection_config()
 		));
-		assert_ok!(DeviceId::mint_device(
+		assert_ok!(DeviceIds::mint_device(
 			RuntimeOrigin::signed(user_1.clone()),
 			collection_id,
 			item_id,
 			user_1.clone()
 		));
-		assert_ok!(DeviceId::approve_device_attributes(
+		assert_ok!(DeviceIds::approve_device_attributes(
 			RuntimeOrigin::signed(user_1.clone()),
 			collection_id,
 			item_id,
@@ -1912,13 +1912,13 @@ fn add_remove_device_attributes_approval_should_work() {
 		));
 		assert_eq!(item_attributes_approvals(collection_id, item_id), vec![user_2.clone()]);
 
-		assert_ok!(DeviceId::approve_device_attributes(
+		assert_ok!(DeviceIds::approve_device_attributes(
 			RuntimeOrigin::signed(user_1.clone()),
 			collection_id,
 			item_id,
 			user_3.clone(),
 		));
-		assert_ok!(DeviceId::approve_device_attributes(
+		assert_ok!(DeviceIds::approve_device_attributes(
 			RuntimeOrigin::signed(user_1.clone()),
 			collection_id,
 			item_id,
@@ -1930,7 +1930,7 @@ fn add_remove_device_attributes_approval_should_work() {
 		);
 
 		assert_noop!(
-			DeviceId::approve_device_attributes(
+			DeviceIds::approve_device_attributes(
 				RuntimeOrigin::signed(user_1.clone()),
 				collection_id,
 				item_id,
@@ -1939,7 +1939,7 @@ fn add_remove_device_attributes_approval_should_work() {
 			Error::<Test>::ReachedApprovalLimit
 		);
 
-		assert_ok!(DeviceId::cancel_device_attributes_approval(
+		assert_ok!(DeviceIds::cancel_device_attributes_approval(
 			RuntimeOrigin::signed(user_1),
 			collection_id,
 			item_id,
@@ -1966,7 +1966,7 @@ fn validate_signature() {
 		};
 		let encoded_data = Encode::encode(&mint_data);
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&encoded_data));
-		assert_ok!(DeviceId::validate_signature(&encoded_data, &signature, &user_1));
+		assert_ok!(DeviceIds::validate_signature(&encoded_data, &signature, &user_1));
 
 		let mut wrapped_data: Vec<u8> = Vec::new();
 		wrapped_data.extend(b"<Bytes>");
@@ -1974,7 +1974,7 @@ fn validate_signature() {
 		wrapped_data.extend(b"</Bytes>");
 
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&wrapped_data));
-		assert_ok!(DeviceId::validate_signature(&encoded_data, &signature, &user_1));
+		assert_ok!(DeviceIds::validate_signature(&encoded_data, &signature, &user_1));
 	})
 }
 
@@ -2000,13 +2000,13 @@ fn pre_signed_device_mints_should_work() {
 
 		Balances::make_free_balance_be(&user_0, 100);
 		Balances::make_free_balance_be(&user_2, 100);
-		assert_ok!(DeviceId::create_product(
+		assert_ok!(DeviceIds::create_product(
 			RuntimeOrigin::signed(user_0.clone()),
 			user_1.clone(),
 			collection_config_with_all_settings_enabled(),
 		));
 
-		assert_ok!(DeviceId::mint_device_pre_signed(
+		assert_ok!(DeviceIds::mint_device_pre_signed(
 			RuntimeOrigin::signed(user_2.clone()),
 			Box::new(mint_data.clone()),
 			signature.clone(),
@@ -2042,7 +2042,7 @@ fn pre_signed_device_mints_should_work() {
 		assert_eq!(Balances::free_balance(&user_2), 100 - 1 - 3 - 6); // 1 - item deposit, 3 - metadata, 6 - attributes
 
 		assert_noop!(
-			DeviceId::mint_device_pre_signed(
+			DeviceIds::mint_device_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				Box::new(mint_data),
 				signature.clone(),
@@ -2051,7 +2051,7 @@ fn pre_signed_device_mints_should_work() {
 			Error::<Test>::AlreadyExists
 		);
 
-		assert_ok!(DeviceId::burn_device(RuntimeOrigin::signed(user_2.clone()), 0, 0));
+		assert_ok!(DeviceIds::burn_device(RuntimeOrigin::signed(user_2.clone()), 0, 0));
 		assert_eq!(Balances::free_balance(&user_2), 100 - 6);
 
 		// validate the `only_account` field
@@ -2066,7 +2066,7 @@ fn pre_signed_device_mints_should_work() {
 
 		// can't mint with the wrong signature
 		assert_noop!(
-			DeviceId::mint_device_pre_signed(
+			DeviceIds::mint_device_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				Box::new(mint_data.clone()),
 				signature.clone(),
@@ -2079,7 +2079,7 @@ fn pre_signed_device_mints_should_work() {
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&message));
 
 		assert_noop!(
-			DeviceId::mint_device_pre_signed(
+			DeviceIds::mint_device_pre_signed(
 				RuntimeOrigin::signed(user_3),
 				Box::new(mint_data.clone()),
 				signature.clone(),
@@ -2091,7 +2091,7 @@ fn pre_signed_device_mints_should_work() {
 		// validate signature's expiration
 		System::set_block_number(10000001);
 		assert_noop!(
-			DeviceId::mint_device_pre_signed(
+			DeviceIds::mint_device_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				Box::new(mint_data),
 				signature,
@@ -2114,7 +2114,7 @@ fn pre_signed_device_mints_should_work() {
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&message));
 
 		assert_noop!(
-			DeviceId::mint_device_pre_signed(
+			DeviceIds::mint_device_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				Box::new(mint_data),
 				signature,
@@ -2135,7 +2135,7 @@ fn pre_signed_device_mints_should_work() {
 		let message = Encode::encode(&mint_data);
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&message));
 		assert_noop!(
-			DeviceId::mint_device_pre_signed(
+			DeviceIds::mint_device_pre_signed(
 				RuntimeOrigin::signed(user_2),
 				Box::new(mint_data),
 				signature,
@@ -2162,12 +2162,12 @@ fn pre_signed_attributes_should_work() {
 		Balances::make_free_balance_be(&user_1, 100);
 		Balances::make_free_balance_be(&user_2, 100);
 		Balances::make_free_balance_be(&user_3, 100);
-		assert_ok!(DeviceId::create_product(
+		assert_ok!(DeviceIds::create_product(
 			RuntimeOrigin::signed(user_1.clone()),
 			user_1.clone(),
 			collection_config_with_all_settings_enabled(),
 		));
-		assert_ok!(DeviceId::mint_device(
+		assert_ok!(DeviceIds::mint_device(
 			RuntimeOrigin::signed(user_1.clone()),
 			collection_id,
 			item_id,
@@ -2185,7 +2185,7 @@ fn pre_signed_attributes_should_work() {
 		let message = Encode::encode(&pre_signed_data);
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&message));
 
-		assert_ok!(DeviceId::set_attributes_pre_signed(
+		assert_ok!(DeviceIds::set_attributes_pre_signed(
 			RuntimeOrigin::signed(user_2.clone()),
 			pre_signed_data.clone(),
 			signature.clone(),
@@ -2214,7 +2214,7 @@ fn pre_signed_attributes_should_work() {
 		assert_eq!(Balances::free_balance(&user_2), 100 - 6); // 6 - attributes
 
 		// validate the deposit gets returned on attribute update from collection's owner
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(user_1.clone()),
 			collection_id,
 			Some(item_id),
@@ -2245,7 +2245,7 @@ fn pre_signed_attributes_should_work() {
 		let signature = MultiSignature::Sr25519(user_3_pair.sign(&message));
 
 		assert_noop!(
-			DeviceId::set_attributes_pre_signed(
+			DeviceIds::set_attributes_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				pre_signed_data.clone(),
 				signature.clone(),
@@ -2277,7 +2277,7 @@ fn pre_signed_attributes_should_work() {
 		let message = Encode::encode(&pre_signed_data);
 		let signature = MultiSignature::Sr25519(user_3_pair.sign(&message));
 
-		assert_ok!(DeviceId::set_attributes_pre_signed(
+		assert_ok!(DeviceIds::set_attributes_pre_signed(
 			RuntimeOrigin::signed(user_2.clone()),
 			pre_signed_data.clone(),
 			signature.clone(),
@@ -2310,7 +2310,7 @@ fn pre_signed_attributes_should_work() {
 		assert_eq!(Balances::free_balance(&user_3), 100);
 
 		// validate the deposit gets returned on attribute update from user_3
-		assert_ok!(DeviceId::set_attribute(
+		assert_ok!(DeviceIds::set_attribute(
 			RuntimeOrigin::signed(user_3.clone()),
 			collection_id,
 			Some(item_id),
@@ -2333,7 +2333,7 @@ fn pre_signed_attributes_should_work() {
 
 		// can't update with the wrong signature
 		assert_noop!(
-			DeviceId::set_attributes_pre_signed(
+			DeviceIds::set_attributes_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				pre_signed_data.clone(),
 				signature.clone(),
@@ -2344,7 +2344,7 @@ fn pre_signed_attributes_should_work() {
 
 		// can't update if I don't own that item
 		assert_noop!(
-			DeviceId::set_attributes_pre_signed(
+			DeviceIds::set_attributes_pre_signed(
 				RuntimeOrigin::signed(user_3.clone()),
 				pre_signed_data.clone(),
 				signature.clone(),
@@ -2366,7 +2366,7 @@ fn pre_signed_attributes_should_work() {
 		let signature = MultiSignature::Sr25519(user_3_pair.sign(&message));
 
 		assert_noop!(
-			DeviceId::set_attributes_pre_signed(
+			DeviceIds::set_attributes_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				pre_signed_data.clone(),
 				signature.clone(),
@@ -2378,7 +2378,7 @@ fn pre_signed_attributes_should_work() {
 		// validate signature's expiration
 		System::set_block_number(10000001);
 		assert_noop!(
-			DeviceId::set_attributes_pre_signed(
+			DeviceIds::set_attributes_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				pre_signed_data.clone(),
 				signature.clone(),
@@ -2400,7 +2400,7 @@ fn pre_signed_attributes_should_work() {
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&message));
 
 		assert_noop!(
-			DeviceId::set_attributes_pre_signed(
+			DeviceIds::set_attributes_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				pre_signed_data.clone(),
 				signature.clone(),
@@ -2421,7 +2421,7 @@ fn pre_signed_attributes_should_work() {
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&message));
 
 		assert_noop!(
-			DeviceId::set_attributes_pre_signed(
+			DeviceIds::set_attributes_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				pre_signed_data.clone(),
 				signature.clone(),
@@ -2442,7 +2442,7 @@ fn pre_signed_attributes_should_work() {
 		let signature = MultiSignature::Sr25519(user_1_pair.sign(&message));
 
 		assert_noop!(
-			DeviceId::set_attributes_pre_signed(
+			DeviceIds::set_attributes_pre_signed(
 				RuntimeOrigin::signed(user_2.clone()),
 				pre_signed_data.clone(),
 				signature.clone(),
@@ -2457,7 +2457,7 @@ fn pre_signed_attributes_should_work() {
 fn basic_create_product_with_id_should_work() {
 	new_test_ext().execute_with(|| {
 		assert_noop!(
-			DeviceId::create_collection_with_id(
+			DeviceIds::create_collection_with_id(
 				0u32,
 				&account(1),
 				&account(1),
@@ -2469,7 +2469,7 @@ fn basic_create_product_with_id_should_work() {
 		Balances::make_free_balance_be(&account(1), 100);
 		Balances::make_free_balance_be(&account(2), 100);
 
-		assert_ok!(DeviceId::create_collection_with_id(
+		assert_ok!(DeviceIds::create_collection_with_id(
 			0u32,
 			&account(1),
 			&account(1),
@@ -2480,7 +2480,7 @@ fn basic_create_product_with_id_should_work() {
 
 		// CollectionId already taken.
 		assert_noop!(
-			DeviceId::create_collection_with_id(
+			DeviceIds::create_collection_with_id(
 				0u32,
 				&account(2),
 				&account(2),
