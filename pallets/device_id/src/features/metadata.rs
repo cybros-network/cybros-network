@@ -175,7 +175,7 @@ impl<T: Config> Pallet<T> {
 	/// - `LockedCollectionMetadata`: The metadata for the collection is locked and cannot be
 	///   modified.
 	/// - `NoPermission`: The caller does not have the required permission to set the metadata.
-	pub(crate) fn do_set_collection_metadata(
+	pub(crate) fn do_set_product_metadata(
 		maybe_check_origin: Option<T::AccountId>,
 		product_id: T::ProductId,
 		data: BoundedVec<u8, T::StringLimit>,

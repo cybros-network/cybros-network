@@ -162,7 +162,7 @@ impl<T: Config> Pallet<T> {
 	/// ownership transfers for the specified collection. If `maybe_collection` is `None`,
 	/// then the account `who` will unset the ownership acceptance, effectively refusing
 	/// ownership transfers for any collection.
-	pub(crate) fn do_set_accept_ownership(
+	pub(crate) fn do_accept_product_ownership(
 		who: T::AccountId,
 		maybe_product_id: Option<T::ProductId>,
 	) -> DispatchResult {

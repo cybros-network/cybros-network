@@ -1,41 +1,33 @@
-# NFTs pallet
+# Device id pallet
 
-A pallet for dealing with non-fungible assets.
+A pallet for dealing with non-fungible-like device id.
 
 ## Overview
 
-The NFTs pallet provides functionality for non-fungible tokens' management, including:
+The Device Id pallet provides functionality for device id' management, including:
 
-* Collection Creation
-* NFT Minting
-* NFT Transfers and Atomic Swaps
-* NFT Trading methods
+* Project Creation
+* Device Minting
+* Device Transfers
 * Attributes Management
-* NFT Burning
-
-To use it in your runtime, you need to implement
-[`nfts::Config`](https://paritytech.github.io/substrate/master/pallet_nfts/pallet/trait.Config.html).
-
-The supported dispatchable functions are documented in the
-[`nfts::Call`](https://paritytech.github.io/substrate/master/pallet_nfts/pallet/enum.Call.html) enum.
+* Device Burning
 
 ### Terminology
 
-* **Collection creation:** The creation of a new collection.
-* **NFT minting:** The action of creating a new item within a collection.
-* **NFT transfer:** The action of sending an item from one account to another.
-* **Atomic swap:** The action of exchanging items between accounts without needing a 3rd party service.
-* **NFT burning:** The destruction of an item.
-* **Non-fungible token (NFT):** An item for which each unit has unique characteristics. There is exactly one instance of
+* **Product creation:** The creation of a new collection.
+* **Device minting:** The action of creating a new item within a collection.
+* **Device transfer:** The action of sending an item from one account to another.
+* **Device burning:** The destruction of an item.
+* **Non-fungible token (NFT) like:** An item for which each unit has unique characteristics. There is exactly one instance of
   such an item in existence and there is exactly one owning account (though that owning account could be a proxy account
   or multi-sig account).
-* **Soul Bound NFT:** An item that is non-transferable from the account which it is minted into.
+* **Soul Bound Device:** An item that is non-transferable from the account which it is minted into.
 
 ### Goals
 
-The NFTs pallet in Substrate is designed to make the following possible:
+The DeviceId pallet in Substrate is designed to make the following possible:
 
-* Allow accounts to permissionlessly create nft collections.
+* Allow accounts to permissionlessly create products.
 * Allow a named (permissioned) account to mint and burn unique items within a collection.
 * Move items between accounts permissionlessly.
 * Allow a named (permissioned) account to freeze and unfreeze items within a collection or the entire collection.

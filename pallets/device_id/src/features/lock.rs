@@ -34,7 +34,7 @@ impl<T: Config> Pallet<T> {
 	///   collection.
 	/// - `collection`: The identifier of the collection to be locked.
 	/// - `lock_settings`: The collection settings to be locked.
-	pub(crate) fn do_lock_collection(
+	pub(crate) fn do_lock_product(
 		origin: T::AccountId,
 		product_id: T::ProductId,
 		lock_settings: ProductSettings,
@@ -66,7 +66,7 @@ impl<T: Config> Pallet<T> {
 	///   item transfer.
 	/// - `collection`: The identifier of the collection to which the item belongs.
 	/// - `item`: The identifier of the item to be locked for transfer.
-	pub(crate) fn do_lock_item_transfer(
+	pub(crate) fn do_lock_device_transfer(
 		origin: T::AccountId,
 		product_id: T::ProductId,
 		device_id: T::DeviceId,
@@ -96,7 +96,7 @@ impl<T: Config> Pallet<T> {
 	///   item transfer.
 	/// - `collection`: The identifier of the collection to which the item belongs.
 	/// - `item`: The identifier of the item to be unlocked for transfer.
-	pub(crate) fn do_unlock_item_transfer(
+	pub(crate) fn do_unlock_device_transfer(
 		origin: T::AccountId,
 		product_id: T::ProductId,
 		device_id: T::DeviceId,

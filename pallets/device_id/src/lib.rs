@@ -525,8 +525,8 @@ pub mod pallet {
         ///
         /// Weight: `O(1)`
         #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::create())]
-        pub fn create(
+        #[pallet::weight(T::WeightInfo::create_product())]
+        pub fn create_product(
             origin: OriginFor<T>,
             admin: AccountIdLookupOf<T>,
             config: ProductConfig,
@@ -544,7 +544,7 @@ pub mod pallet {
 				Error::<T>::WrongSetting
 			);
 
-            Self::do_create_collection(
+            Self::do_create_product(
                 product_id,
                 owner.clone(),
                 admin.clone(),
@@ -573,8 +573,8 @@ pub mod pallet {
         ///
         /// Weight: `O(1)`
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::force_create())]
-        pub fn force_create(
+        #[pallet::weight(T::WeightInfo::force_create_product())]
+        pub fn force_create_product(
             origin: OriginFor<T>,
             owner: AccountIdLookupOf<T>,
             config: ProductConfig,
@@ -586,7 +586,7 @@ pub mod pallet {
                 .or(T::ProductId::initial_value())
                 .ok_or(Error::<T>::UnknownProduct)?;
 
-            Self::do_create_collection(
+            Self::do_create_product(
                 product_id,
                 owner.clone(),
                 owner.clone(),
@@ -617,12 +617,12 @@ pub mod pallet {
         /// - `c = witness.item_configs`
         /// - `a = witness.attributes`
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::destroy(
+        #[pallet::weight(T::WeightInfo::destroy_product(
             witness.device_metadata_count,
             witness.device_configs_count,
             witness.attributes_count,
         ))]
-        pub fn destroy(
+        pub fn destroy_product(
             origin: OriginFor<T>,
             collection: T::ProductId,
             witness: DestroyWitness,
@@ -632,7 +632,7 @@ pub mod pallet {
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
             let details = Self::do_destroy_collection(collection, witness, maybe_check_owner)?;
 
-            Ok(Some(T::WeightInfo::destroy(
+            Ok(Some(T::WeightInfo::destroy_product(
                 details.device_metadata_count,
                 details.device_configs_count,
                 details.attributes_count,
@@ -655,8 +655,8 @@ pub mod pallet {
         ///
         /// Weight: `O(1)`
         #[pallet::call_index(3)]
-        #[pallet::weight(T::WeightInfo::mint())]
-        pub fn mint(
+        #[pallet::weight(T::WeightInfo::mint_device())]
+        pub fn mint_device(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
@@ -705,8 +705,8 @@ pub mod pallet {
         ///
         /// Weight: `O(1)`
         #[pallet::call_index(4)]
-        #[pallet::weight(T::WeightInfo::force_mint())]
-        pub fn force_mint(
+        #[pallet::weight(T::WeightInfo::force_mint_device())]
+        pub fn force_mint_device(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
@@ -739,8 +739,8 @@ pub mod pallet {
         ///
         /// Weight: `O(1)`
         #[pallet::call_index(5)]
-        #[pallet::weight(T::WeightInfo::burn())]
-        pub fn burn(
+        #[pallet::weight(T::WeightInfo::burn_device())]
+        pub fn burn_device(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
@@ -772,8 +772,8 @@ pub mod pallet {
         ///
         /// Weight: `O(1)`
         #[pallet::call_index(6)]
-        #[pallet::weight(T::WeightInfo::transfer())]
-        pub fn transfer(
+        #[pallet::weight(T::WeightInfo::transfer_device())]
+        pub fn transfer_device(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
@@ -798,15 +798,15 @@ pub mod pallet {
         /// Emits `ItemTransferLocked`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(8)]
-        #[pallet::weight(T::WeightInfo::lock_item_transfer())]
-        pub fn lock_item_transfer(
+        #[pallet::call_index(7)]
+        #[pallet::weight(T::WeightInfo::lock_device_transfer())]
+        pub fn lock_device_transfer(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
-            Self::do_lock_item_transfer(origin, product_id, device_id)
+            Self::do_lock_device_transfer(origin, product_id, device_id)
         }
 
         /// Re-allow unprivileged transfer of an item.
@@ -819,15 +819,15 @@ pub mod pallet {
         /// Emits `ItemTransferUnlocked`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(9)]
-        #[pallet::weight(T::WeightInfo::unlock_item_transfer())]
-        pub fn unlock_item_transfer(
+        #[pallet::call_index(8)]
+        #[pallet::weight(T::WeightInfo::unlock_device_transfer())]
+        pub fn unlock_device_transfer(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
-            Self::do_unlock_item_transfer(origin, product_id, device_id)
+            Self::do_unlock_device_transfer(origin, product_id, device_id)
         }
 
         /// Disallows specified settings for the whole collection.
@@ -842,15 +842,15 @@ pub mod pallet {
         /// Emits `CollectionLocked`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(10)]
-        #[pallet::weight(T::WeightInfo::lock_collection())]
-        pub fn lock_collection(
+        #[pallet::call_index(9)]
+        #[pallet::weight(T::WeightInfo::lock_product())]
+        pub fn lock_product(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             lock_settings: ProductSettings,
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
-            Self::do_lock_collection(origin, product_id, lock_settings)
+            Self::do_lock_product(origin, product_id, lock_settings)
         }
 
         /// Change the Owner of a collection.
@@ -864,9 +864,9 @@ pub mod pallet {
         /// Emits `OwnerChanged`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(11)]
-        #[pallet::weight(T::WeightInfo::transfer_ownership())]
-        pub fn transfer_ownership(
+        #[pallet::call_index(10)]
+        #[pallet::weight(T::WeightInfo::transfer_product_ownership())]
+        pub fn transfer_product_ownership(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             new_owner: AccountIdLookupOf<T>,
@@ -892,9 +892,9 @@ pub mod pallet {
         /// Emits `TeamChanged`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(12)]
-        #[pallet::weight(T::WeightInfo::set_team())]
-        pub fn set_team(
+        #[pallet::call_index(11)]
+        #[pallet::weight(T::WeightInfo::set_product_team())]
+        pub fn set_product_team(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             issuer: Option<AccountIdLookupOf<T>>,
@@ -920,9 +920,9 @@ pub mod pallet {
         /// Emits `OwnerChanged`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(13)]
-        #[pallet::weight(T::WeightInfo::force_collection_owner())]
-        pub fn force_collection_owner(
+        #[pallet::call_index(12)]
+        #[pallet::weight(T::WeightInfo::force_set_product_owner())]
+        pub fn force_set_product_owner(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             owner: AccountIdLookupOf<T>,
@@ -942,9 +942,9 @@ pub mod pallet {
         /// Emits `CollectionConfigChanged`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(14)]
-        #[pallet::weight(T::WeightInfo::force_collection_config())]
-        pub fn force_collection_config(
+        #[pallet::call_index(13)]
+        #[pallet::weight(T::WeightInfo::force_set_product_config())]
+        pub fn force_set_product_config(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             config: ProductConfig,
@@ -970,9 +970,9 @@ pub mod pallet {
         /// Emits `ItemPropertiesLocked`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(18)]
-        #[pallet::weight(T::WeightInfo::lock_item_properties())]
-        pub fn lock_item_properties(
+        #[pallet::call_index(14)]
+        #[pallet::weight(T::WeightInfo::lock_device_properties())]
+        pub fn lock_device_properties(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
@@ -1013,7 +1013,7 @@ pub mod pallet {
         /// Emits `AttributeSet`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(19)]
+        #[pallet::call_index(15)]
         #[pallet::weight(T::WeightInfo::set_attribute())]
         pub fn set_attribute(
             origin: OriginFor<T>,
@@ -1049,7 +1049,7 @@ pub mod pallet {
         /// Emits `AttributeSet`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(20)]
+        #[pallet::call_index(16)]
         #[pallet::weight(T::WeightInfo::force_set_attribute())]
         pub fn force_set_attribute(
             origin: OriginFor<T>,
@@ -1079,7 +1079,7 @@ pub mod pallet {
         /// Emits `AttributeCleared`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(21)]
+        #[pallet::call_index(17)]
         #[pallet::weight(T::WeightInfo::clear_attribute())]
         pub fn clear_attribute(
             origin: OriginFor<T>,
@@ -1103,9 +1103,9 @@ pub mod pallet {
         /// - `delegate`: The account to delegate permission to change attributes of the item.
         ///
         /// Emits `ItemAttributesApprovalAdded` on success.
-        #[pallet::call_index(22)]
-        #[pallet::weight(T::WeightInfo::approve_item_attributes())]
-        pub fn approve_item_attributes(
+        #[pallet::call_index(18)]
+        #[pallet::weight(T::WeightInfo::approve_device_attributes())]
+        pub fn approve_device_attributes(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
@@ -1113,7 +1113,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
             let delegate = T::Lookup::lookup(delegate)?;
-            Self::do_approve_item_attributes(origin, product_id, device_id, delegate)
+            Self::do_approve_device_attributes(origin, product_id, device_id, delegate)
         }
 
         /// Cancel the previously provided approval to change item's attributes.
@@ -1126,11 +1126,11 @@ pub mod pallet {
         /// - `delegate`: The previously approved account to remove.
         ///
         /// Emits `ItemAttributesApprovalRemoved` on success.
-        #[pallet::call_index(23)]
-        #[pallet::weight(T::WeightInfo::cancel_item_attributes_approval(
+        #[pallet::call_index(19)]
+        #[pallet::weight(T::WeightInfo::cancel_device_attributes_approval(
             witness.account_attributes
         ))]
-        pub fn cancel_item_attributes_approval(
+        pub fn cancel_device_attributes_approval(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
@@ -1158,9 +1158,9 @@ pub mod pallet {
         /// Emits `ItemMetadataSet`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(24)]
-        #[pallet::weight(T::WeightInfo::set_metadata())]
-        pub fn set_metadata(
+        #[pallet::call_index(20)]
+        #[pallet::weight(T::WeightInfo::set_device_metadata())]
+        pub fn set_device_metadata(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
@@ -1185,9 +1185,9 @@ pub mod pallet {
         /// Emits `ItemMetadataCleared`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(25)]
-        #[pallet::weight(T::WeightInfo::clear_metadata())]
-        pub fn clear_metadata(
+        #[pallet::call_index(21)]
+        #[pallet::weight(T::WeightInfo::clear_device_metadata())]
+        pub fn clear_device_metadata(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             device_id: T::DeviceId,
@@ -1213,9 +1213,9 @@ pub mod pallet {
         /// Emits `CollectionMetadataSet`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(26)]
-        #[pallet::weight(T::WeightInfo::set_collection_metadata())]
-        pub fn set_collection_metadata(
+        #[pallet::call_index(22)]
+        #[pallet::weight(T::WeightInfo::set_product_metadata())]
+        pub fn set_product_metadata(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             data: BoundedVec<u8, T::StringLimit>,
@@ -1223,7 +1223,7 @@ pub mod pallet {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_set_collection_metadata(maybe_check_origin, product_id, data)
+            Self::do_set_product_metadata(maybe_check_origin, product_id, data)
         }
 
         /// Clear the metadata for a collection.
@@ -1238,9 +1238,9 @@ pub mod pallet {
         /// Emits `CollectionMetadataCleared`.
         ///
         /// Weight: `O(1)`
-        #[pallet::call_index(27)]
-        #[pallet::weight(T::WeightInfo::clear_collection_metadata())]
-        pub fn clear_collection_metadata(
+        #[pallet::call_index(23)]
+        #[pallet::weight(T::WeightInfo::clear_product_metadata())]
+        pub fn clear_product_metadata(
             origin: OriginFor<T>,
             product_id: T::ProductId,
         ) -> DispatchResult {
@@ -1260,14 +1260,14 @@ pub mod pallet {
         ///   ownership transferal.
         ///
         /// Emits `OwnershipAcceptanceChanged`.
-        #[pallet::call_index(28)]
-        #[pallet::weight(T::WeightInfo::set_accept_ownership())]
-        pub fn set_accept_ownership(
+        #[pallet::call_index(24)]
+        #[pallet::weight(T::WeightInfo::accept_product_ownership())]
+        pub fn accept_product_ownership(
             origin: OriginFor<T>,
             maybe_product_id: Option<T::ProductId>,
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
-            Self::do_set_accept_ownership(who, maybe_product_id)
+            Self::do_accept_product_ownership(who, maybe_product_id)
         }
 
         /// Set the maximum number of items a collection could have.
@@ -1279,9 +1279,9 @@ pub mod pallet {
         /// - `max_supply`: The maximum number of items a collection could have.
         ///
         /// Emits `CollectionMaxSupplySet` event when successful.
-        #[pallet::call_index(29)]
-        #[pallet::weight(T::WeightInfo::set_collection_max_supply())]
-        pub fn set_collection_max_supply(
+        #[pallet::call_index(25)]
+        #[pallet::weight(T::WeightInfo::set_product_max_supply())]
+        pub fn set_product_max_supply(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             max_supply: u32,
@@ -1289,7 +1289,7 @@ pub mod pallet {
             let maybe_check_owner = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_set_collection_max_supply(maybe_check_owner, product_id, max_supply)
+            Self::do_set_product_max_supply(maybe_check_owner, product_id, max_supply)
         }
 
         /// Update mint settings.
@@ -1301,9 +1301,9 @@ pub mod pallet {
         /// - `mint_settings`: The new mint settings.
         ///
         /// Emits `CollectionMintSettingsUpdated` event when successful.
-        #[pallet::call_index(30)]
-        #[pallet::weight(T::WeightInfo::update_mint_settings())]
-        pub fn update_mint_settings(
+        #[pallet::call_index(26)]
+        #[pallet::weight(T::WeightInfo::update_product_mint_settings())]
+        pub fn update_product_mint_settings(
             origin: OriginFor<T>,
             product_id: T::ProductId,
             mint_settings: MintSettings,
@@ -1311,7 +1311,7 @@ pub mod pallet {
             let maybe_check_origin = T::ForceOrigin::try_origin(origin)
                 .map(|_| None)
                 .or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
-            Self::do_update_mint_settings(maybe_check_origin, product_id, mint_settings)
+            Self::do_update_product_mint_settings(maybe_check_origin, product_id, mint_settings)
         }
 
         /// Mint an item by providing the pre-signed approval.
@@ -1327,9 +1327,9 @@ pub mod pallet {
         /// Emits `Issued` on success.
         /// Emits `AttributeSet` if the attributes were provided.
         /// Emits `ItemMetadataSet` if the metadata was not empty.
-        #[pallet::call_index(37)]
-        #[pallet::weight(T::WeightInfo::mint_pre_signed(mint_data.attributes.len() as u32))]
-        pub fn mint_pre_signed(
+        #[pallet::call_index(27)]
+        #[pallet::weight(T::WeightInfo::mint_device_pre_signed(mint_data.attributes.len() as u32))]
+        pub fn mint_device_pre_signed(
             origin: OriginFor<T>,
             mint_data: Box<PreSignedMintOf<T>>,
             signature: T::OffchainSignature,
@@ -1337,7 +1337,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let origin = ensure_signed(origin)?;
             Self::validate_signature(&Encode::encode(&mint_data), &signature, &signer)?;
-            Self::do_mint_pre_signed(origin, *mint_data, signer)
+            Self::do_mint_device_pre_signed(origin, *mint_data, signer)
         }
 
         /// Set attributes for an item by providing the pre-signed approval.
@@ -1353,7 +1353,7 @@ pub mod pallet {
         /// Emits `AttributeSet` for each provided attribute.
         /// Emits `ItemAttributesApprovalAdded` if the approval wasn't set before.
         /// Emits `PreSignedAttributesSet` on success.
-        #[pallet::call_index(38)]
+        #[pallet::call_index(28)]
         #[pallet::weight(T::WeightInfo::set_attributes_pre_signed(data.attributes.len() as u32))]
         pub fn set_attributes_pre_signed(
             origin: OriginFor<T>,

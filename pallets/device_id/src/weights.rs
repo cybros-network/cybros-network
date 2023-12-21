@@ -49,36 +49,36 @@
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use core::marker::PhantomData;
 
-/// Weight functions needed for pallet_nfts.
+/// Weight functions needed for pallet_device_id.
 pub trait WeightInfo {
-	fn create() -> Weight;
-	fn force_create() -> Weight;
-	fn destroy(m: u32, c: u32, a: u32, ) -> Weight;
-	fn mint() -> Weight;
-	fn force_mint() -> Weight;
-	fn burn() -> Weight;
-	fn transfer() -> Weight;
-	fn lock_item_transfer() -> Weight;
-	fn unlock_item_transfer() -> Weight;
-	fn lock_collection() -> Weight;
-	fn transfer_ownership() -> Weight;
-	fn set_team() -> Weight;
-	fn force_collection_owner() -> Weight;
-	fn force_collection_config() -> Weight;
-	fn lock_item_properties() -> Weight;
+	fn create_product() -> Weight;
+	fn force_create_product() -> Weight;
+	fn destroy_product(m: u32, c: u32, a: u32, ) -> Weight;
+	fn mint_device() -> Weight;
+	fn force_mint_device() -> Weight;
+	fn burn_device() -> Weight;
+	fn transfer_device() -> Weight;
+	fn lock_device_transfer() -> Weight;
+	fn unlock_device_transfer() -> Weight;
+	fn lock_product() -> Weight;
+	fn transfer_product_ownership() -> Weight;
+	fn set_product_team() -> Weight;
+	fn force_set_product_owner() -> Weight;
+	fn force_set_product_config() -> Weight;
+	fn lock_device_properties() -> Weight;
 	fn set_attribute() -> Weight;
 	fn force_set_attribute() -> Weight;
 	fn clear_attribute() -> Weight;
-	fn approve_item_attributes() -> Weight;
-	fn cancel_item_attributes_approval(n: u32, ) -> Weight;
-	fn set_metadata() -> Weight;
-	fn clear_metadata() -> Weight;
-	fn set_collection_metadata() -> Weight;
-	fn clear_collection_metadata() -> Weight;
-	fn set_accept_ownership() -> Weight;
-	fn set_collection_max_supply() -> Weight;
-	fn update_mint_settings() -> Weight;
-	fn mint_pre_signed(n: u32, ) -> Weight;
+	fn approve_device_attributes() -> Weight;
+	fn cancel_device_attributes_approval(n: u32, ) -> Weight;
+	fn set_device_metadata() -> Weight;
+	fn clear_device_metadata() -> Weight;
+	fn set_product_metadata() -> Weight;
+	fn clear_product_metadata() -> Weight;
+	fn accept_product_ownership() -> Weight;
+	fn set_product_max_supply() -> Weight;
+	fn update_product_mint_settings() -> Weight;
+	fn mint_device_pre_signed(n: u32, ) -> Weight;
 	fn set_attributes_pre_signed(n: u32, ) -> Weight;
 }
 
@@ -95,7 +95,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionAccount (r:0 w:1)
 	/// Proof: Nfts CollectionAccount (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
-	fn create() -> Weight {
+	fn create_product() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `216`
 		//  Estimated: `3549`
@@ -114,7 +114,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionAccount (r:0 w:1)
 	/// Proof: Nfts CollectionAccount (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
-	fn force_create() -> Weight {
+	fn force_create_product() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `76`
 		//  Estimated: `3549`
@@ -142,7 +142,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[0, 1000]`.
 	/// The range of component `c` is `[0, 1000]`.
 	/// The range of component `a` is `[0, 1000]`.
-	fn destroy(_m: u32, _c: u32, a: u32, ) -> Weight {
+	fn destroy_product(_m: u32, _c: u32, a: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `32220 + a * (332 ±0)`
 		//  Estimated: `2523990 + a * (2921 ±0)`
@@ -168,7 +168,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
 	/// Storage: Nfts Account (r:0 w:1)
 	/// Proof: Nfts Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
-	fn mint() -> Weight {
+	fn mint_device() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `455`
 		//  Estimated: `4326`
@@ -189,7 +189,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
 	/// Storage: Nfts Account (r:0 w:1)
 	/// Proof: Nfts Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
-	fn force_mint() -> Weight {
+	fn force_mint_device() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `455`
 		//  Estimated: `4326`
@@ -214,7 +214,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts ItemAttributesApprovalsOf (max_values: None, max_size: Some(681), added: 3156, mode: MaxEncodedLen)
 	/// Storage: Nfts PendingSwapOf (r:0 w:1)
 	/// Proof: Nfts PendingSwapOf (max_values: None, max_size: Some(71), added: 2546, mode: MaxEncodedLen)
-	fn burn() -> Weight {
+	fn burn_device() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `564`
 		//  Estimated: `4326`
@@ -239,7 +239,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts ItemPriceOf (max_values: None, max_size: Some(89), added: 2564, mode: MaxEncodedLen)
 	/// Storage: Nfts PendingSwapOf (r:0 w:1)
 	/// Proof: Nfts PendingSwapOf (max_values: None, max_size: Some(71), added: 2546, mode: MaxEncodedLen)
-	fn transfer() -> Weight {
+	fn transfer_device() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `593`
 		//  Estimated: `4326`
@@ -252,7 +252,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts CollectionRoleOf (max_values: None, max_size: Some(69), added: 2544, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemConfigOf (r:1 w:1)
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	fn lock_item_transfer() -> Weight {
+	fn lock_device_transfer() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `435`
 		//  Estimated: `3534`
@@ -265,7 +265,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts CollectionRoleOf (max_values: None, max_size: Some(69), added: 2544, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemConfigOf (r:1 w:1)
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	fn unlock_item_transfer() -> Weight {
+	fn unlock_device_transfer() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `435`
 		//  Estimated: `3534`
@@ -278,7 +278,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionConfigOf (r:1 w:1)
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
-	fn lock_collection() -> Weight {
+	fn lock_product() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `340`
 		//  Estimated: `3549`
@@ -293,7 +293,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionAccount (r:0 w:2)
 	/// Proof: Nfts CollectionAccount (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
-	fn transfer_ownership() -> Weight {
+	fn transfer_product_ownership() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `388`
 		//  Estimated: `3549`
@@ -306,7 +306,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionRoleOf (r:2 w:4)
 	/// Proof: Nfts CollectionRoleOf (max_values: None, max_size: Some(69), added: 2544, mode: MaxEncodedLen)
-	fn set_team() -> Weight {
+	fn set_product_team() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `369`
 		//  Estimated: `6078`
@@ -319,7 +319,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionAccount (r:0 w:2)
 	/// Proof: Nfts CollectionAccount (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
-	fn force_collection_owner() -> Weight {
+	fn force_set_product_owner() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `311`
 		//  Estimated: `3549`
@@ -332,7 +332,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionConfigOf (r:0 w:1)
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
-	fn force_collection_config() -> Weight {
+	fn force_set_product_config() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `276`
 		//  Estimated: `3549`
@@ -345,7 +345,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts CollectionRoleOf (max_values: None, max_size: Some(69), added: 2544, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemConfigOf (r:1 w:1)
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	fn lock_item_properties() -> Weight {
+	fn lock_device_properties() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `435`
 		//  Estimated: `3534`
@@ -407,7 +407,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts Item (max_values: None, max_size: Some(861), added: 3336, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemAttributesApprovalsOf (r:1 w:1)
 	/// Proof: Nfts ItemAttributesApprovalsOf (max_values: None, max_size: Some(681), added: 3156, mode: MaxEncodedLen)
-	fn approve_item_attributes() -> Weight {
+	fn approve_device_attributes() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `381`
 		//  Estimated: `4326`
@@ -425,7 +425,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: System Account (r:1 w:1)
 	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
 	/// The range of component `n` is `[0, 1000]`.
-	fn cancel_item_attributes_approval(n: u32, ) -> Weight {
+	fn cancel_device_attributes_approval(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `837 + n * (364 ±0)`
 		//  Estimated: `4326 + n * (2921 ±0)`
@@ -449,7 +449,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemMetadataOf (r:1 w:1)
 	/// Proof: Nfts ItemMetadataOf (max_values: None, max_size: Some(140), added: 2615, mode: MaxEncodedLen)
-	fn set_metadata() -> Weight {
+	fn set_device_metadata() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `539`
 		//  Estimated: `3605`
@@ -466,7 +466,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemConfigOf (r:1 w:0)
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	fn clear_metadata() -> Weight {
+	fn clear_device_metadata() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `642`
 		//  Estimated: `3605`
@@ -483,7 +483,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionMetadataOf (r:1 w:1)
 	/// Proof: Nfts CollectionMetadataOf (max_values: None, max_size: Some(87), added: 2562, mode: MaxEncodedLen)
-	fn set_collection_metadata() -> Weight {
+	fn set_product_metadata() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `398`
 		//  Estimated: `3552`
@@ -500,7 +500,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionMetadataOf (r:1 w:1)
 	/// Proof: Nfts CollectionMetadataOf (max_values: None, max_size: Some(87), added: 2562, mode: MaxEncodedLen)
-	fn clear_collection_metadata() -> Weight {
+	fn clear_product_metadata() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `509`
 		//  Estimated: `3552`
@@ -511,7 +511,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 	/// Storage: Nfts OwnershipAcceptance (r:1 w:1)
 	/// Proof: Nfts OwnershipAcceptance (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
-	fn set_accept_ownership() -> Weight {
+	fn accept_product_ownership() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `76`
 		//  Estimated: `3517`
@@ -524,7 +524,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: Nfts Collection (r:1 w:0)
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
-	fn set_collection_max_supply() -> Weight {
+	fn set_product_max_supply() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `340`
 		//  Estimated: `3549`
@@ -537,7 +537,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Nfts CollectionRoleOf (max_values: None, max_size: Some(69), added: 2544, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionConfigOf (r:1 w:1)
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
-	fn update_mint_settings() -> Weight {
+	fn update_product_mint_settings() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `323`
 		//  Estimated: `3538`
@@ -565,7 +565,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Storage: Nfts Account (r:0 w:1)
 	/// Proof: Nfts Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
 	/// The range of component `n` is `[0, 10]`.
-	fn mint_pre_signed(n: u32, ) -> Weight {
+	fn mint_device_pre_signed(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `629`
 		//  Estimated: `6078 + n * (2921 ±0)`
@@ -620,7 +620,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionAccount (r:0 w:1)
 	/// Proof: Nfts CollectionAccount (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
-	fn create() -> Weight {
+	fn create_product() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `216`
 		//  Estimated: `3549`
@@ -639,7 +639,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionAccount (r:0 w:1)
 	/// Proof: Nfts CollectionAccount (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
-	fn force_create() -> Weight {
+	fn force_create_product() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `76`
 		//  Estimated: `3549`
@@ -667,7 +667,7 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[0, 1000]`.
 	/// The range of component `c` is `[0, 1000]`.
 	/// The range of component `a` is `[0, 1000]`.
-	fn destroy(_m: u32, _c: u32, a: u32, ) -> Weight {
+	fn destroy_product(_m: u32, _c: u32, a: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `32220 + a * (332 ±0)`
 		//  Estimated: `2523990 + a * (2921 ±0)`
@@ -693,7 +693,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
 	/// Storage: Nfts Account (r:0 w:1)
 	/// Proof: Nfts Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
-	fn mint() -> Weight {
+	fn mint_device() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `455`
 		//  Estimated: `4326`
@@ -714,7 +714,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
 	/// Storage: Nfts Account (r:0 w:1)
 	/// Proof: Nfts Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
-	fn force_mint() -> Weight {
+	fn force_mint_device() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `455`
 		//  Estimated: `4326`
@@ -739,7 +739,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts ItemAttributesApprovalsOf (max_values: None, max_size: Some(681), added: 3156, mode: MaxEncodedLen)
 	/// Storage: Nfts PendingSwapOf (r:0 w:1)
 	/// Proof: Nfts PendingSwapOf (max_values: None, max_size: Some(71), added: 2546, mode: MaxEncodedLen)
-	fn burn() -> Weight {
+	fn burn_device() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `564`
 		//  Estimated: `4326`
@@ -764,7 +764,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts ItemPriceOf (max_values: None, max_size: Some(89), added: 2564, mode: MaxEncodedLen)
 	/// Storage: Nfts PendingSwapOf (r:0 w:1)
 	/// Proof: Nfts PendingSwapOf (max_values: None, max_size: Some(71), added: 2546, mode: MaxEncodedLen)
-	fn transfer() -> Weight {
+	fn transfer_device() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `593`
 		//  Estimated: `4326`
@@ -777,7 +777,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts CollectionRoleOf (max_values: None, max_size: Some(69), added: 2544, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemConfigOf (r:1 w:1)
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	fn lock_item_transfer() -> Weight {
+	fn lock_device_transfer() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `435`
 		//  Estimated: `3534`
@@ -790,7 +790,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts CollectionRoleOf (max_values: None, max_size: Some(69), added: 2544, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemConfigOf (r:1 w:1)
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	fn unlock_item_transfer() -> Weight {
+	fn unlock_device_transfer() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `435`
 		//  Estimated: `3534`
@@ -803,7 +803,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionConfigOf (r:1 w:1)
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
-	fn lock_collection() -> Weight {
+	fn lock_product() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `340`
 		//  Estimated: `3549`
@@ -818,7 +818,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionAccount (r:0 w:2)
 	/// Proof: Nfts CollectionAccount (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
-	fn transfer_ownership() -> Weight {
+	fn transfer_product_ownership() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `388`
 		//  Estimated: `3549`
@@ -831,7 +831,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionRoleOf (r:2 w:4)
 	/// Proof: Nfts CollectionRoleOf (max_values: None, max_size: Some(69), added: 2544, mode: MaxEncodedLen)
-	fn set_team() -> Weight {
+	fn set_product_team() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `369`
 		//  Estimated: `6078`
@@ -844,7 +844,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionAccount (r:0 w:2)
 	/// Proof: Nfts CollectionAccount (max_values: None, max_size: Some(68), added: 2543, mode: MaxEncodedLen)
-	fn force_collection_owner() -> Weight {
+	fn force_set_product_owner() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `311`
 		//  Estimated: `3549`
@@ -857,7 +857,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionConfigOf (r:0 w:1)
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
-	fn force_collection_config() -> Weight {
+	fn force_set_product_config() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `276`
 		//  Estimated: `3549`
@@ -870,7 +870,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts CollectionRoleOf (max_values: None, max_size: Some(69), added: 2544, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemConfigOf (r:1 w:1)
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	fn lock_item_properties() -> Weight {
+	fn lock_device_properties() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `435`
 		//  Estimated: `3534`
@@ -932,7 +932,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts Item (max_values: None, max_size: Some(861), added: 3336, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemAttributesApprovalsOf (r:1 w:1)
 	/// Proof: Nfts ItemAttributesApprovalsOf (max_values: None, max_size: Some(681), added: 3156, mode: MaxEncodedLen)
-	fn approve_item_attributes() -> Weight {
+	fn approve_device_attributes() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `381`
 		//  Estimated: `4326`
@@ -950,7 +950,7 @@ impl WeightInfo for () {
 	/// Storage: System Account (r:1 w:1)
 	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
 	/// The range of component `n` is `[0, 1000]`.
-	fn cancel_item_attributes_approval(n: u32, ) -> Weight {
+	fn cancel_device_attributes_approval(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `837 + n * (364 ±0)`
 		//  Estimated: `4326 + n * (2921 ±0)`
@@ -974,7 +974,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemMetadataOf (r:1 w:1)
 	/// Proof: Nfts ItemMetadataOf (max_values: None, max_size: Some(140), added: 2615, mode: MaxEncodedLen)
-	fn set_metadata() -> Weight {
+	fn set_device_metadata() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `539`
 		//  Estimated: `3605`
@@ -991,7 +991,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts ItemConfigOf (r:1 w:0)
 	/// Proof: Nfts ItemConfigOf (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
-	fn clear_metadata() -> Weight {
+	fn clear_device_metadata() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `642`
 		//  Estimated: `3605`
@@ -1008,7 +1008,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionMetadataOf (r:1 w:1)
 	/// Proof: Nfts CollectionMetadataOf (max_values: None, max_size: Some(87), added: 2562, mode: MaxEncodedLen)
-	fn set_collection_metadata() -> Weight {
+	fn set_product_metadata() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `398`
 		//  Estimated: `3552`
@@ -1025,7 +1025,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionMetadataOf (r:1 w:1)
 	/// Proof: Nfts CollectionMetadataOf (max_values: None, max_size: Some(87), added: 2562, mode: MaxEncodedLen)
-	fn clear_collection_metadata() -> Weight {
+	fn clear_product_metadata() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `509`
 		//  Estimated: `3552`
@@ -1036,7 +1036,7 @@ impl WeightInfo for () {
 	}
 	/// Storage: Nfts OwnershipAcceptance (r:1 w:1)
 	/// Proof: Nfts OwnershipAcceptance (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
-	fn set_accept_ownership() -> Weight {
+	fn accept_product_ownership() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `76`
 		//  Estimated: `3517`
@@ -1049,7 +1049,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: Nfts Collection (r:1 w:0)
 	/// Proof: Nfts Collection (max_values: None, max_size: Some(84), added: 2559, mode: MaxEncodedLen)
-	fn set_collection_max_supply() -> Weight {
+	fn set_product_max_supply() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `340`
 		//  Estimated: `3549`
@@ -1062,7 +1062,7 @@ impl WeightInfo for () {
 	/// Proof: Nfts CollectionRoleOf (max_values: None, max_size: Some(69), added: 2544, mode: MaxEncodedLen)
 	/// Storage: Nfts CollectionConfigOf (r:1 w:1)
 	/// Proof: Nfts CollectionConfigOf (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
-	fn update_mint_settings() -> Weight {
+	fn update_product_mint_settings() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `323`
 		//  Estimated: `3538`
@@ -1090,7 +1090,7 @@ impl WeightInfo for () {
 	/// Storage: Nfts Account (r:0 w:1)
 	/// Proof: Nfts Account (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
 	/// The range of component `n` is `[0, 10]`.
-	fn mint_pre_signed(n: u32, ) -> Weight {
+	fn mint_device_pre_signed(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `629`
 		//  Estimated: `6078 + n * (2921 ±0)`

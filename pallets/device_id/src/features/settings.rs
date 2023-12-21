@@ -54,7 +54,7 @@ impl<T: Config> Pallet<T> {
 	/// the collection, and if not, it returns an `Error::MaxSupplyTooSmall`. If all checks pass,
 	/// it updates the collection configuration with the new maximum supply and emits a
 	/// `CollectionMaxSupplySet` event.
-	pub(crate) fn do_set_collection_max_supply(
+	pub(crate) fn do_set_product_max_supply(
 		maybe_check_owner: Option<T::AccountId>,
 		product_id: T::ProductId,
 		max_supply: u32,
@@ -93,7 +93,7 @@ impl<T: Config> Pallet<T> {
 	/// `maybe_check_origin` is provided, it returns an `Error::NoPermission`. If all checks
 	/// pass, it updates the collection configuration with the new mint settings and emits a
 	/// `CollectionMintSettingsUpdated` event.
-	pub(crate) fn do_update_mint_settings(
+	pub(crate) fn do_update_product_mint_settings(
 		maybe_check_origin: Option<T::AccountId>,
 		product_id: T::ProductId,
 		mint_settings: MintSettings,

@@ -239,7 +239,7 @@ impl<T: Config> Pallet<T> {
 				ensure!(account == &signer, Error::<T>::NoPermission);
 				let approvals = DeviceAttributesApprovalsOf::<T>::get(&product_id, &device_id);
 				if !approvals.contains(account) {
-					Self::do_approve_item_attributes(
+					Self::do_approve_device_attributes(
 						origin.clone(),
 						product_id,
 						device_id,
@@ -368,7 +368,7 @@ impl<T: Config> Pallet<T> {
 	/// - `item`: The identifier of the item for which the delegate is being approved.
 	/// - `delegate`: The account that is being approved to set attributes on behalf of the item's
 	///   owner.
-	pub(crate) fn do_approve_item_attributes(
+	pub(crate) fn do_approve_device_attributes(
 		check_origin: T::AccountId,
 		product_id: T::ProductId,
 		device_id: T::DeviceId,

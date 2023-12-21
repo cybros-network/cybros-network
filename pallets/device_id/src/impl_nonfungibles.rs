@@ -168,7 +168,7 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, ProductConfig>
 			.or(T::ProductId::initial_value())
 			.ok_or(Error::<T>::UnknownProduct)?;
 
-		Self::do_create_collection(
+		Self::do_create_product(
 			collection,
 			who.clone(),
 			admin.clone(),
@@ -201,7 +201,7 @@ impl<T: Config> Create<<T as frame_system::Config>::AccountId, ProductConfig>
 			Error::<T>::WrongSetting
 		);
 
-		Self::do_create_collection(
+		Self::do_create_product(
 			collection,
 			who.clone(),
 			admin.clone(),
@@ -342,7 +342,7 @@ impl<T: Config> Mutate<<T as frame_system::Config>::AccountId, DeviceConfig> for
 		collection: &Self::CollectionId,
 		data: &[u8],
 	) -> DispatchResult {
-		Self::do_set_collection_metadata(
+		Self::do_set_product_metadata(
 			who.cloned(),
 			*collection,
 			Self::construct_metadata(data.to_vec())?,

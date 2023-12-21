@@ -33,7 +33,7 @@ impl<T: Config> Pallet<T> {
 	///
 	/// This function returns a [`CollectionIdInUse`](crate::Error::ProductIdInUse) error if the
 	/// collection ID is already in use.
-	pub fn do_create_collection(
+	pub fn do_create_product(
 		product_id: T::ProductId,
 		owner: T::AccountId,
 		admin: T::AccountId,

@@ -120,7 +120,7 @@ impl<T: Config> Pallet<T> {
 	/// - `mint_data`: The pre-signed minting data containing the `collection`, `item`,
 	///   `attributes`, `metadata`, `deadline`, and `only_account`.
 	/// - `signer`: The account that is authorized to mint the item using the pre-signed message.
-	pub(crate) fn do_mint_pre_signed(
+	pub(crate) fn do_mint_device_pre_signed(
 		mint_to: T::AccountId,
 		mint_data: PreSignedMintOf<T>,
 		signer: T::AccountId,
