@@ -26,10 +26,10 @@ use frame_system::{EnsureRoot, EnsureSigned};
 
 parameter_types! {
 	pub const AssetDeposit: Balance = 100 * DOLLARS;
-	pub const ApprovalDeposit: Balance = 1 * DOLLARS;
-	pub const StringLimit: u32 = 50;
-	pub const MetadataDepositBase: Balance = 10 * DOLLARS;
-	pub const MetadataDepositPerByte: Balance = 1 * DOLLARS;
+	pub const AssetApprovalDeposit: Balance = 1 * DOLLARS;
+	pub const AssetStringLimit: u32 = 50;
+	pub const AssetMetadataDepositBase: Balance = 10 * DOLLARS;
+	pub const AssetMetadataDepositPerByte: Balance = 1 * DOLLARS;
 }
 
 impl pallet_assets::Config<Instance1> for Runtime {
@@ -43,10 +43,10 @@ impl pallet_assets::Config<Instance1> for Runtime {
     type ForceOrigin = EnsureRoot<AccountId>;
     type AssetDeposit = AssetDeposit;
     type AssetAccountDeposit = ConstU128<DOLLARS>;
-    type MetadataDepositBase = MetadataDepositBase;
-    type MetadataDepositPerByte = MetadataDepositPerByte;
-    type ApprovalDeposit = ApprovalDeposit;
-    type StringLimit = StringLimit;
+    type MetadataDepositBase = AssetMetadataDepositBase;
+    type MetadataDepositPerByte = AssetMetadataDepositPerByte;
+    type ApprovalDeposit = AssetApprovalDeposit;
+    type StringLimit = AssetStringLimit;
     type Freezer = ();
     type Extra = ();
     type CallbackHandle = ();

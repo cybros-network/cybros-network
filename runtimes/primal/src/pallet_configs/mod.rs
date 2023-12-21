@@ -36,17 +36,16 @@ pub use proxy::*;
 mod utility;
 pub use utility::*;
 
-mod balances;
-pub use balances::*;
 mod transaction_payment;
 pub use transaction_payment::*;
-
 mod skip_feeless_payment;
 pub use skip_feeless_payment::*;
-mod vesting;
-pub use vesting::*;
+mod balances;
+pub use balances::*;
 mod assets;
 pub use assets::*;
+mod vesting;
+pub use vesting::*;
 
 mod treasury;
 pub use treasury::*;
