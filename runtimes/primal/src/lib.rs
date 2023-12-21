@@ -337,7 +337,7 @@ construct_runtime!(
 		// System support
 		System: frame_system = 0,
 		Timestamp: pallet_timestamp = 1,
-		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 2,
+		Randomness: pallet_insecure_randomness_collective_flip = 2,
 
 		// Consensus
 		Aura: pallet_aura = 20,

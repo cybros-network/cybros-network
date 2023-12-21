@@ -16,11 +16,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-mod insecure_randomness_collective_flip;
 mod system;
 pub use system::*;
 mod timestamp;
 pub use timestamp::*;
+
+mod randomness;
+pub use randomness::*;
 
 mod aura;
 pub use aura::*;
