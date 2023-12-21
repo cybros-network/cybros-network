@@ -665,7 +665,7 @@ pub mod pallet {
             let caller = ensure_signed(origin)?;
             let mint_to = T::Lookup::lookup(mint_to)?;
             let device_config =
-                DeviceConfig { settings: Self::get_default_item_settings(&product_id)? };
+                DeviceConfig { settings: Self::get_default_device_settings(&product_id)? };
 
             Self::do_mint(
                 product_id,
@@ -950,7 +950,7 @@ pub mod pallet {
             config: ProductConfig,
         ) -> DispatchResult {
             T::ForceOrigin::ensure_origin(origin)?;
-            Self::do_force_collection_config(product_id, config)
+            Self::do_force_set_product_config(product_id, config)
         }
 
         /// Disallows changing the metadata or attributes of the item.

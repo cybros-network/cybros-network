@@ -28,7 +28,7 @@ impl<T: Config> Pallet<T> {
 	///
 	/// This function allows for changing the configuration of a collection without any checks.
 	/// It updates the collection configuration and emits a `CollectionConfigChanged` event.
-	pub(crate) fn do_force_collection_config(
+	pub(crate) fn do_force_set_product_config(
 		product_id: T::ProductId,
 		config: ProductConfig,
 	) -> DispatchResult {
@@ -153,7 +153,7 @@ impl<T: Config> Pallet<T> {
 	/// associated with the given `collection_id`. If the collection configuration exists, it
 	/// returns `Ok(default_item_settings)`, otherwise, it returns a `DispatchError` with
 	/// `Error::NoConfig`.
-	pub(crate) fn get_default_item_settings(
+	pub(crate) fn get_default_device_settings(
 		product_id: &T::ProductId,
 	) -> Result<DeviceSettings, DispatchError> {
 		let collection_config = Self::get_product_config(product_id)?;

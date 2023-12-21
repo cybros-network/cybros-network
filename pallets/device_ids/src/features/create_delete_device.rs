@@ -151,7 +151,7 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::NoPermission
 		);
 
-		let item_config = DeviceConfig { settings: Self::get_default_item_settings(&product_id)? };
+		let item_config = DeviceConfig { settings: Self::get_default_device_settings(&product_id)? };
 		Self::do_mint(
 			product_id,
 			device_id,
