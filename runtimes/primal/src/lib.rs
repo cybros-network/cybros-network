@@ -352,7 +352,8 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment = 60,
 		SkipFeelessPayment: pallet_skip_feeless_payment = 61,
 		Balances: pallet_balances = 62,
-		Vesting: pallet_vesting = 63,
+		Assets: pallet_assets::<Instance1> = 63,
+		Vesting: pallet_vesting = 64,
 
 		// Governance
 		Treasury: pallet_treasury = 80,
@@ -704,6 +705,7 @@ mod benches {
 		[pallet_utility, Utility]
 		[pallet_multisig, Multisig]
 		[pallet_balances, Balances]
+		[pallet_assets, Assets]
 		[pallet_vesting, Vesting]
 		[pallet_treasury, Treasury]
 		[pallet_identity, Identity]

@@ -45,6 +45,9 @@ mod skip_feeless_payment;
 pub use skip_feeless_payment::*;
 mod vesting;
 pub use vesting::*;
+mod assets;
+pub use assets::*;
+
 mod treasury;
 pub use treasury::*;
 mod identity;
