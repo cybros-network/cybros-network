@@ -240,7 +240,7 @@ impl Default for MintSettings {
 
 /// Attribute namespaces for non-fungible tokens.
 #[derive(
-	Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
+	Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen,
 )]
 pub enum AttributeNamespace<AccountId> {
 	/// An attribute was set by the pallet.
