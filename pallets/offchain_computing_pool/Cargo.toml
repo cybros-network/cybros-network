@@ -27,6 +27,7 @@ frame-benchmarking = { git = "https://github.com/paritytech/polkadot-sdk.git", b
 frame-support = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 frame-system = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 
+pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 pallet-offchain_computing-infra = { path = "../offchain_computing_infra", default-features = false }
 primitives = { package = "pallet-offchain_computing-pool-primitives", path = "./primitives", default-features = false }
 
@@ -50,6 +51,7 @@ std = [
 	"frame-benchmarking?/std",
 	"frame-support/std",
 	"frame-system/std",
+	"pallet-contracts/std",
 	"pallet-offchain_computing-infra/std",
 	"primitives/std",
 ]
@@ -58,11 +60,13 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"pallet-contracts/runtime-benchmarks",
 	"pallet-offchain_computing-infra/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"sp-runtime/try-runtime",
+	"pallet-contracts/try-runtime",
 	"pallet-offchain_computing-infra/try-runtime",
 ]

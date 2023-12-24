@@ -43,7 +43,7 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		ensure!(!ProductCollection::<T>::contains_key(product_id), Error::<T>::ProductIdInUse);
 
-		T::Currency::reserve(&owner, deposit)?;
+		<T as Config>::Currency::reserve(&owner, deposit)?;
 
 		ProductCollection::<T>::insert(
 			product_id,
@@ -121,7 +121,7 @@ impl<T: Config> Pallet<T> {
 
 			for (_, metadata) in DeviceMetadataOf::<T>::drain_prefix(&product_id) {
 				if let Some(depositor) = metadata.deposit.account {
-					T::Currency::unreserve(&depositor, metadata.deposit.amount);
+					<T as Config>::Currency::unreserve(&depositor, metadata.deposit.amount);
 				}
 			}
 
@@ -131,13 +131,13 @@ impl<T: Config> Pallet<T> {
 			for (_, (_, deposit)) in Attribute::<T>::drain_prefix((&product_id,)) {
 				if !deposit.amount.is_zero() {
 					if let Some(account) = deposit.account {
-						T::Currency::unreserve(&account, deposit.amount);
+						<T as Config>::Currency::unreserve(&account, deposit.amount);
 					}
 				}
 			}
 
 			ProductOwnerAccount::<T>::remove(&product.owner, &product_id);
-			T::Currency::unreserve(&product.owner, product.owner_deposit);
+			<T as Config>::Currency::unreserve(&product.owner, product.owner_deposit);
 			ProductConfigOf::<T>::remove(&product_id);
 			let _ = DeviceConfigOf::<T>::clear_prefix(&product_id, witness.device_configs_count, None);
 

@@ -76,7 +76,7 @@ impl<T: Config> Pallet<T> {
 			let mut deposit = Zero::zero();
 			if product_config.is_setting_enabled(ProductSetting::DepositRequired) && !is_root
 			{
-				deposit = T::DepositPerByte::get()
+				deposit = <T as Config>::DepositPerByte::get()
 					.saturating_mul(((data.len()) as u32).into())
 					.saturating_add(T::MetadataDepositBase::get());
 			}
@@ -85,12 +85,12 @@ impl<T: Config> Pallet<T> {
 			let old_depositor = old_deposit.account.unwrap_or(product.owner.clone());
 
 			if depositor != old_depositor {
-				T::Currency::unreserve(&old_depositor, old_deposit.amount);
-				T::Currency::reserve(&depositor, deposit)?;
+				<T as Config>::Currency::unreserve(&old_depositor, old_deposit.amount);
+				<T as Config>::Currency::reserve(&depositor, deposit)?;
 			} else if deposit > old_deposit.amount {
-				T::Currency::reserve(&depositor, deposit - old_deposit.amount)?;
+				<T as Config>::Currency::reserve(&depositor, deposit - old_deposit.amount)?;
 			} else if deposit < old_deposit.amount {
-				T::Currency::unreserve(&depositor, old_deposit.amount - deposit);
+				<T as Config>::Currency::unreserve(&depositor, old_deposit.amount - deposit);
 			}
 
 			if maybe_depositor.is_none() {
@@ -150,7 +150,7 @@ impl<T: Config> Pallet<T> {
 		ensure!(is_root || !is_locked, Error::<T>::LockedDeviceMetadata);
 
 		product.device_metadata_count.saturating_dec();
-		T::Currency::unreserve(&depositor_account, metadata.deposit.amount);
+		<T as Config>::Currency::unreserve(&depositor_account, metadata.deposit.amount);
 
 		if depositor_account == product.owner {
 			product.owner_deposit.saturating_reduce(metadata.deposit.amount);
@@ -203,14 +203,14 @@ impl<T: Config> Pallet<T> {
 			let mut deposit = Zero::zero();
 			if !is_root && product_config.is_setting_enabled(ProductSetting::DepositRequired)
 			{
-				deposit = T::DepositPerByte::get()
+				deposit = <T as Config>::DepositPerByte::get()
 					.saturating_mul(((data.len()) as u32).into())
 					.saturating_add(T::MetadataDepositBase::get());
 			}
 			if deposit > old_deposit {
-				T::Currency::reserve(&details.owner, deposit - old_deposit)?;
+				<T as Config>::Currency::reserve(&details.owner, deposit - old_deposit)?;
 			} else if deposit < old_deposit {
-				T::Currency::unreserve(&details.owner, old_deposit - deposit);
+				<T as Config>::Currency::unreserve(&details.owner, old_deposit - deposit);
 			}
 			details.owner_deposit.saturating_accrue(deposit);
 
@@ -259,7 +259,7 @@ impl<T: Config> Pallet<T> {
 
 		ProductMetadataOf::<T>::try_mutate_exists(product_id, |metadata| {
 			let deposit = metadata.take().ok_or(Error::<T>::UnknownProduct)?.deposit;
-			T::Currency::unreserve(&product.owner, deposit);
+			<T as Config>::Currency::unreserve(&product.owner, deposit);
 			Self::deposit_event(Event::ProductMetadataCleared { product_id });
 			Ok(())
 		})

@@ -133,7 +133,7 @@ impl<T: Config> Pallet<T> {
 			}
 
 			// Move the deposit to the new owner.
-			T::Currency::repatriate_reserved(
+			<T as Config>::Currency::repatriate_reserved(
 				&product.owner,
 				&new_owner,
 				product.owner_deposit,
@@ -207,7 +207,7 @@ impl<T: Config> Pallet<T> {
 			}
 
 			// Move the deposit to the new owner.
-			T::Currency::repatriate_reserved(
+			<T as Config>::Currency::repatriate_reserved(
 				&product.owner,
 				&owner,
 				product.owner_deposit,

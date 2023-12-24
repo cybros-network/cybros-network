@@ -21,14 +21,16 @@ use super::*;
 use crate as pallet_device_ids;
 
 use frame_support::{
-	construct_runtime, derive_impl,
-	traits::{AsEnsureOriginWithArg, ConstU16, ConstU32, ConstU64},
+	construct_runtime, derive_impl, parameter_types,
+	pallet_prelude::Weight,
+	traits::{AsEnsureOriginWithArg, Everything, ConstBool, ConstU16, ConstU32, ConstU64}
 };
 use sp_keystore::{testing::MemoryKeystore, KeystoreExt};
 use sp_runtime::{
-	traits::{IdentifyAccount, IdentityLookup, Verify},
-	BuildStorage, MultiSignature,
+	traits::{Convert, IdentifyAccount, IdentityLookup, Verify},
+	BuildStorage, MultiSignature, Perbill,
 };
+use pallet_contracts::{DefaultAddressGenerator, Frame, Schedule};
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -37,6 +39,9 @@ construct_runtime!(
 	{
 		System: frame_system,
 		Balances: pallet_balances,
+		Timestamp: pallet_timestamp,
+		Randomness: pallet_insecure_randomness_collective_flip,
+		Contracts: pallet_contracts,
 		DeviceIds: pallet_device_ids,
 	}
 );
@@ -46,6 +51,10 @@ pub type Balance = u64;
 pub type Signature = MultiSignature;
 pub type AccountPublic = <Signature as Verify>::Signer;
 pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
+pub(crate) const MILLI_CENTS: Balance = 1;
+pub(crate) const CENTS: Balance = 1_000 * MILLI_CENTS;
+pub(crate) const DOLLARS: Balance = 100 * CENTS;
 
 #[derive_impl(frame_system::config_preludes::TestDefaultConfig as frame_system::DefaultConfig)]
 impl frame_system::Config for Test {
@@ -73,6 +82,66 @@ impl pallet_balances::Config for Test {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type MaxHolds = ConstU32<2>;
+}
+
+impl pallet_timestamp::Config for Test {
+	type Moment = u64;
+	type OnTimestampSet = ();
+	type MinimumPeriod = ConstU64<5>;
+	type WeightInfo = ();
+}
+
+impl pallet_insecure_randomness_collective_flip::Config for Test {}
+
+pub type ContractsBalanceOf<T> = <<T as pallet_contracts::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
+parameter_types! {
+	pub MySchedule: Schedule<Test> = {
+		let schedule = <Schedule<Test>>::default();
+		schedule
+	};
+	pub static DepositPerByte: ContractsBalanceOf<Test> = 1;
+	pub const DepositPerItem: ContractsBalanceOf<Test> = 2;
+	pub static MaxDelegateDependencies: u32 = 32;
+
+	pub static CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(0);
+	// We need this one set high enough for running benchmarks.
+	pub static DefaultDepositLimit: ContractsBalanceOf<Test> = 1 * DOLLARS;
+}
+
+impl Convert<Weight, ContractsBalanceOf<Test>> for Test {
+	fn convert(w: Weight) -> ContractsBalanceOf<Test> {
+		w.ref_time().into()
+	}
+}
+
+impl pallet_contracts::Config for Test {
+	type Time = Timestamp;
+	type Randomness = Randomness;
+	type Currency = Balances;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type CallFilter = Everything;
+	type CallStack = [Frame<Test>; 5];
+	type WeightPrice = Test;
+	type WeightInfo = ();
+	type ChainExtension = ();
+	type Schedule = MySchedule;
+	type DepositPerByte = DepositPerByte;
+	type DepositPerItem = DepositPerItem;
+	type DefaultDepositLimit = DefaultDepositLimit;
+	type AddressGenerator = DefaultAddressGenerator;
+	type MaxCodeLen = ConstU32<{ 123 * 1024 }>;
+	type MaxStorageKeyLen = ConstU32<128>;
+	type UnsafeUnstableInterface = ConstBool<false>;
+	type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type Migrations = ();
+	type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
+	type MaxDelegateDependencies = MaxDelegateDependencies;
+	type Debug = ();
+	type Environment = ();
+	type Xcm = ();
 }
 
 impl pallet_device_ids::Config for Test {

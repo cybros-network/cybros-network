@@ -28,9 +28,13 @@ sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "mast
 sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 sp-std = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 
+pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
+
 [dev-dependencies]
 sp-keystore = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 pallet-balances = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 
 [features]
 default = ["std"]
@@ -46,17 +50,23 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"pallet-contracts/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"pallet-contracts/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
+	"pallet-timestamp/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"sp-runtime/try-runtime",
+	"pallet-contracts/try-runtime",
 	"pallet-balances/try-runtime",
+	"pallet-timestamp/try-runtime",
+	"pallet-insecure-randomness-collective-flip/try-runtime",
 ]

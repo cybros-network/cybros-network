@@ -43,7 +43,7 @@ impl<T: Config> Pallet<T> {
 	///
 	/// Note: For the `CollectionOwner` namespace, the collection/item must have the
 	/// `UnlockedAttributes` setting enabled.
-	/// The deposit for setting an attribute is based on the `T::DepositPerByte` and
+	/// The deposit for setting an attribute is based on the `<T as Config>::DepositPerByte` and
 	/// `T::AttributeDepositBase` configuration.
 	pub(crate) fn do_set_attribute(
 		origin: T::AccountId,
@@ -95,7 +95,7 @@ impl<T: Config> Pallet<T> {
 		if product_config.is_setting_enabled(ProductSetting::DepositRequired) ||
 			namespace != AttributeNamespace::ProductOwner
 		{
-			deposit = T::DepositPerByte::get()
+			deposit = <T as Config>::DepositPerByte::get()
 				.saturating_mul(((key.len() + value.len()) as u32).into())
 				.saturating_add(T::AttributeDepositBase::get());
 		}
@@ -119,13 +119,13 @@ impl<T: Config> Pallet<T> {
 		// and return the deposit to the previous owner.
 		if depositor_has_changed {
 			if let Some(old_depositor) = old_depositor {
-				T::Currency::unreserve(&old_depositor, old_deposit.amount);
+				<T as Config>::Currency::unreserve(&old_depositor, old_deposit.amount);
 			}
-			T::Currency::reserve(&depositor, deposit)?;
+			<T as Config>::Currency::reserve(&depositor, deposit)?;
 		} else if deposit > old_deposit.amount {
-			T::Currency::reserve(&depositor, deposit - old_deposit.amount)?;
+			<T as Config>::Currency::reserve(&depositor, deposit - old_deposit.amount)?;
 		} else if deposit < old_deposit.amount {
-			T::Currency::unreserve(&depositor, old_deposit.amount - deposit);
+			<T as Config>::Currency::unreserve(&depositor, old_deposit.amount - deposit);
 		}
 
 		if is_depositor_product_owner {
@@ -181,7 +181,7 @@ impl<T: Config> Pallet<T> {
 		if let Some((_, deposit)) = attribute {
 			if deposit.account != set_as && deposit.amount != Zero::zero() {
 				if let Some(deposit_account) = deposit.account {
-					T::Currency::unreserve(&deposit_account, deposit.amount);
+					<T as Config>::Currency::unreserve(&deposit_account, deposit.amount);
 				}
 			}
 		} else {
@@ -342,11 +342,11 @@ impl<T: Config> Pallet<T> {
 
 		match deposit.account {
 			Some(deposit_account) => {
-				T::Currency::unreserve(&deposit_account, deposit.amount);
+				<T as Config>::Currency::unreserve(&deposit_account, deposit.amount);
 			},
 			None if namespace == AttributeNamespace::ProductOwner => {
 				product.owner_deposit.saturating_reduce(deposit.amount);
-				T::Currency::unreserve(&product.owner, deposit.amount);
+				<T as Config>::Currency::unreserve(&product.owner, deposit.amount);
 			},
 			_ => (),
 		}
@@ -429,7 +429,7 @@ impl<T: Config> Pallet<T> {
 			ensure!(attributes <= witness.account_attributes, Error::<T>::BadWitness);
 
 			if !deposited.is_zero() {
-				T::Currency::unreserve(&delegate, deposited);
+				<T as Config>::Currency::unreserve(&delegate, deposited);
 			}
 
 			Self::deposit_event(

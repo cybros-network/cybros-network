@@ -91,7 +91,7 @@ impl<T: Config> Pallet<T> {
 					product.device_configs_count.saturating_inc();
 				}
 
-				T::Currency::reserve(&deposit_account, deposit_amount)?;
+				<T as Config>::Currency::reserve(&deposit_account, deposit_amount)?;
 
 				let deposit = DeviceEntryDeposit { account: deposit_account, amount: deposit_amount };
 				let details = DeviceEntry {
@@ -217,7 +217,7 @@ impl<T: Config> Pallet<T> {
 				with_entry(&device)?;
 
 				// Return the deposit.
-				T::Currency::unreserve(&device.deposit.account, device.deposit.amount);
+				<T as Config>::Currency::unreserve(&device.deposit.account, device.deposit.amount);
 				product.devices_count.saturating_dec();
 
 				if remove_config {
@@ -230,7 +230,7 @@ impl<T: Config> Pallet<T> {
 						let depositor_account =
 							metadata.deposit.account.unwrap_or(product.owner.clone());
 
-						T::Currency::unreserve(&depositor_account, metadata.deposit.amount);
+						<T as Config>::Currency::unreserve(&depositor_account, metadata.deposit.amount);
 						product.device_metadata_count.saturating_dec();
 
 						if depositor_account == product.owner {

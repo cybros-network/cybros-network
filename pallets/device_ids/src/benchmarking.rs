@@ -46,7 +46,7 @@ fn simulate_create_product<T: Config>(
 	let caller: T::AccountId = whitelisted_caller();
 	let caller_lookup = T::Lookup::unlookup(caller.clone());
 	let product_id = T::Helper::product(0);
-	T::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
+	<T as Config>::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
 	assert_ok!(ThePallet::<T>::force_create_product(
 		SystemOrigin::Root.into(),
 		caller_lookup.clone(),
@@ -241,7 +241,7 @@ benchmarks! {
 		let caller = T::CreateOrigin::ensure_origin(origin.clone(), &product_id).unwrap();
 		whitelist_account!(caller);
 		let admin = T::Lookup::unlookup(caller.clone());
-		T::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
+		<T as Config>::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
 		let call = Call::<T>::create_product { admin, config: default_product_config::<T>() };
 	}: { call.dispatch_bypass_filter(origin)? }
 	verify {
@@ -313,7 +313,7 @@ benchmarks! {
 
 		let target: T::AccountId = account("target", 0, SEED);
 		let target_lookup = T::Lookup::unlookup(target.clone());
-		T::Currency::make_free_balance_be(&target, T::Currency::minimum_balance());
+		<T as Config>::Currency::make_free_balance_be(&target, <T as Config>::Currency::minimum_balance());
 	}: _(SystemOrigin::Signed(caller.clone()), product_id, device_id, target_lookup)
 	verify {
 		assert_last_event::<T>(Event::DeviceTransferred { product_id, device_id, from: caller, to: target }.into());
@@ -357,7 +357,7 @@ benchmarks! {
 		let (product_id, caller, _) = simulate_create_product::<T>();
 		let target: T::AccountId = account("target", 0, SEED);
 		let target_lookup = T::Lookup::unlookup(target.clone());
-		T::Currency::make_free_balance_be(&target, T::Currency::minimum_balance());
+		<T as Config>::Currency::make_free_balance_be(&target, <T as Config>::Currency::minimum_balance());
 		let origin = SystemOrigin::Signed(target.clone()).into();
 		ThePallet::<T>::accept_product_ownership(origin, Some(product_id))?;
 	}: _(SystemOrigin::Signed(caller), product_id, target_lookup)
@@ -386,7 +386,7 @@ benchmarks! {
 			T::ForceOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
 		let target: T::AccountId = account("target", 0, SEED);
 		let target_lookup = T::Lookup::unlookup(target.clone());
-		T::Currency::make_free_balance_be(&target, T::Currency::minimum_balance());
+		<T as Config>::Currency::make_free_balance_be(&target, <T as Config>::Currency::minimum_balance());
 		let call = Call::<T>::force_set_product_owner {
 			product_id,
 			owner: target_lookup,
@@ -506,7 +506,7 @@ benchmarks! {
 			device_id,
 			target_lookup.clone(),
 		)?;
-		T::Currency::make_free_balance_be(&target, DepositBalanceOf::<T>::max_value());
+		<T as Config>::Currency::make_free_balance_be(&target, DepositBalanceOf::<T>::max_value());
 		let value: BoundedVec<_, _> = vec![0u8; T::ValueLimit::get() as usize].try_into().unwrap();
 		for i in 0..n {
 			let key = make_filled_vec(i as u16, T::KeyLimit::get() as usize);
@@ -570,7 +570,7 @@ benchmarks! {
 
 	accept_product_ownership {
 		let caller: T::AccountId = whitelisted_caller();
-		T::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
+		<T as Config>::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
 		let product_id = T::Helper::product(0);
 	}: _(SystemOrigin::Signed(caller.clone()), Some(product_id))
 	verify {
@@ -605,7 +605,7 @@ benchmarks! {
 		let n in 0 .. T::MaxAttributesPerCall::get() as u32;
 		let caller_public = sr25519_generate(0.into(), None);
 		let caller = MultiSigner::Sr25519(caller_public).into_account().into();
-		T::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
+		<T as Config>::Currency::make_free_balance_be(&caller, DepositBalanceOf::<T>::max_value());
 		let caller_lookup = T::Lookup::unlookup(caller.clone());
 
 		let product_id = T::Helper::product(0);
@@ -635,7 +635,7 @@ benchmarks! {
 		let signature = MultiSignature::Sr25519(sr25519_sign(0.into(), &caller_public, &message).unwrap());
 
 		let target: T::AccountId = account("target", 0, SEED);
-		T::Currency::make_free_balance_be(&target, DepositBalanceOf::<T>::max_value());
+		<T as Config>::Currency::make_free_balance_be(&target, DepositBalanceOf::<T>::max_value());
 		frame_system::Pallet::<T>::set_block_number(One::one());
 	}: _(SystemOrigin::Signed(target.clone()), Box::new(mint_data), signature.into(), caller)
 	verify {
@@ -653,7 +653,7 @@ benchmarks! {
 		let signer_public = sr25519_generate(0.into(), None);
 		let signer: T::AccountId = MultiSigner::Sr25519(signer_public).into_account().into();
 
-		T::Currency::make_free_balance_be(&device_owner, DepositBalanceOf::<T>::max_value());
+		<T as Config>::Currency::make_free_balance_be(&device_owner, DepositBalanceOf::<T>::max_value());
 
 		let device_id = T::Helper::device(0);
 		assert_ok!(ThePallet::<T>::force_mint_device(

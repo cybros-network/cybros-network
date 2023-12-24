@@ -32,6 +32,8 @@ use scale_info::{build::Fields, meta_type, Path, Type, TypeInfo, TypeParameter};
 /// A type alias for handling balance deposits.
 pub(super) type DepositBalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+// pub type ContractBalanceOf<T> =
+// 	<<T as pallet_contracts::Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 /// A type alias representing the details of a collection.
 pub(super) type ProductEntryFor<T> =
 	ProductEntry<<T as frame_system::Config>::AccountId, DepositBalanceOf<T>>;
