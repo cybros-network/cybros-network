@@ -33,15 +33,15 @@ use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 
 use runtime_primitives::opaque::Block;
-use primal_runtime::RuntimeApi;
+use origin_runtime::RuntimeApi;
 
-/// Host functions required for the Primal runtime and Substrate node.
+/// Host functions required for the Origin runtime and Substrate node.
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type HostFunctions = (
 	sp_io::SubstrateHostFunctions,
 );
 
-/// Host functions required for the Primal runtime and Substrate node.
+/// Host functions required for the Origin runtime and Substrate node.
 #[cfg(feature = "runtime-benchmarks")]
 pub type HostFunctions = (
 	sp_io::SubstrateHostFunctions,
@@ -81,46 +81,46 @@ pub fn fetch_nonce(client: &FullClient, account: sp_core::sr25519::Pair) -> u32 
 pub fn create_extrinsic(
 	client: &FullClient,
 	sender: sp_core::sr25519::Pair,
-	function: impl Into<primal_runtime::RuntimeCall>,
+	function: impl Into<origin_runtime::RuntimeCall>,
 	nonce: Option<u32>,
-) -> primal_runtime::UncheckedExtrinsic {
+) -> origin_runtime::UncheckedExtrinsic {
 	let function = function.into();
 	let genesis_hash = client.block_hash(0).ok().flatten().expect("Genesis block exists; qed");
 	let best_hash = client.chain_info().best_hash;
 	let best_block = client.chain_info().best_number;
 	let nonce = nonce.unwrap_or_else(|| fetch_nonce(client, sender.clone()));
 
-	let period = primal_runtime::BlockHashCount::get()
+	let period = origin_runtime::BlockHashCount::get()
 		.checked_next_power_of_two()
 		.map(|c| c / 2)
 		.unwrap_or(2) as u64;
 	let tip = 0;
-	let extra: primal_runtime::SignedExtra =
+	let extra: origin_runtime::SignedExtra =
 		(
-			frame_system::CheckNonZeroSender::<primal_runtime::Runtime>::new(),
-			frame_system::CheckSpecVersion::<primal_runtime::Runtime>::new(),
-			frame_system::CheckTxVersion::<primal_runtime::Runtime>::new(),
-			frame_system::CheckGenesis::<primal_runtime::Runtime>::new(),
-			frame_system::CheckEra::<primal_runtime::Runtime>::from(generic::Era::mortal(
+			frame_system::CheckNonZeroSender::<origin_runtime::Runtime>::new(),
+			frame_system::CheckSpecVersion::<origin_runtime::Runtime>::new(),
+			frame_system::CheckTxVersion::<origin_runtime::Runtime>::new(),
+			frame_system::CheckGenesis::<origin_runtime::Runtime>::new(),
+			frame_system::CheckEra::<origin_runtime::Runtime>::from(generic::Era::mortal(
 				period,
 				best_block.saturated_into(),
 			)),
-			frame_system::CheckNonce::<primal_runtime::Runtime>::from(nonce),
-			frame_system::CheckWeight::<primal_runtime::Runtime>::new(),
+			frame_system::CheckNonce::<origin_runtime::Runtime>::from(nonce),
+			frame_system::CheckWeight::<origin_runtime::Runtime>::new(),
 			pallet_skip_feeless_payment::SkipCheckIfFeeless::from(
 				pallet_transaction_payment::ChargeTransactionPayment::<
-					primal_runtime::Runtime,
+					origin_runtime::Runtime,
 				>::from(tip),
 			),
 		);
 
-	let raw_payload = primal_runtime::SignedPayload::from_raw(
+	let raw_payload = origin_runtime::SignedPayload::from_raw(
 		function.clone(),
 		extra.clone(),
 		(
 			(),
-			primal_runtime::VERSION.spec_version,
-			primal_runtime::VERSION.transaction_version,
+			origin_runtime::VERSION.spec_version,
+			origin_runtime::VERSION.transaction_version,
 			genesis_hash,
 			best_hash,
 			(),
@@ -130,10 +130,10 @@ pub fn create_extrinsic(
 	);
 	let signature = raw_payload.using_encoded(|e| sender.sign(e));
 
-	primal_runtime::UncheckedExtrinsic::new_signed(
+	origin_runtime::UncheckedExtrinsic::new_signed(
 		function,
 		sp_runtime::AccountId32::from(sender.public()).into(),
-		primal_runtime::Signature::Sr25519(signature),
+		origin_runtime::Signature::Sr25519(signature),
 		extra,
 	)
 }
@@ -181,7 +181,7 @@ pub fn new_partial(
 	let executor = sc_service::new_wasm_executor(&config);
 
 	let (client, backend, keystore_container, task_manager) =
-		sc_service::new_full_parts::<Block, primal_runtime::RuntimeApi, _>(
+		sc_service::new_full_parts::<Block, origin_runtime::RuntimeApi, _>(
 			config,
 			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 			executor,

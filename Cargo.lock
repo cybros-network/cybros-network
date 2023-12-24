@@ -1656,7 +1656,7 @@ version = "0.0.1-dev"
 dependencies = [
  "clap",
  "clap_complete",
- "cybros-primal-runtime",
+ "cybros-origin-runtime",
  "cybros-runtime-primitives",
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -1708,7 +1708,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cybros-primal-runtime"
+name = "cybros-origin-runtime"
 version = "0.0.1-dev"
 dependencies = [
  "cybros-runtime-primitives",

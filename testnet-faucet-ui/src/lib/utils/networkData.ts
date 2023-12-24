@@ -26,7 +26,7 @@ export const Cybros: NetworkData = {
   networkName: "Cybros",
   currency: "CBT",
   chains: [
-    { name: "Dev (the Primal)", id: -1 },
+    { name: "Dev (the Origin)", id: -1 },
   ],
   endpoint: faucetUrl("https://faucet-api.cybros.network/drip/web"),
   explorer: "https://scan.cybros.network",

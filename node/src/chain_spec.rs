@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
-use primal_runtime::{AccountId, Block, RuntimeGenesisConfig, wasm_binary_unwrap};
+use origin_runtime::{AccountId, Block, RuntimeGenesisConfig, wasm_binary_unwrap};
 use sc_chain_spec::{ChainSpecExtension, Properties};
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -92,8 +92,8 @@ pub fn development() -> Result<ChainSpec, String> {
 		serde_json::from_slice(genesis_profile_in_bytes).expect("Bad chain profile");
 
 	chain_spec_for(
-		"Cybros Primal development",
-		"cybros_primal_dev",
+		"Cybros Origin development",
+		"cybros_origin_dev",
 		ChainType::Development,
 		genesis_profile,
 	)
@@ -107,8 +107,8 @@ pub fn local() -> Result<ChainSpec, String> {
 		serde_json::from_slice(genesis_profile_in_bytes).expect("Bad chain profile");
 
 	chain_spec_for(
-		"Cybros Primal local",
-		"cybros_primal_local",
+		"Cybros Origin local",
+		"cybros_origin_local",
 		ChainType::Local,
 		genesis_profile
 	)

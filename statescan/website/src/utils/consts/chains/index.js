@@ -1,10 +1,10 @@
-import { ReactComponent as CybrosPrimalIcon } from "../../../components/icons/cybros-primal.svg";
+import { ReactComponent as CybrosOriginIcon } from "../../../components/icons/cybros-origin.svg";
 
-const cybrosPrimal = {
-  name: "Cybros Primal",
-  icon: <CybrosPrimalIcon />,
+const cybrosOrigin = {
+  name: "Cybros Origin",
+  icon: <CybrosOriginIcon />,
   identity: "polkadot",
-  value: "cybros-primal",
+  value: "cybros-origin",
   chain: "cybros",
   symbol: "CBT",
   decimals: 12,
@@ -21,7 +21,7 @@ const cybrosPrimal = {
 };
 
 const chains = {
-  "cybros-primal": cybrosPrimal
+  "cybros-origin": cybrosOrigin
 };
 
 export default chains;

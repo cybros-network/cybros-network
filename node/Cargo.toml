@@ -87,7 +87,7 @@ pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/polkadot
 
 # Local Dependencies
 runtime-primitives = { package = "cybros-runtime-primitives", path = "../runtime-primitives" }
-primal-runtime = { package = "cybros-primal-runtime", path = "../runtimes/primal" }
+origin-runtime = { package = "cybros-origin-runtime", path = "../runtimes/origin" }
 
 [build-dependencies]
 substrate-build-script-utils = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", optional = true }
@@ -115,5 +115,5 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"node-inspect?/runtime-benchmarks",
 	"pallet-skip-feeless-payment/runtime-benchmarks",
-	"primal-runtime/runtime-benchmarks",
+	"origin-runtime/runtime-benchmarks",
 ]

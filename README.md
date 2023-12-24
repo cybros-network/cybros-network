@@ -165,7 +165,7 @@ We plan to develop a decentralized FaaS-like platform for decentralized job exec
 - `/pallets`
   - `offchain_computing_workers` The pallet for managing Implementations, Builds, and workers
   - `offchain_computing` The pallet for managing pools, jobs, and scheduling
-- `/runtimes/primal` The runtime of the Primal development network
+- `/runtimes/origin` The runtime of the Origin development network
 - `/protocol_impl` A demo Implementation build written in Deno
   - `examples/simple_echo` The simplest sample, it will echo the input as output
   - `examples/echo` A complex echo sample that supports e2e encryption.

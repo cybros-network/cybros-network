@@ -103,8 +103,8 @@ impl_opaque_keys! {
 // https://docs.substrate.io/main-docs/build/upgrade#runtime-versioning
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("primal"),
-	impl_name: create_runtime_str!("cybros-primal"),
+	spec_name: create_runtime_str!("origin"),
+	impl_name: create_runtime_str!("cybros-origin"),
 	authoring_version: 1,
 	spec_version: 100,
 	impl_version: 1,

@@ -1,7 +1,7 @@
 [package]
-name = "cybros-primal-runtime"
+name = "cybros-origin-runtime"
 version = "0.0.1-dev"
-description = "Cybros Primal runtime"
+description = "Cybros Origin runtime"
 authors.workspace = true
 repository.workspace = true
 license.workspace = true

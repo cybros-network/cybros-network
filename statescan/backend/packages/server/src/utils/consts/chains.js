@@ -1,9 +1,9 @@
 const chains = Object.freeze({
-  "cybros-primal": "cybros-primal",
+  "cybros-origin": "cybros-origin",
 });
 
 const ss58Format = Object.freeze({
-  [chains["cybros-primal"]]: 42,
+  [chains["cybros-origin"]]: 42,
 });
 
 function getSs58Format(chain) {

@@ -28,7 +28,7 @@ use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
 
 use runtime_primitives::{constants::currency::EXISTENTIAL_DEPOSIT, opaque::Block};
-use primal_runtime::RuntimeApi;
+use origin_runtime::RuntimeApi;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {

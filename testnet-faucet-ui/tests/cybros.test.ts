@@ -1,7 +1,7 @@
 import { FaucetTests } from "./faucet.js";
 
 const chains = [
-  { name: "Dev (the Primal)", id: -1 },
+  { name: "Dev (the Origin)", id: -1 },
 ];
 
 const tests = new FaucetTests({
