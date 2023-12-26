@@ -1,10 +1,11 @@
 import * as log from "https://deno.land/std/log/mod.ts";
 import * as path from "https://deno.land/std/path/mod.ts";
 import {loadSync as loadEnvSync} from "https://deno.land/std/dotenv/mod.ts";
-import {crypto, toHashString} from "https://deno.land/std/crypto/mod.ts"
-import {decode as decodeBase64} from 'https://deno.land/std/encoding/base64.ts';
+import {crypto} from "https://deno.land/std/crypto/mod.ts"
+import {encodeHex} from "https://deno.land/std/encoding/hex.ts"
+import {decodeBase64} from 'https://deno.land/std/encoding/base64.ts';
 
-import { createCanvas, loadImage as loadImageForCanvas } from "https://deno.land/x/canvas/mod.ts";
+import {createCanvas, loadImage as loadImageForCanvas} from "https://deno.land/x/canvas/mod.ts";
 
 // import { S3Client, PutObjectCommand } from "npm:@aws-sdk/client-s3";
 // import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner";
@@ -467,7 +468,7 @@ if (!isProd) {
 }
 
 // Upload image
-const imageHash = toHashString(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(image)));
+const imageHash = encodeHex(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(image)));
 if (imageUploadUrl.length === 0 && s3Client) {
   // imageUploadUrl = await getSignedUrl(
   //   s3Client,
@@ -493,7 +494,7 @@ if (!isProd) {
 }
 
 // Upload proof
-const proofHash = toHashString(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(responsePayload)));
+const proofHash = encodeHex(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(responsePayload)));
 if (proofUploadUrl.length === 0 && s3Client) {
   // proofUploadUrl = await getSignedUrl(
   //   s3Client,
