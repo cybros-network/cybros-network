@@ -27,18 +27,28 @@ impl<T: Config> Pallet<T> {
 		applicable_scope: ApplicableScope,
 		start_block: Option<BlockNumberFor<T>>,
 		end_block: Option<BlockNumberFor<T>>,
+		settlement_contract: Option<T::AccountId>
 	) -> DispatchResult {
 		ensure!(
 			!JobPolicies::<T>::contains_key(&pool_info.id, &policy_id),
 			Error::<T>::PolicyIdTaken
 		);
 
-		let policy = JobPolicy::<T::PolicyId, BlockNumberFor<T>> {
+		if let Some(contract_address) = settlement_contract.clone() {
+			// TODO: Need find a way to validate the contract
+			ensure!(
+				pallet_contracts::Pallet::<T>::code_hash(&contract_address).is_some(),
+				Error::<T>::SettlementContractNotFound
+			);
+		}
+
+		let policy = JobPolicy::<T::PolicyId, BlockNumberFor<T>, T::AccountId> {
 			id: policy_id.clone(),
 			enabled: true,
 			applicable_scope: applicable_scope.clone(),
 			start_block,
 			end_block,
+			settlement_contract: settlement_contract.clone(),
 			jobs_count: 0,
 		};
 		JobPolicies::<T>::insert(&pool_info.id, &policy_id, policy);
@@ -53,6 +63,7 @@ impl<T: Config> Pallet<T> {
 			applicable_scope,
 			start_block,
 			end_block,
+			settlement_contract,
 		});
 		Ok(())
 	}

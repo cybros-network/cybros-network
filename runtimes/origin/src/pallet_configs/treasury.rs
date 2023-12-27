@@ -20,7 +20,7 @@ use crate::*;
 use frame_support::{
 	parameter_types,
 	PalletId,
-	traits::tokens::{PayFromAccount, UnityAssetBalanceConversion}
+	traits::tokens::{PayFromAccount, UnityAssetBalanceConversion},
 };
 use frame_system::{EnsureRoot, EnsureWithSuccess};
 use sp_runtime::{Percent, traits::IdentityLookup};
@@ -42,7 +42,7 @@ parameter_types! {
 }
 
 impl pallet_treasury::Config for Runtime {
-	type Currency = pallet_balances::Pallet<Runtime>;
+	type Currency = Balances;
 	type ApproveOrigin = EnsureRoot<AccountId>;
 	type RejectOrigin = EnsureRoot<AccountId>;
 	type RuntimeEvent = RuntimeEvent;
@@ -61,7 +61,7 @@ impl pallet_treasury::Config for Runtime {
 	type AssetKind = ();
 	type Beneficiary = AccountId;
 	type BeneficiaryLookup = IdentityLookup<Self::Beneficiary>;
-	type Paymaster = PayFromAccount<pallet_balances::Pallet<Runtime>, TreasuryAccount>;
+	type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
 	type BalanceConverter = UnityAssetBalanceConversion;
 	type PayoutPeriod = SpendPayoutPeriod;
 	#[cfg(feature = "runtime-benchmarks")]

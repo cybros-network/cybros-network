@@ -29,7 +29,7 @@ pub use pallet::*;
 pub use primitives::*;
 
 /// The log target of this pallet.
-pub const LOG_TARGET: &str = "runtime::offchain_computing-pool";
+pub const LOG_TARGET: &str = "runtime::offchain-computing_pool";
 
 // Syntactic sugar for logging.
 #[macro_export]
@@ -51,8 +51,6 @@ use sp_runtime::{
 	SaturatedConversion,
 };
 
-use pallet_contracts::{CollectEvents, DebugInfo, Determinism};
-
 pub(crate) use frame_support::traits::{
 	fungible::{
 		Inspect as InspectFungible, InspectHold as InspectHoldFungible, Mutate as MutateFungible,
@@ -65,10 +63,10 @@ pub(crate) use pallet_offchain_computing_infra::OffchainWorkerLifecycleHooks;
 
 pub(crate) type PalletInfra<T> = pallet_offchain_computing_infra::Pallet<T>;
 
-pub type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
-pub type BalanceOf<T> =
+pub(crate) type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
+pub(crate) type BalanceOf<T> =
 	<<T as Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
-pub type ContractBalanceOf<T> =
+pub(crate) type ContractBalanceOf<T> =
 	<<T as pallet_contracts::Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[frame_support::pallet]
@@ -244,6 +242,7 @@ pub mod pallet {
 			applicable_scope: ApplicableScope,
 			start_block: Option<BlockNumberFor<T>>,
 			end_block: Option<BlockNumberFor<T>>,
+			settlement_contract: Option<T::AccountId>,
 		},
 		AccountAuthorized {
 			pool_id: T::PoolId,
@@ -362,6 +361,8 @@ pub mod pallet {
 		JobAlreadyAssigned,
 		UnsupportedImplSpecVersion,
 		InvalidImplSpecVersionRange,
+		SettlementContractNotFound,
+		SettlementContractCallFailed,
 	}
 
 	#[pallet::composite_enum]
@@ -399,7 +400,7 @@ pub mod pallet {
 		T::PoolId,
 		Blake2_128Concat,
 		T::PolicyId,
-		JobPolicy<T::PolicyId, BlockNumberFor<T>>,
+		JobPolicy<T::PolicyId, BlockNumberFor<T>, T::AccountId>,
 		OptionQuery,
 	>;
 
@@ -670,6 +671,7 @@ pub mod pallet {
 			applicable_scope: ApplicableScope,
 			start_block: Option<BlockNumberFor<T>>,
 			end_block: Option<BlockNumberFor<T>>,
+			settlement_contract: Option<T::AccountId>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -688,6 +690,7 @@ pub mod pallet {
 				applicable_scope,
 				start_block,
 				end_block,
+				settlement_contract,
 			)?;
 
 			let next_id = policy_id.increment();
@@ -984,11 +987,14 @@ pub mod pallet {
 
 		#[pallet::call_index(19)]
 		#[pallet::weight({0})]
-		pub fn call_contract(
+		pub fn test_call_contract(
 			origin: OriginFor<T>,
-			dest: T::AccountId, // <- This is the address of the deployed contract we're calling
+			dest: AccountIdLookupOf<T>, // <- This is the address of the deployed contract we're calling
 		) -> DispatchResult {
+			use pallet_contracts::{CollectEvents, DebugInfo, Determinism};
+
 			let who = ensure_signed(origin)?;
+			let dest = T::Lookup::lookup(dest)?;
 
 			// Amount to transfer to the message. Not gonna transfer anything here, so we'll
 			// leave this as `0`.
@@ -996,29 +1002,31 @@ pub mod pallet {
 
 			// You'll have to play around with this depending on your contract. I don't recommend
 			// hardcoding it but for demo purposes this'll do the trick
-			let gas_limit = Weight::zero();
+			let gas_limit: Weight = Weight::from_parts(1_000_000_000u64, u64::from(T::MaxCodeLen::get()) * 2);
 
 			// Remember, we pulled this out from the `metadata.json` file.
 			//
 			// Again, probably shouldn't be hardcoded but :shrug:
-			let mut selector: Vec<u8> = [0x63, 0x3A, 0xA5, 0x51].into();
-			let mut message_arg = 15663040u32.encode();
+			let mut selector: Vec<u8> = [0x00, 0x00, 0x00, 0x00].into();
 
 			let mut data = Vec::new();
 			data.append(&mut selector);
-			data.append(&mut message_arg);
+			data.append(&mut 1u32.encode());
+			data.append(&mut 1u32.encode());
 
-			pallet_contracts::Pallet::<T>::bare_call(
+			let exec_result = pallet_contracts::Pallet::<T>::bare_call(
 				who,
-				dest.clone(),
+				dest,
 				value,
 				gas_limit,
 				None,
 				data,
-				DebugInfo::Skip,
-				CollectEvents::Skip,
+				DebugInfo::UnsafeDebug, // DebugInfo::Skip,
+				CollectEvents::UnsafeCollect, // CollectEvents::Skip,
 				Determinism::Enforced,
-			).result?;
+			);
+			log!(debug, "{:?}", exec_result);
+			exec_result.result?;
 
 			Ok(())
 		}

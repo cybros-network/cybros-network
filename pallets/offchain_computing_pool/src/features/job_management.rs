@@ -25,7 +25,7 @@ impl<T: Config> Pallet<T> {
 	#[allow(clippy::too_many_arguments)]
 	pub(crate) fn do_create_job(
 		pool_info: PoolInfo<T::PoolId, T::AccountId, BalanceOf<T>, T::ImplId>,
-		policy_info: JobPolicy<T::PolicyId, BlockNumberFor<T>>,
+		policy_info: JobPolicy<T::PolicyId, BlockNumberFor<T>, T::AccountId>,
 		job_id: T::JobId,
 		unique_track_id: Option<UniqueTrackId>,
 		beneficiary: T::AccountId,
@@ -55,7 +55,7 @@ impl<T: Config> Pallet<T> {
 		)?;
 
 		let input_deposit = T::JobStorageDepositPerByte::get().saturating_mul(
-			((input_data.as_ref().map(|x| x.len()).unwrap_or_default()) as u32).into(),
+			(input_data.as_ref().map(|x| x.len()).unwrap_or_default() as u32).into(),
 		);
 		<T as Config>::Currency::hold(
 			&HoldReason::JobStorageReserve.into(),
@@ -96,6 +96,41 @@ impl<T: Config> Pallet<T> {
 			};
 			JobInputs::<T>::insert(&pool_info.id, &job_id, input);
 		}
+
+		// TODO:
+		// if let Some(settlement_contract) = policy_info.settlement_contract {
+		// 	use pallet_contracts::{CollectEvents, DebugInfo, Determinism};
+		//
+		// 	// Amount to transfer to the message. Not gonna transfer anything here, so we'll
+		// 	// leave this as `0`.
+		// 	let value: ContractBalanceOf<T> = Default::default();
+		//
+		// 	// You'll have to play around with this depending on your contract. I don't recommend
+		// 	// hard coding it but for demo purposes this'll do the trick
+		// 	let gas_limit = Weight::zero();
+		//
+		// 	// Remember, we pulled this out from the `metadata.json` file.
+		// 	//
+		// 	// Again, probably shouldn't be hardcoded but :shrug:
+		// 	let mut selector: Vec<u8> = [0x00, 0x00, 0x00, 0x01].into();
+		//
+		// 	let mut data = Vec::new();
+		// 	data.append(&mut selector);
+		// 	data.append(&mut pool_info.id.clone());
+		// 	data.append(&mut job.id.clone());
+		//
+		// 	pallet_contracts::Pallet::<T>::bare_call(
+		// 		depositor,
+		// 		settlement_contract,
+		// 		value,
+		// 		gas_limit,
+		// 		None,
+		// 		data,
+		// 		DebugInfo::Skip,
+		// 		CollectEvents::Skip,
+		// 		Determinism::Enforced,
+		// 	).result?;
+		// }
 
 		let mut new_pool_info = pool_info.clone();
 		new_pool_info.jobs_count += 1;

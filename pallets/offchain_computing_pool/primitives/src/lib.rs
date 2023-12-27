@@ -38,19 +38,20 @@ pub enum ApplicableScope {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct JobPolicy<PoolId, BlockNumber> {
+pub struct JobPolicy<PoolId, BlockNumber, AccountId> {
 	/// Policy's id
 	pub id: PoolId,
 	/// This policy is available to use
 	pub enabled: bool,
 	/// Who can applicable with the policy
 	pub applicable_scope: ApplicableScope,
-	// TODO：rates strategy
-	// TODO: allow create scheduled job and rule
 	/// When the policy starts.
 	pub start_block: Option<BlockNumber>,
 	/// When the policy ends.
 	pub end_block: Option<BlockNumber>,
+	// TODO：rates strategy
+	// TODO: allow create scheduled job and rule
+	pub settlement_contract: Option<AccountId>,
 	pub jobs_count: u32,
 }
 
