@@ -333,7 +333,7 @@ impl OnUnbalanced<NegativeImbalance> for DealWithFees {
 
 // Create the runtime by composing the FRAME pallet_configs that were previously configured.
 construct_runtime!(
-	pub struct Runtime {
+	pub enum Runtime {
 		// System support
 		System: frame_system = 0,
 		Timestamp: pallet_timestamp = 1,

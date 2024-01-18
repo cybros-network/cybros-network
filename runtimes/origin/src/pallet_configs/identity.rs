@@ -17,7 +17,7 @@
 // along with Cybros.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::*;
-use frame_support::parameter_types;
+use frame_support::{traits::ConstU32, parameter_types};
 use frame_system::EnsureRoot;
 use pallet_identity::legacy::IdentityInfo;
 
@@ -34,15 +34,21 @@ parameter_types! {
 
 impl pallet_identity::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Currency = pallet_balances::Pallet<Runtime>;
+	type Currency = Balances;
 	type BasicDeposit = BasicDeposit;
 	type ByteDeposit = ByteDeposit;
 	type SubAccountDeposit = SubAccountDeposit;
 	type MaxSubAccounts = MaxSubAccounts;
 	type IdentityInformation = IdentityInfo<MaxAdditionalFields>;
 	type MaxRegistrars = MaxRegistrars;
-	type Slashed = pallet_treasury::Pallet<Runtime>;
+	type Slashed = Treasury;
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type RegistrarOrigin = EnsureRoot<AccountId>;
+	type OffchainSignature = Signature;
+	type SigningPublicKey = <Signature as traits::Verify>::Signer;
+	type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
+	type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
+	type MaxSuffixLength = ConstU32<7>;
+	type MaxUsernameLength = ConstU32<32>;
 	type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
 }

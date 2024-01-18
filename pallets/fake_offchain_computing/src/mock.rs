@@ -43,7 +43,7 @@ pub(crate) const DOLLARS: Balance = 100 * CENTS;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-	pub struct Test {
+	pub enum Test {
 		System: frame_system,
 		Balances: pallet_balances,
 		Timestamp: pallet_timestamp,
