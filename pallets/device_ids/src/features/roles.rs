@@ -19,7 +19,7 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
-use sp_std::collections::btree_map::BTreeMap;
+use alloc::collections::btree_map::BTreeMap;
 
 impl<T: Config> Pallet<T> {
 	/// Set the team roles for a specific collection.

@@ -18,6 +18,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
 mod features;
 
 #[cfg(test)]
@@ -42,6 +44,7 @@ macro_rules! log {
 	};
 }
 
+use alloc::vec::Vec;
 use frame_support::{
 	traits::{Incrementable, UnixTime},
 	transactional,
@@ -74,7 +77,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use sp_std::{fmt::Display, prelude::*};
+	use core::fmt::Display;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);

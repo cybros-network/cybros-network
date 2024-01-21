@@ -22,7 +22,6 @@ scale-codec = { package = "parity-scale-codec", version = "3.6.5", default-featu
 scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
 
 sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
-sp-std = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 frame-benchmarking = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false, optional = true }
 frame-support = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
 frame-system = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
@@ -47,7 +46,6 @@ std = [
 	"scale-codec/std",
 	"scale-info/std",
 	"sp-runtime/std",
-	"sp-std/std",
 	"frame-benchmarking?/std",
 	"frame-support/std",
 	"frame-system/std",

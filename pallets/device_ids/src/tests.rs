@@ -32,7 +32,6 @@ use sp_runtime::{
 	traits::IdentifyAccount,
 	MultiSignature, MultiSigner,
 };
-use sp_std::prelude::*;
 
 type AccountIdOf<Test> = <Test as frame_system::Config>::AccountId;
 

@@ -18,7 +18,7 @@
 
 use crate::*;
 use frame_support::pallet_prelude::*;
-use sp_std::cmp::Ordering;
+use core::cmp::Ordering;
 
 impl<T: Config> Pallet<T> {
 	pub fn do_register_impl(

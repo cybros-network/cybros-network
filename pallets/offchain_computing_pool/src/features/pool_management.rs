@@ -19,7 +19,7 @@
 use crate::*;
 use frame_support::pallet_prelude::*;
 use sp_runtime::{traits::Zero, Saturating};
-use sp_std::cmp::Ordering;
+use core::cmp::Ordering;
 
 impl<T: Config> Pallet<T> {
 	pub(crate) fn do_create_pool(

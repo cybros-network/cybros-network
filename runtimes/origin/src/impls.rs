@@ -20,5 +20,3 @@
 
 #[allow(unused_imports)]
 use frame_support::pallet_prelude::*;
-#[allow(unused_imports)]
-use sp_std::prelude::*;

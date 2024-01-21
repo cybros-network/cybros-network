@@ -42,7 +42,7 @@ macro_rules! impl_codec_bitflags {
 		impl Decode for $wrapper {
 			fn decode<I: scale_codec::Input>(
 				input: &mut I,
-			) -> sp_std::result::Result<Self, scale_codec::Error> {
+			) -> core::result::Result<Self, scale_codec::Error> {
 				let field = <$size>::decode(input)?;
 				Ok(Self(BitFlags::from_bits(field as $size).map_err(|_| "invalid value")?))
 			}

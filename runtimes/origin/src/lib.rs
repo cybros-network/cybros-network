@@ -39,6 +39,9 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 	)
 }
 
+extern crate alloc;
+
+use alloc::{boxed::Box, vec::Vec};
 use static_assertions::const_assert;
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -51,7 +54,6 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	generic::Era, ApplyExtrinsicResult, SaturatedConversion
 };
-use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
@@ -395,7 +397,7 @@ impl_runtime_apis! {
 			Runtime::metadata_at_version(version)
 		}
 
-		fn metadata_versions() -> sp_std::vec::Vec<u32> {
+		fn metadata_versions() -> alloc::vec::Vec<u32> {
 			Runtime::metadata_versions()
 		}
 	}

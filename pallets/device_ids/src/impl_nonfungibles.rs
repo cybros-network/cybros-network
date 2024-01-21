@@ -25,7 +25,6 @@ use frame_support::{
 	BoundedSlice,
 };
 use sp_runtime::{DispatchError, DispatchResult};
-use sp_std::prelude::*;
 
 impl<T: Config> Inspect<<T as frame_system::Config>::AccountId> for Pallet<T> {
 	type ItemId = T::DeviceId;

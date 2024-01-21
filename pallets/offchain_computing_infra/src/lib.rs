@@ -64,7 +64,6 @@ use sp_runtime::{
 	traits::{StaticLookup, Zero},
 	SaturatedConversion, Saturating,
 };
-use sp_std::prelude::*;
 
 pub(crate) use frame_support::traits::{
 	fungible::{
@@ -86,7 +85,7 @@ mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::traits::AtLeast32BitUnsigned;
-	use sp_std::fmt::Display;
+	use core::fmt::Display;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
