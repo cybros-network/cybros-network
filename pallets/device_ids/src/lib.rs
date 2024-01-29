@@ -55,10 +55,7 @@ use frame_support::traits::{
     tokens::Locker, BalanceStatus::Reserved, Currency, EnsureOriginWithArg, Incrementable,
     ReservableCurrency,
 };
-use sp_runtime::{
-    traits::{IdentifyAccount, Saturating, StaticLookup, Verify, Zero},
-    RuntimeDebug,
-};
+use sp_runtime::traits::{IdentifyAccount, Saturating, StaticLookup, Verify, Zero};
 
 pub use pallet::*;
 pub use types::*;

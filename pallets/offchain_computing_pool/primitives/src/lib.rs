@@ -20,13 +20,13 @@
 
 use scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_core::{bounded::BoundedVec, ConstU32, RuntimeDebug};
+use sp_core::{bounded::BoundedVec, ConstU32};
 
 pub use base_primitives::*;
 
 pub type UniqueTrackId = BoundedVec<u8, ConstU32<16>>;
 
-#[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
+#[derive(Clone, Decode, Encode, MaxEncodedLen, Eq, PartialEq, Debug, TypeInfo, Default)]
 pub enum ApplicableScope {
 	/// Only the owner could use the implementations.
 	#[default]
@@ -37,7 +37,7 @@ pub enum ApplicableScope {
 	AllowList,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct JobPolicy<PoolId, BlockNumber, AccountId> {
 	/// Policy's id
 	pub id: PoolId,
@@ -59,13 +59,13 @@ pub struct JobPolicy<PoolId, BlockNumber, AccountId> {
 // for each job, pay to worker or the owner TODO: WorkerPolicy: How to slashing, max processing
 // duration, and etc.
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum JobScheduler {
 	/// DemoOnly
 	DemoOnly
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum JobDestroyReason {
 	Safe,
 	Force,
@@ -74,7 +74,7 @@ pub enum JobDestroyReason {
 }
 
 /// Information about a pool.
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct PoolInfo<PoolId, AccountId, Balance, ImplId> {
 	/// Pool's id
 	pub id: PoolId,
@@ -103,7 +103,7 @@ pub struct PoolInfo<PoolId, AccountId, Balance, ImplId> {
 	pub workers_count: u32,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum JobStatus {
 	/// Initial status, the job is pending to be processed
 	Pending,
@@ -115,7 +115,7 @@ pub enum JobStatus {
 	Discarded,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum JobResult {
 	///  and report success
 	Success,
@@ -132,7 +132,7 @@ pub enum JobResult {
 // TODO: Idea: JobType: info will copy to Job, advanceable, creatable, minimum_deposit (more than
 // actual will save to surplus_deposit)
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct JobInfo<JobId, PolicyId, AccountId, Balance> {
 	pub id: JobId,
 	pub unique_track_id: Option<UniqueTrackId>,
