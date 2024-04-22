@@ -35,13 +35,13 @@ use sp_consensus::SelectChain;
 use sc_consensus_grandpa::{
 	FinalityProofProvider, GrandpaJustificationStream, SharedVoterState, SharedAuthoritySet,
 };
-use sc_rpc_spec_v2::SubscriptionTaskExecutor;
 
 use runtime_primitives::{
 	opaque::Block,
 	types::{AccountId, Balance, BlockNumber, Hash, Nonce},
 };
 
+pub use sc_rpc::SubscriptionTaskExecutor;
 pub use sc_rpc_api::DenyUnsafe;
 
 /// Extra dependencies for GRANDPA

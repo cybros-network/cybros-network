@@ -18,7 +18,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 scale-codec = { package = "parity-scale-codec", version = "3.6.5", default-features = false, features = ["derive"] }
 scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
 
-sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master", default-features = false }
+sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.6.0", default-features = false }
 
 base-primitives = { package = "pallet-offchain_computing-infra-primitives", path = "../../offchain_computing_infra/primitives", default-features = false }
 

@@ -257,7 +257,7 @@ pub fn new_partial(
 		let chain_spec = config.chain_spec.cloned_box();
 
 		let rpc_backend = backend.clone();
-		let rpc_extensions_builder = move |deny_unsafe, subscription_executor| {
+		let rpc_extensions_builder = move |deny_unsafe, subscription_executor: crate::rpc::SubscriptionTaskExecutor| {
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
