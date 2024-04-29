@@ -51,8 +51,6 @@ use sp_runtime::{
 	SaturatedConversion,
 };
 
-use pallet_contracts::{CollectEvents, DebugInfo, Determinism};
-
 pub(crate) use frame_support::traits::{
 	fungible::{
 		Inspect as InspectFungible, InspectHold as InspectHoldFungible, Mutate as MutateFungible,
@@ -68,8 +66,6 @@ pub(crate) type PalletInfra<T> = pallet_offchain_computing_infra::Pallet<T>;
 pub type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
 pub type BalanceOf<T> =
 	<<T as Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
-pub type ContractBalanceOf<T> =
-	<<T as pallet_contracts::Config>::Currency as InspectFungible<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -87,7 +83,7 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_contracts::Config + pallet_offchain_computing_infra::Config {
+	pub trait Config: frame_system::Config + pallet_offchain_computing_infra::Config {
 		/// Because this pallet emits events, it depends on the runtime definition of an event.
 		type RuntimeEvent: From<Event<Self>>
 			+ IsType<<Self as frame_system::Config>::RuntimeEvent>
@@ -980,47 +976,6 @@ pub mod pallet {
 			let now = T::UnixTime::now().as_secs().saturated_into::<u64>();
 			let expires_in = soft_expires_in.unwrap_or(T::DefaultJobExpiresIn::get());
 			Self::do_submit_job_result(pool_id, job_id, who, result, output, proof, now, expires_in)
-		}
-
-		#[pallet::call_index(19)]
-		#[pallet::weight({0})]
-		pub fn call_contract(
-			origin: OriginFor<T>,
-			dest: T::AccountId, // <- This is the address of the deployed contract we're calling
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			// Amount to transfer to the message. Not gonna transfer anything here, so we'll
-			// leave this as `0`.
-			let value: ContractBalanceOf<T> = Default::default();
-
-			// You'll have to play around with this depending on your contract. I don't recommend
-			// hardcoding it but for demo purposes this'll do the trick
-			let gas_limit = Weight::zero();
-
-			// Remember, we pulled this out from the `metadata.json` file.
-			//
-			// Again, probably shouldn't be hardcoded but :shrug:
-			let mut selector: Vec<u8> = [0x63, 0x3A, 0xA5, 0x51].into();
-			let mut message_arg = 15663040u32.encode();
-
-			let mut data = Vec::new();
-			data.append(&mut selector);
-			data.append(&mut message_arg);
-
-			pallet_contracts::Pallet::<T>::bare_call(
-				who,
-				dest.clone(),
-				value,
-				gas_limit,
-				None,
-				data,
-				DebugInfo::Skip,
-				CollectEvents::Skip,
-				Determinism::Enforced,
-			).result?;
-
-			Ok(())
 		}
 	}
 

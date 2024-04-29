@@ -19,17 +19,15 @@
 use crate as pallet_offchain_computing_pool;
 
 use frame_support::{
-	assert_ok, parameter_types, derive_impl,
-	weights::Weight,
-	traits::{Currency, Everything, OnFinalize, OnInitialize},
+	assert_ok, derive_impl,
+	traits::{OnFinalize, OnInitialize},
 };
 use frame_system::EnsureSigned;
 use sp_core::{ConstBool, ConstU128, ConstU16, ConstU32, ConstU64};
 use sp_runtime::{
-	traits::{Convert, IdentifyAccount, IdentityLookup, Verify},
-	BuildStorage, MultiSignature, Perbill,
+	traits::{IdentifyAccount, IdentityLookup, Verify},
+	BuildStorage, MultiSignature,
 };
-use pallet_contracts::{DefaultAddressGenerator, Frame, Schedule};
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -53,7 +51,6 @@ frame_support::construct_runtime!(
 		Balances: pallet_balances,
 		Timestamp: pallet_timestamp,
 		Randomness: pallet_insecure_randomness_collective_flip,
-		Contracts: pallet_contracts,
 		OffchainComputingInfra: pallet_offchain_computing_infra,
 		OffchainComputingPool: pallet_offchain_computing_pool,
 	}
@@ -95,57 +92,6 @@ impl pallet_timestamp::Config for Test {
 }
 
 impl pallet_insecure_randomness_collective_flip::Config for Test {}
-
-pub type ContractsBalanceOf<T> = <<T as pallet_contracts::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-
-parameter_types! {
-	pub MySchedule: Schedule<Test> = {
-		let schedule = <Schedule<Test>>::default();
-		schedule
-	};
-	pub static DepositPerByte: ContractsBalanceOf<Test> = 1;
-	pub const DepositPerItem: ContractsBalanceOf<Test> = 2;
-	pub static MaxDelegateDependencies: u32 = 32;
-
-	pub static CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(0);
-	// We need this one set high enough for running benchmarks.
-	pub static DefaultDepositLimit: ContractsBalanceOf<Test> = 1 * DOLLARS;
-}
-
-impl Convert<Weight, ContractsBalanceOf<Test>> for Test {
-	fn convert(w: Weight) -> ContractsBalanceOf<Test> {
-		w.ref_time().into()
-	}
-}
-
-impl pallet_contracts::Config for Test {
-	type Time = Timestamp;
-	type Randomness = Randomness;
-	type Currency = Balances;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type CallFilter = Everything;
-	type CallStack = [Frame<Test>; 5];
-	type WeightPrice = Test;
-	type WeightInfo = ();
-	type ChainExtension = ();
-	type Schedule = MySchedule;
-	type DepositPerByte = DepositPerByte;
-	type DepositPerItem = DepositPerItem;
-	type DefaultDepositLimit = DefaultDepositLimit;
-	type AddressGenerator = DefaultAddressGenerator;
-	type MaxCodeLen = ConstU32<{ 123 * 1024 }>;
-	type MaxStorageKeyLen = ConstU32<128>;
-	type UnsafeUnstableInterface = ConstBool<false>;
-	type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type Migrations = ();
-	type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
-	type MaxDelegateDependencies = MaxDelegateDependencies;
-	type Debug = ();
-	type Environment = ();
-	type Xcm = ();
-}
 
 impl pallet_offchain_computing_infra::Config for Test {
 	type RuntimeEvent = RuntimeEvent;

@@ -5103,7 +5103,6 @@ dependencies = [
  "frame-system",
  "log",
  "pallet-balances",
- "pallet-contracts",
  "pallet-insecure-randomness-collective-flip",
  "pallet-offchain_computing-infra",
  "pallet-offchain_computing-pool-primitives",
