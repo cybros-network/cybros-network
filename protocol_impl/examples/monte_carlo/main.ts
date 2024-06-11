@@ -465,7 +465,9 @@ try {
 if (!isProd) {
   logger.debug("Uploading image")
 }
-
+// presignedGetObject
+let imageDownloadUrl  = ""
+let profDownloadUrl = ""
 // Upload image
 const imageHash = toHashString(await crypto.subtle.digest("BLAKE2S", new TextEncoder().encode(image)));
 if (imageUploadUrl.length === 0 && s3Client) {
@@ -487,7 +489,7 @@ if (!imageUploadResp.ok) {
   logger.error(await imageUploadResp.text());
   renderAndExit(Result.Error, "IMAGE_UPLOAD_ERROR");
 }
-
+imageDownloadUrl = await s3Client.presignedGetObject(env.FALLBACK_S3_BUCKET,`${imageHash}.png`,60 * 24 * 60 * 7)
 if (!isProd) {
   logger.debug("Uploading proof")
 }
@@ -503,7 +505,7 @@ if (proofUploadUrl.length === 0 && s3Client) {
   //   }),
   //   { expiresIn: 60 }
   // )
-  proofUploadUrl = await s3Client.presignedPutObject(env.FALLBACK_S3_BUCKET, `${imageHash}.json`, 60);
+  proofUploadUrl = await s3Client.presignedPutObject(env.FALLBACK_S3_BUCKET, `${proofHash}.json`, 60);
 }
 const proofUploadResp = await fetch(proofUploadUrl, {
   method: 'PUT',
@@ -513,11 +515,11 @@ if (!proofUploadResp.ok) {
   logger.error(await proofUploadResp.text());
   renderAndExit(Result.Error, "PROOF_UPLOAD_ERROR");
 }
-
-let imageUrl = new URL(imageUploadUrl);
-imageUrl.search = ""
-let proofUrl = new URL(proofUploadUrl);
-proofUrl.search = ""
+profDownloadUrl = await s3Client.presignedGetObject(env.FALLBACK_S3_BUCKET,`${proofHash}.json`,60 * 24 * 60 * 7)
+let imageUrl = new URL(imageDownloadUrl);
+// imageUrl.search = ""
+let proofUrl = new URL(profDownloadUrl);
+// proofUrl.search = ""
 
 if (!isProd) {
   logger.debug("Finished")
