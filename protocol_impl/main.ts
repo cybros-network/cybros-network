@@ -1,15 +1,15 @@
-import {parse} from "https://deno.land/std/flags/mod.ts";
-import * as log from "https://deno.land/std/log/mod.ts";
-import * as path from "https://deno.land/std/path/mod.ts";
-import {copySync} from "https://deno.land/std/fs/mod.ts";
+import {parse} from "https://deno.land/std@0.224.0/flags/mod.ts";
+import * as log from "https://deno.land/std@0.224.0/log/mod.ts";
+import * as path from "https://deno.land/std@0.224.0/path/mod.ts";
+import {copySync} from "https://deno.land/std@0.224.0/fs/mod.ts";
 
-import {BN, hexToU8a, isHex, u8aToHex, hexToString} from "https://deno.land/x/polkadot/util/mod.ts";
-import {cryptoWaitReady, mnemonicGenerate} from "https://deno.land/x/polkadot/util-crypto/mod.ts";
-import {KeyringPair} from "https://deno.land/x/polkadot/keyring/types.ts";
-import {ApiPromise, HttpProvider, Keyring, WsProvider} from "https://deno.land/x/polkadot/api/mod.ts";
+import {BN, hexToU8a, isHex, u8aToHex, hexToString} from "npm:@polkadot/util";
+import {cryptoWaitReady, mnemonicGenerate} from "npm:@polkadot/util-crypto";
+import {KeyringPair} from "npm:@polkadot/keyring";
+import {ApiPromise, HttpProvider, Keyring, WsProvider} from "npm:@polkadot/api";
 import {Application, Router} from "https://deno.land/x/oak/mod.ts";
 
-import {AnyJson} from "https://deno.land/x/polkadot/types-codec/types/helpers.ts";
+import {AnyJson} from "npm:@polkadot/types-codec";
 
 const APP_NAME = "Cybros protocol reference implementation";
 const APP_VERSION = "v0.0.1-dev";
@@ -122,8 +122,8 @@ async function initializeLogger(logPath: string) {
   // logger not write to log instantly, need explict call `logger.handlers[0].flush()`
   await log.setup({
     handlers: {
-      console: new log.handlers.ConsoleHandler("NOTSET"),
-      file: new log.handlers.FileHandler("NOTSET", {
+      console: new log.ConsoleHandler("NOTSET"),
+      file: new log.FileHandler("NOTSET", {
         filename: path.resolve(path.join(logPath, "computing_worker.log")),
         formatter: (rec) =>
           JSON.stringify(
@@ -254,10 +254,10 @@ function balanceToNumber(value: BN | string) {
 
 async function handleJob() {
   const logger = log.getLogger("background");
-  const api = window.substrateApi;
-  const job = window.locals.currentJob;
+  const api = globalThis.substrateApi;
+  const job = globalThis.locals.currentJob;
 
-  if (job.status === JobStatus.Processing && window.locals.sentProcessedJobAt) {
+  if (job.status === JobStatus.Processing && globalThis.locals.sentProcessedJobAt) {
     logger.debug("Waiting processed job extrinsic finalize");
 
     return;
@@ -265,7 +265,7 @@ async function handleJob() {
 
   // TODO: Handle timeout or canceled
 
-  if (window.locals.runningJob) {
+  if (globalThis.locals.runningJob) {
     console.log("Job is running...");
     return;
   }
@@ -320,17 +320,17 @@ async function handleJob() {
     const jobOutput = out && out.length > 0 ? api.createType("JobOutput", out) : null;
 
     logger.info(`Sending "offchain_computing.submitJobResult()`);
-    const txPromise = api.tx.offchainComputingPool.submitJobResult(window.subscribePool, job.id, jobResult, jobOutput, null, null);
+    const txPromise = api.tx.offchainComputingPool.submitJobResult(globalThis.subscribePool, job.id, jobResult, jobOutput, null, null);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
-    const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
+    const txHash = await txPromise.signAndSend(globalThis.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
     // TODO: Catch whether failed
 
-    window.locals.sentProcessedJobAt = window.latestBlockNumber;
-    window.locals.runningJob = undefined;
+    globalThis.locals.sentProcessedJobAt = globalThis.latestBlockNumber;
+    globalThis.locals.runningJob = undefined;
   });
 
-  window.locals.runningJob = child;
+  globalThis.locals.runningJob = child;
 }
 
 if (parsedArgs.version) {
@@ -468,28 +468,28 @@ declare global {
   }
 }
 
-window.workerKeyPair = workerKeyPair;
-window.ownerKeyPair = ownerKeyPair;
-window.substrateApi = api;
+globalThis.workerKeyPair = workerKeyPair;
+globalThis.ownerKeyPair = ownerKeyPair;
+globalThis.substrateApi = api;
 
-window.noHeartbeat = parsedArgs.noHeartbeat;
-window.subscribePool = subscribePool;
+globalThis.noHeartbeat = parsedArgs.noHeartbeat;
+globalThis.subscribePool = subscribePool;
 
-window.finalizedBlockNumber = 0;
-window.finalizedBlockHash = "";
+globalThis.finalizedBlockNumber = 0;
+globalThis.finalizedBlockHash = "";
 
-window.latestBlockNumber = 0;
-window.latestBlockHash = "";
+globalThis.latestBlockNumber = 0;
+globalThis.latestBlockHash = "";
 
-window.workerStatus = WorkerStatus.Unregistered;
-window.attestedAt = 0;
+globalThis.workerStatus = WorkerStatus.Unregistered;
+globalThis.attestedAt = 0;
 
-window.locals = {};
+globalThis.locals = {};
 
-// await window.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHeader) => {
-await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
+// await globalThis.substrateApi.rpc.chain.subscribeFinalizedHeads(async (finalizedHeader) => {
+await globalThis.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
   const logger = log.getLogger("background");
-  const api = window.substrateApi;
+  const api = globalThis.substrateApi;
 
   // const finalizedBlockHash = finalizedHeader.hash.toHex();
   // const finalizedBlockNumber = finalizedHeader.number.toNumber();
@@ -502,10 +502,10 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
   const latestBlockHash = latestHeader.hash.toHex();
   const latestBlockNumber = latestHeader.number.toNumber();
 
-  window.finalizedBlockHash = finalizedBlockHash;
-  window.finalizedBlockNumber = finalizedBlockNumber;
-  window.latestBlockHash = latestBlockHash;
-  window.latestBlockNumber = latestBlockNumber;
+  globalThis.finalizedBlockHash = finalizedBlockHash;
+  globalThis.finalizedBlockNumber = finalizedBlockNumber;
+  globalThis.latestBlockHash = latestBlockHash;
+  globalThis.latestBlockNumber = latestBlockNumber;
 
   logger.debug(
     `best: #${latestBlockNumber} (${latestBlockHash}), finalized #${finalizedBlockNumber} (${finalizedBlockHash})`,
@@ -516,40 +516,40 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
   // Use the latest block instead of finalized one, so we don't delay handle any operation,
   // but confirm use finalized block
   const [workerInfo, flipOrFlop, inFlipSet, inFlopSet, { data: workerBalance }] = await Promise.all([
-    api.query.offchainComputingInfra.workers(window.workerKeyPair.address).then((v) =>
+    api.query.offchainComputingInfra.workers(globalThis.workerKeyPair.address).then((v) =>
       v === null || v === undefined ? null : v.toJSON()
     ),
     api.query.offchainComputingInfra.flipOrFlop().then(stage => stage.toString()),
-    api.query.offchainComputingInfra.flipSet(window.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
-    api.query.offchainComputingInfra.flopSet(window.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
-    api.query.system.account(window.workerKeyPair.address),
+    api.query.offchainComputingInfra.flipSet(globalThis.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
+    api.query.offchainComputingInfra.flopSet(globalThis.workerKeyPair.address).then(v => v.isSome ? v.unwrap().toNumber() : null),
+    api.query.system.account(globalThis.workerKeyPair.address),
   ]);
 
   if (workerInfo === null || workerInfo === undefined) {
-    if (window.locals.sentRegisterAt && window.locals.sentRegisterAt >= finalizedBlockNumber) {
+    if (globalThis.locals.sentRegisterAt && globalThis.locals.sentRegisterAt >= finalizedBlockNumber) {
       logger.debug("Waiting register extrinsic finalize");
 
       return;
     }
 
-    logger.warning("Worker hasn't registered");
-    if (window.ownerKeyPair !== null) {
+    logger.warn("Worker hasn't registered");
+    if (globalThis.ownerKeyPair !== null) {
       const initialDeposit = numberToBalance(10000);
       logger.info(`Sending "offchain_computing_workers.registerWorker(worker, implId, initialDeposit)`);
-      const txPromise = api.tx.offchainComputingInfra.registerWorker(window.workerKeyPair.address, implId, initialDeposit);
+      const txPromise = api.tx.offchainComputingInfra.registerWorker(globalThis.workerKeyPair.address, implId, initialDeposit);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
-      const txHash = await txPromise.signAndSend(window.ownerKeyPair, { nonce: -1 });
+      const txHash = await txPromise.signAndSend(globalThis.ownerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
       // TODO: Catch whether failed
 
-      window.locals.sentRegisterAt = latestBlockNumber;
+      globalThis.locals.sentRegisterAt = latestBlockNumber;
     }
 
     return;
-  } else if (window.workerStatus === WorkerStatus.Unregistered && workerInfo.status === WorkerStatus.Registered) {
+  } else if (globalThis.workerStatus === WorkerStatus.Unregistered && workerInfo.status === WorkerStatus.Registered) {
     logger.info("Worker has registered.");
-    window.locals.sentRegisterAt = undefined;
-    window.workerStatus = workerInfo.status;
+    globalThis.locals.sentRegisterAt = undefined;
+    globalThis.workerStatus = workerInfo.status;
     return;
   }
 
@@ -558,7 +558,7 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
     workerInfo.status === WorkerStatus.Unresponsive ||
     workerInfo.status === WorkerStatus.Offline
   ) {
-    if (window.locals.sentOnlineAt && window.locals.sentOnlineAt >= finalizedBlockNumber) {
+    if (globalThis.locals.sentOnlineAt && globalThis.locals.sentOnlineAt >= finalizedBlockNumber) {
       logger.debug("Waiting online extrinsic finalize");
 
       return;
@@ -570,61 +570,61 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
       "impl_build_version": IMPL_BUILD_VERSION,
       "impl_build_magic_bytes": IMPL_BUILD_MAGIC_BYTES,
     });
-    const payloadSig = window.workerKeyPair.sign(payload.toU8a());
+    const payloadSig = globalThis.workerKeyPair.sign(payload.toU8a());
     const attestation = createAttestation(api, u8aToHex(payloadSig));
 
     logger.info(`Sending "offchain_computing_workers.online(payload, attestation)`);
     const txPromise = api.tx.offchainComputingInfra.online(payload, attestation);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
-    const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
+    const txHash = await txPromise.signAndSend(globalThis.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
     // TODO: Catch whether failed
 
-    window.locals.sentOnlineAt = latestBlockNumber;
+    globalThis.locals.sentOnlineAt = latestBlockNumber;
 
     return;
-  } else if (window.workerStatus === WorkerStatus.Registered && workerInfo.status === WorkerStatus.Online) {
+  } else if (globalThis.workerStatus === WorkerStatus.Registered && workerInfo.status === WorkerStatus.Online) {
     logger.info("Worker is online.");
-    window.locals.sentOnlineAt = undefined;
-    window.workerStatus = workerInfo.status;
+    globalThis.locals.sentOnlineAt = undefined;
+    globalThis.workerStatus = workerInfo.status;
     return;
   }
 
-  if (!window.noHeartbeat) {
+  if (!globalThis.noHeartbeat) {
     const shouldHeartBeat = (
       flipOrFlop === FlipFlopStage.Flip && inFlipSet && latestBlockNumber >= inFlipSet
     ) || (
       flipOrFlop === FlipFlopStage.Flop && inFlopSet && latestBlockNumber >= inFlopSet
     );
-    if (shouldHeartBeat && window.locals.sentHeartbeatAt === undefined) {
+    if (shouldHeartBeat && globalThis.locals.sentHeartbeatAt === undefined) {
       logger.info(`Sending "offchain_computing_workers.heartbeat()`);
       const txPromise = api.tx.offchainComputingInfra.heartbeat();
       logger.debug(`Call hash: ${txPromise.toHex()}`);
-      const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
+      const txHash = await txPromise.signAndSend(globalThis.workerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
       // TODO: Catch whether failed
 
-      window.locals.sentHeartbeatAt = latestBlockNumber;
-    } else if (finalizedBlockNumber > window.locals.sentHeartbeatAt) {
-      window.locals.sentHeartbeatAt = undefined;
+      globalThis.locals.sentHeartbeatAt = latestBlockNumber;
+    } else if (finalizedBlockNumber > globalThis.locals.sentHeartbeatAt) {
+      globalThis.locals.sentHeartbeatAt = undefined;
     }
   }
 
-  window.workerStatus = workerInfo.status;
-  window.attestedAt = workerInfo.attestedAt
+  globalThis.workerStatus = workerInfo.status;
+  globalThis.attestedAt = workerInfo.attestedAt
 
   // Watch worker's balance
   const freeWorkerBalance = balanceToNumber(workerBalance.free);
   const workerBalanceThreshold = 10;
   if (freeWorkerBalance < workerBalanceThreshold) {
-    logger.warning(`Worker's free balance nearly exhausted: ${freeWorkerBalance}`);
+    logger.warn(`Worker's free balance nearly exhausted: ${freeWorkerBalance}`);
 
-    if (window.ownerKeyPair !== null) {
+    if (globalThis.ownerKeyPair !== null) {
       const deposit = numberToBalance(workerBalanceThreshold);
-      logger.info(`Sending "offchainComputingInfra.deposit('${window.workerKeyPair.address}', '${deposit}')"`);
-      const txPromise = api.tx.offchainComputingInfra.deposit(window.workerKeyPair.address, deposit);
+      logger.info(`Sending "offchainComputingInfra.deposit('${globalThis.workerKeyPair.address}', '${deposit}')"`);
+      const txPromise = api.tx.offchainComputingInfra.deposit(globalThis.workerKeyPair.address, deposit);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
-      const txHash = await txPromise.signAndSend(window.ownerKeyPair, { nonce: -1 });
+      const txHash = await txPromise.signAndSend(globalThis.ownerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
     }
   }
@@ -635,138 +635,138 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
   //   if (event.section !== "offchainComputing") {
   //     return;
   //   }
-  //   if (event.data.worker === undefined || event.data.worker.toString() !== window.workerKeyPair.address) {
+  //   if (event.data.worker === undefined || event.data.worker.toString() !== globalThis.workerKeyPair.address) {
   //     return;
   //   }
   //
   //   console.log(event.toHuman());
   // });
 
-  if (isNaN(window.subscribePool)) {
+  if (isNaN(globalThis.subscribePool)) {
     return;
   }
 
   const [invited, subscribed] = await Promise.all([
-    api.query.offchainComputingPool.poolAuthorizedWorkers(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
-    api.query.offchainComputingPool.workerSubscribedPools(window.workerKeyPair.address, window.subscribePool).then(v => v.isSome),
+    api.query.offchainComputingPool.poolAuthorizedWorkers(globalThis.workerKeyPair.address, globalThis.subscribePool).then(v => v.isSome),
+    api.query.offchainComputingPool.workerSubscribedPools(globalThis.workerKeyPair.address, globalThis.subscribePool).then(v => v.isSome),
   ]);
 
   if (!invited) {
-    console.log(`Worker not added to ${window.subscribePool} yet`);
+    console.log(`Worker not added to ${globalThis.subscribePool} yet`);
 
-    if (window.locals.sentAuthorizePoolAt && window.locals.sentAuthorizePoolAt >= finalizedBlockNumber) {
+    if (globalThis.locals.sentAuthorizePoolAt && globalThis.locals.sentAuthorizePoolAt >= finalizedBlockNumber) {
       logger.debug("Waiting authorize worker extrinsic finalize");
 
       return;
     }
 
-    if (window.ownerKeyPair !== null) {
+    if (globalThis.ownerKeyPair !== null) {
       logger.info(`Sending "offchainComputingPool.authorizeWorker(poolId, worker)`);
-      const txPromise = api.tx.offchainComputingPool.authorizeWorker(window.subscribePool, window.workerKeyPair.address);
+      const txPromise = api.tx.offchainComputingPool.authorizeWorker(globalThis.subscribePool, globalThis.workerKeyPair.address);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
-      const txHash = await txPromise.signAndSend(window.ownerKeyPair, { nonce: -1 });
+      const txHash = await txPromise.signAndSend(globalThis.ownerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
       // TODO: Catch whether failed
 
-      window.locals.sentAuthorizePoolAt = latestBlockNumber;
+      globalThis.locals.sentAuthorizePoolAt = latestBlockNumber;
     }
 
     return;
-  } else if (window.locals.sentAuthorizePoolAt && invited) {
-    console.log(`Worker has been invited to pool ${window.subscribePool}.`)
+  } else if (globalThis.locals.sentAuthorizePoolAt && invited) {
+    console.log(`Worker has been invited to pool ${globalThis.subscribePool}.`)
 
-    window.locals.sentAuthorizePoolAt = undefined
+    globalThis.locals.sentAuthorizePoolAt = undefined
   }
 
   if (!subscribed) {
-    if (window.locals.sentSubscribePoolAt && window.locals.sentSubscribePoolAt >= finalizedBlockNumber) {
+    if (globalThis.locals.sentSubscribePoolAt && globalThis.locals.sentSubscribePoolAt >= finalizedBlockNumber) {
       logger.debug("Waiting subscribe pool extrinsic finalize");
 
       return;
     }
 
     logger.info(`Sending "offchainComputingPool.subscribePool(poolId)`);
-    const txPromise = api.tx.offchainComputingPool.subscribePool(window.subscribePool);
+    const txPromise = api.tx.offchainComputingPool.subscribePool(globalThis.subscribePool);
     logger.debug(`Call hash: ${txPromise.toHex()}`);
-    const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
+    const txHash = await txPromise.signAndSend(globalThis.workerKeyPair, { nonce: -1 });
     logger.info(`Transaction hash: ${txHash.toHex()}`);
     // TODO: Catch whether failed
 
-    window.locals.sentSubscribePoolAt = latestBlockNumber;
+    globalThis.locals.sentSubscribePoolAt = latestBlockNumber;
 
     return;
-  } else if (window.locals.sentSubscribePoolAt && subscribed) {
-    console.log(`Worker subscribed pool ${window.subscribePool}.`)
+  } else if (globalThis.locals.sentSubscribePoolAt && subscribed) {
+    console.log(`Worker subscribed pool ${globalThis.subscribePool}.`)
 
-    window.locals.sentSubscribePoolAt = undefined
+    globalThis.locals.sentSubscribePoolAt = undefined
   }
 
-  // if (window.locals.sentTakeJobAt && window.locals.sentTakeJobAt >= window.finalizedBlockNumber) {
+  // if (globalThis.locals.sentTakeJobAt && globalThis.locals.sentTakeJobAt >= globalThis.finalizedBlockNumber) {
   //   logger.debug("Waiting take job extrinsic finalize");
   //
   //   return;
   // }
 
-  if (window.locals.sentProcessedJobAt) {
-    // if (window.locals.sentTakeJobAt >= window.finalizedBlockNumber) {
+  if (globalThis.locals.sentProcessedJobAt) {
+    // if (globalThis.locals.sentTakeJobAt >= globalThis.finalizedBlockNumber) {
     //   logger.debug("Waiting submit job result extrinsic finalize");
     // } else {
-    //   window.locals.sentTakeJobAt = undefined;
-    //   window.locals.sentProcessedJobAt = undefined;
-    //   window.locals.runningJob = undefined;
-    //   window.locals.currentJob = undefined;
+    //   globalThis.locals.sentTakeJobAt = undefined;
+    //   globalThis.locals.sentProcessedJobAt = undefined;
+    //   globalThis.locals.runningJob = undefined;
+    //   globalThis.locals.currentJob = undefined;
     // }
-    window.locals.sentTakeJobAt = undefined;
-    window.locals.sentProcessedJobAt = undefined;
-    window.locals.runningJob = undefined;
-    window.locals.currentJob = undefined;
+    globalThis.locals.sentTakeJobAt = undefined;
+    globalThis.locals.sentProcessedJobAt = undefined;
+    globalThis.locals.runningJob = undefined;
+    globalThis.locals.currentJob = undefined;
   }
 
-  if (window.locals.currentJob === undefined) {
-    window.locals.sentTakeJobAt = undefined;
+  if (globalThis.locals.currentJob === undefined) {
+    globalThis.locals.sentTakeJobAt = undefined;
 
     const jobs =
-      (await api.query.offchainComputingPool.jobs.entries(window.subscribePool))
+      (await api.query.offchainComputingPool.jobs.entries(globalThis.subscribePool))
         .map(([_k, job]) => job.toJSON());
 
     const jobsOfMine = jobs
-      .filter((job: AnyJson) => job.status != JobStatus.Processed && job.assignee === window.workerKeyPair.address)
+      .filter((job: AnyJson) => job.status != JobStatus.Processed && job.assignee === globalThis.workerKeyPair.address)
       .sort((a: AnyJson, b: AnyJson) => a.id - b.id);
     if (jobsOfMine.length > 0) {
       console.log(`Jobs assign to me: ${jobsOfMine.map((i) => i.id)}`);
       const job = jobsOfMine[0];
       // console.log(job);
 
-      if ((job && window.locals.currentJob === undefined) || window.locals.currentJob.id == job.id) {
-        const input = (await api.query.offchainComputingPool.jobInputs(window.subscribePool, job.id)).unwrapOr(null);
+      if ((job && globalThis.locals.currentJob === undefined) || globalThis.locals.currentJob.id == job.id) {
+        const input = (await api.query.offchainComputingPool.jobInputs(globalThis.subscribePool, job.id)).unwrapOr(null);
         // console.log(input);
         job.input = input !== null ? u8aToHex(input.data) : "";
         job.rawInput = input;
         // console.log(job.input);
 
-        window.locals.currentJob = job
+        globalThis.locals.currentJob = job
 
         await handleJob();
       }
     }
 
     let assignableJobsCount = jobs.filter((job: AnyJson) => job.status === JobStatus.Pending && job.assignee === null && job.implSpecVersion == implSpecVersion ).length
-    let myJobsCount = (await api.query.offchainComputingPool.counterForWorkerAssignedJobs(window.workerKeyPair.address)).toNumber()
-    if (assignableJobsCount > 0 && myJobsCount <= 1 && window.locals.sentTakeJobAt === undefined) {
+    let myJobsCount = (await api.query.offchainComputingPool.counterForWorkerAssignedJobs(globalThis.workerKeyPair.address)).toNumber()
+    if (assignableJobsCount > 0 && myJobsCount <= 1 && globalThis.locals.sentTakeJobAt === undefined) {
       logger.info("taking a new job");
 
-      logger.info(`Sending "offchain_computing.take_job(${window.subscribePool}, null, true, null)`);
-      const txPromise = api.tx.offchainComputingPool.takeJob(window.subscribePool, null, true, null);
+      logger.info(`Sending "offchain_computing.take_job(${globalThis.subscribePool}, null, true, null)`);
+      const txPromise = api.tx.offchainComputingPool.takeJob(globalThis.subscribePool, null, true, null);
       logger.debug(`Call hash: ${txPromise.toHex()}`);
-      const txHash = await txPromise.signAndSend(window.workerKeyPair, { nonce: -1 });
+      const txHash = await txPromise.signAndSend(globalThis.workerKeyPair, { nonce: -1 });
       logger.info(`Transaction hash: ${txHash.toHex()}`);
       // TODO: Catch whether failed
 
-      window.locals.sentTakeJobAt = window.latestBlockNumber;
+      globalThis.locals.sentTakeJobAt = globalThis.latestBlockNumber;
 
       return;
-    } else if (window.locals.sentTakeJobAt && window.locals.sentTakeJobAt >= finalizedBlockNumber) {
-      window.locals.sentTakeJobAt = undefined;
+    } else if (globalThis.locals.sentTakeJobAt && globalThis.locals.sentTakeJobAt >= finalizedBlockNumber) {
+      globalThis.locals.sentTakeJobAt = undefined;
     } else {
       // logger.info("No new job");
       return;
@@ -777,14 +777,14 @@ await window.substrateApi.rpc.chain.subscribeNewHeads(async (latestHeader) => {
 const router = new Router();
 router.get("/", (ctx) => {
   ctx.response.body = {
-    latestBlockNumber: window.latestBlockNumber,
-    latestBlockHash: window.latestBlockHash,
-    finalizedBlockNumber: window.finalizedBlockNumber,
-    finalizedBlockHash: window.finalizedBlockHash,
-    workerAddress: window.workerKeyPair.address,
-    workerPublicKey: u8aToHex(window.workerKeyPair.publicKey),
-    workerStatus: window.workerStatus,
-    attestedAt: window.attestedAt,
+    latestBlockNumber: globalThis.latestBlockNumber,
+    latestBlockHash: globalThis.latestBlockHash,
+    finalizedBlockNumber: globalThis.finalizedBlockNumber,
+    finalizedBlockHash: globalThis.finalizedBlockHash,
+    workerAddress: globalThis.workerKeyPair.address,
+    workerPublicKey: u8aToHex(globalThis.workerKeyPair.publicKey),
+    workerStatus: globalThis.workerStatus,
+    attestedAt: globalThis.attestedAt,
     version: VERSION,
     implVersion: IMPL_BUILD_VERSION,
   };

@@ -1,7 +1,6 @@
 {
   "lock": "deno.lock",
   "compilerOptions": {
-    "allowJs": true,
     "lib": ["deno.window"],
     "strict": true
   },

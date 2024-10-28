@@ -7,8 +7,9 @@ EXECUTOR_PATH="${EXECUTOR_PATH:-"$APP_PATH/examples/simple_echo"}"
 
 deno run \
   --allow-run="$DENO_PATH" \
+  --allow-env \
   --allow-net \
   --allow-sys \
   --allow-write="$APP_PATH/data,$APP_PATH/tmp,$APP_PATH/log" \
-  --allow-read="$DENO_PATH,$PWD,$APP_PATH/data,$APP_PATH/tmp,$APP_PATH/log,$EXECUTOR_PATH" \
+  --allow-read \
   "$APP_PATH"/main.ts --job-executor-path "$EXECUTOR_PATH" "$@"
